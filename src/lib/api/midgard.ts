@@ -2,9 +2,9 @@ import axios from 'axios';
 import { Pool, NetworkStats, Node, HistoryItem, Swap, ChainData } from '@/lib/types';
 
 const MIDGARD_ENDPOINTS = [
-  'https://midgard.ninerealms.com/v2',
+  'https://gateway.liquify.com/chain/thorchain_midgard',
   'https://midgard.thorchain.network',
-  'https://midgard.thorswap.net/v2',
+  'https://midgard.ninerealms.com/v2',
 ];
 
 let activeEndpoint = 0;
