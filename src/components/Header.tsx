@@ -11,6 +11,8 @@ const navItems = [
   { name: 'Ecosystem', href: '/ecosystem' },
   { name: 'Governance', href: '/governance' },
   { name: 'Statistics', href: '/stats' },
+  { name: 'RUNE', href: '/rune' },
+  { name: 'TCY', href: '/tcy' },
   { name: 'Docs', href: '/docs' },
 ];
 
