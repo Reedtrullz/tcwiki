@@ -14,7 +14,6 @@ export interface Pool {
   liquidityUSD: string;
   volume24h: string;
   volume24hUSD: string;
-  price: string;
   pool: string;
   earnings: string;
   rewards: string;

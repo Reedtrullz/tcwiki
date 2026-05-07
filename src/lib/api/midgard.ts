@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Pool, NetworkStats, Node, HistoryItem, Swap, ChainData } from './types';
+import { Pool, NetworkStats, Node, HistoryItem, Swap, ChainData } from '@/lib/types';
 
 const MIDGARD_API_BASE = 'https://midgard.ninerealms.com/v2';
 
