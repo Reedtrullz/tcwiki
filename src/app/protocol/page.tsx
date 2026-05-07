@@ -1,4 +1,5 @@
 import { BookOpen, Cpu, Lock, Shield, Database, Zap, Link as LinkIcon, Layers } from 'lucide-react';
+import { CHAINS } from '@/lib/data/static';
 import Link from 'next/link';
 
 const sections = [
@@ -155,26 +156,13 @@ export default function ProtocolPage() {
               Supported Chains
             </h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-              {[
-                'Bitcoin (BTC)',
-                'Ethereum (ETH)',
-                'BNB Chain (BSC)',
-                'Avalanche (AVAX)',
-                'Cosmos Hub (GAIA)',
-                'Dogecoin (DOGE)',
-                'Litecoin (LTC)',
-                'Bitcoin Cash (BCH)',
-                'Tron (TRX)',
-                'Base (BASE)',
-                'Arbitrum (ARB)',
-                'Polygon (MATIC)',
-              ].map((chain) => (
+              {CHAINS.map((c) => (
                 <div
-                  key={chain}
+                  key={c.chain}
                   className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 text-center border border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-500 transition-colors"
                 >
                   <p className="font-medium text-gray-900 dark:text-white">
-                    {chain}
+                    {c.name} ({c.chain})
                   </p>
                 </div>
               ))}

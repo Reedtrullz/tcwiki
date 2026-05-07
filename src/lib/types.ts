@@ -95,6 +95,7 @@ export interface HistoryItem {
   time: string;
   totalValueLocked: string;
   totalVolume24h: string;
+  totalVolume24hUSD?: string;
   poolCount: number;
   runePriceUSD: string;
   activeUsers: number;

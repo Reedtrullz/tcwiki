@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import MidgardAPI from '@/lib/api/midgard';
 import { NetworkStats, Pool } from '@/lib/types';
 import { Activity, Network, Zap, Shield, Layers, BookOpen } from 'lucide-react';
+import { ECOSYSTEM_PROJECTS, RESEARCH_REPORTS } from '@/lib/data/static';
 import Link from 'next/link';
 
 export default function HomePage() {
@@ -318,6 +319,38 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      <section className="py-16 bg-gray-50 dark:bg-gray-900/50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">Ecosystem Projects</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {ECOSYSTEM_PROJECTS.slice(0, 8).map(p => (
+              <a key={p.id} href={p.url} target="_blank" rel="noopener noreferrer" className="block bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-500 transition-all group">
+                <div className="flex items-center justify-between mb-2"><h3 className="font-semibold text-gray-900 dark:text-white text-sm">{p.name}</h3><span className="text-xs px-1.5 py-0.5 rounded bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">{p.category}</span></div>
+                <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">{p.description}</p>
+              </a>
+            ))}
+          </div>
+          <div className="mt-6 text-center"><Link href="/ecosystem" className="text-blue-600 dark:text-blue-400 hover:underline font-medium">View Full Ecosystem →</Link></div>
+        </div>
+      </section>
+
+      <section className="py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">Research & Reports</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {RESEARCH_REPORTS.map(r => (
+              <a key={r.id} href={r.url} target="_blank" rel="noopener noreferrer" className="block bg-white dark:bg-gray-800 rounded-xl p-5 border border-gray-200 dark:border-gray-700 hover:border-green-500 dark:hover:border-green-500 transition-all">
+                <p className="text-xs text-gray-500">{r.date} · {r.source}</p>
+                <h3 className="font-bold text-gray-900 dark:text-white mt-1 mb-2">{r.title}</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-3">{r.summary}</p>
+                {r.keyInsights.length > 0 && <div className="mt-3 flex flex-wrap gap-1">{r.keyInsights.slice(0,2).map((ki,i) => (<span key={i} className="text-xs px-2 py-1 rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">{ki}</span>))}</div>}
+              </a>
+            ))}
+          </div>
+        </div>
+      </section>
+
     </div>
   );
 }
