@@ -41,6 +41,7 @@ function SearchResults() {
         ].find(p => p.slug === r.ref);
         return { ...page!, score: r.score };
       });
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setResults(r);
     }
   }, [query]);

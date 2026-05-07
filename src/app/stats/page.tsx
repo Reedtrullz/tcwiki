@@ -13,6 +13,7 @@ export default function StatsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let cancelled = false;
     const fetchData = async () => {
       try {
         const [history, poolsData, nodesData] = await Promise.all([
@@ -20,19 +21,22 @@ export default function StatsPage() {
           MidgardAPI.getPools(),
           MidgardAPI.getNodes(),
         ]);
-        setNetworkData(history);
-        setPools(poolsData);
-        setNodes(nodesData);
-        setLoading(false);
+        if (!cancelled) {
+          setNetworkData(history);
+          setPools(poolsData);
+          setNodes(nodesData);
+          setLoading(false);
+        }
       } catch (error) {
-        console.error('Error fetching data:', error);
-        setLoading(false);
+        if (!cancelled) {
+          console.error('Error fetching data:', error);
+          setLoading(false);
+        }
       }
     };
-    // eslint-disable-next-line react-hooks/extra/no-direct-set-state-in-use-effect
-    void fetchData();
-    const interval = setInterval(() => { fetchData(); }, 60000);
-    return () => clearInterval(interval);
+    fetchData();
+    const interval = setInterval(fetchData, 60000);
+    return () => { cancelled = true; clearInterval(interval); };
   }, []);
 
   if (loading) {

@@ -1,4 +1,4 @@
-import { Zap, TrendingUp, DollarSign, BarChart3, Coins, PieChart } from 'lucide-react';
+import { DollarSign, BarChart3, Coins } from 'lucide-react';
 
 export default function EconomicsPage() {
   return (
