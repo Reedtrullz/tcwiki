@@ -97,11 +97,13 @@ export default function HomePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center pt-16">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
       </div>
     );
   }
+
+  const apiError = !networkData;
 
   return (
     <div className="pt-16">
@@ -138,6 +140,11 @@ export default function HomePage() {
             Network Overview
           </h2>
 
+          {apiError && (
+            <div className="mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg text-sm text-yellow-800 dark:text-yellow-200">
+              ⚠ Live network data is currently unavailable. The Midgard API endpoint may be down. Showing placeholder values — historical data and documentation pages remain accessible.
+            </div>
+          )}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {statCards.map((card) => (
               <Link

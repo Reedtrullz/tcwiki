@@ -1,149 +1,91 @@
 import axios from 'axios';
 import { Pool, NetworkStats, Node, HistoryItem, Swap, ChainData } from '@/lib/types';
 
-const MIDGARD_API_BASE = 'https://midgard.ninerealms.com/v2';
+const MIDGARD_ENDPOINTS = [
+  'https://midgard.ninerealms.com/v2',
+  'https://midgard.thorchain.network',
+  'https://midgard.thorswap.net/v2',
+];
+
+let activeEndpoint = 0;
+
+function getClient() {
+  return axios.create({
+    baseURL: MIDGARD_ENDPOINTS[activeEndpoint],
+    timeout: 5000,
+  });
+}
+
+async function request<T>(path: string): Promise<T> {
+  for (let i = 0; i < MIDGARD_ENDPOINTS.length; i++) {
+    const endpoint = (activeEndpoint + i) % MIDGARD_ENDPOINTS.length;
+    try {
+      const client = axios.create({
+        baseURL: MIDGARD_ENDPOINTS[endpoint],
+        timeout: 5000,
+      });
+      const response = await client.get(path);
+      activeEndpoint = endpoint;
+      return response.data;
+    } catch {
+      continue;
+    }
+  }
+  throw new Error('All Midgard endpoints unreachable');
+}
 
 export class MidgardAPI {
-  private static instance = axios.create({
-    baseURL: MIDGARD_API_BASE,
-    timeout: 30000,
-  });
-
   static async getPools(): Promise<Pool[]> {
-    try {
-      const response = await this.instance.get('/pools?stakeable=true');
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching pools:', error);
-      return [];
-    }
+    try { return await request<Pool[]>('/pools?stakeable=true'); } catch { return []; }
   }
 
   static async getPoolDetails(pool: string): Promise<Pool> {
-    try {
-      const response = await this.instance.get(`/pool/${pool}`);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching pool details:', error);
-      throw error;
-    }
+    return request<Pool>(`/pool/${pool}`);
   }
 
   static async getNetworkData(): Promise<NetworkStats> {
-    try {
-      const response = await this.instance.get('/network');
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching network data:', error);
-      throw error;
-    }
+    return request<NetworkStats>('/network');
   }
 
   static async getNodes(): Promise<Node[]> {
-    try {
-      const response = await this.instance.get('/nodes');
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching nodes:', error);
-      return [];
-    }
+    try { return await request<Node[]>('/nodes'); } catch { return []; }
   }
 
-  static async getHistory(bucket: string = 'day', count: number = 30): Promise<HistoryItem[]> {
-    try {
-      const response = await this.instance.get(`/history?bucket=${bucket}&count=${count}`);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching history:', error);
-      return [];
-    }
+  static async getHistory(bucket = 'day', count = 30): Promise<HistoryItem[]> {
+    try { return await request<HistoryItem[]>(`/history?bucket=${bucket}&count=${count}`); } catch { return []; }
   }
 
-  static async getSwaps(params: {
-    limit?: number;
-    offset?: number;
-    pool?: string;
-    from?: string;
-    to?: string;
-  } = {}): Promise<Swap[]> {
-    try {
-      const response = await this.instance.get('/swaps', { params });
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching swaps:', error);
-      return [];
-    }
+  static async getSwaps(params: Record<string, unknown> = {}): Promise<Swap[]> {
+    try { return await request<Swap[]>('/swaps'); } catch { return []; }
   }
 
   static async getChains(): Promise<ChainData[]> {
-    try {
-      const response = await this.instance.get('/chains');
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching chains:', error);
-      return [];
-    }
+    try { return await request<ChainData[]>('/chains'); } catch { return []; }
   }
 
-  static async getActions(params: {
-    limit?: number;
-    offset?: number;
-    type?: string;
-    address?: string;
-    pool?: string;
-  } = {}): Promise<Record<string, unknown>[]> {
-    try {
-      const response = await this.instance.get('/actions', { params });
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching actions:', error);
-      return [];
-    }
+  static async getActions(params: Record<string, unknown> = {}): Promise<Record<string, unknown>[]> {
+    try { return await request<Record<string, unknown>[]>('/actions'); } catch { return []; }
   }
 
   static async getPoolStats(pool: string, from?: string, to?: string): Promise<Record<string, unknown> | null> {
-    try {
-      const response = await this.instance.get(`/pool/${pool}/stats`, {
-        params: { from, to }
-      });
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching pool stats:', error);
-      return null;
-    }
+    try { return await request<Record<string, unknown>>(`/pool/${pool}/stats`); } catch { return null; }
   }
 
   static async getMemberDetails(address: string): Promise<Record<string, unknown> | null> {
-    try {
-      const response = await this.instance.get(`/member/${address}`);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching member details:', error);
-      return null;
-    }
+    try { return await request<Record<string, unknown>>(`/member/${address}`); } catch { return null; }
   }
 
   static async getAssetPrice(asset: string): Promise<{ runePrice: string; assetPrice: string }> {
     try {
-      const response = await this.instance.get(`/price/${asset}`);
-      return {
-        runePrice: response.data.runePrice,
-        assetPrice: response.data.assetPrice,
-      };
-    } catch (error) {
-      console.error('Error fetching asset price:', error);
+      const data = await request<{ runePrice: string; assetPrice: string }>(`/price/${asset}`);
+      return { runePrice: data.runePrice, assetPrice: data.assetPrice };
+    } catch {
       return { runePrice: '0', assetPrice: '0' };
     }
   }
 
-  static async getRunePriceHistory(bucket: string = 'day', count: number = 365): Promise<Record<string, unknown>[]> {
-    try {
-      const response = await this.instance.get(`/history/rune?bucket=${bucket}&count=${count}`);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching rune price history:', error);
-      return [];
-    }
+  static async getRunePriceHistory(bucket = 'day', count = 365): Promise<Record<string, unknown>[]> {
+    try { return await request<Record<string, unknown>[]>(`/history/rune?bucket=${bucket}&count=${count}`); } catch { return []; }
   }
 }
 

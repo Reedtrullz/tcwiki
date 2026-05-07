@@ -47,6 +47,7 @@ export default function StatsPage() {
     );
   }
 
+  const apiError = networkData.length === 0;
   const latestData = networkData[0];
   const parseCurrency = (val?: string) => parseFloat(val?.replace(/[$,]/g, '') || '0');
   const tvlData = networkData.map(d => ({
@@ -65,6 +66,11 @@ export default function StatsPage() {
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">Network Statistics</h1>
           <p className="text-lg text-gray-600 dark:text-gray-400">Real-time THORChain network metrics and performance data</p>
+          {apiError && (
+            <div className="mt-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg text-sm text-yellow-800 dark:text-yellow-200">
+              ⚠ Live data is currently unavailable. The Midgard API may be down. Charts and stats will appear once the connection is restored.
+            </div>
+          )}
         </div>
 
         {latestData && (
