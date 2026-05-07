@@ -20,8 +20,8 @@ const resourceLinks = [
 ];
 
 const communityLinks = [
-  { label: 'Discord', href: 'https://discord.gg/thorchain' },
-  { label: 'Twitter', href: 'https://x.com/THORChain' },
+  { label: 'Discord', href: 'https://discord.com/invite/thorchaincommunity' },
+  { label: 'Twitter', href: 'https://x.com/thorchain_org' },
   { label: 'Telegram', href: 'https://t.me/thorchain_org' },
   { label: 'Reddit', href: 'https://reddit.com/r/THORChain' },
   { label: 'GitHub', href: 'https://github.com/thorchain' },
