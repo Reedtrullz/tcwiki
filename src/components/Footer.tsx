@@ -14,7 +14,7 @@ const footerLinks = [
 const resourceLinks = [
   { label: 'Official Docs', href: 'https://docs.thorchain.org' },
   { label: 'Dev Docs', href: 'https://dev.thorchain.org' },
-  { label: 'Midgard API', href: 'https://midgard.ninerealms.com/v2/doc' },
+  { label: 'Midgard API', href: 'https://midgard.thorchain.network/v2/doc' },
   { label: 'RuneScan', href: 'https://runescan.io' },
   { label: 'ViewBlock', href: 'https://viewblock.io/thorchain' },
   { label: 'THORSwap', href: 'https://app.thorswap.finance' },

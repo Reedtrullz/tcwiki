@@ -306,7 +306,7 @@ export default function HomePage() {
                 </Link>
 
                 <Link
-                  href="https://midgard.ninerealms.com/v2/doc"
+                  href="https://midgard.thorchain.network/v2/doc"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="block bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-500 transition-colors"
@@ -318,7 +318,7 @@ export default function HomePage() {
                         Midgard API
                       </p>
                       <p className="text-sm text-gray-600 dark:text-gray-400">
-                        midgard.ninerealms.com/v2
+                        gateway.liquify.com/chain/thorchain_midgard/v2
                       </p>
                     </div>
                   </div>

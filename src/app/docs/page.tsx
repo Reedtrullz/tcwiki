@@ -24,8 +24,8 @@ const docSections = [
     icon: <Code className="h-8 w-8" />,
     links: [
       { label: 'Developer Docs', href: 'https://dev.thorchain.org' },
-      { label: 'Midgard API Reference', href: 'https://midgard.ninerealms.com/v2/doc' },
-      { label: 'Thornode API', href: 'https://thornode.ninerealms.com/thorchain/doc' },
+      { label: 'Midgard API Reference', href: 'https://midgard.thorchain.network/v2/doc' },
+      { label: 'Thornode API', href: 'https://thornode.thorchain.network/thorchain/doc' },
       { label: 'SwapKit SDK', href: 'https://swapkit.dev' },
       { label: 'XChainJS Library', href: 'https://xchainjs.org' },
     ],
@@ -48,7 +48,7 @@ const communityLinks = [
   { label: 'THORChain Telegram', href: 'https://t.me/thorchain_org' },
   { label: 'THORChain Reddit', href: 'https://reddit.com/r/THORChain' },
   { label: 'GitHub (THORChain)', href: 'https://github.com/thorchain' },
-  { label: 'Nine Realms', href: 'https://ninerealms.com' },
+  { label: 'THORChain', href: 'https://thorchain.org' },
 ];
 
 export default function DocsPage() {
@@ -90,8 +90,8 @@ export default function DocsPage() {
         <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-xl p-8 border border-blue-200 dark:border-blue-800">
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">API Endpoints</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {[{ name: 'Midgard (v2)', url: 'https://midgard.ninerealms.com/v2', desc: 'Layer 2 REST API for pool data, swaps, nodes, and network stats.' },
-              { name: 'Thornode', url: 'https://thornode.ninerealms.com', desc: 'Full node RPC and REST API. Access mempool, transactions, account data.' },
+            {[{ name: 'Midgard v2 (Liquify)', url: 'https://gateway.liquify.com/chain/thorchain_midgard/v2', desc: 'Layer 2 REST API proxied through Liquify gateway for pool data, swaps, nodes, and network stats.' },
+              { name: 'Thornode v2', url: 'https://gateway.liquify.com/chain/thorchain_api', desc: 'Full node RPC and REST API proxied through Liquify. Access mempool, transactions, account data.' },
               { name: 'Midgard (v1)', url: 'https://midgard.thorchain.info/v2', desc: 'Legacy Midgard endpoint. Prefer v2 for new integrations.' },
               { name: 'Nine Realms RPC', url: 'https://rpc.thorchain.info', desc: 'Public RPC endpoint for querying the THORChain network directly.' }].map(a => (
               <a key={a.name} href={a.url} target="_blank" rel="noopener noreferrer" className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 hover:border-blue-500 transition-colors">
