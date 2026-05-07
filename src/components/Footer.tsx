@@ -1,143 +1,87 @@
-'use client';
-
 import Link from 'next/link';
 
-const footerLinks = [
+const navLinks = [
   { label: 'Protocol', href: '/protocol' },
   { label: 'Network', href: '/network' },
   { label: 'Economics', href: '/economics' },
   { label: 'Ecosystem', href: '/ecosystem' },
   { label: 'Governance', href: '/governance' },
-  { label: 'Statistics', href: '/stats' },
+  { label: 'Stats', href: '/stats' },
+  { label: 'Docs', href: '/docs' },
 ];
 
 const resourceLinks = [
-  { label: 'Official Docs', href: 'https://docs.thorchain.org' },
-  { label: 'Dev Docs', href: 'https://dev.thorchain.org' },
+  { label: 'THORChain Docs', href: 'https://docs.thorchain.org' },
+  { label: 'Developer Docs', href: 'https://dev.thorchain.org' },
   { label: 'Midgard API', href: 'https://midgard.thorchain.network/v2/doc' },
+  { label: 'Gateway API', href: 'https://gateway.liquify.com/chain/thorchain_midgard/v2' },
   { label: 'RuneScan', href: 'https://runescan.io' },
-  { label: 'ViewBlock', href: 'https://viewblock.io/thorchain' },
   { label: 'THORSwap', href: 'https://app.thorswap.finance' },
-  { label: 'AsgardEX', href: 'https://www.asgardex.com' },
+];
+
+const communityLinks = [
+  { label: 'Discord', href: 'https://discord.gg/thorchain' },
+  { label: 'Twitter', href: 'https://x.com/THORChain' },
+  { label: 'Telegram', href: 'https://t.me/thorchain_org' },
+  { label: 'Reddit', href: 'https://reddit.com/r/THORChain' },
+  { label: 'GitHub', href: 'https://github.com/thorchain' },
 ];
 
 export default function Footer() {
   return (
-    <footer className="bg-gray-100 dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 mt-auto">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-8">
-          <div className="col-span-1 md:col-span-2 lg:col-span-2">
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
-              THORChain Wiki
-            </h3>
-            <p className="text-gray-600 dark:text-gray-400 text-sm">
-              Comprehensive encyclopedia of THORChain protocol, data, and ecosystem.
-              Built with ultrawork for maximum knowledge aggregation.
+    <footer className="border-t border-border mt-auto">
+      <div className="max-w-7xl mx-auto px-6 py-12">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+          <div className="col-span-2 md:col-span-1">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-5 h-5 rounded bg-accent/20 flex items-center justify-center">
+                <span className="text-accent text-xs font-mono">⬡</span>
+              </div>
+              <span className="text-sm font-semibold">THORChain Wiki</span>
+            </div>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Community-maintained encyclopedia of THORChain protocol,
+              data, and ecosystem.
             </p>
           </div>
 
           <div>
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
-              Navigation
-            </h3>
+            <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Navigate</h3>
             <ul className="space-y-2">
-              {footerLinks.map((link) => (
-                <li key={link.href}>
-                  <Link
-                    href={link.href}
-                    className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 text-sm transition-colors"
-                  >
-                    {link.label}
-                  </Link>
+              {navLinks.map((l) => (
+                <li key={l.href}>
+                  <Link href={l.href} className="text-sm text-slate-500 hover:text-slate-300 transition-colors">{l.label}</Link>
                 </li>
               ))}
             </ul>
           </div>
 
           <div>
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
-              Resources
-            </h3>
+            <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Resources</h3>
             <ul className="space-y-2">
-              {resourceLinks.map((link) => (
-                <li key={link.href}>
-                  <a
-                    href={link.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 text-sm transition-colors"
-                  >
-                    {link.label}
-                  </a>
+              {resourceLinks.map((l) => (
+                <li key={l.href}>
+                  <a href={l.href} target="_blank" rel="noopener noreferrer" className="text-sm text-slate-500 hover:text-slate-300 transition-colors">{l.label}</a>
                 </li>
               ))}
             </ul>
           </div>
 
           <div>
-            <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">
-              Community
-            </h3>
+            <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Community</h3>
             <ul className="space-y-2">
-              <li>
-                <a
-                  href="https://discord.gg/c4EhDZdFMA"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 text-sm transition-colors"
-                >
-                  Discord
-                </a>
-              </li>
-              <li>
-                <a
-                  href="https://t.me/thorchain_org"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 text-sm transition-colors"
-                >
-                  Telegram
-                </a>
-              </li>
-              <li>
-                <a
-                  href="https://twitter.com/thorchain"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 text-sm transition-colors"
-                >
-                  Twitter
-                </a>
-              </li>
-              <li>
-                <a
-                  href="https://reddit.com/r/thorchainofficial"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 text-sm transition-colors"
-                >
-                  Reddit
-                </a>
-              </li>
+              {communityLinks.map((l) => (
+                <li key={l.href}>
+                  <a href={l.href} target="_blank" rel="noopener noreferrer" className="text-sm text-slate-500 hover:text-slate-300 transition-colors">{l.label}</a>
+                </li>
+              ))}
             </ul>
           </div>
         </div>
 
-        <div className="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700 text-center text-sm text-gray-600 dark:text-gray-400">
-          <p>
-            © 2025 THORChain Wiki. Data aggregated from official sources.
-          </p>
-          <p className="mt-2">
-            Powered by{' '}
-            <a
-              href="https://thorchain.org"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-600 dark:text-blue-400 hover:underline"
-            >
-              THORChain Protocol
-            </a>
-          </p>
+        <div className="mt-10 pt-6 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-600">
+          <p>Data from Midgard API via Liquify Gateway. Not affiliated with THORChain.</p>
+          <p>© {new Date().getFullYear()} THORChain Wiki</p>
         </div>
       </div>
     </footer>
