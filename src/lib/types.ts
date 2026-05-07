@@ -20,17 +20,17 @@ export interface Pool {
 }
 
 export interface NetworkStats {
-  totalValueLocked: string;
-  totalVolume24h: string;
-  totalVolume24hUSD: string;
-  activePools: number;
-  totalTransactions: number;
-  totalNodes: number;
-  bondedNodes: number;
-  runePriceUSD: string;
-  runePrice: string;
-  blockHeight: number;
-  reserve: string;
+  totalPooledRune: string;
+  totalReserve: string;
+  activeNodeCount: number;
+  standbyNodeCount: number;
+  bondingAPY: string;
+  liquidityAPY: string;
+  nextChurnHeight: number;
+  poolActivationCountdown: number;
+  poolShareFactor: string;
+  blockRewards: string;
+  bondMetrics: Record<string, unknown>;
 }
 
 export interface Node {
@@ -92,14 +92,16 @@ export interface ChainData {
 }
 
 export interface HistoryItem {
-  time: string;
-  totalValueLocked: string;
-  totalVolume24h: string;
-  totalVolume24hUSD?: string;
-  poolCount: number;
+  startTime: string;
+  endTime: string;
+  liquidityFees: string;
+  blockRewards: string;
+  earnings: string;
+  bondingEarnings: string;
+  liquidityEarnings: string;
+  avgNodeCount: string;
   runePriceUSD: string;
-  activeUsers: number;
-  swapCount: number;
+  pools: unknown[];
 }
 
 export interface Swap {

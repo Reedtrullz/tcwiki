@@ -4,17 +4,9 @@ import { Pool, NetworkStats, Node, HistoryItem, Swap, ChainData } from '@/lib/ty
 const MIDGARD_ENDPOINTS = [
   'https://gateway.liquify.com/chain/thorchain_midgard/v2',
   'https://midgard.thorchain.network/v2',
-  'https://midgard.ninerealms.com/v2',
 ];
 
 let activeEndpoint = 0;
-
-function getClient() {
-  return axios.create({
-    baseURL: MIDGARD_ENDPOINTS[activeEndpoint],
-    timeout: 5000,
-  });
-}
 
 async function request<T>(path: string): Promise<T> {
   for (let i = 0; i < MIDGARD_ENDPOINTS.length; i++) {
@@ -36,7 +28,11 @@ async function request<T>(path: string): Promise<T> {
 
 export class MidgardAPI {
   static async getPools(): Promise<Pool[]> {
-    try { return await request<Pool[]>('/pools?stakeable=true'); } catch { return []; }
+    try {
+      return await request<Pool[]>('/pools');
+    } catch {
+      return [];
+    }
   }
 
   static async getPoolDetails(pool: string): Promise<Pool> {
@@ -48,31 +44,62 @@ export class MidgardAPI {
   }
 
   static async getNodes(): Promise<Node[]> {
-    try { return await request<Node[]>('/nodes'); } catch { return []; }
+    try {
+      return await request<Node[]>('/nodes');
+    } catch {
+      return [];
+    }
   }
 
-  static async getHistory(bucket = 'day', count = 30): Promise<HistoryItem[]> {
-    try { return await request<HistoryItem[]>(`/history?bucket=${bucket}&count=${count}`); } catch { return []; }
+  static async getHistory(interval = 'day', count = 30): Promise<HistoryItem[]> {
+    try {
+      const data = await request<{ intervals: HistoryItem[] }>(
+        `/history/earnings?interval=${interval}&count=${count}`
+      );
+      return data.intervals || [];
+    } catch {
+      return [];
+    }
   }
 
   static async getSwaps(params: Record<string, unknown> = {}): Promise<Swap[]> {
-    try { return await request<Swap[]>('/swaps'); } catch { return []; }
+    try {
+      return await request<Swap[]>('/swaps');
+    } catch {
+      return [];
+    }
   }
 
   static async getChains(): Promise<ChainData[]> {
-    try { return await request<ChainData[]>('/chains'); } catch { return []; }
+    try {
+      return await request<ChainData[]>('/chains');
+    } catch {
+      return [];
+    }
   }
 
   static async getActions(params: Record<string, unknown> = {}): Promise<Record<string, unknown>[]> {
-    try { return await request<Record<string, unknown>[]>('/actions'); } catch { return []; }
+    try {
+      return await request<Record<string, unknown>[]>('/actions');
+    } catch {
+      return [];
+    }
   }
 
   static async getPoolStats(pool: string, from?: string, to?: string): Promise<Record<string, unknown> | null> {
-    try { return await request<Record<string, unknown>>(`/pool/${pool}/stats`); } catch { return null; }
+    try {
+      return await request<Record<string, unknown>>(`/pool/${pool}/stats`);
+    } catch {
+      return null;
+    }
   }
 
   static async getMemberDetails(address: string): Promise<Record<string, unknown> | null> {
-    try { return await request<Record<string, unknown>>(`/member/${address}`); } catch { return null; }
+    try {
+      return await request<Record<string, unknown>>(`/member/${address}`);
+    } catch {
+      return null;
+    }
   }
 
   static async getAssetPrice(asset: string): Promise<{ runePrice: string; assetPrice: string }> {
@@ -84,8 +111,15 @@ export class MidgardAPI {
     }
   }
 
-  static async getRunePriceHistory(bucket = 'day', count = 365): Promise<Record<string, unknown>[]> {
-    try { return await request<Record<string, unknown>[]>(`/history/rune?bucket=${bucket}&count=${count}`); } catch { return []; }
+  static async getRunePriceHistory(interval = 'day', count = 365): Promise<Record<string, unknown>[]> {
+    try {
+      const data = await request<{ intervals: Record<string, unknown>[] }>(
+        `/history/rune?interval=${interval}&count=${count}`
+      );
+      return data.intervals || [];
+    } catch {
+      return [];
+    }
   }
 }
 

@@ -11,6 +11,7 @@ export default function HomePage() {
   const [networkData, setNetworkData] = useState<NetworkStats | null>(null);
   const [topPools, setTopPools] = useState<Pool[]>([]);
   const [loading, setLoading] = useState(true);
+  const [poolCount, setPoolCount] = useState(0);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -21,6 +22,7 @@ export default function HomePage() {
         ]);
         setNetworkData(network);
         setTopPools(pools.slice(0, 10));
+        setPoolCount(pools.length);
         setLoading(false);
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -36,28 +38,28 @@ export default function HomePage() {
   const statCards = [
     {
       title: 'Total Value Locked',
-      value: networkData?.totalValueLocked || '$0',
+      value: networkData?.totalPooledRune ? `${(parseInt(networkData.totalPooledRune) / 1e8).toLocaleString()} RUNE` : '$0',
       icon: <Layers className="h-6 w-6" />,
       color: 'blue',
       link: '/stats',
     },
     {
-      title: '24h Volume',
-      value: networkData?.totalVolume24hUSD || '$0',
+      title: 'Bonding APY',
+      value: networkData?.bondingAPY ? `${(parseFloat(networkData.bondingAPY) * 100).toFixed(2)}%` : 'N/A',
       icon: <Activity className="h-6 w-6" />,
       color: 'green',
       link: '/stats',
     },
     {
       title: 'Active Pools',
-      value: networkData?.activePools?.toString() || '0',
+      value: poolCount.toString(),
       icon: <Network className="h-6 w-6" />,
       color: 'purple',
       link: '/stats',
     },
     {
       title: 'Active Nodes',
-      value: networkData?.bondedNodes?.toString() || '0',
+      value: networkData?.activeNodeCount?.toString() || '0',
       icon: <Shield className="h-6 w-6" />,
       color: 'orange',
       link: '/network',
