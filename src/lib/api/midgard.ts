@@ -91,7 +91,7 @@ export class MidgardAPI {
     type?: string;
     address?: string;
     pool?: string;
-  } = {}): Promise<any[]> {
+  } = {}): Promise<Record<string, unknown>[]> {
     try {
       const response = await this.instance.get('/actions', { params });
       return response.data;
@@ -101,7 +101,7 @@ export class MidgardAPI {
     }
   }
 
-  static async getPoolStats(pool: string, from?: string, to?: string): Promise<any> {
+  static async getPoolStats(pool: string, from?: string, to?: string): Promise<Record<string, unknown> | null> {
     try {
       const response = await this.instance.get(`/pool/${pool}/stats`, {
         params: { from, to }
@@ -113,7 +113,7 @@ export class MidgardAPI {
     }
   }
 
-  static async getMemberDetails(address: string): Promise<any> {
+  static async getMemberDetails(address: string): Promise<Record<string, unknown> | null> {
     try {
       const response = await this.instance.get(`/member/${address}`);
       return response.data;
@@ -136,7 +136,7 @@ export class MidgardAPI {
     }
   }
 
-  static async getRunePriceHistory(bucket: string = 'day', count: number = 365): Promise<any[]> {
+  static async getRunePriceHistory(bucket: string = 'day', count: number = 365): Promise<Record<string, unknown>[]> {
     try {
       const response = await this.instance.get(`/history/rune?bucket=${bucket}&count=${count}`);
       return response.data;
