@@ -12,7 +12,7 @@ interface SearchDoc {
 }
 
 const pages: SearchDoc[] = [
-  { slug: '/protocol', title: 'Protocol Overview', content: 'THORChain protocol architecture cross-chain swaps native assets without wrapped tokens. Cosmos SDK TSS Threshold Signature Schemes Bifrost bridge Continuous Liquidity Pools CLP Savers Vaults single-sided yield impermanent loss protection governance.' },
+  { slug: '/protocol', title: 'Protocol Overview', content: 'THORChain protocol architecture cross-chain swaps native assets directly between blockchains without intermediaries. Built on Cosmos SDK with TSS Threshold Signature Schemes, Bifrost bridge, and Continuous Liquidity Pools (CLP). Savers Vaults for single-sided yield. Minimal on-chain governance.' },
   { slug: '/network', title: 'Network & Security', content: 'THORChain network security bonded validators threshold signatures TSS rotating vaults churning slash points Byzantine fault tolerance. Node types: Active Standby Ready Whitelisted. Minimum bond 300K RUNE. Churn interval 3 days. Consensus Tendermint.' },
   { slug: '/economics', title: 'Economics & Tokenomics', content: 'RUNE token economics. Max supply 500M. Settlement asset cross-chain swaps. Liquidity pair. Security bond. CLP Continuous Liquidity Pool slip-based fees. Incentive Pendulum security liquidity. Block rewards 67% nodes 33% LPs. Fee types liquidity outbound network.' },
   { slug: '/ecosystem', title: 'Ecosystem', content: 'THORChain ecosystem applications wallets interfaces explorers developer tools. THORSwap DEX. AsgardEX wallet. XDEFI platform. RuneScan explorer. ViewBlock. SwapKit SDK. XChainJS. 13 chains: Bitcoin Ethereum BNB Chain Avalanche Cosmos Hub Dogecoin Litecoin.' },

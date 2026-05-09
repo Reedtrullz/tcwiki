@@ -46,7 +46,7 @@ export default function RunePage() {
         </div>
         <div className="p-5 rounded-lg bg-surface-elevated border border-border">
           <h3 className="text-sm font-semibold text-accent mb-2">2. Liquidity</h3>
-          <p className="text-xs text-slate-500">LP deposits RUNE + asset into a pool. Earns swap fees proportional to share. After 100 days, qualifies for Impermanent Loss Protection (ILP) — the protocol covers partial losses from pool rebalancing.</p>
+          <p className="text-xs text-slate-500">LP deposits RUNE + asset into a pool. Earns swap fees proportional to share. Earns swap fees proportional to share of the pool.</p>
         </div>
         <div className="p-5 rounded-lg bg-surface-elevated border border-border">
           <h3 className="text-sm font-semibold text-accent mb-2">3. Security</h3>
@@ -54,20 +54,7 @@ export default function RunePage() {
         </div>
       </div>
 
-      <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-5">RUNE on External Chains</h2>
-      <p className="text-xs text-slate-500 mb-4">RUNE is native to THORChain but also exists as wrapped/pegged tokens on external chains for trading and DeFi integration.</p>
-      <div className="flex flex-wrap gap-2">
-        {[
-          { chain: 'Ethereum', address: '0x3155ba85d5f96b2d030a4966af206230e46849cb' },
-          { chain: 'BNB Chain', address: 'BEP-20 RUNE (via THORChain router)' },
-          { chain: 'THORChain', address: 'Native RUNE (THOR.RUNE)' },
-        ].map((t) => (
-          <div key={t.chain} className="p-3 rounded-lg bg-surface-elevated border border-border">
-            <p className="text-xs font-semibold">{t.chain}</p>
-            <p className="text-[11px] text-slate-500 font-mono mt-1 break-all">{t.address}</p>
-          </div>
-        ))}
-      </div>
+
     </div>
   );
 }

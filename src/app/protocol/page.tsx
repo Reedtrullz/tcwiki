@@ -4,14 +4,14 @@ export default function ProtocolPage() {
   return (
     <div className="pt-[52px] py-16 px-6 max-w-7xl mx-auto">
       <h1 className="text-3xl font-bold tracking-tight mb-2">Protocol Overview</h1>
-      <p className="text-slate-400 max-w-3xl mb-12">THORChain is a decentralized cross-chain liquidity protocol that enables native asset swaps between blockchains without wrapped tokens or centralized intermediaries.</p>
+      <p className="text-slate-400 max-w-3xl mb-12">THORChain is a decentralized cross-chain liquidity protocol that enables native asset swaps between blockchains directly between blockchains without intermediaries.</p>
 
       <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-5">Architecture</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-12">
         {[
           { title: 'Cosmos SDK', desc: 'Built on Tendermint consensus with instant finality and IBC compatibility.' },
           { title: 'TSS Vaults', desc: 'Threshold Signature Schemes distribute signing power across node operators — no single custodian.' },
-          { title: 'Bifrost Bridge', desc: 'Observes external chains and facilitates secure cross-chain asset transfers.' },
+          { title: 'Bifrost Bridge', desc: 'Observes connected chains and facilitates secure cross-chain asset transfers via TSS vaults.' },
           { title: 'Midgard API', desc: 'Layer-2 REST API providing real-time network data, pools, swaps, and node info.' },
         ].map((c) => (
           <div key={c.title} className="p-5 rounded-lg bg-surface-elevated border border-border">
@@ -26,7 +26,7 @@ export default function ProtocolPage() {
         {[
           { title: 'RUNE Token', desc: 'Native settlement asset. Every swap between non-RUNE assets routes through RUNE (e.g., BTC → RUNE → ETH). RUNE is also the liquidity pair in every pool, and the bond asset for node operators.' },
           { title: 'Continuous Liquidity Pools', desc: 'Slip-based fee formula where larger trades pay proportionally more. Pools never run out — trades always execute, at increasingly worse prices as depth is consumed.' },
-          { title: 'Savers Vaults', desc: 'Single-sided yield provision. Deposit one asset and earn without impermanent loss — the protocol compensates IL through the reserve after 100 days.' },
+          { title: 'Savers Vaults', desc: 'Single-sided yield provision. Deposit one asset and earn yield without needing to provide RUNE as a liquidity pair.' },
           { title: 'Incentive Pendulum', desc: 'Balances security vs liquidity. When bonded RUNE is low, more rewards flow to nodes. When pooled RUNE is low, more rewards flow to LPs.' },
           { title: 'Slip-Based Fees', desc: 'Fee = input / (pool + input). Small trades pay near-zero. Large trades pay proportionally more, protecting LPs from whale manipulation.' },
           { title: 'Minimum Governance', desc: 'Architecture Decision Records (ADRs) voted on by node operators. 67% threshold required. Covers parameter changes, chain listings, and protocol upgrades.' },
