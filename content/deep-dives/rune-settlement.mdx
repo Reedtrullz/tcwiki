@@ -1,0 +1,35 @@
+# RUNE as the Universal Settlement Asset
+
+RUNE is not just a governance or security token — it is the backbone that makes THORChain’s cross-chain AMM possible.
+
+## The Settlement Layer
+
+Every swap between two external assets on THORChain must route through RUNE:
+
+```
+BTC → RUNE → ETH
+```
+
+This design has profound implications:
+
+- Every liquidity pool is paired against RUNE (BTC/RUNE, ETH/RUNE, etc.).
+- RUNE provides deep, shared liquidity across all pools.
+- Price discovery and slippage calculations are unified through a single asset.
+
+## Why This Architecture?
+
+Traditional multi-asset AMMs require every pair to have direct liquidity (BTC/ETH, BTC/USDT, etc.). This fragments liquidity and creates poor prices for exotic pairs.
+
+By forcing all trades through RUNE, THORChain achieves:
+
+- **Unified liquidity depth** — capital in any RUNE pool helps every other pool.
+- **Simple pricing** — only one price per asset needs to be tracked (asset/RUNE).
+- **Economic security** — RUNE bonds and liquidity are tightly coupled.
+
+## Practical Effects
+
+- Large trades in one pool can affect pricing in seemingly unrelated pools because they all share the RUNE side.
+- RUNE acts as a "universal gas token" for the liquidity layer.
+- The Incentive Pendulum directly modulates how much RUNE flows into bonding vs. pooling.
+
+RUNE’s role as settlement asset is one of the most under-appreciated but fundamental aspects of THORChain’s design. It is what allows the protocol to scale to many chains without liquidity fragmentation.

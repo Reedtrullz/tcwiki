@@ -62,8 +62,7 @@ export class MidgardAPI {
     }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  static async getSwaps(_params: Record<string, unknown> = {}): Promise<Swap[]> {
+  static async getSwaps(): Promise<Swap[]> {
     try {
       return await request<Swap[]>('/swaps');
     } catch {
@@ -79,7 +78,7 @@ export class MidgardAPI {
     }
   }
 
-  static async getActions(_params: Record<string, unknown> = {}): Promise<Record<string, unknown>[]> {
+  static async getActions(): Promise<Record<string, unknown>[]> {
     try {
       return await request<Record<string, unknown>[]>('/actions');
     } catch {
@@ -87,7 +86,7 @@ export class MidgardAPI {
     }
   }
 
-  static async getPoolStats(pool: string, _from?: string, _to?: string): Promise<Record<string, unknown> | null> {
+  static async getPoolStats(pool: string): Promise<Record<string, unknown> | null> {
     try {
       return await request<Record<string, unknown>>(`/pool/${pool}/stats`);
     } catch {

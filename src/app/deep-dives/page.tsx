@@ -32,6 +32,24 @@ const deepDives = [
     description: 'The economic defense mechanism that makes attacking the network extremely expensive.',
     date: '2025',
   },
+  {
+    slug: 'bifrost',
+    title: 'Bifrost Bridge and Cross-Chain Observability',
+    description: 'How THORChain nodes reliably monitor activity across 13+ external blockchains.',
+    date: '2025',
+  },
+  {
+    slug: 'rune-settlement',
+    title: 'RUNE as the Universal Settlement Asset',
+    description: 'Why every cross-chain swap must route through RUNE and what that enables.',
+    date: '2025',
+  },
+  {
+    slug: 'savers',
+    title: 'Savers Vaults and Yield Mechanics',
+    description: 'Single-sided yield without providing RUNE — how it works and the trade-offs.',
+    date: '2025',
+  },
 ];
 
 export default function DeepDivesIndex() {

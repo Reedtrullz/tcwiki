@@ -1,0 +1,27 @@
+# Bifrost Bridge and Cross-Chain Observability
+
+Bifrost is the component responsible for making THORChain aware of activity on external blockchains.
+
+## What Bifrost Does
+
+Bifrost is a network of observers (the active THORChain nodes) that continuously monitor supported chains for relevant events:
+
+- Inbound transactions (users sending assets into vaults)
+- Outbound transaction confirmations
+- Chain reorganizations and finality
+
+Every active node runs Bifrost observers for the chains it supports.
+
+## How Observation Works
+
+1. Nodes independently scan the mempool and blocks of external chains.
+2. They report observed transactions to the rest of the network via the THORChain state machine.
+3. A transaction is only considered final once a supermajority (typically 2/3) of nodes have reported the same observation.
+
+This multi-observer model provides strong security against individual node compromise or misbehavior.
+
+## Why It Matters
+
+Without reliable cross-chain observability, THORChain could not safely process inbound deposits or confirm outbound withdrawals. Bifrost is what allows the protocol to operate as a true cross-chain AMM rather than just an internal liquidity layer.
+
+The design has been stress-tested through multiple chain upgrades, hard forks, and high-volume periods. Continuous improvements to observation reliability and finality detection remain a core focus of the protocol.
