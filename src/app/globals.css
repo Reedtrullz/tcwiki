@@ -1,5 +1,5 @@
 @import "tailwindcss";
-@import "tailwindcss/typography";
+@import "@tailwindcss/typography";
 
 @theme inline {
   --color-surface: oklch(0.15 0.01 250);
