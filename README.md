@@ -1,36 +1,77 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# THORChain Wiki
+
+Community-maintained encyclopedia and reference for the THORChain protocol — architecture, economics, governance, ecosystem, and live network data.
+
+**Live site**: [wiki.thorchain.no](https://wiki.thorchain.no)
+
+## What this is
+
+A focused, high-signal resource that complements the official THORChain documentation. It provides:
+
+- Clear overviews of protocol mechanics, tokenomics, and security model
+- Curated history (security incidents with lessons, governance milestones, research)
+- Live network statistics and charts (powered by Midgard)
+- An ecosystem directory and quick links to the best official resources
+
+The goal is to make THORChain more approachable for users, node operators, developers, and researchers without duplicating the full depth of the official docs.
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Project Structure
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `src/app/` — All page content (mostly React Server Components + client islands for live data)
+- `src/lib/data/static.ts` — Curated content (chains, ecosystem, incidents, milestones, research, governance). This is the main "wiki" data source today.
+- `src/lib/api/midgard.ts` — Resilient client for live network data (failover across endpoints).
+- `src/components/` — Header, Footer, and (future) shared UI primitives.
+- `Dockerfile` + `ansible-playbook.yml` — Production self-hosted deployment (see below).
 
-## Learn More
+## Contributing
 
-To learn more about Next.js, take a look at the following resources:
+We welcome improvements! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- How to edit existing pages or add new ones
+- How to update the curated data (incidents, ecosystem projects, research, etc.)
+- Local development workflow
+- PR expectations and CI checks
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Deployment
 
-## Deploy on Vercel
+- **Production**: Self-hosted via Docker (standalone Next.js output) + Ansible on a VPS.
+- **CI**: GitHub Actions builds, lints, type-checks, and publishes images to GHCR on every push to `main`.
+- **Health checks**: The site exposes `/api/health`; Ansible uses this for zero-downtime-ish rollouts with automatic rollback on failure.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+The deployment setup is intentionally simple and production-grade. We prefer to keep changes to the Ansible side minimal.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Tech Stack
+
+- Next.js 16 (App Router) + React 19
+- Tailwind v4 with custom OKLCH dark-only design system
+- TypeScript (strict)
+- Recharts for live statistics
+- Lunr (client-side search — being improved)
+- Self-hosted Docker + Ansible (no Vercel dependency in production)
+
+## Status & Direction
+
+This project is in active evolution toward a deeper community wiki with more original, long-form articles while preserving its strength as a clean, fast reference + live dashboard.
+
+Current focus areas (see the improvement plan in the repo session notes for details):
+- Visual and component consistency
+- Much stronger in-site search
+- Better contributor experience and documentation
+- Gradual introduction of richer original content
+
+## License
+
+MIT (or project default — update as appropriate).
+
+---
+
+*Not affiliated with THORChain. Data sourced from the public Midgard API and community research.*

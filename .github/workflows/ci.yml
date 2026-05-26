@@ -19,8 +19,8 @@ env:
   NODE_VERSION: '22'
 
 jobs:
-  test:
-    name: Build check
+  build-check:
+    name: Lint + Build + Typecheck
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -28,6 +28,10 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
+      # Tailwind v4 (and its transitive native dependencies: lightningcss, @tailwindcss/oxide,
+      # rolldown, sharp, etc.) require platform-specific binaries that are not always included
+      # in the prebuilt packages on Linux CI runners. We install the linux-x64-gnu variants
+      # explicitly so the production build succeeds in GitHub Actions.
       - run: |
           npm ci --include=optional
           npm install --no-save --no-package-lock \
@@ -38,13 +42,14 @@ jobs:
             @img/sharp-linux-x64 \
             @img/sharp-libvips-linux-x64
       - run: npm run lint
+      - run: npx tsc --noEmit
       - run: npm run build
         env:
           CI: true
 
   publish:
     name: Build & publish image
-    needs: [test]
+    needs: [build-check]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
