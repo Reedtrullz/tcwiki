@@ -1,0 +1,34 @@
+# Churning and Node Lifecycle
+
+Churning is the mechanism that keeps the THORChain validator set fresh, secure, and decentralized over time.
+
+## What is Churning?
+
+Every ~3 days (50,000 blocks), the oldest active node is removed from the validator set and replaced by the highest-bonded standby node. This process is called "churning."
+
+During a churn event:
+- The outgoing node's bond enters a 12-hour unbonding period.
+- A new Asgard vault is created with fresh TSS keys.
+- All active nodes begin observing and signing with the new vault.
+
+## Why Churning Matters
+
+**Security through rotation**: Regular key rotation limits the window for key compromise accumulation.
+
+**Economic incentives**: Standby nodes are constantly competing to bond more RUNE to earn the right to churn in. This creates strong pressure for honest behavior.
+
+**Fault tolerance**: If a node becomes unresponsive or malicious, it will eventually be churned out naturally.
+
+## Node Lifecycle
+
+1. **Whitelisted** → Approved by governance but not yet bonded.
+2. **Ready** → Bonded but below the standby threshold.
+3. **Standby** → Bonded and synced, waiting for the next churn.
+4. **Active** → Currently in the validator set (highest rewards, highest responsibility).
+5. **Churned** → Removed from active set, 12h unbonding period begins.
+
+## Slash Points and Forced Churn
+
+Nodes accumulate slash points for missing observations or failing to sign. High slash counts can force a node out of the active set even before its natural churn time.
+
+The combination of natural churning + economic slashing creates a robust, self-healing validator set.

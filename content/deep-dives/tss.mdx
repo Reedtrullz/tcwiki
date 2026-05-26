@@ -1,0 +1,31 @@
+# Threshold Signatures (TSS) in THORChain
+
+Threshold Signature Schemes are the cryptographic foundation that allows THORChain to custody assets across many chains without ever exposing a single private key.
+
+## The Problem with Traditional Multisig
+
+Traditional multisignature schemes (like Bitcoin's 2-of-3) have significant limitations when used for cross-chain protocols:
+
+- Each chain has different multisig capabilities
+- Keys must be generated per chain
+- No unified security model across assets
+
+## How TSS Solves This
+
+THORChain uses **GG20** (and later **GG21**) threshold signature schemes that provide:
+
+- **Distributed key generation**: No single node ever holds the full private key
+- **Threshold signing**: A configurable threshold (typically 2/3) of nodes must cooperate to produce a valid signature
+- **Chain-agnostic**: The same TSS keys can be used to generate addresses on many different blockchains
+
+## Security Properties
+
+- **No single point of failure**: Even if some nodes are compromised, funds remain safe as long as the threshold is not reached
+- **Proactive security**: Keys are regularly rotated during churn events
+- **Accountability**: Misbehaving nodes can be identified and slashed
+
+## Real-World Impact
+
+TSS has been battle-tested through multiple incidents. The 2023 Double Whammy exploit exposed certain coordination vulnerabilities, but the underlying TSS primitive itself has remained sound. The protocol continues to improve TSS implementation and monitoring around it.
+
+TSS is what makes true native cross-chain liquidity possible without bridges or wrapped tokens.

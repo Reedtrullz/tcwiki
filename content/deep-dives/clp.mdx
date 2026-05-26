@@ -1,0 +1,24 @@
+# Continuous Liquidity Pools (CLP) Deep Dive
+
+The Continuous Liquidity Pool is the core innovation that allows THORChain to offer native cross-chain swaps without order books or wrapped assets.
+
+## How CLP Works
+
+Every pool consists of RUNE paired with an external asset. The slip-based fee formula protects liquidity providers:
+
+```
+Slip Fee = x / (X + x)
+```
+
+Where `x` is the input amount and `X` is the current pool depth of that asset.
+
+## Key Properties
+
+- **Always executable**: Trades never fail due to insufficient liquidity.
+- **Progressive slippage**: Larger trades pay proportionally more, protecting LPs from manipulation.
+- **Single-sided yield via Savers**: Users can earn yield on one asset without providing the RUNE pair.
+
+## Comparison to Traditional AMMs
+
+Unlike constant-product AMMs (Uniswap v2 style), CLP's continuous nature and RUNE as universal settlement asset creates deep unified liquidity across 13+ chains.
+

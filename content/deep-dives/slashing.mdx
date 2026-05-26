@@ -1,0 +1,27 @@
+# Slashing and Economic Security
+
+Slashing is the primary economic defense mechanism that aligns node operator incentives with the security of the network.
+
+## What is Slashing?
+
+When a node misbehaves, the protocol can confiscate (slash) a portion of its bonded RUNE. This is the "skin in the game" that makes attacking the network economically irrational.
+
+## Types of Slashing Events
+
+- **Observation failures**: Failing to report inbound or outbound transactions.
+- **Signing failures**: Not participating in TSS signing when required.
+- **Double signing or equivocation**: Attempting to produce conflicting blocks or signatures.
+
+## Slash Rate
+
+The current slash rate is **1.5x** the value of the harm caused. This over-slashing makes attacks extremely expensive relative to any potential gain.
+
+## Churn and Unbonding
+
+Nodes that accumulate too many slash points can be forced out of the active set during churn. Even without forced churn, nodes have a 12-hour unbonding period after leaving the active set, during which their bond is still at risk.
+
+## Why This Matters
+
+Without strong slashing, a rational actor could attempt to steal funds or disrupt the network if the expected value of the attack exceeded the bond at risk. The combination of high bonds (~300k–2M+ RUNE), 1.5x slash multiplier, and regular churning creates one of the strongest economic security models in decentralized finance.
+
+The system has been tested through multiple real-world incidents and has continued to evolve its monitoring and response mechanisms.
