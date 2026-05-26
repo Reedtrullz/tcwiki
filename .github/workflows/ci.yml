@@ -89,3 +89,27 @@ jobs:
           echo "${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
           echo "Pull with: \`docker pull ghcr.io/${{ github.repository }}:latest\`" >> $GITHUB_STEP_SUMMARY
+
+  deploy:
+    name: Deploy to VPS
+    needs: [publish]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Ansible
+        run: |
+          python3 -m pip install --upgrade pip
+          pip install ansible
+          ansible-galaxy collection install community.docker
+      - name: Set up SSH key and known hosts
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.ANSIBLE_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa_racknerd
+          chmod 600 ~/.ssh/id_rsa_racknerd
+          ssh-keyscan -H 198.23.137.16 >> ~/.ssh/known_hosts
+      - name: Run Ansible deploy
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+        run: ansible-playbook -i inventory/hosts.yml ansible-playbook.yml
