@@ -1,10 +1,13 @@
+import { Card } from '@/components/ui/Card';
+import { SectionHeader } from '@/components/ui/SectionHeader';
+
 export default function NetworkPage() {
   return (
     <div className="pt-[52px] py-16 px-6 max-w-7xl mx-auto">
       <h1 className="text-3xl font-bold tracking-tight mb-2">Network & Security</h1>
       <p className="text-slate-400 max-w-3xl mb-12">How THORChain secures cross-chain assets through bonded validators, threshold signatures, and economic incentives.</p>
 
-      <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-5">Node Types</h2>
+      <SectionHeader>Node Types</SectionHeader>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-12">
         {[
           { type: 'Active', color: 'text-green-400', desc: 'Currently in the validator set. Must be online, observe chains, sign TSS transactions, and participate in consensus. Highest rewards.' },
@@ -19,7 +22,7 @@ export default function NetworkPage() {
         ))}
       </div>
 
-      <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-5">Security Architecture</h2>
+      <SectionHeader>Security Architecture</SectionHeader>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-12">
         {[
           { title: 'Threshold Signatures', desc: 'TSS distributes key generation and signing across operators. A 2/3 threshold of nodes must cooperate to authorize outgoing transactions.' },
@@ -36,7 +39,7 @@ export default function NetworkPage() {
         ))}
       </div>
 
-      <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-5">Key Numbers</h2>
+      <SectionHeader>Key Numbers</SectionHeader>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
           { label: 'Consensus Threshold', value: '67%' },
@@ -48,10 +51,10 @@ export default function NetworkPage() {
           { label: 'Minimum Bond', value: '~300K RUNE' },
           { label: 'Max Supply', value: '500M RUNE' },
         ].map((s) => (
-          <div key={s.label} className="p-4 rounded-lg bg-surface-elevated border border-border text-center">
+          <Card key={s.label} padding="sm" className="text-center">
             <p className="text-xl font-bold text-accent">{s.value}</p>
             <p className="text-[11px] text-slate-500 mt-1">{s.label}</p>
-          </div>
+          </Card>
         ))}
       </div>
     </div>

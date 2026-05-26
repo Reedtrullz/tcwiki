@@ -1,53 +1,27 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import MidgardAPI from '@/lib/api/midgard';
-import { HistoryItem, NetworkStats } from '@/lib/types';
 import { Activity, TrendingUp, TrendingDown, Zap } from 'lucide-react';
+import { useNetworkData, useEarningsHistory } from '@/lib/hooks/useMidgard';
 
 export default function StatsPage() {
-  const [networkData, setNetworkData] = useState<NetworkStats | null>(null);
-  const [earningsHistory, setEarningsHistory] = useState<HistoryItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: networkData, error: networkError, isLoading: networkLoading } = useNetworkData();
+  const { data: earningsData, error: earningsError, isLoading: earningsLoading } = useEarningsHistory('day', 30);
 
-  useEffect(() => {
-    let cancelled = false;
-    const fetchData = async () => {
-      try {
-        const [network, history] = await Promise.all([
-          MidgardAPI.getNetworkData(),
-          MidgardAPI.getHistory('day', 30),
-        ]);
-        if (!cancelled) {
-          setNetworkData(network);
-          setEarningsHistory(history);
-          setLoading(false);
-        }
-      } catch (error) {
-        if (!cancelled) {
-          console.error('Error fetching data:', error);
-          setLoading(false);
-        }
-      }
-    };
-    fetchData();
-    const interval = setInterval(fetchData, 60000);
-    return () => { cancelled = true; clearInterval(interval); };
-  }, []);
+  const isLoading = networkLoading || earningsLoading;
+  const hasError = networkError || earningsError || !networkData;
 
-  if (loading) {
+  if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center pt-16">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      <div className="min-h-screen flex items-center justify-center pt-[52px]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent"></div>
       </div>
     );
   }
 
-  const apiError = !networkData;
   const runePooled = networkData ? parseInt(networkData.totalPooledRune) / 1e8 : 0;
   const bondingApy = networkData ? parseFloat(networkData.bondingAPY) * 100 : 0;
-  const earningsChart = earningsHistory.map(d => ({
+  const earningsChart = (earningsData || []).map(d => ({
     name: new Date(parseInt(d.startTime) * 1000).toLocaleDateString(),
     earnings: parseInt(d.earnings || '0') / 1e8,
     nodeOps: parseInt(d.bondingEarnings || '0') / 1e8,
@@ -55,59 +29,69 @@ export default function StatsPage() {
   })).reverse();
 
   return (
-    <div className="pt-16 py-12">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">Network Statistics</h1>
-          <p className="text-lg text-gray-600 dark:text-gray-400">Real-time THORChain network metrics from Midgard v2 API</p>
-          {apiError && (
-            <div className="mt-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg text-sm text-yellow-800 dark:text-yellow-200">
-              ⚠ Live data is currently unavailable. The Midgard API may be down. Charts and stats will appear once the connection is restored.
-            </div>
-          )}
-        </div>
-
-        {networkData && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
-              <div className="flex items-center mb-4 text-blue-600 dark:text-blue-400"><Activity className="h-6 w-6 mr-2" /><h3 className="text-lg font-semibold text-gray-900 dark:text-white">Pooled RUNE</h3></div>
-              <p className="text-3xl font-bold text-gray-900 dark:text-white">{runePooled.toLocaleString()} RUNE</p>
-            </div>
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
-              <div className="flex items-center mb-4 text-green-600 dark:text-green-400"><TrendingUp className="h-6 w-6 mr-2" /><h3 className="text-lg font-semibold text-gray-900 dark:text-white">Bonding APY</h3></div>
-              <p className="text-3xl font-bold text-gray-900 dark:text-white">{bondingApy.toFixed(2)}%</p>
-            </div>
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
-              <div className="flex items-center mb-4 text-purple-600 dark:text-purple-400"><Zap className="h-6 w-6 mr-2" /><h3 className="text-lg font-semibold text-gray-900 dark:text-white">Active Nodes</h3></div>
-              <p className="text-3xl font-bold text-gray-900 dark:text-white">{networkData.activeNodeCount}</p>
-            </div>
-            <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
-              <div className="flex items-center mb-4 text-orange-600 dark:text-orange-400"><TrendingDown className="h-6 w-6 mr-2" /><h3 className="text-lg font-semibold text-gray-900 dark:text-white">Reserve RUNE</h3></div>
-              <p className="text-3xl font-bold text-gray-900 dark:text-white">{(parseInt(networkData.totalReserve) / 1e8).toLocaleString()} RUNE</p>
-            </div>
+    <div className="pt-[52px] py-16 px-6 max-w-7xl mx-auto">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold tracking-tight mb-2">Network Statistics</h1>
+        <p className="text-slate-400 max-w-3xl">Real-time THORChain network metrics from Midgard v2 API</p>
+        {hasError && (
+          <div className="mt-4 p-4 bg-amber-500/10 border border-amber-500/20 rounded-lg text-sm text-amber-400">
+            ⚠ Live data is currently unavailable. The Midgard API may be down. Charts and stats will appear once the connection is restored.
           </div>
         )}
+      </div>
 
-        <div className="mb-12">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Earnings History (30 days)</h2>
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
-            {earningsChart.length > 0 ? (
-              <ResponsiveContainer width="100%" height={400}>
-                <LineChart data={earningsChart}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Line type="monotone" dataKey="earnings" stroke="#3b82f6" strokeWidth={2} dot={false} name="Total Earnings (RUNE)" />
-                  <Line type="monotone" dataKey="nodeOps" stroke="#8b5cf6" strokeWidth={2} dot={false} name="Node Operator Earnings" />
-                  <Line type="monotone" dataKey="lps" stroke="#10b981" strokeWidth={2} dot={false} name="LP Earnings" />
-                </LineChart>
-              </ResponsiveContainer>
-            ) : (
-              <p className="text-gray-500 text-center py-20">No earnings history data available.</p>
-            )}
+      {!hasError && networkData && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-12">
+          <div className="bg-surface-elevated border border-border rounded-lg p-5">
+            <div className="flex items-center gap-2 text-accent mb-3">
+              <Activity className="h-4 w-4" />
+              <span className="text-[11px] text-slate-400 uppercase tracking-wider">Pooled RUNE</span>
+            </div>
+            <p className="text-2xl font-bold tracking-tight">{runePooled.toLocaleString()} RUNE</p>
           </div>
+          <div className="bg-surface-elevated border border-border rounded-lg p-5">
+            <div className="flex items-center gap-2 text-accent mb-3">
+              <TrendingUp className="h-4 w-4" />
+              <span className="text-[11px] text-slate-400 uppercase tracking-wider">Bonding APY</span>
+            </div>
+            <p className="text-2xl font-bold tracking-tight">{bondingApy.toFixed(2)}%</p>
+          </div>
+          <div className="bg-surface-elevated border border-border rounded-lg p-5">
+            <div className="flex items-center gap-2 text-accent mb-3">
+              <Zap className="h-4 w-4" />
+              <span className="text-[11px] text-slate-400 uppercase tracking-wider">Active Nodes</span>
+            </div>
+            <p className="text-2xl font-bold tracking-tight">{networkData.activeNodeCount}</p>
+          </div>
+          <div className="bg-surface-elevated border border-border rounded-lg p-5">
+            <div className="flex items-center gap-2 text-accent mb-3">
+              <TrendingDown className="h-4 w-4" />
+              <span className="text-[11px] text-slate-400 uppercase tracking-wider">Reserve RUNE</span>
+            </div>
+            <p className="text-2xl font-bold tracking-tight">{(parseInt(networkData.totalReserve) / 1e8).toLocaleString()} RUNE</p>
+          </div>
+        </div>
+      )}
+
+      <div className="mb-12">
+        <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-5">Earnings History (30 days)</h2>
+        <div className="bg-surface-elevated border border-border rounded-lg p-6">
+          {earningsChart.length > 0 ? (
+            <ResponsiveContainer width="100%" height={400}>
+              <LineChart data={earningsChart}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Line type="monotone" dataKey="earnings" stroke="#3b82f6" strokeWidth={2} dot={false} name="Total Earnings (RUNE)" />
+                <Line type="monotone" dataKey="nodeOps" stroke="#8b5cf6" strokeWidth={2} dot={false} name="Node Operator Earnings" />
+                <Line type="monotone" dataKey="lps" stroke="#10b981" strokeWidth={2} dot={false} name="LP Earnings" />
+              </LineChart>
+            </ResponsiveContainer>
+          ) : (
+            <p className="text-slate-500 text-center py-20">No earnings history data available.</p>
+          )}
         </div>
       </div>
     </div>

@@ -1,41 +1,16 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import MidgardAPI from '@/lib/api/midgard';
-import { NetworkStats, Pool } from '@/lib/types';
 import { ECOSYSTEM_PROJECTS, RESEARCH_REPORTS } from '@/lib/data/static';
 import { Activity, TrendingUp, Shield, Layers } from 'lucide-react';
+import { useNetworkData, usePools } from '@/lib/hooks/useMidgard';
+import { StatCard } from '@/components/ui/StatCard';
 
 export default function HomePage() {
-  const [networkData, setNetworkData] = useState<NetworkStats | null>(null);
-  const [topPools, setTopPools] = useState<Pool[]>([]);
-  const [poolCount, setPoolCount] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const { data: networkData } = useNetworkData();
+  const { data: pools } = usePools();
 
-  useEffect(() => {
-    let cancelled = false;
-    const fetchData = async () => {
-      try {
-        const [network, pools] = await Promise.all([
-          MidgardAPI.getNetworkData(),
-          MidgardAPI.getPools(),
-        ]);
-        if (!cancelled) {
-          setNetworkData(network);
-          setTopPools(pools.slice(0, 5));
-          setPoolCount(pools.length);
-          setLoading(false);
-        }
-      } catch {
-        if (!cancelled) setLoading(false);
-      }
-    };
-    fetchData();
-    const interval = setInterval(fetchData, 60000);
-    return () => { cancelled = true; clearInterval(interval); };
-  }, []);
-
+  const poolCount = pools?.length ?? 0;
   const runePooled = networkData ? Math.round(parseInt(networkData.totalPooledRune) / 1e8).toLocaleString() : '…';
   const bondingApy = networkData ? (parseFloat(networkData.bondingAPY) * 100).toFixed(2) : '…';
   const activeNodes = networkData?.activeNodeCount ?? '…';
@@ -56,28 +31,10 @@ export default function HomePage() {
       {/* Network stats strip */}
       <section className="px-6 max-w-7xl mx-auto mb-16">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          <StatCard
-            icon={<Layers className="h-4 w-4" />}
-            label="Pooled RUNE"
-            value={`${runePooled}`}
-            unit="RUNE"
-          />
-          <StatCard
-            icon={<TrendingUp className="h-4 w-4" />}
-            label="Bonding APY"
-            value={bondingApy}
-            unit="%"
-          />
-          <StatCard
-            icon={<Shield className="h-4 w-4" />}
-            label="Active Nodes"
-            value={String(activeNodes)}
-          />
-          <StatCard
-            icon={<Activity className="h-4 w-4" />}
-            label="Pools"
-            value={String(poolCount)}
-          />
+          <StatCard icon={<Layers className="h-4 w-4" />} label="Pooled RUNE" value={`${runePooled}`} unit="RUNE" />
+          <StatCard icon={<TrendingUp className="h-4 w-4" />} label="Bonding APY" value={bondingApy} unit="%" />
+          <StatCard icon={<Shield className="h-4 w-4" />} label="Active Nodes" value={String(activeNodes)} />
+          <StatCard icon={<Activity className="h-4 w-4" />} label="Pools" value={String(poolCount)} />
         </div>
       </section>
 
@@ -171,14 +128,4 @@ export default function HomePage() {
   );
 }
 
-function StatCard({ icon, label, value, unit }: { icon: React.ReactNode; label: string; value: string; unit?: string }) {
-  return (
-    <div className="p-5 rounded-lg bg-surface-elevated border border-border">
-      <div className="flex items-center gap-2 text-accent mb-3">{icon}<span className="text-[11px] text-slate-400 uppercase tracking-wider">{label}</span></div>
-      <p className="text-2xl font-bold tracking-tight">
-        {value}
-        {unit && <span className="text-sm font-normal text-slate-500 ml-1">{unit}</span>}
-      </p>
-    </div>
-  );
-}
+

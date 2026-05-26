@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { STATIC_DATA_LAST_UPDATED } from '@/lib/data/static';
 
 const navLinks = [
   { label: 'Protocol', href: '/protocol' },
@@ -80,7 +81,7 @@ export default function Footer() {
         </div>
 
         <div className="mt-10 pt-6 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-600">
-          <p>Data from Midgard API via Liquify Gateway. Not affiliated with THORChain.</p>
+          <p>Data from Midgard API via Liquify Gateway. Not affiliated with THORChain. Curated data last updated {STATIC_DATA_LAST_UPDATED}.</p>
           <p>© {new Date().getFullYear()} THORChain Wiki</p>
         </div>
       </div>

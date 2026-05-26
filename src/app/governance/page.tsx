@@ -1,4 +1,7 @@
 import { GOVERNANCE_PROPOSALS, PROTOCOL_MILESTONES, SECURITY_INCIDENTS, RESEARCH_REPORTS } from '@/lib/data/static';
+import { Badge } from '@/components/ui/Badge';
+import { SectionHeader } from '@/components/ui/SectionHeader';
+import { Card } from '@/components/ui/Card';
 
 export default function GovernancePage() {
   return (
@@ -6,10 +9,10 @@ export default function GovernancePage() {
       <h1 className="text-3xl font-bold tracking-tight mb-2">Governance & History</h1>
       <p className="text-slate-400 max-w-3xl mb-12">ADRs, protocol milestones, security incidents, and third-party research reports.</p>
 
-      <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">Proposals (ADRs)</h2>
+      <SectionHeader>Proposals (ADRs)</SectionHeader>
       <div className="space-y-2 mb-12">
         {GOVERNANCE_PROPOSALS.map((p) => (
-          <div key={p.id} className="p-4 rounded-lg bg-surface-elevated border border-border">
+          <Card key={p.id}>
             <div className="flex items-start justify-between gap-4">
               <div className="min-w-0">
                 <div className="flex items-center gap-2 mb-1">
@@ -18,7 +21,7 @@ export default function GovernancePage() {
                 </div>
                 <p className="text-xs text-slate-500">{p.description}</p>
               </div>
-              <span className={`text-[11px] px-2 py-0.5 rounded shrink-0 ${p.status === 'Passed' ? 'bg-green-500/10 text-green-400' : 'bg-amber-500/10 text-amber-400'}`}>{p.status}</span>
+              <Badge variant={p.status === 'Passed' ? 'success' : 'warning'} className="shrink-0">{p.status}</Badge>
             </div>
             <div className="flex gap-4 mt-2 text-[11px] text-slate-600">
               <span>For: {p.votesFor}%</span>
@@ -26,7 +29,7 @@ export default function GovernancePage() {
               <span>Threshold: {p.threshold}%</span>
               <span className="capitalize">{p.type}</span>
             </div>
-          </div>
+          </Card>
         ))}
       </div>
 
@@ -50,10 +53,10 @@ export default function GovernancePage() {
           <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">Security Incidents</h2>
           <div className="space-y-2">
             {SECURITY_INCIDENTS.map((inc) => (
-              <div key={inc.id} className="p-4 rounded-lg bg-surface-elevated border border-border">
+              <Card key={inc.id}>
                 <div className="flex items-center justify-between mb-1">
                   <h3 className="text-sm font-semibold">{inc.title}</h3>
-                  <span className={`text-[11px] px-2 py-0.5 rounded ${inc.resolved ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>{inc.resolved ? 'Resolved' : 'Ongoing'}</span>
+                  <Badge variant={inc.resolved ? 'success' : 'danger'}>{inc.resolved ? 'Resolved' : 'Ongoing'}</Badge>
                 </div>
                 <p className="text-xs text-slate-500 mb-1">{inc.description} — <span className="text-red-400">{inc.impact}</span></p>
                 <div className="flex flex-wrap gap-1 mt-2">
@@ -61,7 +64,7 @@ export default function GovernancePage() {
                     <span key={i} className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400/80">{l}</span>
                   ))}
                 </div>
-              </div>
+              </Card>
             ))}
           </div>
         </div>

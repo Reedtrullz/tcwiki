@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search, Menu, X } from 'lucide-react';
 
 const navItems = [
@@ -20,6 +20,22 @@ export default function Header() {
   const [isOpen, setIsOpen] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Global ⌘K / Ctrl+K to open search
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setShowSearch(true);
+        // Focus will be handled by autoFocus on the input
+      }
+      if (e.key === 'Escape' && showSearch) {
+        setShowSearch(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showSearch]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
