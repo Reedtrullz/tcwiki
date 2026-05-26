@@ -1,5 +1,8 @@
 import { Chain, EcosystemProject, ResearchReport, SecurityIncident, GovernanceProposal } from '../types';
 
+/** Last time the curated static data in this file was meaningfully updated */
+export const STATIC_DATA_LAST_UPDATED = '2025-05';
+
 export const CHAINS: Chain[] = [
   {
     name: 'Bitcoin',
@@ -281,7 +284,7 @@ export const SECURITY_INCIDENTS: SecurityIncident[] = [
   {
     id: 'thorfi-pause-2025',
     title: 'THORFi Pause',
-    date: '2025-02-XX',
+    date: '2025-02',
     type: 'Protocol Pause',
     description: 'THORFi lending and savers programs paused due to protocol liabilities.',
     impact: '$200M in protocol liabilities',
@@ -302,8 +305,8 @@ export const GOVERNANCE_PROPOSALS: GovernanceProposal[] = [
     type: 'Emergency',
     status: 'Passed',
     votingPeriod: '72h',
-    createdDate: '2025-02-XX',
-    expiryDate: '2025-02-XX',
+    createdDate: '2025-02',
+    expiryDate: '2025-02',
     votesFor: 67,
     votesAgainst: 5,
     threshold: 67,
@@ -355,7 +358,7 @@ export const PROTOCOL_MILESTONES = [
     description: 'Major protocol upgrade bringing new features and improvements to cross-chain liquidity.',
   },
   {
-    date: '2025-02-XX',
+    date: '2025-02',
     title: 'THORFi Pause',
     description: 'Experimental lending and savers programs paused due to protocol issues.',
   },
