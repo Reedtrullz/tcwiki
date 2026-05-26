@@ -43,7 +43,7 @@ jobs:
             @img/sharp-libvips-linux-x64
       - run: npm run lint
       - run: npx tsc --noEmit
-      - run: npm run build
+      - run: NEXT_TURBOPACK=0 npm run build
         env:
           CI: true
 
