@@ -4,7 +4,7 @@ test.describe('THORChain Wiki Smoke Tests', () => {
   test('home page loads and shows key sections', async ({ page }) => {
     await page.goto('/');
     await expect(page.getByRole('heading', { name: /THORChain Wiki/i })).toBeVisible();
-    await expect(page.getByText(/Community-maintained encyclopedia/i)).toBeVisible();
+    await expect(page.getByText(/Community-maintained encyclopedia/i).first()).toBeVisible();
   });
 
   test('stats page loads with data or graceful error state', async ({ page }) => {
@@ -17,13 +17,13 @@ test.describe('THORChain Wiki Smoke Tests', () => {
     await expect(page.getByRole('heading', { name: /Search/i })).toBeVisible();
     await page.getByPlaceholder(/Search the wiki/i).fill('RUNE');
     await page.keyboard.press('Enter');
-    await expect(page.getByText(/result/i)).toBeVisible();
+    await expect(page.getByText(/result/i).first()).toBeVisible();
   });
 
   test('governance page shows incidents and milestones', async ({ page }) => {
     await page.goto('/governance');
     await expect(page.getByRole('heading', { name: /Governance & History/i })).toBeVisible();
-    await expect(page.getByText(/Security Incidents/i)).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Security Incidents/i })).toBeVisible();
   });
 
   test('deep dives index and article pages load', async ({ page }) => {

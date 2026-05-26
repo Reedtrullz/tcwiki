@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { Search } from 'lucide-react';
 import lunr from 'lunr';
 import { SECURITY_INCIDENTS, ECOSYSTEM_PROJECTS, RESEARCH_REPORTS, PROTOCOL_MILESTONES } from '@/lib/data/static';
 
@@ -52,7 +53,7 @@ const staticSearchDocs: SearchDoc[] = [
 const allSearchDocs = [...pages, ...staticSearchDocs];
 
 const searchIndex = lunr(function () {
-  this.ref('slug');
+  this.ref('id');
   this.field('title');
   this.field('content');
   allSearchDocs.forEach((p, i) => this.add({ ...p, id: i })); // use numeric id to avoid slug collisions
@@ -61,7 +62,23 @@ const searchIndex = lunr(function () {
 function SearchResultsInner() {
   const searchParams = useSearchParams();
   const query = searchParams.get('q') || '';
+  const [localQuery, setLocalQuery] = useState(query);
   const [results, setResults] = useState<Array<SearchDoc & { score: number }>>([]);
+
+  useEffect(() => {
+    setLocalQuery(query);
+  }, [query]);
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const params = new URLSearchParams(window.location.search);
+    if (localQuery.trim()) {
+      params.set('q', localQuery);
+    } else {
+      params.delete('q');
+    }
+    window.history.pushState(null, '', `?${params.toString()}`);
+  };
 
   useEffect(() => {
     if (query.trim()) {
@@ -85,6 +102,19 @@ function SearchResultsInner() {
 
   return (
     <div>
+      <form onSubmit={handleSearchSubmit} className="mb-8">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-500" />
+          <input
+            type="text"
+            value={localQuery}
+            onChange={(e) => setLocalQuery(e.target.value)}
+            placeholder="Search the wiki..."
+            className="w-full pl-10 pr-4 py-3 bg-surface border border-border rounded-lg text-base text-slate-100 placeholder-slate-600 focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all shadow-lg"
+          />
+        </div>
+      </form>
+
       {query ? (
         <p className="text-sm text-slate-500 mb-6">{results.length} result{results.length !== 1 ? 's' : ''} for &ldquo;{query}&rdquo;</p>
       ) : (
