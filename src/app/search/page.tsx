@@ -63,11 +63,13 @@ function SearchResultsInner() {
   const searchParams = useSearchParams();
   const query = searchParams.get('q') || '';
   const [localQuery, setLocalQuery] = useState(query);
+  const [prevQuery, setPrevQuery] = useState(query);
   const [results, setResults] = useState<Array<SearchDoc & { score: number }>>([]);
 
-  useEffect(() => {
+  if (query !== prevQuery) {
+    setPrevQuery(query);
     setLocalQuery(query);
-  }, [query]);
+  }
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
