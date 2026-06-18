@@ -1,16 +1,18 @@
 import { spawn } from 'node:child_process';
-import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { setTimeout as wait } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
+import { prepareStandaloneAssets } from './prepare-standalone-assets.mjs';
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const serverPath = join(root, '.next/standalone/server.js');
 const port = process.env.SMOKE_PORT ?? '3010';
 const baseUrl = `http://127.0.0.1:${port}`;
 
-if (!existsSync(serverPath)) {
-  console.error('Standalone server is missing. Run npm run build first.');
+try {
+  prepareStandaloneAssets(root);
+} catch (error) {
+  console.error(error instanceof Error ? error.message : error);
   process.exit(1);
 }
 
