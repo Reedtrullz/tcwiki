@@ -1,15 +1,6 @@
 import Link from 'next/link';
 import { STATIC_DATA_LAST_UPDATED } from '@/lib/data/static';
-
-const navLinks = [
-  { label: 'Protocol', href: '/protocol' },
-  { label: 'Network', href: '/network' },
-  { label: 'Economics', href: '/economics' },
-  { label: 'Ecosystem', href: '/ecosystem' },
-  { label: 'Governance', href: '/governance' },
-  { label: 'Stats', href: '/stats' },
-  { label: 'Docs', href: '/docs' },
-];
+import { FOOTER_NAV_ITEMS } from '@/lib/content/registry';
 
 const resourceLinks = [
   { label: 'THORChain Docs', href: 'https://docs.thorchain.org' },
@@ -49,7 +40,7 @@ export default function Footer() {
           <div>
             <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Navigate</h3>
             <ul className="space-y-2">
-              {navLinks.map((l) => (
+              {FOOTER_NAV_ITEMS.map((l) => (
                 <li key={l.href}>
                   <Link href={l.href} className="text-sm text-slate-500 hover:text-slate-300 transition-colors">{l.label}</Link>
                 </li>
@@ -81,7 +72,7 @@ export default function Footer() {
         </div>
 
         <div className="mt-10 pt-6 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-600">
-          <p>Data from Midgard API via Liquify Gateway. Not affiliated with THORChain. Curated data last updated {STATIC_DATA_LAST_UPDATED}.</p>
+          <p>Live data is current-only from Midgard/THORNode sources. Not affiliated with THORChain. Curated data last reviewed {STATIC_DATA_LAST_UPDATED}.</p>
           <p>© {new Date().getFullYear()} THORChain Wiki</p>
         </div>
       </div>

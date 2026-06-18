@@ -1,62 +1,91 @@
+import { PageContainer } from '@/components/layout/PageContainer';
+import { Card } from '@/components/ui/Card';
+import { Badge } from '@/components/ui/Badge';
+
+const sources = [
+  { label: 'Archived Savers/Lending docs', href: 'https://docs.thorchain.org/thornodes/archived' },
+  { label: 'TCY tokenomics', href: 'https://docs.thorchain.org/tokenomics-rune-tcy' },
+  { label: 'TCY developer guide', href: 'https://dev.thorchain.org/concepts/tcy.html' },
+];
+
 export default function TCYPage() {
   return (
-    <div className="pt-[52px] py-16 px-6 max-w-7xl mx-auto">
-      <h1 className="text-3xl font-bold tracking-tight mb-2">THORChain Yield &amp; Savers</h1>
-      <p className="text-slate-400 max-w-3xl mb-12">Savers Vaults, lending programs, and yield products on THORChain — including the THORFi era and its aftermath.</p>
+    <PageContainer>
+      <h1 className="text-3xl font-bold tracking-tight mb-2">TCY, Savers, and THORFi History</h1>
+      <p className="text-slate-400 max-w-3xl mb-8">
+        Savers and Lending are historical THORFi features. Official archived docs say they are deprecated
+        and no longer available; TCY is the recovery-token framing that followed the unwind.
+      </p>
 
-      <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-5">Savers Vaults</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-12">
+      <div className="mb-12 rounded-lg border border-amber-500/20 bg-amber-500/5 p-5">
+        <div className="flex flex-wrap items-center gap-2 mb-2">
+          <Badge variant="warning">Historical</Badge>
+          <Badge variant="danger">Deprecated products</Badge>
+        </div>
+        <p className="text-sm text-slate-300">
+          Do not treat Savers or Lending as active yield products. Current availability, TCY claiming, and
+          staking state are live protocol facts and should be checked from THORNode/Mimir before making any
+          current claim.
+        </p>
+      </div>
+
+      <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-5">Historical Timeline</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-12">
         {[
-          { title: 'Single-Sided Deposits', desc: 'Deposit a single asset (e.g., BTC or ETH) without needing RUNE. Earn yield from swap fees and block rewards proportional to your share of the pool.' },
-          { title: 'Yield Source', desc: 'Earnings come from swap fees and block rewards. Savers receive a share proportional to their deposit relative to the total pool depth.' },
-          { title: 'No Lock-Up', desc: 'Withdraw at any time. No minimum deposit period required.' },
-          { title: 'Auto-Compounding', desc: 'Earnings are automatically reinvested into the vault, compounding your position over time without manual intervention.' },
-        ].map((c) => (
-          <div key={c.title} className="p-5 rounded-lg bg-surface-elevated border border-border">
-            <h3 className="text-sm font-semibold mb-1.5">{c.title}</h3>
-            <p className="text-xs text-slate-500 leading-relaxed">{c.desc}</p>
-          </div>
+          {
+            title: 'THORFi suspended',
+            desc: 'The THORFi lending and Savers era moved into unwind/recovery after liability concerns in January 2025.',
+          },
+          {
+            title: 'Claims dollarized',
+            desc: 'TCY materials describe claims being dollarized for recovery accounting. Treat exact claim status as current-only.',
+          },
+          {
+            title: 'Archived products',
+            desc: 'Official docs preserve Savers and Lending content for historical reference, not as current product guidance.',
+          },
+        ].map((card) => (
+          <Card key={card.title}>
+            <h3 className="text-sm font-semibold mb-1.5">{card.title}</h3>
+            <p className="text-xs text-slate-500 leading-relaxed">{card.desc}</p>
+          </Card>
         ))}
       </div>
 
-      <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-5">THORFi History</h2>
-      <div className="p-5 rounded-lg bg-surface-elevated border border-amber-500/20 mb-12">
-        <div className="flex items-center gap-2 mb-3">
-          <span className="text-[11px] px-2 py-0.5 rounded bg-amber-500/10 text-amber-400">Paused</span>
-          <h3 className="text-sm font-semibold">THORFi Lending Program</h3>
-        </div>
-        <p className="text-xs text-slate-500 leading-relaxed mb-3">In early 2025, THORChain introduced experimental lending and synthetic asset programs under the &ldquo;THORFi&rdquo; umbrella. The protocol allowed users to borrow against their LP positions and mint synthetic assets (TOR, a USD-pegged stablecoin). Due to accumulated protocol liabilities of approximately $200M, the programs were paused in February 2025 via emergency governance (ADR-006).</p>
-        <div className="flex flex-wrap gap-2">
-          {['$200M protocol liabilities', 'ADR-006 emergency pause', 'TOR stablecoin depegged', 'Savers program unaffected', 'Lending program paused'].map((l) => (
-            <span key={l} className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400/80">{l}</span>
-          ))}
-        </div>
+      <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-5">What Changed</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-12">
+        <Card className="border-amber-500/20">
+          <h3 className="text-sm font-semibold text-amber-300 mb-2">Savers and Lending</h3>
+          <ul className="space-y-2 text-xs text-slate-500">
+            <li>Archived docs mark both features as deprecated and no longer available.</li>
+            <li>Historical mechanics are useful for understanding THORFi, but they are not current deposit instructions.</li>
+            <li>Current claim, stake, and pause state must come from live protocol sources.</li>
+          </ul>
+        </Card>
+        <Card className="border-accent/20">
+          <h3 className="text-sm font-semibold text-accent mb-2">TCY</h3>
+          <ul className="space-y-2 text-xs text-slate-500">
+            <li>TCY is the recovery-token context for the THORFi unwind.</li>
+            <li>Supply, claiming, and staking details should be dated and source-linked.</li>
+            <li>The wiki should avoid financial or recovery-value advice.</li>
+          </ul>
+        </Card>
       </div>
 
-
-      <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-5">Savers vs Liquidity Provision</h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div className="p-5 rounded-lg bg-surface-elevated border border-accent/20">
-          <h3 className="text-sm font-semibold text-accent mb-2">Savers</h3>
-          <ul className="space-y-1 text-xs text-slate-500">
-            <li>• Deposit single asset (no RUNE needed)</li>
-            <li>• Lower risk — single asset exposure</li>
-            <li>• Lower yield than LP</li>
-            <li>• Auto-compounding returns</li>
-            <li>• No need to manage two positions</li>
-          </ul>
-        </div>
-        <div className="p-5 rounded-lg bg-surface-elevated border border-rune/20">
-          <h3 className="text-sm font-semibold text-rune mb-2">Liquidity Provision</h3>
-          <ul className="space-y-1 text-xs text-slate-500">
-            <li>• Deposit RUNE + asset (two tokens)</li>
-            <li>• Exposed to price divergence between paired assets</li>
-            <li>• Higher yield than Savers</li>
-            <li>• Earns both swap fees and block rewards</li>
-            <li>• Active position management may be needed</li>
-          </ul>
-        </div>
+      <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-5">Sources</h2>
+      <div className="flex flex-wrap gap-2">
+        {sources.map((source) => (
+          <a
+            key={source.href}
+            href={source.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="rounded-lg border border-border bg-surface-elevated px-4 py-3 text-sm text-slate-400 hover:border-accent/30 hover:text-slate-200 transition-colors"
+          >
+            {source.label}
+          </a>
+        ))}
       </div>
-    </div>
+    </PageContainer>
   );
 }

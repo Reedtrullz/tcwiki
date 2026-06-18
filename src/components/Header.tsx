@@ -1,22 +1,13 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { Search, Menu, X } from 'lucide-react';
-
-const navItems = [
-  { name: 'Protocol', href: '/protocol' },
-  { name: 'Network', href: '/network' },
-  { name: 'Economics', href: '/economics' },
-  { name: 'Ecosystem', href: '/ecosystem' },
-  { name: 'Governance', href: '/governance' },
-  { name: 'Statistics', href: '/stats' },
-  { name: 'RUNE', href: '/rune' },
-  { name: 'TCY', href: '/tcy' },
-  { name: 'Docs', href: '/docs' },
-];
+import { NAV_ITEMS } from '@/lib/content/registry';
 
 export default function Header() {
+  const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -57,11 +48,12 @@ export default function Header() {
             </span>
           </Link>
 
-          <nav className="hidden md:flex items-center gap-1">
-            {navItems.map((item) => (
+          <nav aria-label="Primary navigation" className="hidden lg:flex items-center gap-1">
+            {NAV_ITEMS.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
+                aria-current={pathname === item.href ? 'page' : undefined}
                 className="px-3 py-1.5 text-sm text-slate-400 hover:text-slate-100 hover:bg-slate-800/50 rounded-md transition-colors"
               >
                 {item.name}
@@ -71,14 +63,22 @@ export default function Header() {
 
           <div className="flex items-center gap-2">
             <button
+              type="button"
               onClick={() => setShowSearch(!showSearch)}
+              aria-label={showSearch ? 'Close search' : 'Open search'}
+              aria-expanded={showSearch}
+              aria-controls="site-search-panel"
               className="p-2 text-slate-400 hover:text-slate-100 rounded-md hover:bg-slate-800/50 transition-colors"
             >
               <Search className="h-4 w-4" />
             </button>
             <button
+              type="button"
               onClick={() => setIsOpen(!isOpen)}
-              className="md:hidden p-2 text-slate-400 hover:text-slate-100 rounded-md"
+              aria-label={isOpen ? 'Close navigation menu' : 'Open navigation menu'}
+              aria-expanded={isOpen}
+              aria-controls="mobile-navigation"
+              className="lg:hidden p-2 text-slate-400 hover:text-slate-100 rounded-md"
             >
               {isOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
             </button>
@@ -87,11 +87,13 @@ export default function Header() {
       </div>
 
       {showSearch && (
-        <div className="border-t border-border px-6 py-3 bg-surface-elevated">
+        <div id="site-search-panel" className="border-t border-border px-6 py-3 bg-surface-elevated">
           <form onSubmit={handleSearch} className="max-w-2xl mx-auto">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+              <label htmlFor="site-search" className="sr-only">Search the wiki</label>
               <input
+                id="site-search"
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -105,12 +107,13 @@ export default function Header() {
       )}
 
       {isOpen && (
-        <div className="md:hidden border-t border-border bg-surface-elevated">
-          <nav className="px-4 py-2 space-y-0.5">
-            {navItems.map((item) => (
+        <div id="mobile-navigation" className="lg:hidden border-t border-border bg-surface-elevated">
+          <nav aria-label="Mobile navigation" className="px-4 py-2 space-y-0.5">
+            {NAV_ITEMS.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
+                aria-current={pathname === item.href ? 'page' : undefined}
                 className="block px-3 py-2 text-sm text-slate-400 hover:text-slate-100 hover:bg-slate-800/50 rounded-md transition-colors"
                 onClick={() => setIsOpen(false)}
               >

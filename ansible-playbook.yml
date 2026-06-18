@@ -2,112 +2,144 @@
   hosts: vps
   gather_facts: false
   vars:
-    docker_image: "ghcr.io/reedtrullz/tcwiki:latest"
     container_name: "tcwiki"
-    image_tag: "{{ lookup('env', 'GITHUB_SHA') | default(lookup('pipe', 'git -C ' ~ playbook_dir ~ ' rev-parse --short HEAD 2>/dev/null || echo latest'), true) }}"
+    image_ref: "{{ lookup('env', 'IMAGE_REF') }}"
+    app_version: "{{ lookup('env', 'APP_VERSION') }}"
 
   pre_tasks:
+    - name: Require immutable image ref
+      assert:
+        that:
+          - image_ref is defined
+          - image_ref | length > 0
+          - "'@sha256:' in image_ref"
+          - app_version is defined
+          - app_version | length > 0
+        fail_msg: "IMAGE_REF must be a digest ref and APP_VERSION must be set."
+
     - name: Get current container image
       community.docker.docker_container_info:
         name: "{{ container_name }}"
       register: current_container
-      ignore_errors: yes
+      failed_when: false
 
     - name: Set previous image fact
       set_fact:
-        previous_image: "{{ (current_container.container.Config.Image) if (current_container.container is not none) else 'none' }}"
+        previous_image: "{{ current_container.container.Config.Image if current_container.container is defined and current_container.container else 'none' }}"
 
   tasks:
-    - name: Pull latest image from GHCR
-      community.docker.docker_image:
-        name: "{{ docker_image }}"
-        source: pull
-        force_source: yes
+    - block:
+        - name: Pull immutable image from GHCR
+          community.docker.docker_image:
+            name: "{{ image_ref }}"
+            source: pull
+            force_source: yes
 
-    - name: Stop and remove existing container
-      community.docker.docker_container:
-        name: "{{ container_name }}"
-        state: absent
+        - name: Stop and remove existing container
+          community.docker.docker_container:
+            name: "{{ container_name }}"
+            state: absent
 
-    - name: Start new container
-      community.docker.docker_container:
-        name: "{{ container_name }}"
-        image: "{{ docker_image }}"
-        state: started
-        restart_policy: unless-stopped
-        ports:
-          - "127.0.0.1:3003:3000"
-        log_driver: "json-file"
-        log_options:
-          max-size: "10m"
-          max-file: "3"
-        healthcheck:
-          test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:3000/api/health', r => process.exit(r.statusCode === 200 ? 0 : 1))\""]
-          interval: 30s
-          timeout: 10s
-          retries: 3
-          start_period: 40s
-        env:
-          NODE_ENV: production
-          PORT: "3000"
-          HOSTNAME: "0.0.0.0"
-          VERSION: "{{ image_tag }}"
+        - name: Start new container
+          community.docker.docker_container:
+            name: "{{ container_name }}"
+            image: "{{ image_ref }}"
+            state: started
+            restart_policy: unless-stopped
+            ports:
+              - "127.0.0.1:3003:3000"
+            log_driver: "json-file"
+            log_options:
+              max-size: "10m"
+              max-file: "3"
+            healthcheck:
+              test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:3000/api/health', r => process.exit(r.statusCode === 200 ? 0 : 1))\""]
+              interval: 30s
+              timeout: 10s
+              retries: 3
+              start_period: 40s
+            env:
+              NODE_ENV: production
+              PORT: "3000"
+              HOSTNAME: "0.0.0.0"
+              APP_VERSION: "{{ app_version }}"
+              VERSION: "{{ app_version }}"
+              COMMIT_SHA: "{{ app_version }}"
+              IMAGE_REF: "{{ image_ref }}"
 
-    - name: Wait for application to become healthy
-      uri:
-        url: "http://localhost:3003/api/health"
-        return_content: yes
-        timeout: 5
-      register: health_check
-      until: health_check is succeeded and health_check.json.status == "healthy"
-      retries: 10
-      delay: 5
-      failed_when: false
+        - name: Wait for application health
+          uri:
+            url: "http://localhost:3003/api/health"
+            return_content: yes
+            timeout: 5
+          register: health_check
+          until: health_check is succeeded and health_check.json.status == "healthy"
+          retries: 10
+          delay: 5
 
-    - name: Fail if application is not healthy
-      fail:
-        msg: "TCWiki health check failed: {{ health_check }}"
-      when:
-        - health_check is not succeeded or health_check.json.status != "healthy"
-        - previous_image == "none"
+        - name: Verify deployed version
+          uri:
+            url: "http://localhost:3003/api/version"
+            return_content: yes
+            timeout: 5
+          register: version_check
+          until: version_check is succeeded and version_check.json.version == app_version
+          retries: 6
+          delay: 5
 
-    - name: Rollback to previous image on failure
-      community.docker.docker_container:
-        name: "{{ container_name }}"
-        image: "{{ previous_image }}"
-        state: started
-        restart_policy: unless-stopped
-        ports:
-          - "127.0.0.1:3003:3000"
-        log_driver: "json-file"
-        log_options:
-          max-size: "10m"
-          max-file: "3"
-        healthcheck:
-          test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:3000/api/health', r => process.exit(r.statusCode === 200 ? 0 : 1))\""]
-          interval: 30s
-          timeout: 10s
-          retries: 3
-          start_period: 40s
-        env:
-          NODE_ENV: production
-          PORT: "3000"
-          HOSTNAME: "0.0.0.0"
-      when:
-        - health_check is not succeeded or health_check.json.status != "healthy"
-        - previous_image != "none"
-      register: rollback
+        - name: Verify deployed image from version endpoint
+          assert:
+            that:
+              - version_check.json.image == image_ref
+            fail_msg: "Version endpoint returned image {{ version_check.json.image | default('missing') }}, expected {{ image_ref }}."
 
-    - name: Fail with rollback message
-      fail:
-        msg: "Deployment failed, rolled back to {{ previous_image }}"
-      when: rollback.changed
+      rescue:
+        - name: Roll back to previous image when available
+          community.docker.docker_container:
+            name: "{{ container_name }}"
+            image: "{{ previous_image }}"
+            state: started
+            restart_policy: unless-stopped
+            ports:
+              - "127.0.0.1:3003:3000"
+            log_driver: "json-file"
+            log_options:
+              max-size: "10m"
+              max-file: "3"
+            healthcheck:
+              test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:3000/api/health', r => process.exit(r.statusCode === 200 ? 0 : 1))\""]
+              interval: 30s
+              timeout: 10s
+              retries: 3
+              start_period: 40s
+          when: previous_image != "none"
 
-    - name: Verify container is running
+        - name: Verify rollback health when previous image exists
+          uri:
+            url: "http://localhost:3003/api/health"
+            return_content: yes
+            timeout: 5
+          register: rollback_health
+          until: rollback_health is succeeded and rollback_health.json.status == "healthy"
+          retries: 10
+          delay: 5
+          when: previous_image != "none"
+
+        - name: Fail deployment after rollback attempt
+          fail:
+            msg: "TCWiki deploy failed for {{ image_ref }}; rollback target was {{ previous_image }}."
+
+    - name: Verify container image ref
       community.docker.docker_container_info:
         name: "{{ container_name }}"
       register: container_info
 
+    - name: Assert running container uses requested image
+      assert:
+        that:
+          - container_info.container.Config.Image == image_ref
+        fail_msg: "Running container image {{ container_info.container.Config.Image | default('missing') }} does not match {{ image_ref }}."
+
     - name: Report deployment status
       debug:
-        msg: "✅ TCWiki deployed successfully: {{ container_info.container.State.Status }}"
+        msg: "TCWiki deployed {{ container_info.container.Config.Image }} with version {{ app_version }}"

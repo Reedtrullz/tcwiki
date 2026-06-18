@@ -3,17 +3,22 @@
 import Link from 'next/link';
 import { ECOSYSTEM_PROJECTS, RESEARCH_REPORTS } from '@/lib/data/static';
 import { Activity, TrendingUp, Shield, Layers } from 'lucide-react';
-import { useNetworkData, usePools } from '@/lib/hooks/useMidgard';
+import { useNetworkData, useNetworkStatus, usePools } from '@/lib/hooks/useMidgard';
 import { StatCard } from '@/components/ui/StatCard';
+import { NetworkStatusBanner } from '@/components/features/NetworkStatusBanner';
+import { FEATURED_ENTRIES } from '@/lib/content/registry';
+import { formatPercent, formatRuneFromBaseUnits, normalizeApyToPercent } from '@/lib/trust';
+import { LiveSourceMeta } from '@/components/ui/LiveSourceMeta';
 
 export default function HomePage() {
-  const { data: networkData } = useNetworkData();
-  const { data: pools } = usePools();
+  const { data: networkData, result: networkResult, isDegraded: networkDegraded } = useNetworkData();
+  const { result: statusResult, isLoading: statusLoading } = useNetworkStatus();
+  const { data: pools, isDegraded: poolsDegraded } = usePools();
 
-  const poolCount = pools?.length ?? 0;
-  const runePooled = networkData ? Math.round(parseInt(networkData.totalPooledRune) / 1e8).toLocaleString() : '…';
-  const bondingApy = networkData ? (parseFloat(networkData.bondingAPY) * 100).toFixed(2) : '…';
-  const activeNodes = networkData?.activeNodeCount ?? '…';
+  const poolCount = pools && !poolsDegraded ? String(pools.length) : 'Unavailable';
+  const runePooled = networkData ? formatRuneFromBaseUnits(networkData.totalPooledRune) : 'Unavailable';
+  const bondingApy = networkData ? formatPercent(normalizeApyToPercent(networkData.bondingAPY, 'decimal')) : 'Unavailable';
+  const activeNodes = networkData?.activeNodeCount ?? 'Unavailable';
 
   return (
     <div className="pt-[52px]">
@@ -24,17 +29,27 @@ export default function HomePage() {
         </h1>
         <p className="text-lg text-slate-400 max-w-2xl">
           Community-maintained encyclopedia of the THORChain protocol —
-          architecture, economics, governance, ecosystem, and live network data.
+          architecture, economics, governance, ecosystem, and source-backed live network data.
         </p>
+      </section>
+
+      <section className="px-6 max-w-7xl mx-auto mb-8">
+        <NetworkStatusBanner result={statusResult} isLoading={statusLoading} />
       </section>
 
       {/* Network stats strip */}
       <section className="px-6 max-w-7xl mx-auto mb-16">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          <StatCard icon={<Layers className="h-4 w-4" />} label="Pooled RUNE" value={`${runePooled}`} unit="RUNE" />
-          <StatCard icon={<TrendingUp className="h-4 w-4" />} label="Bonding APY" value={bondingApy} unit="%" />
+          <StatCard icon={<Layers className="h-4 w-4" />} label="Pooled RUNE" value={`${runePooled}`} unit={networkData ? 'RUNE' : undefined} />
+          <StatCard icon={<TrendingUp className="h-4 w-4" />} label="Bonding APY" value={bondingApy} />
           <StatCard icon={<Shield className="h-4 w-4" />} label="Active Nodes" value={String(activeNodes)} />
-          <StatCard icon={<Activity className="h-4 w-4" />} label="Pools" value={String(poolCount)} />
+          <StatCard icon={<Activity className="h-4 w-4" />} label="Available Pools" value={poolCount} />
+        </div>
+        <div className="mt-3">
+          <LiveSourceMeta result={networkResult} />
+          {networkDegraded && (
+            <p className="mt-2 text-xs text-amber-300">Midgard source did not respond; values are unavailable rather than assumed zero.</p>
+          )}
         </div>
       </section>
 
@@ -42,19 +57,14 @@ export default function HomePage() {
       <section className="px-6 max-w-7xl mx-auto mb-16">
         <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-5">Explore</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          {[
-            { title: 'Protocol', desc: 'Architecture, cross-chain mechanics, TSS, vaults, and supported chains.', href: '/protocol' },
-            { title: 'Network', desc: 'Node types, churning, bond requirements, and security model.', href: '/network' },
-            { title: 'Economics', desc: 'RUNE tokenomics, CLP formula, fees, and the Incentive Pendulum.', href: '/economics' },
-            { title: 'Governance', desc: 'ADRs, protocol milestones, security incidents, and research.', href: '/governance' },
-          ].map((t) => (
+          {FEATURED_ENTRIES.slice(0, 8).map((t) => (
             <Link
               key={t.href}
               href={t.href}
               className="block p-5 rounded-lg bg-surface-elevated border border-border hover:border-accent/30 transition-colors group"
             >
               <h3 className="text-sm font-semibold mb-1.5 group-hover:text-accent transition-colors">{t.title}</h3>
-              <p className="text-xs text-slate-500 leading-relaxed">{t.desc}</p>
+              <p className="text-xs text-slate-500 leading-relaxed">{t.description}</p>
             </Link>
           ))}
         </div>
@@ -127,5 +137,3 @@ export default function HomePage() {
     </div>
   );
 }
-
-

@@ -9,20 +9,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
  && rm -rf /var/lib/apt/lists/*
 
 COPY package.json package-lock.json ./
-RUN npm ci --include=optional \
- && npm install --no-save --no-package-lock \
-      lightningcss-linux-x64-gnu \
-      @tailwindcss/oxide-linux-x64-gnu \
-      @rolldown/binding-linux-x64-gnu \
-      @unrs/resolver-binding-linux-x64-gnu \
-      @img/sharp-linux-x64 \
-      @img/sharp-libvips-linux-x64
+RUN npm ci --include=optional
 
 FROM node:${NODE_VERSION}-slim AS builder
 WORKDIR /app
 
-ARG VERSION=latest
+ARG VERSION=unknown
+ARG COMMIT_SHA=unknown
 ENV VERSION=${VERSION} \
+    COMMIT_SHA=${COMMIT_SHA} \
     NEXT_TELEMETRY_DISABLED=1
 
 COPY --from=deps /app/node_modules ./node_modules
@@ -33,10 +28,22 @@ RUN npm run build
 FROM node:${NODE_VERSION}-slim AS runner
 WORKDIR /app
 
+ARG VERSION=unknown
+ARG COMMIT_SHA=unknown
+ARG IMAGE_REF=unknown
+
 ENV NODE_ENV=production \
     PORT=3000 \
     HOSTNAME=0.0.0.0 \
+    APP_VERSION=${VERSION} \
+    VERSION=${VERSION} \
+    COMMIT_SHA=${COMMIT_SHA} \
+    IMAGE_REF=${IMAGE_REF} \
     NEXT_TELEMETRY_DISABLED=1
+
+LABEL org.opencontainers.image.source="https://github.com/Reedtrullz/tcwiki" \
+      org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.revision="${COMMIT_SHA}"
 
 RUN mkdir -p /app/.next && chown -R node:node /app
 

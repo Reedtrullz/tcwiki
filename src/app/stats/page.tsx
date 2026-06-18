@@ -2,14 +2,33 @@
 
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { Activity, TrendingUp, TrendingDown, Zap } from 'lucide-react';
-import { useNetworkData, useEarningsHistory } from '@/lib/hooks/useMidgard';
+import { useNetworkData, useEarningsHistory, useNetworkStatus } from '@/lib/hooks/useMidgard';
+import { NetworkStatusBanner } from '@/components/features/NetworkStatusBanner';
+import { PageContainer } from '@/components/layout/PageContainer';
+import { StatCard } from '@/components/ui/StatCard';
+import { LiveSourceMeta } from '@/components/ui/LiveSourceMeta';
+import { formatPercent, formatRuneFromBaseUnits, normalizeApyToPercent, runeBaseUnitsToNumber } from '@/lib/trust';
 
 export default function StatsPage() {
-  const { data: networkData, error: networkError, isLoading: networkLoading } = useNetworkData();
-  const { data: earningsData, error: earningsError, isLoading: earningsLoading } = useEarningsHistory('day', 30);
+  const {
+    data: networkData,
+    result: networkResult,
+    error: networkError,
+    isLoading: networkLoading,
+    isDegraded: networkDegraded,
+  } = useNetworkData();
+  const {
+    data: earningsData,
+    result: earningsResult,
+    error: earningsError,
+    isLoading: earningsLoading,
+    isDegraded: earningsDegraded,
+  } = useEarningsHistory('day', 30);
+  const { result: statusResult, isLoading: statusLoading } = useNetworkStatus();
 
   const isLoading = networkLoading || earningsLoading;
-  const hasError = networkError || earningsError || !networkData;
+  const networkHasError = networkError || networkDegraded || !networkData;
+  const earningsHasError = earningsError || earningsDegraded;
 
   if (isLoading) {
     return (
@@ -19,81 +38,93 @@ export default function StatsPage() {
     );
   }
 
-  const runePooled = networkData ? parseInt(networkData.totalPooledRune) / 1e8 : 0;
-  const bondingApy = networkData ? parseFloat(networkData.bondingAPY) * 100 : 0;
+  const runePooled = networkData ? formatRuneFromBaseUnits(networkData.totalPooledRune) : 'Unavailable';
+  const bondingApy = networkData ? formatPercent(normalizeApyToPercent(networkData.bondingAPY, 'decimal')) : 'Unavailable';
+  const reserveRune = networkData ? formatRuneFromBaseUnits(networkData.totalReserve) : 'Unavailable';
   const earningsChart = (earningsData || []).map(d => ({
     name: new Date(parseInt(d.startTime) * 1000).toLocaleDateString(),
-    earnings: parseInt(d.earnings || '0') / 1e8,
-    nodeOps: parseInt(d.bondingEarnings || '0') / 1e8,
-    lps: parseInt(d.liquidityEarnings || '0') / 1e8,
+    earnings: runeBaseUnitsToNumber(d.earnings),
+    nodeOps: runeBaseUnitsToNumber(d.bondingEarnings),
+    lps: runeBaseUnitsToNumber(d.liquidityEarnings),
   })).reverse();
 
   return (
-    <div className="pt-[52px] py-16 px-6 max-w-7xl mx-auto">
+    <PageContainer>
       <div className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight mb-2">Network Statistics</h1>
-        <p className="text-slate-400 max-w-3xl">Real-time THORChain network metrics from Midgard v2 API</p>
-        {hasError && (
+        <p className="text-slate-400 max-w-3xl">Current-only THORChain metrics from Midgard and THORNode. Unavailable upstream data is shown as degraded, not zero.</p>
+        {(networkHasError || earningsHasError) && (
           <div className="mt-4 p-4 bg-amber-500/10 border border-amber-500/20 rounded-lg text-sm text-amber-400">
-            ⚠ Live data is currently unavailable. The Midgard API may be down. Charts and stats will appear once the connection is restored.
+            Live data is degraded. {networkError || earningsError || 'One or more sources did not respond.'}
           </div>
         )}
       </div>
 
-      {!hasError && networkData && (
+      <div className="mb-8">
+        <NetworkStatusBanner result={statusResult} isLoading={statusLoading} />
+      </div>
+
+      {!networkHasError && networkData && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-12">
-          <div className="bg-surface-elevated border border-border rounded-lg p-5">
-            <div className="flex items-center gap-2 text-accent mb-3">
-              <Activity className="h-4 w-4" />
-              <span className="text-[11px] text-slate-400 uppercase tracking-wider">Pooled RUNE</span>
-            </div>
-            <p className="text-2xl font-bold tracking-tight">{runePooled.toLocaleString()} RUNE</p>
-          </div>
-          <div className="bg-surface-elevated border border-border rounded-lg p-5">
-            <div className="flex items-center gap-2 text-accent mb-3">
-              <TrendingUp className="h-4 w-4" />
-              <span className="text-[11px] text-slate-400 uppercase tracking-wider">Bonding APY</span>
-            </div>
-            <p className="text-2xl font-bold tracking-tight">{bondingApy.toFixed(2)}%</p>
-          </div>
-          <div className="bg-surface-elevated border border-border rounded-lg p-5">
-            <div className="flex items-center gap-2 text-accent mb-3">
-              <Zap className="h-4 w-4" />
-              <span className="text-[11px] text-slate-400 uppercase tracking-wider">Active Nodes</span>
-            </div>
-            <p className="text-2xl font-bold tracking-tight">{networkData.activeNodeCount}</p>
-          </div>
-          <div className="bg-surface-elevated border border-border rounded-lg p-5">
-            <div className="flex items-center gap-2 text-accent mb-3">
-              <TrendingDown className="h-4 w-4" />
-              <span className="text-[11px] text-slate-400 uppercase tracking-wider">Reserve RUNE</span>
-            </div>
-            <p className="text-2xl font-bold tracking-tight">{(parseInt(networkData.totalReserve) / 1e8).toLocaleString()} RUNE</p>
-          </div>
+          <StatCard icon={<Activity className="h-4 w-4" />} label="Pooled RUNE" value={runePooled} unit="RUNE" />
+          <StatCard icon={<TrendingUp className="h-4 w-4" />} label="Bonding APY" value={bondingApy} />
+          <StatCard icon={<Zap className="h-4 w-4" />} label="Active Nodes" value={networkData.activeNodeCount} />
+          <StatCard icon={<TrendingDown className="h-4 w-4" />} label="Reserve RUNE" value={reserveRune} unit="RUNE" />
         </div>
       )}
+      <div className="mb-12">
+        <LiveSourceMeta result={networkResult} />
+      </div>
 
       <div className="mb-12">
         <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-5">Earnings History (30 days)</h2>
+        <div className="mb-3">
+          <LiveSourceMeta result={earningsResult} />
+        </div>
         <div className="bg-surface-elevated border border-border rounded-lg p-6">
           {earningsChart.length > 0 ? (
-            <ResponsiveContainer width="100%" height={400}>
-              <LineChart data={earningsChart}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Line type="monotone" dataKey="earnings" stroke="#3b82f6" strokeWidth={2} dot={false} name="Total Earnings (RUNE)" />
-                <Line type="monotone" dataKey="nodeOps" stroke="#8b5cf6" strokeWidth={2} dot={false} name="Node Operator Earnings" />
-                <Line type="monotone" dataKey="lps" stroke="#10b981" strokeWidth={2} dot={false} name="LP Earnings" />
-              </LineChart>
-            </ResponsiveContainer>
+            <>
+              <ResponsiveContainer width="100%" height={400}>
+                <LineChart data={earningsChart}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Line type="monotone" dataKey="earnings" stroke="#3b82f6" strokeWidth={2} dot={false} name="Total Earnings (RUNE)" />
+                  <Line type="monotone" dataKey="nodeOps" stroke="#8b5cf6" strokeWidth={2} dot={false} name="Node Operator Earnings" />
+                  <Line type="monotone" dataKey="lps" stroke="#10b981" strokeWidth={2} dot={false} name="LP Earnings" />
+                </LineChart>
+              </ResponsiveContainer>
+              <div className="mt-6 overflow-x-auto">
+                <table className="w-full min-w-[520px] text-left text-xs text-slate-500">
+                  <caption className="sr-only">Thirty day earnings history from Midgard</caption>
+                  <thead className="text-[11px] uppercase tracking-wider text-slate-400">
+                    <tr>
+                      <th scope="col" className="py-2 pr-4">Date</th>
+                      <th scope="col" className="py-2 pr-4">Total RUNE</th>
+                      <th scope="col" className="py-2 pr-4">Node operators</th>
+                      <th scope="col" className="py-2 pr-4">LPs</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {earningsChart.slice(-7).map((row) => (
+                      <tr key={row.name} className="border-t border-border">
+                        <td className="py-2 pr-4">{row.name}</td>
+                        <td className="py-2 pr-4">{row.earnings?.toLocaleString() ?? 'Unavailable'}</td>
+                        <td className="py-2 pr-4">{row.nodeOps?.toLocaleString() ?? 'Unavailable'}</td>
+                        <td className="py-2 pr-4">{row.lps?.toLocaleString() ?? 'Unavailable'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           ) : (
-            <p className="text-slate-500 text-center py-20">No earnings history data available.</p>
+            <p className="text-slate-500 text-center py-20">Earnings history unavailable from live sources.</p>
           )}
         </div>
       </div>
-    </div>
+    </PageContainer>
   );
 }

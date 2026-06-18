@@ -2,38 +2,60 @@
 
 import useSWR from 'swr';
 import MidgardAPI from '@/lib/api/midgard';
-import { NetworkStats, HistoryItem, Pool } from '@/lib/types';
+import ThornodeAPI from '@/lib/api/thornode';
+import { HistoryItem, LiveDataResult, NetworkStats, NetworkStatus, Pool } from '@/lib/types';
 
-const fetcher = {
-  network: () => MidgardAPI.getNetworkData(),
-  pools: () => MidgardAPI.getPools(),
-  history: (interval = 'day', count = 30) => MidgardAPI.getHistory(interval, count),
+const SWR_OPTIONS = {
+  refreshInterval: 60000,
+  revalidateOnFocus: false,
 };
 
+function unwrapLiveResult<T>(result: LiveDataResult<T> | undefined, error: unknown, isLoading: boolean) {
+  const errorMessage = error instanceof Error ? error.message : undefined;
+  return {
+    result,
+    data: result?.data,
+    status: result?.status ?? (errorMessage ? 'degraded' : undefined),
+    error: errorMessage ?? result?.error,
+    source: result?.source,
+    checkedAt: result?.checkedAt,
+    isLoading,
+    isDegraded: Boolean(errorMessage || result?.status === 'degraded'),
+  };
+}
+
 export function useNetworkData() {
-  const { data, error, isLoading } = useSWR<NetworkStats>('network', fetcher.network, {
-    refreshInterval: 60000,
-    revalidateOnFocus: false,
-  });
-  return { data, error, isLoading };
+  const { data, error, isLoading } = useSWR<LiveDataResult<NetworkStats>>(
+    'midgard:network',
+    () => MidgardAPI.getNetworkData(),
+    SWR_OPTIONS
+  );
+  return unwrapLiveResult(data, error, isLoading);
 }
 
 export function usePools() {
-  const { data, error, isLoading } = useSWR<Pool[]>('pools', fetcher.pools, {
-    refreshInterval: 60000,
-    revalidateOnFocus: false,
-  });
-  return { data, error, isLoading };
+  const { data, error, isLoading } = useSWR<LiveDataResult<Pool[]>>(
+    'midgard:pools',
+    () => MidgardAPI.getPools(),
+    SWR_OPTIONS
+  );
+  return unwrapLiveResult(data, error, isLoading);
 }
 
 export function useEarningsHistory(interval = 'day', count = 30) {
-  const { data, error, isLoading } = useSWR<HistoryItem[]>(
-    ['history', interval, count],
-    () => fetcher.history(interval, count),
-    {
-      refreshInterval: 60000,
-      revalidateOnFocus: false,
-    }
+  const { data, error, isLoading } = useSWR<LiveDataResult<HistoryItem[]>>(
+    ['midgard:history', interval, count],
+    () => MidgardAPI.getHistory(interval, count),
+    SWR_OPTIONS
   );
-  return { data, error, isLoading };
+  return unwrapLiveResult(data, error, isLoading);
+}
+
+export function useNetworkStatus() {
+  const { data, error, isLoading } = useSWR<LiveDataResult<NetworkStatus>>(
+    'thornode:network-status',
+    () => ThornodeAPI.getNetworkStatus(),
+    SWR_OPTIONS
+  );
+  return unwrapLiveResult(data, error, isLoading);
 }

@@ -4,10 +4,10 @@ Churning is the mechanism that keeps the THORChain validator set fresh, secure, 
 
 ## What is Churning?
 
-Every ~3 days (50,000 blocks), the oldest active node is removed from the validator set and replaced by the highest-bonded standby node. This process is called "churning."
+At configured churn intervals, active nodes can rotate out and standby nodes can rotate in. Official node docs describe the cadence as roughly 43,200 blocks, or about 2.5 days, but the interval is governed by protocol constants and Mimir overrides, so the exact value remains current-only data.
 
 During a churn event:
-- The outgoing node's bond enters a 12-hour unbonding period.
+- A churned-out node moves back to standby; its bond is not automatically returned.
 - A new Asgard vault is created with fresh TSS keys.
 - All active nodes begin observing and signing with the new vault.
 
@@ -17,18 +17,18 @@ During a churn event:
 
 **Economic incentives**: Standby nodes are constantly competing to bond more RUNE to earn the right to churn in. This creates strong pressure for honest behavior.
 
-**Fault tolerance**: If a node becomes unresponsive or malicious, it will eventually be churned out naturally.
+**Fault tolerance**: If a node becomes unresponsive or malicious, churn and slash-point mechanics can remove it from the active set, subject to current protocol state.
 
 ## Node Lifecycle
 
-1. **Whitelisted** → Approved by governance but not yet bonded.
-2. **Ready** → Bonded but below the standby threshold.
-3. **Standby** → Bonded and synced, waiting for the next churn.
+1. **Whitelisted** → A node address has sent an initial BOND deposit and can continue setup.
+2. **Ready** → Bonded, synced, and passing preflight checks for churn eligibility.
+3. **Standby** → Bonded and waiting for churn selection, usually competing by bond and current readiness.
 4. **Active** → Currently in the validator set (highest rewards, highest responsibility).
-5. **Churned** → Removed from active set, 12h unbonding period begins.
+5. **Churned to standby / leaving** → Removed from active set; unbonding or leaving depends on the node's current state and follow-up memos.
 
 ## Slash Points and Forced Churn
 
 Nodes accumulate slash points for missing observations or failing to sign. High slash counts can force a node out of the active set even before its natural churn time.
 
-The combination of natural churning + economic slashing creates a robust, self-healing validator set.
+The combination of churning and economic penalties is intended to reduce long-lived validator and vault risk, but exact behavior should be checked against current protocol constants and Mimir state.

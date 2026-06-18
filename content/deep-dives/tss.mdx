@@ -12,7 +12,7 @@ Traditional multisignature schemes (like Bitcoin's 2-of-3) have significant limi
 
 ## How TSS Solves This
 
-THORChain uses **GG20** (and later **GG21**) threshold signature schemes that provide:
+THORChain has used **GG20** threshold signature schemes, with later cryptographic migration work discussed in official incident reporting. Details should stay tied to dated sources because the implementation and recovery path can change.
 
 - **Distributed key generation**: No single node ever holds the full private key
 - **Threshold signing**: A configurable threshold (typically 2/3) of nodes must cooperate to produce a valid signature
@@ -20,12 +20,12 @@ THORChain uses **GG20** (and later **GG21**) threshold signature schemes that pr
 
 ## Security Properties
 
-- **No single point of failure**: Even if some nodes are compromised, funds remain safe as long as the threshold is not reached
-- **Proactive security**: Keys are regularly rotated during churn events
-- **Accountability**: Misbehaving nodes can be identified and slashed
+- **No intended single point of failure**: Correctly implemented threshold signing avoids one node holding a complete private key, but safety depends on the current cryptographic implementation and active incident status.
+- **Proactive security**: Keys are regularly rotated during churn events.
+- **Accountability**: Misbehaving nodes can be identified and penalized through reward slash points or bond slashing, depending on the fault.
 
 ## Real-World Impact
 
-TSS has been battle-tested through multiple incidents. The 2023 Double Whammy exploit exposed certain coordination vulnerabilities, but the underlying TSS primitive itself has remained sound. The protocol continues to improve TSS implementation and monitoring around it.
+The May 15, 2026 official exploit report says a newly churned node operator exploited a GG20 TSS vulnerability and drained one vault before automated solvency detection and manual Mimir halts contained further activity. That report should be treated as dated incident evidence, not a timeless statement of current safety.
 
 TSS is what makes true native cross-chain liquidity possible without bridges or wrapped tokens.

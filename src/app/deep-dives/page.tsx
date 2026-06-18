@@ -1,56 +1,6 @@
 import Link from 'next/link';
 import { PageContainer } from '@/components/layout/PageContainer';
-
-const deepDives = [
-  {
-    slug: 'clp',
-    title: 'Continuous Liquidity Pools (CLP)',
-    description: 'How THORChain\'s slip-based AMM enables native cross-chain swaps without order books or wrapped assets.',
-    date: '2025',
-  },
-  {
-    slug: 'incentive-pendulum',
-    title: 'The Incentive Pendulum',
-    description: 'THORChain\'s self-correcting mechanism that automatically balances network security and liquidity.',
-    date: '2025',
-  },
-  {
-    slug: 'tss',
-    title: 'Threshold Signatures (TSS)',
-    description: 'The cryptographic foundation that allows secure custody without ever exposing a full private key.',
-    date: '2025',
-  },
-  {
-    slug: 'churning',
-    title: 'Churning and Node Lifecycle',
-    description: 'How regular validator rotation and economic incentives keep the network secure and decentralized.',
-    date: '2025',
-  },
-  {
-    slug: 'slashing',
-    title: 'Slashing and Economic Security',
-    description: 'The economic defense mechanism that makes attacking the network extremely expensive.',
-    date: '2025',
-  },
-  {
-    slug: 'bifrost',
-    title: 'Bifrost Bridge and Cross-Chain Observability',
-    description: 'How THORChain nodes reliably monitor activity across 13+ external blockchains.',
-    date: '2025',
-  },
-  {
-    slug: 'rune-settlement',
-    title: 'RUNE as the Universal Settlement Asset',
-    description: 'Why every cross-chain swap must route through RUNE and what that enables.',
-    date: '2025',
-  },
-  {
-    slug: 'savers',
-    title: 'Savers Vaults and Yield Mechanics',
-    description: 'Single-sided yield without providing RUNE — how it works and the trade-offs.',
-    date: '2025',
-  },
-];
+import { DEEP_DIVE_ENTRIES } from '@/lib/content/registry';
 
 export default function DeepDivesIndex() {
   return (
@@ -61,24 +11,25 @@ export default function DeepDivesIndex() {
       </p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {deepDives.map((dive) => (
+        {DEEP_DIVE_ENTRIES.map((dive) => (
           <Link
-            key={dive.slug}
-            href={`/deep-dives/${dive.slug}`}
+            key={dive.id}
+            href={dive.href}
             className="block p-6 rounded-lg bg-surface-elevated border border-border hover:border-accent/30 transition-colors group"
           >
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-lg font-semibold group-hover:text-accent transition-colors">{dive.title}</h3>
-              <span className="text-[11px] text-slate-500">{dive.date}</span>
+              <span className="text-[11px] text-slate-500">{dive.reviewedAt}</span>
             </div>
             <p className="text-sm text-slate-400 leading-relaxed">{dive.description}</p>
+            <p className="mt-3 text-[11px] text-slate-600">Sources: {dive.sources.map((source) => source.label).join(', ')}</p>
             <div className="mt-4 text-xs text-accent group-hover:underline">Read deep dive →</div>
           </Link>
         ))}
       </div>
 
       <div className="mt-12 text-sm text-slate-500">
-        More deep dives coming soon. Interested in contributing? See the <Link href="https://github.com/reedtrullz/thorchain-wiki" className="underline hover:text-accent">GitHub repo</Link>.
+        More deep dives coming soon. Interested in contributing? See the <Link href="https://github.com/Reedtrullz/tcwiki" className="underline hover:text-accent">GitHub repo</Link>.
       </div>
     </PageContainer>
   );
