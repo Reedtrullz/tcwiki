@@ -17,10 +17,11 @@ permissions:
 env:
   NODE_VERSION: '22'
 
+# Keep runner images explicit so release-path behavior changes only when reviewed.
 jobs:
   build-check:
     name: Lint + Typecheck + Tests + Build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
@@ -47,7 +48,7 @@ jobs:
     name: Build & publish image
     needs: [build-check]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       packages: write
@@ -102,7 +103,7 @@ jobs:
     name: Deploy to VPS
     needs: [publish]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v6
       - name: Install Ansible
