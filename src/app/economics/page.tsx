@@ -1,74 +1,101 @@
 import { Card } from '@/components/ui/Card';
 import { SectionHeader } from '@/components/ui/SectionHeader';
+import { PageContainer } from '@/components/layout/PageContainer';
+import { Badge } from '@/components/ui/Badge';
 
 export default function EconomicsPage() {
   return (
-    <div className="pt-[52px] py-16 px-6 max-w-7xl mx-auto">
+    <PageContainer>
       <h1 className="text-3xl font-bold tracking-tight mb-2">Economics & Tokenomics</h1>
-      <p className="text-slate-400 max-w-3xl mb-12">RUNE token mechanics, fee structures, the Continuous Liquidity Pool model, and the Incentive Pendulum.</p>
+      <p className="text-slate-400 max-w-3xl mb-12">
+        RUNE settlement, CLP pricing, fees, incentive design, RUNEPool/POL, trade assets, and current-only protocol parameters.
+      </p>
 
       <SectionHeader>RUNE Token</SectionHeader>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-12">
         {[
-          { title: 'Settlement Asset', desc: 'All cross-chain swaps route through RUNE. BTC → RUNE → ETH. RUNE is the only asset that pairs against every external token in every liquidity pool.' },
-          { title: 'Security Bond', desc: 'Node operators bond RUNE to participate. Bonds range from ~300K to 2M+ RUNE. Larger bonds earn more rewards. Misbehavior results in slashing of the bond.' },
-          { title: 'Governance Token', desc: 'RUNE holders govern via Architecture Decision Records (ADRs). Voting power is proportional to bonded RUNE. 67% threshold required to pass.' },
-        ].map((c) => (
-          <Card key={c.title}>
-            <h3 className="text-sm font-semibold mb-1.5">{c.title}</h3>
-            <p className="text-xs text-slate-500 leading-relaxed">{c.desc}</p>
+          { title: 'Settlement Asset', desc: 'External-asset swaps route through RUNE-paired liquidity, which keeps the liquidity graph simple and shared.' },
+          { title: 'Security Bond', desc: 'Node operators bond RUNE to participate. Bond size, minimum bond, and slash parameters should be checked from live constants and Mimir.' },
+          { title: 'Protocol Governance Context', desc: 'THORChain governance is intentionally minimal. Node operators and Mimir govern operational parameters; ADRs/TIPs document changes.' },
+        ].map((card) => (
+          <Card key={card.title}>
+            <h3 className="text-sm font-semibold mb-1.5">{card.title}</h3>
+            <p className="text-xs text-slate-500 leading-relaxed">{card.desc}</p>
           </Card>
         ))}
       </div>
 
       <SectionHeader>Supply & Emission</SectionHeader>
+      <p className="mb-4 text-sm text-slate-500">
+        Official tokenomics currently frames RUNE supply around a reduced supply near 425M, circulating supply near 350M,
+        and a reserve near 75M, with ongoing burn mechanics. Treat these as dated/source-backed figures, not hard-coded live balances.
+      </p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-12">
         {[
-          { label: 'Maximum Supply', value: '500,000,000 RUNE' },
-          { label: 'Initial Supply', value: '~230M (BEPSwap)' },
-          { label: 'Circulating', value: '~340M RUNE' },
-          { label: 'Block Rewards Split', value: '67% Nodes / 33% LPs' },
-        ].map((r) => (
-          <div key={r.label} className="flex items-center justify-between p-4 rounded-lg bg-surface-elevated border border-border">
-            <span className="text-xs text-slate-400">{r.label}</span>
-            <span className="text-sm font-semibold">{r.value}</span>
+          { label: 'Original Cap Context', value: '500M RUNE', tone: 'historical' },
+          { label: 'Current Supply Framing', value: '~425M and burning', tone: 'source-backed' },
+          { label: 'Circulating / Reserve', value: '~350M / ~75M', tone: 'source-backed' },
+          { label: 'Revenue Split', value: '75% nodes + LPs', tone: 'dynamic' },
+        ].map((row) => (
+          <div key={row.label} className="flex items-center justify-between gap-4 p-4 rounded-lg bg-surface-elevated border border-border">
+            <span className="text-xs text-slate-400">{row.label}</span>
+            <span className="text-sm font-semibold text-right">{row.value}</span>
+            <Badge variant={row.tone === 'historical' ? 'info' : 'warning'}>{row.tone}</Badge>
           </div>
         ))}
       </div>
 
       <SectionHeader>Fee Structure</SectionHeader>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-12">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-12">
         {[
-          { fee: 'Liquidity Fee', rate: 'Slip-based (dynamic)', to: 'LPs', desc: 'Scaled by trade size relative to pool depth. Small trades pay near-zero. Large trades pay proportionally more.' },
-          { fee: 'Outbound Fee', rate: 'Dynamic per chain', to: 'Reserve', desc: 'Covers gas costs for outbound transactions. Varies by chain based on current network fees.' },
-          { fee: 'Network Fee', rate: 'Flat per swap', to: 'Node operators', desc: 'Minimum fee applied to every swap. Compensates operators for observation and signing.' },
-        ].map((f) => (
-          <Card key={f.fee}>
-            <h3 className="text-sm font-semibold mb-2">{f.fee}</h3>
-            <p className="text-xl font-bold text-accent mb-1">{f.rate}</p>
-            <p className="text-[11px] text-slate-500 mb-2">To: {f.to}</p>
-            <p className="text-xs text-slate-500 leading-relaxed">{f.desc}</p>
+          { fee: 'Inbound Gas', rate: 'Chain-specific', desc: 'External-chain gas paid by the user when sending inbound transactions.' },
+          { fee: 'Liquidity / Slip Fee', rate: 'Dynamic', desc: 'Scaled by trade size relative to pool depth; protects liquidity providers.' },
+          { fee: 'Affiliate Fee', rate: 'Optional', desc: 'Interface- or affiliate-defined fee when a memo includes an affiliate basis-point setting.' },
+          { fee: 'Outbound Fee', rate: 'Dynamic', desc: 'Covers outbound gas and protocol fee logic. Gas rate and minimums are live values.' },
+        ].map((fee) => (
+          <Card key={fee.fee}>
+            <h3 className="text-sm font-semibold mb-2">{fee.fee}</h3>
+            <p className="text-xl font-bold text-accent mb-1">{fee.rate}</p>
+            <p className="text-xs text-slate-500 leading-relaxed">{fee.desc}</p>
           </Card>
         ))}
       </div>
 
       <SectionHeader>Incentive Pendulum</SectionHeader>
+      <p className="mb-4 text-sm text-slate-500">
+        The pendulum allocates the node/LP share of network revenue based on the network&apos;s bond-to-liquidity posture.
+      </p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-12">
         <Card className="border-rune/20">
-          <h3 className="text-sm font-semibold text-rune mb-2">Low Bond Ratio →</h3>
-          <p className="text-xs text-slate-500">When bonded RUNE is low relative to pooled RUNE, more block rewards flow to node operators to incentivize bonding.</p>
+          <h3 className="text-sm font-semibold text-rune mb-2">Low bond security</h3>
+          <p className="text-xs text-slate-500">When the network needs more security relative to liquidity, rewards shift toward node operators.</p>
         </Card>
         <Card className="border-accent/20">
-          <h3 className="text-sm font-semibold text-accent mb-2">High Bond Ratio →</h3>
-          <p className="text-xs text-slate-500">When bonded RUNE is high relative to pooled RUNE, more rewards flow to LPs to incentivize liquidity provision.</p>
+          <h3 className="text-sm font-semibold text-accent mb-2">Low pooled liquidity</h3>
+          <p className="text-xs text-slate-500">When the network needs more depth, rewards shift toward liquidity providers.</p>
         </Card>
+      </div>
+
+      <SectionHeader>RUNEPool, POL, and Trade Assets</SectionHeader>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-12">
+        {[
+          { title: 'RUNEPool', desc: 'RUNEPool lets RUNE providers participate in protocol-owned liquidity. Enabled state, provider balances, and PnL are live THORNode facts.' },
+          { title: 'Protocol-Owned Liquidity', desc: 'POL changes protocol exposure and should be described with current-only balances and source labels.' },
+          { title: 'Trade Assets', desc: 'Trade/secured assets are protocol accounting concepts. Enablement and halt state should be read from Mimir and docs before current claims.' },
+        ].map((card) => (
+          <Card key={card.title}>
+            <h3 className="text-sm font-semibold mb-1.5">{card.title}</h3>
+            <p className="text-xs text-slate-500 leading-relaxed">{card.desc}</p>
+          </Card>
+        ))}
       </div>
 
       <SectionHeader>CLP Formula</SectionHeader>
       <Card className="font-mono text-xs text-slate-400 space-y-1">
-        <p><span className="text-accent">Slip Fee:</span> fee = x / (X + x)  &mdash; where x is input, X is pool balance</p>
-        <p><span className="text-accent">Output Amount:</span> y = (x · Y · X) / (x + X)&sup2; &mdash; where Y is paired asset balance</p>
+        <p><span className="text-accent">Slip Ratio:</span> slip = x / (X + x), where x is input and X is input-side pool depth</p>
+        <p><span className="text-accent">Liquidity Fee:</span> fee = (x^2 * Y) / (x + X)^2, denominated in the output asset</p>
+        <p><span className="text-accent">Output Amount:</span> y = (x * X * Y) / (x + X)^2, where Y is output-side pool depth</p>
       </Card>
-    </div>
+    </PageContainer>
   );
 }

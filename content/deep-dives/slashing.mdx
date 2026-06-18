@@ -4,24 +4,29 @@ Slashing is the primary economic defense mechanism that aligns node operator inc
 
 ## What is Slashing?
 
-When a node misbehaves, the protocol can confiscate (slash) a portion of its bonded RUNE. This is the "skin in the game" that makes attacking the network economically irrational.
+THORChain uses two related penalty ideas that should not be collapsed together:
+
+- **Slash points** reduce earned rewards for reliability failures such as missed observations, missed signing participation, or keygen failures.
+- **Bond slashing** burns bonded RUNE for security-critical behavior such as unauthorized outflows or theft.
+
+Bonded RUNE is the "skin in the game" that makes attacks economically irrational, but not every operator fault directly confiscates bond.
 
 ## Types of Slashing Events
 
-- **Observation failures**: Failing to report inbound or outbound transactions.
-- **Signing failures**: Not participating in TSS signing when required.
-- **Double signing or equivocation**: Attempting to produce conflicting blocks or signatures.
+- **Reward slash points**: Missed observations, missed signing participation, failed keygen, or other reliability failures that reduce rewards.
+- **Bond slashing**: Unauthorized outbound transactions, theft, or other security-critical vault behavior.
+- **Consensus faults**: Double signing or equivocation can put bond at risk according to current protocol rules.
 
 ## Slash Rate
 
-The current slash rate is **1.5x** the value of the harm caused. This over-slashing makes attacks extremely expensive relative to any potential gain.
+Slash constants and minimum bond values can be overridden by live Mimir parameters. The wiki should describe the economic purpose of slashing, then point to THORNode constants and Mimir for current values rather than freezing a rate in prose.
 
 ## Churn and Unbonding
 
-Nodes that accumulate too many slash points can be forced out of the active set during churn. Even without forced churn, nodes have a 12-hour unbonding period after leaving the active set, during which their bond is still at risk.
+Nodes that accumulate too many slash points can be forced out of the active set during churn. Unbonding and leaving are state-dependent: active nodes must churn out first, standby nodes can unbond, and operators should verify node state before assuming bond is withdrawable.
 
 ## Why This Matters
 
-Without strong slashing, a rational actor could attempt to steal funds or disrupt the network if the expected value of the attack exceeded the bond at risk. The combination of high bonds (~300k–2M+ RUNE), 1.5x slash multiplier, and regular churning creates one of the strongest economic security models in decentralized finance.
+Without strong slashing, a rational actor could attempt to steal funds or disrupt the network if the expected value of the attack exceeded the bond at risk. Bond ranges, minimum bond, and slash multipliers are live/current-only parameters and should be checked before being quoted.
 
 The system has been tested through multiple real-world incidents and has continued to evolve its monitoring and response mechanisms.

@@ -1,6 +1,6 @@
 # THORChain Wiki
 
-Community-maintained encyclopedia and reference for the THORChain protocol — architecture, economics, governance, ecosystem, and live network data.
+Community-maintained encyclopedia and reference for the THORChain protocol: architecture, economics, governance history, ecosystem context, and current-only live network status.
 
 **Live site**: [wiki.thorchain.no](https://wiki.thorchain.no)
 
@@ -10,7 +10,7 @@ A focused, high-signal resource that complements the official THORChain document
 
 - Clear overviews of protocol mechanics, tokenomics, and security model
 - Curated history (security incidents with lessons, governance milestones, research)
-- Live network statistics and charts (powered by Midgard)
+- Live network statistics and status with Midgard and THORNode provenance
 - An ecosystem directory and quick links to the best official resources
 
 The goal is to make THORChain more approachable for users, node operators, developers, and researchers without duplicating the full depth of the official docs.
@@ -18,7 +18,7 @@ The goal is to make THORChain more approachable for users, node operators, devel
 ## Getting Started
 
 ```bash
-npm install
+npm ci --include=optional
 npm run dev
 ```
 
@@ -27,10 +27,14 @@ Open [http://localhost:3000](http://localhost:3000).
 ## Project Structure
 
 - `src/app/` — All page content (mostly React Server Components + client islands for live data)
-- `src/lib/data/static.ts` — Curated content (chains, ecosystem, incidents, milestones, research, governance). This is the main "wiki" data source today.
-- `src/lib/api/midgard.ts` — Resilient client for live network data (failover across endpoints).
-- `src/components/` — Header, Footer, and (future) shared UI primitives.
+- `content/deep-dives/` — MDX source for long-form explainers.
+- `src/lib/data/static.ts` — Sourced curated records for chains, ecosystem, incidents, milestones, research, and governance.
+- `src/lib/api/midgard.ts` and `src/lib/api/thornode.ts` — Live data clients with source/degraded-state results.
+- `src/lib/content/registry.ts` — Central navigation, search, and content metadata registry.
+- `src/components/` — Header, Footer, shared UI primitives, and live status surfaces.
 - `Dockerfile` + `ansible-playbook.yml` — Production self-hosted deployment (see below).
+
+For release-shaped local runtime checks after `npm run build`, use `npm run start:standalone` or `npm run smoke:standalone` rather than `next start`.
 
 ## Contributing
 
@@ -44,10 +48,11 @@ We welcome improvements! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for:
 ## Deployment
 
 - **Production**: Self-hosted via Docker (standalone Next.js output) + Ansible on a VPS.
-- **CI**: GitHub Actions builds, lints, type-checks, and publishes images to GHCR on every push to `main`.
-- **Health checks**: The site exposes `/api/health`; Ansible uses this for zero-downtime-ish rollouts with automatic rollback on failure.
+- **CI**: GitHub Actions audits production dependencies, lints, type-checks, runs unit tests, builds, and runs Playwright smoke tests.
+- **Images**: GHCR images are deployed by immutable digest, not mutable `latest`.
+- **Health and version checks**: The site exposes `/api/health` and `/api/version`; Ansible verifies both and fails closed after rollback attempts.
 
-The deployment setup is intentionally simple and production-grade. We prefer to keep changes to the Ansible side minimal.
+The deployment setup is intentionally simple, but not blue/green. The existing container is replaced and rollback is attempted if health or version readback fails.
 
 ## Tech Stack
 
@@ -55,23 +60,24 @@ The deployment setup is intentionally simple and production-grade. We prefer to 
 - Tailwind v4 with custom OKLCH dark-only design system
 - TypeScript (strict)
 - Recharts for live statistics
-- Lunr (client-side search — being improved)
+- Lunr for registry-backed client-side search
 - Self-hosted Docker + Ansible (no Vercel dependency in production)
+- Vitest unit tests + Playwright smoke tests
 
 ## Status & Direction
 
 This project is in active evolution toward a deeper community wiki with more original, long-form articles while preserving its strength as a clean, fast reference + live dashboard.
 
-Current focus areas (see the improvement plan in the repo session notes for details):
-- Visual and component consistency
-- Much stronger in-site search
-- Better contributor experience and documentation
-- Gradual introduction of richer original content
+Current focus areas:
+- Source-backed protocol content with explicit freshness/confidence metadata
+- Conservative current-only wording for live protocol state
+- Better coverage of Mimir, halts, TCY, THORFi history, App Layer, and incident history
+- Reliable local and CI verification
 
 ## License
 
-MIT (or project default — update as appropriate).
+MIT.
 
 ---
 
-*Not affiliated with THORChain. Data sourced from the public Midgard API and community research.*
+*Not affiliated with THORChain. Live data is current-only from Midgard and THORNode sources; curated content should stay dated and source-linked.*

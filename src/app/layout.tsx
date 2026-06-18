@@ -8,19 +8,19 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const mono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono" });
 
 export const metadata: Metadata = {
-  title: "THORChain Wiki — Protocol Encyclopedia & Live Data",
-  description: "Community-maintained encyclopedia of THORChain — decentralized cross-chain liquidity protocol. Architecture, economics, governance, ecosystem, and live network statistics. Native swaps for Bitcoin, Ethereum, USDT, USDC with no wrapping or intermediaries.",
-  keywords: "THORChain, RUNE, cross-chain DEX, decentralized exchange, Bitcoin swap, native asset swap, DeFi, liquidity protocol, AMM, crypto, blockchain, censorship resistant, no KYC, USDT, USDC",
+  title: "THORChain Wiki - Protocol Encyclopedia & Source-Backed Data",
+  description: "Community-maintained encyclopedia of THORChain with protocol architecture, economics, governance history, ecosystem context, and current-only live network status from Midgard and THORNode.",
+  keywords: "THORChain, RUNE, TCY, cross-chain DEX, decentralized exchange, native asset swap, DeFi, liquidity protocol, AMM, Mimir, THORNode, Midgard",
   openGraph: {
-    title: "THORChain Wiki — Protocol Encyclopedia & Live Data",
-    description: "Community-maintained encyclopedia of THORChain — decentralized cross-chain liquidity protocol. Architecture, economics, governance, ecosystem, and live network data from Midgard API.",
+    title: "THORChain Wiki - Protocol Encyclopedia & Source-Backed Data",
+    description: "Community-maintained encyclopedia of THORChain with current-only live network status and sourced protocol content.",
     type: "website",
     url: "https://wiki.thorchain.no",
   },
   twitter: {
     card: "summary_large_image",
-    title: "THORChain Wiki — Protocol Encyclopedia & Live Data",
-    description: "Decentralized cross-chain liquidity protocol. Native swaps for Bitcoin, Ethereum, USDT, USDC. No wrapping, no bridges, no intermediaries.",
+    title: "THORChain Wiki - Protocol Encyclopedia & Source-Backed Data",
+    description: "Sourced protocol context for THORChain, RUNE, TCY, Midgard, THORNode, Mimir, and native cross-chain swaps.",
     site: "@thorchain_org",
   },
   robots: "index, follow",
@@ -44,7 +44,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               "@context": "https://schema.org",
               "@type": "WebSite",
               "name": "THORChain Wiki",
-              "description": "Community-maintained encyclopedia of THORChain — decentralized cross-chain liquidity protocol. Native swaps without wrapping, bridges, or intermediaries.",
+              "description": "Community-maintained encyclopedia of THORChain with source-backed protocol context and current-only live network status.",
               "url": "https://wiki.thorchain.no",
               "potentialAction": {
                 "@type": "SearchAction",

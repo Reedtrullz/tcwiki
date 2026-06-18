@@ -1,48 +1,68 @@
-import { GOVERNANCE_PROPOSALS, PROTOCOL_MILESTONES, SECURITY_INCIDENTS, RESEARCH_REPORTS } from '@/lib/data/static';
+import {
+  GOVERNANCE_PROPOSAL_RECORDS,
+  PROTOCOL_MILESTONE_RECORDS,
+  RESEARCH_REPORT_RECORDS,
+  SECURITY_INCIDENT_RECORDS,
+} from '@/lib/data/static';
 import { Badge } from '@/components/ui/Badge';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { Card } from '@/components/ui/Card';
+import { PageContainer } from '@/components/layout/PageContainer';
+import { FreshnessMeta } from '@/components/ui/FreshnessMeta';
 
 export default function GovernancePage() {
   return (
-    <div className="pt-[52px] py-16 px-6 max-w-7xl mx-auto">
+    <PageContainer>
       <h1 className="text-3xl font-bold tracking-tight mb-2">Governance & History</h1>
-      <p className="text-slate-400 max-w-3xl mb-12">ADRs, protocol milestones, security incidents, and third-party research reports.</p>
+      <p className="text-slate-400 max-w-3xl mb-12">
+        ADRs, Mimir context, milestones, incidents, and research. Vote percentages are shown only when source-backed.
+      </p>
 
-      <SectionHeader>Proposals (ADRs)</SectionHeader>
+      <SectionHeader>Governance Records</SectionHeader>
       <div className="space-y-2 mb-12">
-        {GOVERNANCE_PROPOSALS.map((p) => (
-          <Card key={p.id}>
-            <div className="flex items-start justify-between gap-4">
-              <div className="min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-[11px] font-mono text-accent">ADR-{String(p.id).padStart(3, '0')}</span>
-                  <h3 className="text-sm font-semibold truncate">{p.title}</h3>
+        {GOVERNANCE_PROPOSAL_RECORDS.map((record) => {
+          const proposal = record.data;
+          return (
+            <Card key={proposal.id}>
+              <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2 mb-1">
+                    <span className="text-[11px] font-mono text-accent">{proposal.id}</span>
+                    <h3 className="text-sm font-semibold">{proposal.title}</h3>
+                  </div>
+                  <p className="text-xs text-slate-500">{proposal.description}</p>
                 </div>
-                <p className="text-xs text-slate-500">{p.description}</p>
+                <Badge variant={proposal.status === 'Live' ? 'success' : proposal.status.includes('Needs') ? 'warning' : 'info'} className="shrink-0">
+                  {proposal.status}
+                </Badge>
               </div>
-              <Badge variant={p.status === 'Passed' ? 'success' : 'warning'} className="shrink-0">{p.status}</Badge>
-            </div>
-            <div className="flex gap-4 mt-2 text-[11px] text-slate-600">
-              <span>For: {p.votesFor}%</span>
-              <span>Against: {p.votesAgainst}%</span>
-              <span>Threshold: {p.threshold}%</span>
-              <span className="capitalize">{p.type}</span>
-            </div>
-          </Card>
-        ))}
+              <div className="mt-3 flex flex-wrap gap-3 text-[11px] text-slate-600">
+                <span>{proposal.type}</span>
+                <span>Created: {proposal.createdDate}</span>
+                <span>Review: {proposal.expiryDate}</span>
+                {proposal.votesFor !== undefined && <span>For: {proposal.votesFor}%</span>}
+                {proposal.votesAgainst !== undefined && <span>Against: {proposal.votesAgainst}%</span>}
+                {proposal.threshold !== undefined && <span>Threshold: {proposal.threshold}%</span>}
+              </div>
+              <div className="mt-3">
+                <FreshnessMeta freshness={record.freshness} sources={record.sources} />
+              </div>
+            </Card>
+          );
+        })}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-12">
         <div>
           <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">Milestones</h2>
           <div className="space-y-0">
-            {PROTOCOL_MILESTONES.map((m, i) => (
-              <div key={i} className="flex gap-3 py-2.5 border-b border-border last:border-0">
-                <span className="text-[11px] text-slate-600 font-mono shrink-0 w-20">{m.date}</span>
+            {PROTOCOL_MILESTONE_RECORDS.map((record) => (
+              <div key={`${record.data.date}-${record.data.title}`} className="flex gap-3 py-2.5 border-b border-border last:border-0">
+                <span className="text-[11px] text-slate-600 font-mono shrink-0 w-20">{record.data.date}</span>
                 <div>
-                  <p className="text-sm font-medium">{m.title}</p>
-                  <p className="text-xs text-slate-500">{m.description}</p>
+                  <p className="text-sm font-medium">{record.data.title}</p>
+                  <p className="text-xs text-slate-500">{record.data.description}</p>
+                  <FreshnessMeta freshness={record.freshness} sources={record.sources} compact />
                 </div>
               </div>
             ))}
@@ -52,34 +72,55 @@ export default function GovernancePage() {
         <div>
           <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">Security Incidents</h2>
           <div className="space-y-2">
-            {SECURITY_INCIDENTS.map((inc) => (
-              <Card key={inc.id}>
-                <div className="flex items-center justify-between mb-1">
-                  <h3 className="text-sm font-semibold">{inc.title}</h3>
-                  <Badge variant={inc.resolved ? 'success' : 'danger'}>{inc.resolved ? 'Resolved' : 'Ongoing'}</Badge>
-                </div>
-                <p className="text-xs text-slate-500 mb-1">{inc.description} — <span className="text-red-400">{inc.impact}</span></p>
-                <div className="flex flex-wrap gap-1 mt-2">
-                  {inc.lessons.map((l, i) => (
-                    <span key={i} className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400/80">{l}</span>
-                  ))}
-                </div>
-              </Card>
-            ))}
+            {SECURITY_INCIDENT_RECORDS.map((record) => {
+              const incident = record.data;
+              return (
+                <Card key={incident.id}>
+                  <div className="flex items-center justify-between gap-3 mb-1">
+                    <h3 className="text-sm font-semibold">{incident.title}</h3>
+                    <Badge variant={incident.resolved ? 'success' : 'warning'}>{incident.resolved ? 'Resolved' : 'Open / needs review'}</Badge>
+                  </div>
+                  <p className="text-xs text-slate-500 mb-1">
+                    {incident.description} <span className="text-amber-300">{incident.impact}</span>
+                  </p>
+                  <div className="flex flex-wrap gap-1 mt-2 mb-3">
+                    {incident.lessons.map((lesson) => (
+                      <span key={lesson} className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400/80">{lesson}</span>
+                    ))}
+                  </div>
+                  <div className="space-y-2">
+                    <FreshnessMeta freshness={record.freshness} sources={record.sources} />
+                    {incident.url && (
+                      <a
+                        href={incident.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex text-[11px] text-slate-500 underline-offset-4 hover:text-slate-300 hover:underline"
+                      >
+                        Incident source
+                      </a>
+                    )}
+                  </div>
+                </Card>
+              );
+            })}
           </div>
         </div>
       </div>
 
       <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">Research</h2>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        {RESEARCH_REPORTS.map((r) => (
-          <a key={r.id} href={r.url} target="_blank" rel="noopener noreferrer" className="block p-5 rounded-lg bg-surface-elevated border border-border hover:border-accent/20 transition-colors">
-            <p className="text-[11px] text-slate-500 mb-1">{r.date} · {r.source} · {r.author}</p>
-            <h3 className="text-sm font-semibold mb-2">{r.title}</h3>
-            <p className="text-xs text-slate-500 leading-relaxed">{r.summary}</p>
-          </a>
-        ))}
+        {RESEARCH_REPORT_RECORDS.map((record) => {
+          const report = record.data;
+          return (
+            <a key={report.id} href={report.url} target="_blank" rel="noopener noreferrer" className="block p-5 rounded-lg bg-surface-elevated border border-border hover:border-accent/20 transition-colors">
+              <p className="text-[11px] text-slate-500 mb-1">{report.date} · {report.source} · {report.author}</p>
+              <h3 className="text-sm font-semibold mb-2">{report.title}</h3>
+              <p className="text-xs text-slate-500 leading-relaxed">{report.summary}</p>
+            </a>
+          );
+        })}
       </div>
-    </div>
+    </PageContainer>
   );
 }

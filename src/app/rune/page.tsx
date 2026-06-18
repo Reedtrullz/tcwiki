@@ -1,60 +1,69 @@
+import { PageContainer } from '@/components/layout/PageContainer';
+import { Card } from '@/components/ui/Card';
+import { Badge } from '@/components/ui/Badge';
+
 export default function RunePage() {
   return (
-    <div className="pt-[52px] py-16 px-6 max-w-7xl mx-auto">
+    <PageContainer>
       <h1 className="text-3xl font-bold tracking-tight mb-2">RUNE Token</h1>
-      <p className="text-slate-400 max-w-3xl mb-12">RUNE is the native asset of THORChain — used for settlement, security, liquidity, and governance.</p>
+      <p className="text-slate-400 max-w-3xl mb-12">
+        RUNE is the native asset used for settlement, liquidity pairing, economic security, and protocol accounting.
+      </p>
 
       <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-5">What is RUNE?</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-12">
         {[
-          { title: 'Settlement Asset', desc: 'Every swap between two external assets routes through RUNE. BTC → RUNE → ETH. This paired-asset model means every pool has deep RUNE liquidity on one side.' },
-          { title: 'Security Bond', desc: 'Node operators bond RUNE to secure the network. Larger bonds increase earning potential and voting power. Misbehavior is penalized by slashing bonded RUNE — currently at 1.5x the stolen amount.' },
-          { title: 'Liquidity Pair', desc: 'Every liquidity pool consists of RUNE paired with an external asset. LPs must deposit both RUNE and the paired asset. RUNE depth is shared across all pools, creating a unified liquidity layer.' },
-          { title: 'Governance', desc: 'RUNE holders govern via Architecture Decision Records (ADRs). Voting power is proportional to bonded RUNE. Node operators vote on parameter changes, chain listings, and protocol upgrades.' },
-        ].map((c) => (
-          <div key={c.title} className="p-5 rounded-lg bg-surface-elevated border border-border">
-            <h3 className="text-sm font-semibold mb-1.5">{c.title}</h3>
-            <p className="text-xs text-slate-500 leading-relaxed">{c.desc}</p>
-          </div>
+          { title: 'Settlement Asset', desc: 'Every external-asset swap routes through RUNE liquidity, for example BTC to RUNE to ETH.' },
+          { title: 'Security Bond', desc: 'Node operators bond RUNE to secure vaults and participate in signing. Minimums and slash settings are current-only constants/Mimir facts.' },
+          { title: 'Liquidity Pair', desc: 'Pools pair RUNE with external assets, creating a unified liquidity layer rather than isolated asset pairs.' },
+          { title: 'Governance Context', desc: 'Operational governance is primarily node/Mimir driven. ADRs and TIPs document protocol changes; avoid treating all RUNE holders as direct voters.' },
+        ].map((card) => (
+          <Card key={card.title}>
+            <h3 className="text-sm font-semibold mb-1.5">{card.title}</h3>
+            <p className="text-xs text-slate-500 leading-relaxed">{card.desc}</p>
+          </Card>
         ))}
       </div>
 
       <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-5">Token Economics</h2>
+      <p className="mb-4 text-sm text-slate-500">
+        The original cap context was 500M RUNE, but current official tokenomics emphasizes a reduced supply near
+        425M, circulating supply near 350M, reserve near 75M, and ongoing burns. Recheck live/source data before
+        quoting exact balances.
+      </p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-12">
         {[
-          { label: 'Maximum Supply', value: '500,000,000 RUNE' },
-          { label: 'Initial Supply (BEPSwap)', value: '~230,000,000 RUNE' },
-          { label: 'Circulating Supply', value: '~340,000,000 RUNE' },
-          { label: 'Burned (from Reserve)', value: '~160,000,000 RUNE remaining' },
-          { label: 'Block Rewards', value: 'Emitted per block, modulated by Incentive Pendulum' },
-          { label: 'Network Income', value: 'Swap fees + block rewards distributed to nodes & LPs' },
-          { label: 'Bond Requirement', value: '~300,000 RUNE minimum for Standby nodes' },
-          { label: 'Slash Penalty', value: '1.5x stolen amount from bonded RUNE' },
-        ].map((r) => (
-          <div key={r.label} className="flex items-center justify-between p-4 rounded-lg bg-surface-elevated border border-border">
-            <span className="text-xs text-slate-400">{r.label}</span>
-            <span className="text-sm font-semibold text-right">{r.value}</span>
+          { label: 'Original Cap Context', value: '500M RUNE', badge: 'historical' },
+          { label: 'Current Supply Framing', value: '~425M and burning', badge: 'source-backed' },
+          { label: 'Circulating Supply', value: '~350M source figure', badge: 'source-backed' },
+          { label: 'Reserve', value: '~75M source figure', badge: 'source-backed' },
+          { label: 'Network Income', value: 'Fees, emissions, burns, TCY share', badge: 'dynamic' },
+          { label: 'Bond Requirement', value: 'Check constants + Mimir', badge: 'current-only' },
+          { label: 'Slash Penalty', value: 'Check constants + Mimir', badge: 'current-only' },
+        ].map((row) => (
+          <div key={row.label} className="flex items-center justify-between gap-4 p-4 rounded-lg bg-surface-elevated border border-border">
+            <span className="text-xs text-slate-400">{row.label}</span>
+            <span className="text-sm font-semibold text-right">{row.value}</span>
+            <Badge variant={row.badge === 'historical' ? 'info' : 'warning'}>{row.badge}</Badge>
           </div>
         ))}
       </div>
 
       <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-5">How RUNE Flows</h2>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-12">
-        <div className="p-5 rounded-lg bg-surface-elevated border border-border">
+        <Card>
           <h3 className="text-sm font-semibold text-accent mb-2">1. Swaps</h3>
-          <p className="text-xs text-slate-500">User swaps BTC for ETH. BTC → RUNE (buy RUNE with BTC). RUNE → ETH (sell RUNE for ETH). Net RUNE balance in pools is unchanged — RUNE acts as a transient settlement layer.</p>
-        </div>
-        <div className="p-5 rounded-lg bg-surface-elevated border border-border">
+          <p className="text-xs text-slate-500">A swap routes through RUNE-paired pools. RUNE acts as the common settlement layer between native assets.</p>
+        </Card>
+        <Card>
           <h3 className="text-sm font-semibold text-accent mb-2">2. Liquidity</h3>
-          <p className="text-xs text-slate-500">LP deposits RUNE + asset into a pool. Earns swap fees proportional to share. Earns swap fees proportional to share of the pool.</p>
-        </div>
-        <div className="p-5 rounded-lg bg-surface-elevated border border-border">
+          <p className="text-xs text-slate-500">Liquidity providers supply pool depth and earn source-dependent fees and rewards according to current protocol rules.</p>
+        </Card>
+        <Card>
           <h3 className="text-sm font-semibold text-accent mb-2">3. Security</h3>
-          <p className="text-xs text-slate-500">Node operators bond RUNE. Bond size determines Active/Standby status. Earnings from block rewards proportional to bond. If node misbehaves (double-signs, steals), bond is slashed by the protocol.</p>
-        </div>
+          <p className="text-xs text-slate-500">Node operators bond RUNE. Misbehavior can put that bond at risk through slash mechanisms and churn rules.</p>
+        </Card>
       </div>
-
-
-    </div>
+    </PageContainer>
   );
 }

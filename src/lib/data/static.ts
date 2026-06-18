@@ -1,210 +1,279 @@
-import { Chain, EcosystemProject, ResearchReport, SecurityIncident, GovernanceProposal } from '../types';
+import {
+  Chain,
+  DataConfidence,
+  EcosystemProject,
+  FreshnessMeta,
+  GovernanceProposal,
+  ResearchReport,
+  SecurityIncident,
+  SourceMeta,
+  SourcedRecord,
+} from '@/lib/types';
+import { unwrapRecord, withFreshness } from '@/lib/trust';
 
-/** Last time the curated static data in this file was meaningfully updated */
-export const STATIC_DATA_LAST_UPDATED = '2025-05';
+export const STATIC_DATA_LAST_UPDATED = '2026-06-18';
 
-export const CHAINS: Chain[] = [
-  {
+const officialDocs: SourceMeta = {
+  label: 'THORChain Docs',
+  url: 'https://docs.thorchain.org',
+};
+
+const developerDocs: SourceMeta = {
+  label: 'THORChain Dev Docs',
+  url: 'https://dev.thorchain.org',
+};
+
+const liveInboundSource: SourceMeta = {
+  label: 'THORNode inbound_addresses',
+  url: 'https://thornode.thorchain.network/thorchain/inbound_addresses',
+  notes: 'Use as a current-only check for live chain availability and pause state.',
+};
+
+const archivedFeaturesSource: SourceMeta = {
+  label: 'Archived Savers and Lending docs',
+  url: 'https://docs.thorchain.org/thornodes/archived',
+};
+
+const exploitReportSource: SourceMeta = {
+  label: 'THORChain Exploit Report #1',
+  url: 'https://blog.thorchain.org/thorchain-exploit-report-1',
+};
+
+const tokenomicsSource: SourceMeta = {
+  label: 'RUNE and TCY tokenomics',
+  url: 'https://docs.thorchain.org/tokenomics-rune-tcy',
+};
+
+const ecosystemSource: SourceMeta = {
+  label: 'THORChain Ecosystem',
+  url: 'https://docs.thorchain.org/ecosystem',
+};
+
+const messariQ1Source: SourceMeta = {
+  label: 'Messari THORChain Q1 2025 Brief',
+  url: 'https://messari.io/report/thorchain-q1-2025-brief',
+};
+
+const nineRealmsQ2Source: SourceMeta = {
+  label: 'Nine Realms Q2 2025 Ecosystem Report',
+  url: 'https://medium.com/thorchain/thorchain-q2-2025-ecosystem-report-q3-roadmap-1f5097a086a9',
+};
+
+const nineRealmsQ3Source: SourceMeta = {
+  label: 'Nine Realms Q3 2024 Ecosystem Report',
+  url: 'https://medium.com/thorchain/thorchain-q3-2024-ecosystem-report-1b048fe55141',
+};
+
+const trmBybitSource: SourceMeta = {
+  label: 'TRM Labs Bybit laundering update',
+  url: 'https://www.trmlabs.com/resources/blog/bybit-hack-update-north-korea-moves-to-next-stage-of-laundering',
+};
+
+const checkedFreshness = (confidence: DataConfidence, nextReviewDue = '2026-07-18'): FreshnessMeta => ({
+  checkedAt: STATIC_DATA_LAST_UPDATED,
+  confidence,
+  nextReviewDue,
+});
+
+const record = <T>(
+  data: T,
+  sources: SourceMeta[],
+  confidence: DataConfidence = 'curated'
+): SourcedRecord<T> => withFreshness(data, sources, checkedFreshness(confidence));
+
+export const CHAIN_RECORDS: SourcedRecord<Chain>[] = [
+  record({
     name: 'Bitcoin',
     chain: 'BTC',
     explorer: 'https://mempool.space/block',
     addressFormats: ['P2WSH (preferred)', 'P2WPKH', 'P2PKH', 'P2SH', 'P2TR'],
     dustThreshold: 546,
     supported: true,
-  },
-  {
+    statusNote: 'Live inbound status must be checked before describing BTC swaps as open.',
+  }, [liveInboundSource, developerDocs], 'official'),
+  record({
     name: 'Ethereum',
     chain: 'ETH',
     explorer: 'https://etherscan.io/block',
     addressFormats: ['EIP-55'],
     supported: true,
-  },
-  {
+    statusNote: 'Router/inbound status is live-state dependent.',
+  }, [liveInboundSource, developerDocs], 'official'),
+  record({
     name: 'BNB Chain',
     chain: 'BSC',
     explorer: 'https://bscscan.com/block',
     addressFormats: ['EIP-55'],
     supported: true,
-  },
-  {
+  }, [liveInboundSource], 'official'),
+  record({
     name: 'Avalanche',
     chain: 'AVAX',
     explorer: 'https://snowtrace.io/block',
     addressFormats: ['EIP-55'],
     supported: true,
-  },
-  {
+  }, [liveInboundSource], 'official'),
+  record({
     name: 'Cosmos Hub',
     chain: 'GAIA',
-    explorer: 'https://cosmos.bigdip.com/blocks',
+    explorer: 'https://www.mintscan.io/cosmos/blocks',
     addressFormats: ['Bech32'],
     supported: true,
-  },
-  {
+  }, [liveInboundSource], 'official'),
+  record({
     name: 'Dogecoin',
     chain: 'DOGE',
     explorer: 'https://blockchair.com/dogecoin/block',
     addressFormats: ['Bech32', 'P2PKH'],
     dustThreshold: 1000000,
     supported: true,
-  },
-  {
+  }, [liveInboundSource], 'official'),
+  record({
     name: 'Litecoin',
     chain: 'LTC',
     explorer: 'https://blockchair.com/litecoin/block',
     addressFormats: ['Bech32', 'P2PKH'],
     dustThreshold: 100000,
     supported: true,
-  },
-  {
+  }, [liveInboundSource], 'official'),
+  record({
     name: 'Bitcoin Cash',
     chain: 'BCH',
     explorer: 'https://blockchair.com/bitcoin-cash/block',
-    addressFormats: ['Bech32', 'P2PKH'],
+    addressFormats: ['CashAddr', 'P2PKH'],
     dustThreshold: 1000,
     supported: true,
-  },
-  {
+  }, [liveInboundSource], 'official'),
+  record({
     name: 'Tron',
-    chain: 'TRX',
-    explorer: 'https://tronscan.org/block',
+    chain: 'TRON',
+    explorer: 'https://tronscan.org/#/block',
     addressFormats: ['Base58'],
     supported: true,
-  },
-  {
+  }, [liveInboundSource], 'official'),
+  record({
     name: 'Base',
     chain: 'BASE',
     explorer: 'https://basescan.org/block',
     addressFormats: ['EIP-55'],
     supported: true,
-  },
-  {
-    name: 'Arbitrum',
-    chain: 'ARB',
-    explorer: 'https://arbiscan.io/block',
-    addressFormats: ['EIP-55'],
+  }, [liveInboundSource], 'official'),
+  record({
+    name: 'Solana',
+    chain: 'SOL',
+    explorer: 'https://solscan.io/block',
+    addressFormats: ['Base58'],
     supported: true,
-  },
-  {
-    name: 'Polygon',
-    chain: 'MATIC',
-    explorer: 'https://polygonscan.com/block',
-    addressFormats: ['EIP-55'],
+    statusNote: 'SOL uses EdDSA signing and was called out separately in the May 2026 exploit report.',
+  }, [liveInboundSource, exploitReportSource], 'official'),
+  record({
+    name: 'XRP Ledger',
+    chain: 'XRP',
+    explorer: 'https://xrpscan.com/ledger',
+    addressFormats: ['Classic address', 'X-address'],
     supported: true,
-  },
-  {
-    name: 'Optimism',
-    chain: 'OP',
-    explorer: 'https://optimistic.etherscan.io/block',
-    addressFormats: ['EIP-55'],
-    supported: true,
-  },
+  }, [liveInboundSource], 'official'),
 ];
 
-export const ECOSYSTEM_PROJECTS: EcosystemProject[] = [
-  {
+export const CHAINS: Chain[] = CHAIN_RECORDS.map(unwrapRecord);
+
+const chainCodes = CHAINS.map((chain) => chain.chain);
+
+export const ECOSYSTEM_PROJECT_RECORDS: SourcedRecord<EcosystemProject>[] = [
+  record({
     id: 'thorchain-swap',
     name: 'THORChain Swap',
     category: 'Interface',
-    description: 'Official THORChain swap interface. Direct access to cross-chain swaps powered by THORChain protocol with no interface fees.',
+    description: 'Official THORChain swap interface for native cross-chain swaps. Live availability depends on current THORNode halt and inbound status.',
     url: 'https://swap.thorchain.org',
     status: 'Active',
-    chains: CHAINS.map(c => c.chain),
-  },
-  {
+    chains: chainCodes,
+  }, [ecosystemSource, liveInboundSource], 'curated'),
+  record({
     id: 'asgardex',
     name: 'AsgardEX',
     category: 'Wallet',
-    description: 'Professional multi-chain desktop DEX providing native access to THORChain, MayaChain, and Chainflip ecosystems with enterprise-grade security.',
+    description: 'Multi-chain desktop wallet and DEX interface with THORChain support.',
     url: 'https://www.asgardex.com',
     logo: '/logos/asgardex.svg',
     status: 'Active',
-    chains: ['BTC', 'ETH', 'BSC', 'AVAX', 'ATOM', 'DOGE', 'LTC', 'BCH', 'MATIC'],
-  },
-  {
+    chains: ['BTC', 'ETH', 'BSC', 'AVAX', 'GAIA', 'DOGE', 'LTC', 'BCH'],
+  }, [ecosystemSource], 'curated'),
+  record({
     id: 'thorswap',
     name: 'THORSwap',
     category: 'Interface',
-    description: 'Multi-chain DEX aggregator offering cross-chain swaps, liquidity provision, and Savers vaults.',
+    description: 'Multi-chain DEX aggregator and THORChain interface. Deprecated Savers/Lending products should be treated as historical.',
     url: 'https://app.thorswap.finance',
     logo: '/logos/thorswap.svg',
     status: 'Active',
-    chains: CHAINS.map(c => c.chain),
-  },
-  {
-    id: 'xdefi',
-    name: 'XDEFI',
-    category: 'Interface',
-    description: 'Cross-chain DeFi platform offering swaps, liquidity provision, and yield generation across multiple chains.',
-    url: 'https://app.xdefi.io',
-    status: 'Active',
-    chains: ['BTC', 'ETH', 'BSC', 'AVAX', 'ATOM', 'DOGE', 'LTC'],
-  },
-  {
+    chains: chainCodes,
+  }, [ecosystemSource, archivedFeaturesSource], 'curated'),
+  record({
     id: 'runescan',
     name: 'RuneScan',
     category: 'Explorer',
-    description: 'Block explorer for THORChain with transactions, pools, nodes, and statistics.',
+    description: 'THORChain explorer for transactions, pools, nodes, and statistics.',
     url: 'https://runescan.io',
     status: 'Active',
     chains: ['THOR'],
-  },
-  {
+  }, [ecosystemSource], 'curated'),
+  record({
     id: 'viewblock',
     name: 'ViewBlock',
     category: 'Explorer',
-    description: 'Multi-chain block explorer with THORChain support.',
+    description: 'Multi-chain explorer with THORChain support.',
     url: 'https://viewblock.io/thorchain',
     status: 'Active',
     chains: ['THOR'],
-  },
-  {
+  }, [ecosystemSource], 'curated'),
+  record({
     id: 'swapkit',
     name: 'SwapKit',
     category: 'Developer Tools',
-    description: 'SDK and API for integrating cross-chain swaps. Wallet-agnostic with support for 10+ blockchains.',
+    description: 'SDK and API tooling for cross-chain swap integrations.',
     url: 'https://swapkit.dev',
     status: 'Active',
-    chains: CHAINS.map(c => c.chain),
-  },
-  {
+    chains: chainCodes,
+  }, [developerDocs], 'curated'),
+  record({
     id: 'xchainjs',
     name: 'XChainJS',
     category: 'Developer Tools',
-    description: 'JavaScript client library for THORChain and compatible chains. Simplifies client integration.',
+    description: 'JavaScript client libraries for THORChain and connected chains.',
     url: 'https://xchainjs.org',
     status: 'Active',
-    chains: CHAINS.map(c => c.chain),
-  },
+    chains: chainCodes,
+  }, [developerDocs], 'curated'),
 ];
 
-export const RESEARCH_REPORTS: ResearchReport[] = [
-  {
+export const ECOSYSTEM_PROJECTS: EcosystemProject[] = ECOSYSTEM_PROJECT_RECORDS.map(unwrapRecord);
+
+export const RESEARCH_REPORT_RECORDS: SourcedRecord<ResearchReport>[] = [
+  record({
     id: 'messari-q1-2025',
     title: 'THORChain Q1 2025 Brief',
     author: 'Drexel Bakker',
     date: '2025-04-24',
     source: 'Messari',
     url: 'https://messari.io/report/thorchain-q1-2025-brief',
-    summary: 'Comprehensive quarterly analysis including affiliate volume growth, TVL decline, RUNE price performance, and swap activity metrics.',
+    summary: 'Quarterly analysis covering affiliate volume, TVL, RUNE price performance, swap activity, and THORFi liabilities.',
     keyInsights: [
-      'Affiliate volume increased 29.7% QoQ to $3.21 billion',
-      'USD-denominated TVL declined 50.5% to $181.1M',
-      'RUNE fell 74.5% QoQ from $4.48 to $1.14',
-      'THORFi paused with $200M in protocol liabilities',
+      'THORFi was paused after protocol liability concerns',
+      'Affiliate volume and TVL moved sharply during Q1 2025',
     ],
-  },
-  {
+  }, [messariQ1Source], 'curated'),
+  record({
     id: 'nine-realms-q2-2025',
     title: 'THORChain Q2 2025 Ecosystem Report & Q3 Roadmap',
     author: 'Nine Realms',
     date: '2025-07-09',
     source: 'Nine Realms',
     url: 'https://medium.com/thorchain/thorchain-q2-2025-ecosystem-report-q3-roadmap-1f5097a086a9',
-    summary: 'Detailed ecosystem report with Q3 roadmap priorities and development updates.',
+    summary: 'Ecosystem report with Q3 roadmap priorities and development updates.',
     keyInsights: [],
-  },
-  {
+  }, [nineRealmsQ2Source], 'curated'),
+  record({
     id: 'nine-realms-q3-2024',
     title: 'THORChain Q3 2024 Ecosystem Report',
     author: 'Nine Realms',
@@ -213,158 +282,141 @@ export const RESEARCH_REPORTS: ResearchReport[] = [
     url: 'https://medium.com/thorchain/thorchain-q3-2024-ecosystem-report-1b048fe55141',
     summary: 'Quarterly ecosystem report covering protocol performance, development milestones, and community initiatives.',
     keyInsights: [],
-  },
+  }, [nineRealmsQ3Source], 'curated'),
 ];
 
-export const SECURITY_INCIDENTS: SecurityIncident[] = [
-  {
+export const RESEARCH_REPORTS: ResearchReport[] = RESEARCH_REPORT_RECORDS.map(unwrapRecord);
+
+export const SECURITY_INCIDENT_RECORDS: SourcedRecord<SecurityIncident>[] = [
+  record({
     id: 'eth-router-1',
     title: 'ETH Router Exploit #1',
     date: '2021-04-19',
     type: 'Exploit',
-    description: 'First exploit affecting the ETH router contract.',
+    description: 'Early ETH router exploit affecting a limited amount of funds during Chaosnet.',
     impact: '$12,000 loss',
     resolved: true,
     resolutionDate: '2021-04-20',
-    lessons: [
-      'Need for additional security audits',
-      'Implement more thorough testing',
-      'Deploy proper monitoring systems',
-    ],
+    lessons: ['Router audits and monitoring became more important', 'Incident response procedures were refined'],
     url: 'https://medium.com/thorchain/post-mortem-eth-router-exploits-1-2-and-premature-return-to-trading-incident-2908928c5fb',
-  },
-  {
+  }, [officialDocs], 'historical'),
+  record({
     id: 'eth-router-2',
     title: 'ETH Router Exploit #2',
     date: '2021-04-22',
     type: 'Exploit',
-    description: 'Second exploit targeting ETH router.',
+    description: 'Second ETH router exploit, followed by further fixes and a cautious return-to-trading process.',
     impact: '$8,000 loss',
     resolved: true,
     resolutionDate: '2021-04-23',
-    lessons: [
-      'Additional security layers required',
-      'Rate limiting needed',
-      'Better incident response protocols',
-    ],
+    lessons: ['Return-to-trading safety needs explicit gates', 'Router changes require extra validation'],
     url: 'https://medium.com/thorchain/post-mortem-eth-router-exploits-1-2-and-premature-return-to-trading-incident-2908928c5fb',
-  },
-  {
-    id: 'double-whammy-2023',
-    title: 'Double Whammy Exploit',
-    date: '2023-07-04',
+  }, [officialDocs], 'historical'),
+  record({
+    id: 'thorfi-unwind-2025',
+    title: 'THORFi Unwind',
+    date: '2025-01',
+    type: 'Protocol Unwind',
+    description: 'Savers and Lending were deprecated and moved to archived documentation after THORFi liability concerns.',
+    impact: 'Deprecated Savers and Lending products; TCY became the main recovery token framing.',
+    resolved: false,
+    lessons: ['Experimental yield and lending features need explicit solvency and liability framing'],
+    url: 'https://docs.thorchain.org/thornodes/archived',
+  }, [archivedFeaturesSource, tokenomicsSource], 'official'),
+  record({
+    id: 'bybit-laundering-2025',
+    title: 'Post-Bybit Laundering Flow',
+    date: '2025-03',
+    type: 'Illicit Flow',
+    description: 'THORChain saw controversial post-exchange-hack flow; this was not a THORChain protocol exploit.',
+    impact: 'High-volume illicit-flow and interface-policy debate rather than a protocol drain.',
+    resolved: false,
+    lessons: ['Separate protocol exploits from illicit usage of open infrastructure', 'Use precise source-backed labels'],
+    url: 'https://www.trmlabs.com/resources/blog/bybit-hack-update-north-korea-moves-to-next-stage-of-laundering',
+  }, [trmBybitSource], 'needs-review'),
+  record({
+    id: 'gg20-vault-exploit-2026',
+    title: 'GG20 Vault Exploit',
+    date: '2026-05-15',
     type: 'Exploit',
-    description: 'Cross-chain vulnerability exploited resulting in significant losses.',
-    impact: '$13M+ loss',
-    resolved: true,
-    resolutionDate: '2023-07-07',
-    lessons: [
-      'Cross-chain security needs improvement',
-      'More robust validation required',
-      'Enhanced monitoring across chains',
-    ],
-    url: 'https://www.vidma.io/blog/thorchain-s-double-whammy-a-13-million-lesson-in-cross-chain-vulnerabilities',
-  },
-  {
-    id: 'bybit-exploit-2025',
-    title: 'Post-Bybit Exploit Laundering',
-    date: '2025-03-28',
-    type: 'Exploit',
-    description: 'Laundering activity following Bybit exploit using THORChain.',
-    impact: '$5M+ volume in single day',
-    resolved: true,
-    resolutionDate: '2025-03-29',
-    lessons: [
-      'Need for better KYC/AML controls',
-      'Enhanced transaction monitoring',
-      'Collaboration with exchanges',
-    ],
-    url: 'https://www.theblock.co/post/111660/thorchain-suffers-5-million-exploit-developers-have-put-out-a-fix',
-  },
-  {
-    id: 'thorfi-pause-2025',
-    title: 'THORFi Pause',
-    date: '2025-02',
-    type: 'Protocol Pause',
-    description: 'THORFi lending and savers programs paused due to protocol liabilities.',
-    impact: '$200M in protocol liabilities',
+    description: 'A newly churned node operator exploited a GG20 TSS vulnerability and drained one vault before automatic and manual halts contained the incident.',
+    impact: 'Approximately $10.7M drained from a single vault; remaining vaults were reported unaffected in the first official report.',
     resolved: false,
     lessons: [
-      'Protocol design review needed',
-      'Better risk management',
-      'Gradual rollout of new features',
+      'Current halt and signing state must be displayed from live Mimir, not hard-coded copy',
+      'Recovery and root-cause status should remain dated and source-linked',
+      'TSS scheme details require careful, source-backed wording',
     ],
-  },
+    url: 'https://blog.thorchain.org/thorchain-exploit-report-1',
+  }, [exploitReportSource], 'official'),
 ];
 
-export const GOVERNANCE_PROPOSALS: GovernanceProposal[] = [
-  {
-    id: 6,
-    title: 'THORFi Pause & Resolution',
-    description: 'Proposal to pause THORFi lending and savers programs and resolve protocol liabilities.',
-    type: 'Emergency',
-    status: 'Passed',
-    votingPeriod: '72h',
-    createdDate: '2025-02',
-    expiryDate: '2025-02',
-    votesFor: 67,
-    votesAgainst: 5,
-    threshold: 67,
-  },
-  {
-    id: 21,
-    title: 'Marketing Fund Allocation (ADR 021)',
-    description: 'Proposal to allocate 5% of network revenue to marketing fund instead of burning.',
-    type: 'Parameter Change',
-    status: 'Passed',
-    votingPeriod: '14d',
-    createdDate: '2025-01-14',
-    expiryDate: '2025-01-28',
-    votesFor: 55,
-    votesAgainst: 20,
-    threshold: 67,
-  },
+export const SECURITY_INCIDENTS: SecurityIncident[] = SECURITY_INCIDENT_RECORDS.map(unwrapRecord);
+
+export const GOVERNANCE_PROPOSAL_RECORDS: SourcedRecord<GovernanceProposal>[] = [
+  record({
+    id: 'thorfi-unwind',
+    title: 'THORFi Unwind',
+    description: 'Deprecation and unwind process for Savers and Lending liabilities.',
+    type: 'Protocol Unwind',
+    status: 'Historical',
+    votingPeriod: 'Source-dependent',
+    createdDate: '2025-01',
+    expiryDate: 'Historical',
+    sourceUrl: 'https://docs.thorchain.org/thornodes/archived',
+  }, [archivedFeaturesSource, tokenomicsSource], 'official'),
+  record({
+    id: 'adr-028-recovery',
+    title: 'ADR-028 Recovery Path',
+    description: 'Recovery of May 2026 exploit losses was described by the first official exploit report as a community governance decision.',
+    type: 'Recovery',
+    status: 'Needs current review',
+    votingPeriod: 'Source-dependent',
+    createdDate: '2026-05',
+    expiryDate: 'Current status must be checked',
+    sourceUrl: 'https://blog.thorchain.org/thorchain-exploit-report-1',
+  }, [exploitReportSource], 'needs-review'),
+  record({
+    id: 'mimir-operational-halts',
+    title: 'Operational Mimir Halts',
+    description: 'Operational Mimir parameters such as HALTTRADING and HALTSIGNING can pause network activity and should be read from THORNode.',
+    type: 'Operational Parameter',
+    status: 'Live',
+    votingPeriod: 'Current-only',
+    createdDate: 'Ongoing',
+    expiryDate: 'Live parameter',
+    sourceUrl: 'https://dev.thorchain.org/concepts/network-halts.html',
+  }, [developerDocs, liveInboundSource], 'official'),
 ];
 
-export const PROTOCOL_MILESTONES = [
-  {
+export const GOVERNANCE_PROPOSALS: GovernanceProposal[] = GOVERNANCE_PROPOSAL_RECORDS.map(unwrapRecord);
+
+export const PROTOCOL_MILESTONE_RECORDS = [
+  record({
     date: '2018-10-15',
     title: 'THORChain Founded',
-    description: 'THORChain project founded and whitepaper development begins.',
-  },
-  {
-    date: '2020-05-01',
-    title: 'Whitepaper Released',
-    description: 'Initial THORChain whitepaper published outlining cross-chain AMM architecture.',
-  },
-  {
+    description: 'THORChain project founded and initial whitepaper work begins.',
+  }, [officialDocs], 'historical'),
+  record({
     date: '2021-04-13',
-    title: 'Mainnet Chaosnet Launch (MCCN)',
-    description: 'THORChain launches mainnet with native cross-chain swaps live on 9 blockchains.',
-  },
-  {
-    date: '2021-07-29',
-    title: 'ETH Router Exploits & Pause',
-    description: 'Two ETH router exploits trigger trading pause and security upgrades.',
-  },
-  {
-    date: '2023-07-04',
-    title: 'Double Whammy Exploit',
-    description: '$13M+ cross-chain exploit exposes vulnerabilities in TSS coordination.',
-  },
-  {
+    title: 'Mainnet Chaosnet Launch',
+    description: 'Mainnet Chaosnet launches with native cross-chain swaps.',
+  }, [officialDocs], 'historical'),
+  record({
     date: '2024-12-22',
     title: 'THORChain V3 Release',
-    description: 'Major protocol upgrade bringing new features and improvements to cross-chain liquidity.',
-  },
-  {
-    date: '2025-02',
-    title: 'THORFi Pause',
-    description: 'Experimental lending and savers programs paused due to protocol issues.',
-  },
-  {
-    date: '2025-03-28',
-    title: 'Bybit Exploit Laundering',
-    description: 'Record daily volume from laundering activity following exchange hack.',
-  },
+    description: 'Major protocol upgrade introducing app-layer and protocol improvements.',
+  }, [officialDocs], 'historical'),
+  record({
+    date: '2025-01',
+    title: 'Savers and Lending Deprecated',
+    description: 'Archived THORChain docs mark Savers and Lending as deprecated and no longer available.',
+  }, [archivedFeaturesSource], 'official'),
+  record({
+    date: '2026-05-15',
+    title: 'GG20 Vault Exploit and Emergency Halt',
+    description: 'Official report says one vault was drained and automated/manual halt controls were activated.',
+  }, [exploitReportSource], 'official'),
 ];
+
+export const PROTOCOL_MILESTONES = PROTOCOL_MILESTONE_RECORDS.map(unwrapRecord);

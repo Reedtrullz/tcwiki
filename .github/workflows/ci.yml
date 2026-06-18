@@ -13,14 +13,13 @@ concurrency:
 
 permissions:
   contents: read
-  packages: write
 
 env:
   NODE_VERSION: '22'
 
 jobs:
   build-check:
-    name: Lint + Build + Typecheck
+    name: Lint + Typecheck + Tests + Build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -28,30 +27,33 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-      # Tailwind v4 (and its transitive native dependencies: lightningcss, @tailwindcss/oxide,
-      # rolldown, sharp, etc.) require platform-specific binaries that are not always included
-      # in the prebuilt packages on Linux CI runners. We install the linux-x64-gnu variants
-      # explicitly so the production build succeeds in GitHub Actions.
-      - run: |
-          npm ci --include=optional
-          npm install --no-save --no-package-lock \
-            lightningcss-linux-x64-gnu \
-            @tailwindcss/oxide-linux-x64-gnu \
-            @rolldown/binding-linux-x64-gnu \
-            @unrs/resolver-binding-linux-x64-gnu \
-            @img/sharp-linux-x64 \
-            @img/sharp-libvips-linux-x64
+      - run: npm ci --include=optional
+      - run: npm run audit:prod
+      - run: npm run check:content
       - run: npm run lint
-      - run: npx tsc --noEmit
+      - run: npm run typecheck
+      - run: npm run test:unit
       - run: npm run build
         env:
           CI: true
+      - run: npm run smoke:standalone
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+        env:
+          CI: true
+          PLAYWRIGHT_WEB_SERVER_COMMAND: npm run start:standalone
 
   publish:
     name: Build & publish image
     needs: [build-check]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image_ref: ${{ steps.image.outputs.ref }}
+      app_version: ${{ github.sha }}
     steps:
       - uses: actions/checkout@v4
       - name: Set up Docker Buildx
@@ -62,15 +64,18 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Compute lowercase image name
+        id: image_name
+        run: echo "name=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
       - name: Extract image metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.repository }}
+          images: ${{ steps.image_name.outputs.name }}
           tags: |
-            type=raw,value=latest,enable={{is_default_branch}}
-            type=sha,prefix=sha-,format=short
+            type=sha,prefix=sha-,format=long
       - name: Build and push
+        id: build
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -81,14 +86,17 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
-            VERSION=sha-${{ github.sha }}
+            VERSION=${{ github.sha }}
+            COMMIT_SHA=${{ github.sha }}
+      - name: Compute digest image ref
+        id: image
+        run: echo "ref=${{ steps.image_name.outputs.name }}@${{ steps.build.outputs.digest }}" >> "$GITHUB_OUTPUT"
       - name: Summary
         run: |
-          echo "### Image published" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          echo "${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          echo "Pull with: \`docker pull ghcr.io/${{ github.repository }}:latest\`" >> $GITHUB_STEP_SUMMARY
+          echo "### Image published" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          echo "${{ steps.image_name.outputs.name }}@${{ steps.build.outputs.digest }}" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
 
   deploy:
     name: Deploy to VPS
@@ -102,13 +110,16 @@ jobs:
           python3 -m pip install --upgrade pip
           pip install ansible
           ansible-galaxy collection install community.docker
-      - name: Set up SSH key and known hosts
+      - name: Set up SSH key and pinned known hosts
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.ANSIBLE_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa_racknerd
+          echo "${{ secrets.ANSIBLE_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
           chmod 600 ~/.ssh/id_rsa_racknerd
-          ssh-keyscan -H 198.23.137.16 >> ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+          ssh-keygen -F 198.23.137.16 -f ~/.ssh/known_hosts
       - name: Run Ansible deploy
         env:
-          GITHUB_SHA: ${{ github.sha }}
+          IMAGE_REF: ${{ needs.publish.outputs.image_ref }}
+          APP_VERSION: ${{ needs.publish.outputs.app_version }}
         run: ansible-playbook -i inventory/hosts.yml ansible-playbook.yml

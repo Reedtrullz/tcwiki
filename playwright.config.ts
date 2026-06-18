@@ -2,6 +2,7 @@ import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   testDir: './tests',
+  testMatch: '**/*.spec.ts',
   timeout: 30 * 1000,
   expect: { timeout: 5000 },
   fullyParallel: true,
@@ -18,9 +19,13 @@ export default defineConfig({
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
     },
+    {
+      name: 'mobile-chromium',
+      use: { ...devices['Pixel 7'] },
+    },
   ],
   webServer: {
-    command: 'npm run dev',
+    command: process.env.PLAYWRIGHT_WEB_SERVER_COMMAND || 'npm run dev',
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000,
