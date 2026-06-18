@@ -64,24 +64,26 @@ export function NetworkStatusBanner({ result, isLoading = false }: NetworkStatus
       {status && status.chainStatuses.length > 0 && (
         <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
           {status.chainStatuses.map((chain) => {
-            const paused = chain.halted || chain.tradingPaused || chain.lpActionsPaused;
+            const paused = chain.halted || chain.tradingPaused || chain.lpActionsPaused || chain.signingPaused;
             const details = [
               chain.halted ? 'halted' : null,
               chain.tradingPaused ? 'trading' : null,
               chain.signingPaused ? 'signing' : null,
               chain.lpActionsPaused ? 'LP' : null,
             ].filter((item): item is string => item !== null);
+            const statusText = paused ? details.join(' / ') : 'open';
             return (
               <div
                 key={chain.chain}
+                aria-label={`${chain.chain}: ${statusText}`}
                 className="rounded-md border border-border bg-surface/70 px-3 py-2"
               >
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-xs font-semibold">{chain.chain}</span>
-                  <RadioTower className={paused ? 'h-3.5 w-3.5 text-amber-400' : 'h-3.5 w-3.5 text-emerald-400'} />
+                  <RadioTower aria-hidden="true" className={paused ? 'h-3.5 w-3.5 text-amber-400' : 'h-3.5 w-3.5 text-emerald-400'} />
                 </div>
                 <p className="mt-1 text-[11px] text-slate-500">
-                  {paused ? details.join(' / ') : 'open'}
+                  {statusText}
                 </p>
               </div>
             );
