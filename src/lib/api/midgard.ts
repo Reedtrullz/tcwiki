@@ -28,6 +28,8 @@ type RawHistoryResponse = {
   intervals?: unknown;
 };
 
+const NON_NEGATIVE_INTEGER_PATTERN = /^\d+$/;
+
 export function resetMidgardEndpointForTests() {
   activeEndpoint = 0;
 }
@@ -83,9 +85,28 @@ function asRequiredString(value: unknown, field: string): string {
   return stringValue;
 }
 
-function asNumber(value: unknown, field: string): number {
-  const numeric = typeof value === 'number' ? value : Number(value);
-  if (!Number.isFinite(numeric)) {
+function asNonNegativeInteger(value: unknown, field: string): number {
+  if (typeof value === 'number') {
+    if (!Number.isSafeInteger(value) || value < 0) {
+      throw new Error(`Midgard response has invalid ${field}`);
+    }
+    return value;
+  }
+
+  if (typeof value !== 'string') {
+    throw new Error(`Midgard response missing ${field}`);
+  }
+
+  if (!value) {
+    throw new Error(`Midgard response missing ${field}`);
+  }
+
+  if (!NON_NEGATIVE_INTEGER_PATTERN.test(value)) {
+    throw new Error(`Midgard response has invalid ${field}`);
+  }
+
+  const numeric = Number(value);
+  if (!Number.isSafeInteger(numeric)) {
     throw new Error(`Midgard response has invalid ${field}`);
   }
   return numeric;
@@ -173,14 +194,14 @@ function normalizeNetworkData(result: LiveDataResult<RawNetworkStats>): LiveData
       data: {
         totalPooledRune: asRequiredString(result.data.totalPooledRune, 'network.totalPooledRune'),
         totalReserve: asRequiredString(result.data.totalReserve, 'network.totalReserve'),
-        activeNodeCount: asNumber(result.data.activeNodeCount, 'network.activeNodeCount'),
-        standbyNodeCount: asNumber(result.data.standbyNodeCount, 'network.standbyNodeCount'),
+        activeNodeCount: asNonNegativeInteger(result.data.activeNodeCount, 'network.activeNodeCount'),
+        standbyNodeCount: asNonNegativeInteger(result.data.standbyNodeCount, 'network.standbyNodeCount'),
         bondingAPY: asRequiredString(result.data.bondingAPY, 'network.bondingAPY'),
         liquidityAPY: asRequiredString(result.data.liquidityAPY, 'network.liquidityAPY'),
-        nextChurnHeight: asNumber(result.data.nextChurnHeight, 'network.nextChurnHeight'),
+        nextChurnHeight: asNonNegativeInteger(result.data.nextChurnHeight, 'network.nextChurnHeight'),
         poolActivationCountdown: result.data.poolActivationCountdown === undefined
           ? undefined
-          : asNumber(result.data.poolActivationCountdown, 'network.poolActivationCountdown'),
+          : asNonNegativeInteger(result.data.poolActivationCountdown, 'network.poolActivationCountdown'),
         poolShareFactor: asString(result.data.poolShareFactor),
         blockRewards: asStringOrRecord(result.data.blockRewards),
         bondMetrics:

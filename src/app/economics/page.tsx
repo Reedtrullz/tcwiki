@@ -2,6 +2,21 @@ import { Card } from '@/components/ui/Card';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { Badge } from '@/components/ui/Badge';
+import { FreshnessMeta } from '@/components/ui/FreshnessMeta';
+import type { FreshnessMeta as FreshnessMetaType, SourceMeta } from '@/lib/types';
+
+const supplyFreshness: FreshnessMetaType = {
+  checkedAt: '2026-06-18',
+  confidence: 'official',
+  nextReviewDue: '2026-07-18',
+};
+
+const supplySources: SourceMeta[] = [
+  {
+    label: 'RUNE and TCY tokenomics',
+    url: 'https://docs.thorchain.org/tokenomics-rune-tcy',
+  },
+];
 
 export default function EconomicsPage() {
   return (
@@ -30,6 +45,9 @@ export default function EconomicsPage() {
         Official tokenomics currently frames RUNE supply around a reduced supply near 425M, circulating supply near 350M,
         and a reserve near 75M, with ongoing burn mechanics. Treat these as dated/source-backed figures, not hard-coded live balances.
       </p>
+      <div className="mb-4">
+        <FreshnessMeta freshness={supplyFreshness} sources={supplySources} />
+      </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-12">
         {[
           { label: 'Original Cap Context', value: '500M RUNE', tone: 'historical' },

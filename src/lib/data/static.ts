@@ -1,4 +1,4 @@
-import {
+import type {
   Chain,
   DataConfidence,
   EcosystemProject,
@@ -39,9 +39,19 @@ const exploitReportSource: SourceMeta = {
   url: 'https://blog.thorchain.org/thorchain-exploit-report-1',
 };
 
+const ethRouterExploitSource: SourceMeta = {
+  label: 'ETH Router exploit post-mortem',
+  url: 'https://medium.com/thorchain/post-mortem-eth-router-exploits-1-2-and-premature-return-to-trading-incident-2908928c5fb',
+};
+
 const tokenomicsSource: SourceMeta = {
   label: 'RUNE and TCY tokenomics',
   url: 'https://docs.thorchain.org/tokenomics-rune-tcy',
+};
+
+const networkHaltsSource: SourceMeta = {
+  label: 'THORChain Network Halts',
+  url: 'https://dev.thorchain.org/concepts/network-halts.html',
 };
 
 const ecosystemSource: SourceMeta = {
@@ -299,7 +309,7 @@ export const SECURITY_INCIDENT_RECORDS: SourcedRecord<SecurityIncident>[] = [
     resolutionDate: '2021-04-20',
     lessons: ['Router audits and monitoring became more important', 'Incident response procedures were refined'],
     url: 'https://medium.com/thorchain/post-mortem-eth-router-exploits-1-2-and-premature-return-to-trading-incident-2908928c5fb',
-  }, [officialDocs], 'historical'),
+  }, [ethRouterExploitSource], 'historical'),
   record({
     id: 'eth-router-2',
     title: 'ETH Router Exploit #2',
@@ -311,7 +321,7 @@ export const SECURITY_INCIDENT_RECORDS: SourcedRecord<SecurityIncident>[] = [
     resolutionDate: '2021-04-23',
     lessons: ['Return-to-trading safety needs explicit gates', 'Router changes require extra validation'],
     url: 'https://medium.com/thorchain/post-mortem-eth-router-exploits-1-2-and-premature-return-to-trading-incident-2908928c5fb',
-  }, [officialDocs], 'historical'),
+  }, [ethRouterExploitSource], 'historical'),
   record({
     id: 'thorfi-unwind-2025',
     title: 'THORFi Unwind',
@@ -386,7 +396,7 @@ export const GOVERNANCE_PROPOSAL_RECORDS: SourcedRecord<GovernanceProposal>[] = 
     createdDate: 'Ongoing',
     expiryDate: 'Live parameter',
     sourceUrl: 'https://dev.thorchain.org/concepts/network-halts.html',
-  }, [developerDocs, liveInboundSource], 'official'),
+  }, [networkHaltsSource, liveInboundSource], 'official'),
 ];
 
 export const GOVERNANCE_PROPOSALS: GovernanceProposal[] = GOVERNANCE_PROPOSAL_RECORDS.map(unwrapRecord);

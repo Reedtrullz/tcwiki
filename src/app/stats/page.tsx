@@ -47,6 +47,10 @@ export default function StatsPage() {
     nodeOps: runeBaseUnitsToNumber(d.bondingEarnings),
     lps: runeBaseUnitsToNumber(d.liquidityEarnings),
   })).reverse();
+  const availableIntervals = earningsChart.filter((row) => row.earnings !== null).length;
+  const earningsSummary = earningsChart.length > 0
+    ? `Showing ${earningsChart.length} Midgard daily earnings intervals; ${availableIntervals} include a valid total earnings value.`
+    : 'No Midgard daily earnings intervals are available.';
 
   return (
     <PageContainer>
@@ -78,10 +82,13 @@ export default function StatsPage() {
 
       <div className="mb-12">
         <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-5">Earnings History (30 days)</h2>
+        <p id="earnings-history-summary" className="mb-3 text-sm text-slate-500">
+          {earningsSummary}
+        </p>
         <div className="mb-3">
           <LiveSourceMeta result={earningsResult} />
         </div>
-        <div className="bg-surface-elevated border border-border rounded-lg p-6">
+        <div className="bg-surface-elevated border border-border rounded-lg p-6" aria-describedby="earnings-history-summary">
           {earningsChart.length > 0 ? (
             <>
               <ResponsiveContainer width="100%" height={400}>
@@ -108,7 +115,7 @@ export default function StatsPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {earningsChart.slice(-7).map((row) => (
+                    {earningsChart.map((row) => (
                       <tr key={row.name} className="border-t border-border">
                         <td className="py-2 pr-4">{row.name}</td>
                         <td className="py-2 pr-4">{row.earnings?.toLocaleString() ?? 'Unavailable'}</td>

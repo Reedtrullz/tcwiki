@@ -25,6 +25,16 @@ const devDocsSource: SourceMeta = {
   url: 'https://dev.thorchain.org',
 };
 
+const tokenomicsSource: SourceMeta = {
+  label: 'RUNE and TCY tokenomics',
+  url: 'https://docs.thorchain.org/tokenomics-rune-tcy',
+};
+
+const networkHaltsSource: SourceMeta = {
+  label: 'THORChain Network Halts',
+  url: 'https://dev.thorchain.org/concepts/network-halts.html',
+};
+
 const exploitReportSource: SourceMeta = {
   label: 'THORChain Exploit Report #1',
   url: 'https://blog.thorchain.org/thorchain-exploit-report-1',
@@ -42,10 +52,10 @@ export const CONTENT_ENTRIES: ContentEntry[] = [
     href: '/protocol',
     category: 'section',
     description: 'Architecture, swaps, TSS, Bifrost, Mimir, halts, app layer, and supported chains.',
-    body: 'THORChain protocol architecture native cross-chain swaps Bifrost observers TSS vaults Mimir halts inbound addresses refunds streaming swaps App Layer CosmWasm.',
+    body: 'THORChain protocol architecture native cross-chain swaps Bifrost observers TSS vaults Mimir halts inbound addresses refunds streaming swaps StreamingSwapPause HaltMemoless RUNEPoolHaltDeposit app layer CosmWasm.',
     tags: ['architecture', 'swaps', 'mimir', 'halts'],
     reviewedAt: '2026-06-18',
-    sources: [docsSource, devDocsSource, exploitReportSource],
+    sources: [docsSource, devDocsSource, networkHaltsSource, exploitReportSource],
     nav: true,
     footer: true,
     featured: true,
@@ -56,10 +66,10 @@ export const CONTENT_ENTRIES: ContentEntry[] = [
     href: '/network',
     category: 'section',
     description: 'Node lifecycle, churning, slashing, vault security, and live operational state.',
-    body: 'Network security nodes churning slashing GG20 TSS DKLS signer halts Mimir operational parameters vault solvency current-only status.',
+    body: 'Network security nodes churning slashing GG20 TSS DKLS signer halts Mimir operational parameters vault solvency current-only status official halt keys HALTTRADING HALTSIGNING HALTCHURNING HALTWASMGLOBAL StreamingSwapPause HaltMemoless RUNEPoolHaltDeposit memoless halt streaming swap pause RUNEPool deposit halt.',
     tags: ['nodes', 'security', 'slashing', 'churning'],
     reviewedAt: '2026-06-18',
-    sources: [docsSource, exploitReportSource],
+    sources: [docsSource, networkHaltsSource, exploitReportSource],
     nav: true,
     footer: true,
     featured: true,
@@ -73,7 +83,7 @@ export const CONTENT_ENTRIES: ContentEntry[] = [
     body: 'RUNE settlement asset CLP slip ratio liquidity fee affiliate fee outbound fee incentive pendulum RUNEPool protocol owned liquidity trade assets secured assets liquidity units APY.',
     tags: ['rune', 'clp', 'fees', 'runepool'],
     reviewedAt: '2026-06-18',
-    sources: [docsSource, devDocsSource],
+    sources: [docsSource, devDocsSource, tokenomicsSource],
     nav: true,
     footer: true,
     featured: true,
@@ -101,7 +111,7 @@ export const CONTENT_ENTRIES: ContentEntry[] = [
     body: 'Governance ADR Mimir halt trading halt signing pause LP incidents exploit THORFi unwind TCY recovery source-backed history.',
     tags: ['governance', 'incidents', 'mimir', 'adr'],
     reviewedAt: '2026-06-18',
-    sources: [docsSource, exploitReportSource],
+    sources: [docsSource, networkHaltsSource, exploitReportSource],
     nav: true,
     footer: true,
     featured: true,
@@ -125,10 +135,10 @@ export const CONTENT_ENTRIES: ContentEntry[] = [
     href: '/rune',
     category: 'section',
     description: 'Native settlement, bond, and liquidity asset for THORChain.',
-    body: 'RUNE token settlement asset security bond liquidity pair tokenomics TCY recovery protocol owned liquidity.',
+    body: 'RUNE token settlement asset security bond liquidity pair tokenomics current supply framing reduced supply circulating supply reserve burns TCY recovery protocol owned liquidity.',
     tags: ['rune', 'tokenomics'],
     reviewedAt: '2026-06-18',
-    sources: [docsSource],
+    sources: [docsSource, tokenomicsSource],
     nav: true,
   },
   {
@@ -163,10 +173,10 @@ export const CONTENT_ENTRIES: ContentEntry[] = [
     href: '/docs',
     category: 'resource',
     description: 'Official documentation, developer resources, and live API references.',
-    body: 'Official THORChain docs developer docs Midgard API THORNode API network halts querying inbound addresses fees.',
+    body: 'Official THORChain docs developer docs Midgard API THORNode API network halts Mimir halt keys StreamingSwapPause HaltMemoless RUNEPoolHaltDeposit querying inbound addresses fees.',
     tags: ['docs', 'resources'],
     reviewedAt: '2026-06-18',
-    sources: [docsSource, devDocsSource],
+    sources: [docsSource, devDocsSource, networkHaltsSource],
     nav: true,
     footer: true,
   },

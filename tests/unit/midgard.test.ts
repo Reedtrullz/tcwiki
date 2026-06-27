@@ -102,4 +102,81 @@ describe('MidgardAPI', () => {
     expect(result.data?.poolActivationCountdown).toBe(9);
     expect(result.data?.blockRewards).toEqual({ blockReward: '100' });
   });
+
+  it('treats valid numeric zero as data, not degradation', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(makeResponse(true, {
+        totalPooledRune: '0',
+        totalReserve: '0',
+        activeNodeCount: 0,
+        standbyNodeCount: '0',
+        bondingAPY: '0',
+        liquidityAPY: '0',
+        nextChurnHeight: '0',
+        poolActivationCountdown: '0',
+        bondMetrics: {},
+      }))
+    );
+
+    const result = await MidgardAPI.getNetworkData();
+
+    expect(result.status).toBe('ok');
+    expect(result.data?.activeNodeCount).toBe(0);
+    expect(result.data?.standbyNodeCount).toBe(0);
+    expect(result.data?.nextChurnHeight).toBe(0);
+    expect(result.data?.poolActivationCountdown).toBe(0);
+  });
+
+  it('returns degraded instead of coercing missing numeric fields to zero', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(makeResponse(true, {
+        totalPooledRune: '100000000',
+        totalReserve: '200000000',
+        activeNodeCount: null,
+        standbyNodeCount: '',
+        bondingAPY: '0.12',
+        liquidityAPY: '4.5',
+        nextChurnHeight: '123456',
+        bondMetrics: {},
+      }))
+    );
+
+    const result = await MidgardAPI.getNetworkData();
+
+    expect(result.status).toBe('degraded');
+    expect(result.error).toContain('network.activeNodeCount');
+    expect(result.data).toBeUndefined();
+  });
+
+  it.each([
+    ['alpha suffix', '123abc'],
+    ['hex-shaped string', '0x10'],
+    ['blank string', '   '],
+    ['trimmed-looking string', ' 23'],
+    ['exponent string', '1e2'],
+    ['decimal count', '23.5'],
+    ['negative count', '-1'],
+  ])('returns degraded instead of accepting malformed numeric field: %s', async (_label, activeNodeCount) => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(makeResponse(true, {
+        totalPooledRune: '100000000',
+        totalReserve: '200000000',
+        activeNodeCount,
+        standbyNodeCount: '23',
+        bondingAPY: '0.12',
+        liquidityAPY: '4.5',
+        nextChurnHeight: '123456',
+        bondMetrics: {},
+      }))
+    );
+
+    const result = await MidgardAPI.getNetworkData();
+
+    expect(result.status).toBe('degraded');
+    expect(result.error).toContain('network.activeNodeCount');
+    expect(result.data).toBeUndefined();
+  });
 });

@@ -9,6 +9,15 @@ updates:
         patterns:
           - react
           - react-dom
+    # ESLint 10 stays guarded until Next/eslint-config-next compatibility is
+    # proven through this repo's CI gates.
+    # TypeScript majors are intentionally not ignored: the MDX declaration in
+    # src/types/mdx.d.ts removes the local MDX import blocker, but TS 6 PRs
+    # still need explicit review plus lint/typecheck/build/e2e proof before merge.
+    ignore:
+      - dependency-name: eslint
+        update-types:
+          - version-update:semver-major
     open-pull-requests-limit: 5
   - package-ecosystem: github-actions
     directory: /

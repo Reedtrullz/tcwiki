@@ -1,5 +1,6 @@
 import {
   DataConfidence,
+  DATA_CONFIDENCES,
   FreshnessMeta,
   LiveDataResult,
   SourceMeta,
@@ -7,6 +8,9 @@ import {
 } from '@/lib/types';
 
 const RUNE_BASE_UNITS = BigInt(100000000);
+const ZERO_BIGINT = BigInt(0);
+const BASE_UNIT_DECIMAL_PATTERN = /^\d+$/;
+const DECIMAL_NUMBER_PATTERN = /^[+-]?(?:\d+(?:\.\d+)?|\.\d+)$/;
 
 export function withFreshness<T>(
   data: T,
@@ -20,17 +24,43 @@ export function unwrapRecord<T>(record: SourcedRecord<T>): T {
   return record.data;
 }
 
+export function isDataConfidence(value: unknown): value is DataConfidence {
+  return typeof value === 'string' && DATA_CONFIDENCES.includes(value as DataConfidence);
+}
+
+function strictDecimalNumber(value: string): number | null {
+  if (!DECIMAL_NUMBER_PATTERN.test(value)) {
+    return null;
+  }
+
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : null;
+}
+
 export function runeBaseUnitsToNumber(baseUnits: string | number | bigint | undefined): number | null {
   if (baseUnits === undefined || baseUnits === null || baseUnits === '') {
     return null;
   }
 
-  try {
-    const value = BigInt(baseUnits);
-    return Number(value) / Number(RUNE_BASE_UNITS);
-  } catch {
+  if (typeof baseUnits === 'string') {
+    if (!BASE_UNIT_DECIMAL_PATTERN.test(baseUnits)) {
+      return null;
+    }
+    return Number(BigInt(baseUnits)) / Number(RUNE_BASE_UNITS);
+  }
+
+  if (typeof baseUnits === 'number') {
+    if (!Number.isSafeInteger(baseUnits) || baseUnits < 0) {
+      return null;
+    }
+    return Number(BigInt(baseUnits)) / Number(RUNE_BASE_UNITS);
+  }
+
+  if (baseUnits < ZERO_BIGINT) {
     return null;
   }
+
+  return Number(baseUnits) / Number(RUNE_BASE_UNITS);
 }
 
 export function formatRuneFromBaseUnits(baseUnits: string | number | bigint | undefined): string {
@@ -54,8 +84,8 @@ export function normalizeApyToPercent(
     return null;
   }
 
-  const numeric = typeof value === 'number' ? value : Number(value);
-  if (!Number.isFinite(numeric)) {
+  const numeric = typeof value === 'number' ? value : strictDecimalNumber(value);
+  if (numeric === null || !Number.isFinite(numeric)) {
     return null;
   }
 

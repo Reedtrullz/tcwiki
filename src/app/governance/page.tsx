@@ -113,11 +113,22 @@ export default function GovernancePage() {
         {RESEARCH_REPORT_RECORDS.map((record) => {
           const report = record.data;
           return (
-            <a key={report.id} href={report.url} target="_blank" rel="noopener noreferrer" className="block p-5 rounded-lg bg-surface-elevated border border-border hover:border-accent/20 transition-colors">
+            <Card key={report.id} hover>
               <p className="text-[11px] text-slate-500 mb-1">{report.date} · {report.source} · {report.author}</p>
               <h3 className="text-sm font-semibold mb-2">{report.title}</h3>
               <p className="text-xs text-slate-500 leading-relaxed">{report.summary}</p>
-            </a>
+              <div className="mt-3">
+                <FreshnessMeta freshness={record.freshness} sources={record.sources} compact />
+              </div>
+              <a
+                href={report.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-3 inline-flex text-[11px] text-slate-500 underline-offset-4 hover:text-slate-300 hover:underline"
+              >
+                Research source
+              </a>
+            </Card>
           );
         })}
       </div>

@@ -15,10 +15,27 @@ export interface SearchDoc {
   content: string;
 }
 
+const OPERATIONAL_HALT_SEARCH_DOCUMENTS: SearchDoc[] = [
+  {
+    id: 'mimir:official-halt-controls',
+    slug: '/network',
+    title: 'Official Mimir halt and enablement controls',
+    content: [
+      'Official THORNode and Mimir halt keys and related halt terms.',
+      'StreamingSwapPause means streaming swap pause behavior should be checked from live Mimir.',
+      'HaltMemoless means memoless transaction handling may be halted.',
+      'RUNEPoolHaltDeposit means RUNEPool deposits may be halted; use RUNEPool deposit halt as the human-readable phrase.',
+      'Related controls include HALTTRADING, HALTSIGNING, PAUSELP, PAUSELOANS, HALTCHURNING, HALTWASMGLOBAL, TRADEACCOUNTSENABLED, and RUNEPOOLENABLED.',
+      'Treat halt, pause, disabled, enabled, RUNEPool, trade accounts, app layer, signing, trading, LP actions, and memoless availability as current-only source-backed status.',
+    ].join(' '),
+  },
+];
+
 const mdxBySlug = new Map(MDX_SEARCH_DOCUMENTS.map((doc) => [doc.slug, doc]));
 const contentEntrySlugs = new Set(CONTENT_ENTRIES.map((entry) => entry.href));
 
 export const SEARCH_DOCUMENTS: SearchDoc[] = [
+  ...OPERATIONAL_HALT_SEARCH_DOCUMENTS,
   ...CONTENT_ENTRIES.map((entry) => ({
     id: entry.id,
     slug: entry.href,

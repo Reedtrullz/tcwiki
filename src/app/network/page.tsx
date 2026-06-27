@@ -9,14 +9,14 @@ import { LiveSourceMeta } from '@/components/ui/LiveSourceMeta';
 
 export default function NetworkPage() {
   const { data: networkData, result: networkResult } = useNetworkData();
-  const { result: statusResult, isLoading: statusLoading } = useNetworkStatus();
+  const { result: statusResult, isLoading: statusLoading, isDegraded: statusDegraded } = useNetworkStatus();
   const networkStatus = statusResult?.data;
 
   const liveStateValue = (paused: boolean | null | undefined) => {
     if (statusLoading) {
       return 'Checking';
     }
-    if (statusResult?.status === 'degraded') {
+    if (statusDegraded || statusResult?.status === 'degraded' || !statusResult) {
       return 'Unavailable';
     }
     if (paused === null) {
@@ -27,6 +27,10 @@ export default function NetworkPage() {
     }
     return paused ? 'Paused' : 'Open';
   };
+  const lpActionsPaused = networkStatus
+    ? networkStatus.lpPaused || networkStatus.chainStatuses.some((chain) => chain.lpActionsPaused)
+    : undefined;
+  const lpDepositsPaused = networkStatus ? networkStatus.poolDepositPauseKeys.length > 0 : undefined;
 
   return (
     <PageContainer>
@@ -85,7 +89,8 @@ export default function NetworkPage() {
           { label: 'Slash Rate', value: 'Check constants + Mimir' },
           { label: 'Churn Interval', value: 'Check constants + Mimir' },
           { label: 'Signing State', value: liveStateValue(networkStatus?.signingPaused) },
-          { label: 'LP Actions', value: liveStateValue(networkStatus?.lpPaused) },
+          { label: 'LP Actions', value: liveStateValue(lpActionsPaused) },
+          { label: 'LP Deposits', value: liveStateValue(lpDepositsPaused) },
           { label: 'TCY Claims', value: liveStateValue(networkStatus?.tcyClaimingPaused) },
           { label: 'TCY Claim Swaps', value: liveStateValue(networkStatus?.tcyClaimingSwapPaused) },
           { label: 'TCY Staking', value: liveStateValue(networkStatus?.tcyStakingPaused) },

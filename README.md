@@ -50,7 +50,7 @@ We welcome improvements! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for:
 - **Production**: Self-hosted via Docker (standalone Next.js output) + Ansible on a VPS.
 - **CI**: GitHub Actions audits production dependencies, lints, type-checks, runs unit tests, builds, and runs Playwright smoke tests.
 - **Images**: GHCR images are deployed by immutable digest, not mutable `latest`.
-- **Health and version checks**: The site exposes `/api/health` and `/api/version`; Ansible verifies both and fails closed after rollback attempts.
+- **Health and version checks**: The site exposes `/api/health` and `/api/version`; Ansible verifies health, version, image, and runtime metadata. Rollback uses the previous `/api/version` readback with Docker env fallback, verifies restored metadata, then fails closed after rollback attempts.
 
 The deployment setup is intentionally simple, but not blue/green. The existing container is replaced and rollback is attempted if health or version readback fails.
 

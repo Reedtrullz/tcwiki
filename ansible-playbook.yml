@@ -27,6 +27,42 @@
       set_fact:
         previous_image: "{{ current_container.container.Config.Image if current_container.container is defined and current_container.container else 'none' }}"
 
+    - name: Read previous version endpoint when container exists
+      uri:
+        url: "http://localhost:3003/api/version"
+        return_content: yes
+        timeout: 5
+      register: previous_version_readback
+      failed_when: false
+      changed_when: false
+      when: previous_image != "none"
+
+    - name: Set previous runtime metadata facts
+      vars:
+        previous_env: "{{ current_container.container.Config.Env | default([]) if current_container.container is defined and current_container.container else [] }}"
+        previous_endpoint_json: >-
+          {{ previous_version_readback.json | default({}) if (previous_version_readback is defined and (previous_version_readback.status | default(0)) == 200) else {} }}
+        previous_endpoint_version: "{{ previous_endpoint_json.version | default('') }}"
+        previous_endpoint_commit: "{{ previous_endpoint_json.commit | default('') }}"
+        previous_endpoint_image: "{{ previous_endpoint_json.image | default('') }}"
+        previous_env_app_version: >-
+          {{ (previous_env | select('match', '^APP_VERSION=') | list | first | default('APP_VERSION=unknown')) | regex_replace('^APP_VERSION=', '') }}
+        previous_env_version: >-
+          {{ (previous_env | select('match', '^VERSION=') | list | first | default('VERSION=unknown')) | regex_replace('^VERSION=', '') }}
+        previous_env_commit_sha: >-
+          {{ (previous_env | select('match', '^COMMIT_SHA=') | list | first | default('COMMIT_SHA=unknown')) | regex_replace('^COMMIT_SHA=', '') }}
+        previous_env_image_ref: >-
+          {{ (previous_env | select('match', '^IMAGE_REF=') | list | first | default('IMAGE_REF=' ~ previous_image)) | regex_replace('^IMAGE_REF=', '') }}
+      set_fact:
+        previous_app_version: >-
+          {{ previous_endpoint_version if previous_endpoint_version not in ['', 'unknown', 'development'] else previous_env_app_version }}
+        previous_version: >-
+          {{ previous_env_version if previous_env_version not in ['', 'unknown'] else (previous_endpoint_version if previous_endpoint_version not in ['', 'unknown', 'development'] else previous_env_app_version) }}
+        previous_commit_sha: >-
+          {{ previous_endpoint_commit if previous_endpoint_commit not in ['', 'unknown'] else previous_env_commit_sha }}
+        previous_image_ref: >-
+          {{ previous_endpoint_image if previous_endpoint_image not in ['', 'unknown'] else previous_env_image_ref }}
+
   tasks:
     - block:
         - name: Pull immutable image from GHCR
@@ -112,6 +148,14 @@
               timeout: 10s
               retries: 3
               start_period: 40s
+            env:
+              NODE_ENV: production
+              PORT: "3000"
+              HOSTNAME: "0.0.0.0"
+              APP_VERSION: "{{ previous_app_version }}"
+              VERSION: "{{ previous_version }}"
+              COMMIT_SHA: "{{ previous_commit_sha }}"
+              IMAGE_REF: "{{ previous_image_ref }}"
           when: previous_image != "none"
 
         - name: Verify rollback health when previous image exists
@@ -123,6 +167,38 @@
           until: rollback_health is succeeded and rollback_health.json.status == "healthy"
           retries: 10
           delay: 5
+          when: previous_image != "none"
+
+        - name: Verify rollback version when previous image exists
+          uri:
+            url: "http://localhost:3003/api/version"
+            return_content: yes
+            timeout: 5
+          register: rollback_version
+          until: >-
+            rollback_version is succeeded
+            and rollback_version.json.version == previous_app_version
+            and rollback_version.json.commit == previous_commit_sha
+            and rollback_version.json.image == previous_image_ref
+          retries: 6
+          delay: 5
+          when: previous_image != "none"
+
+        - name: Inspect rollback container when previous image exists
+          community.docker.docker_container_info:
+            name: "{{ container_name }}"
+          register: rollback_container_info
+          when: previous_image != "none"
+
+        - name: Assert rollback image and runtime metadata when previous image exists
+          assert:
+            that:
+              - rollback_container_info.container.Config.Image == previous_image
+              - "('APP_VERSION=' ~ previous_app_version) in rollback_container_info.container.Config.Env"
+              - "('VERSION=' ~ previous_version) in rollback_container_info.container.Config.Env"
+              - "('COMMIT_SHA=' ~ previous_commit_sha) in rollback_container_info.container.Config.Env"
+              - "('IMAGE_REF=' ~ previous_image_ref) in rollback_container_info.container.Config.Env"
+            fail_msg: "Rollback container did not restore image/version/runtime metadata for {{ previous_image }}."
           when: previous_image != "none"
 
         - name: Fail deployment after rollback attempt

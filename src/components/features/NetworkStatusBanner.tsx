@@ -9,11 +9,77 @@ interface NetworkStatusBannerProps {
   isLoading?: boolean;
 }
 
+interface EvidenceRow {
+  id: string;
+  scope: string;
+  impact: string;
+  key: string;
+}
+
+function uniqueStrings(values: string[]) {
+  return Array.from(new Set(values));
+}
+
+function formatKeyCount(count: number) {
+  return `${count} ${count === 1 ? 'key' : 'keys'}`;
+}
+
+function isExactMimirKey(key: string) {
+  return !key.includes('*');
+}
+
+function isEnablementControlKey(key: string) {
+  return key === 'TRADEACCOUNTSENABLED' || key === 'RUNEPOOLENABLED';
+}
+
+function getControlStateLabel(key: string, state: string) {
+  if (!isEnablementControlKey(key)) {
+    return state;
+  }
+
+  if (state === 'inactive') {
+    return 'enabled';
+  }
+
+  if (state === 'disabled') {
+    return 'disabled';
+  }
+
+  return state;
+}
+
 export function NetworkStatusBanner({ result, isLoading = false }: NetworkStatusBannerProps) {
   const status = result?.data;
   const isPaused = status?.state === 'paused';
   const isDegraded = result?.status === 'degraded';
   const isUnavailable = !result && !isLoading;
+  const activeControlKeys = status?.activeControlKeys ?? status?.activePauseKeys ?? [];
+  const chainsWithEvidence = status?.chainStatuses
+    .map((chain) => ({
+      chain: chain.chain,
+      keys: uniqueStrings([...chain.activeMimirKeys, ...chain.lpDepositPauseKeys]),
+    }))
+    .filter((chain) => chain.keys.length > 0) ?? [];
+  const activeEvidenceKeys = status?.activeEvidenceKeys ?? [...new Set(chainsWithEvidence.flatMap((chain) => chain.keys))];
+  const chainEvidenceKeySet = new Set(chainsWithEvidence.flatMap((chain) => chain.keys));
+  const controlEvidenceRows: EvidenceRow[] = activeControlKeys
+    .filter((key) => isExactMimirKey(key) && !chainEvidenceKeySet.has(key))
+    .map((key) => ({
+      id: `control:${key}`,
+      scope: 'Network',
+      impact: 'Monitored control flag',
+      key,
+    }));
+  const chainEvidenceRows: EvidenceRow[] = chainsWithEvidence.flatMap((chain) => (
+    chain.keys.map((key) => ({
+      id: `${chain.chain}:${key}`,
+      scope: chain.chain,
+      impact: key.startsWith('PAUSELPDEPOSIT-') ? 'LP deposit pause' : 'Chain operation flag',
+      key,
+    }))
+  ));
+  const evidenceRows = [...controlEvidenceRows, ...chainEvidenceRows];
+  const evidenceCount = activeEvidenceKeys.length > 0 ? activeEvidenceKeys.length : evidenceRows.length;
   const Icon = isPaused || isDegraded || isUnavailable ? AlertTriangle : CheckCircle2;
   const title = isLoading
     ? 'Checking live network status'
@@ -46,9 +112,9 @@ export function NetworkStatusBanner({ result, isLoading = false }: NetworkStatus
                 ? 'Fetching THORNode Mimir and inbound-address state.'
                 : result?.error ?? status?.summary ?? 'Current-only THORNode status is unavailable.'}
             </p>
-            {status && status.activePauseKeys.length > 0 && (
+            {activeControlKeys.length > 0 && (
               <p className="mt-2 text-xs text-amber-300">
-                Active monitored controls: {status.activePauseKeys.join(', ')}
+                Active monitored controls: {formatKeyCount(activeControlKeys.length)}. Supporting source keys are listed in operational evidence.
               </p>
             )}
           </div>
@@ -64,14 +130,16 @@ export function NetworkStatusBanner({ result, isLoading = false }: NetworkStatus
       {status && status.chainStatuses.length > 0 && (
         <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
           {status.chainStatuses.map((chain) => {
-            const paused = chain.halted || chain.tradingPaused || chain.lpActionsPaused || chain.signingPaused;
+            const paused = chain.halted || chain.tradingPaused || chain.lpActionsPaused || chain.lpDepositPaused || chain.signingPaused;
             const details = [
               chain.halted ? 'halted' : null,
               chain.tradingPaused ? 'trading' : null,
               chain.signingPaused ? 'signing' : null,
               chain.lpActionsPaused ? 'LP' : null,
+              !chain.lpActionsPaused && chain.lpDepositPaused ? 'LP deposits' : null,
             ].filter((item): item is string => item !== null);
             const statusText = paused ? details.join(' / ') : 'open';
+            const sourceKeyCount = uniqueStrings([...chain.activeMimirKeys, ...chain.lpDepositPauseKeys]).length;
             return (
               <div
                 key={chain.chain}
@@ -85,10 +153,68 @@ export function NetworkStatusBanner({ result, isLoading = false }: NetworkStatus
                 <p className="mt-1 text-[11px] text-slate-500">
                   {statusText}
                 </p>
+                {sourceKeyCount > 0 && (
+                  <p className="mt-1 text-[10px] text-slate-600" aria-label={`${chain.chain} active Mimir key count`}>
+                    Evidence: {formatKeyCount(sourceKeyCount)}
+                  </p>
+                )}
               </div>
             );
           })}
         </div>
+      )}
+
+      {evidenceRows.length > 0 && (
+        <details className="mt-4 rounded-md border border-border bg-surface/50">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2 text-xs font-semibold text-slate-300">
+            <span>Operational evidence</span>
+            <span className="shrink-0 text-[11px] font-normal text-slate-500">{formatKeyCount(evidenceCount)}</span>
+          </summary>
+          <div className="border-t border-border px-3 py-3">
+            <p className="text-[11px] text-slate-500">
+              Supporting active Mimir keys from the live THORNode source above. These keys explain the compact chain-card states.
+            </p>
+            <div className="mt-3 space-y-2 sm:hidden" role="list" aria-label="Active Mimir key evidence for network operation state">
+              {evidenceRows.map((row) => (
+                <div key={`mobile:${row.id}`} role="listitem" className="rounded-md border border-border bg-slate-950/30 p-2">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px]">
+                    <span className="font-semibold text-slate-300">{row.scope}</span>
+                    <span className="text-slate-600">/</span>
+                    <span className="text-slate-500">{row.impact}</span>
+                  </div>
+                  <code className="mt-1 block break-all font-mono text-[10px] leading-relaxed text-amber-200">
+                    {row.key}
+                  </code>
+                </div>
+              ))}
+            </div>
+            <div className="mt-3 hidden overflow-x-auto sm:block">
+              <table className="min-w-[640px] text-left text-[11px]">
+                <caption className="sr-only">Active Mimir key evidence for network operation state</caption>
+                <thead className="text-slate-500">
+                  <tr>
+                    <th scope="col" className="whitespace-nowrap pb-2 pr-4 font-medium">Scope</th>
+                    <th scope="col" className="whitespace-nowrap pb-2 pr-4 font-medium">Impact</th>
+                    <th scope="col" className="pb-2 font-medium">Mimir key</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border text-slate-300">
+                  {evidenceRows.map((row) => (
+                    <tr key={row.id}>
+                      <td className="whitespace-nowrap py-2 pr-4 font-medium">{row.scope}</td>
+                      <td className="whitespace-nowrap py-2 pr-4 text-slate-500">{row.impact}</td>
+                      <td className="py-2">
+                        <code className="break-all rounded border border-border bg-slate-950/50 px-1.5 py-1 text-[10px] text-amber-200">
+                          {row.key}
+                        </code>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </details>
       )}
 
       {status && status.monitoredControls.length > 0 && (
@@ -109,7 +235,7 @@ export function NetworkStatusBanner({ result, isLoading = false }: NetworkStatus
                       : 'border-emerald-500/20 bg-emerald-500/5 text-emerald-300'
                 }`}
               >
-                {control.label}: {control.state}
+                {control.label}: {getControlStateLabel(control.key, control.state)}
               </span>
             ))}
           </div>

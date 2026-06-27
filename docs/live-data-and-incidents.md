@@ -21,6 +21,19 @@ Do not hard-code these as timeless claims:
 - TCY claim/stake state
 - RUNEPool/POL state
 - trade-account and secured-asset enablement
+- streaming-swap, memoless-transaction, secured-asset deposit/withdraw, app-layer/WASM, oracle, and node-operator halt flags
+
+## Operational Halt Coverage
+
+When updating live status code or copy, check both exact Mimir keys and key families. The wiki should avoid saying a feature is open when any relevant scoped halt is active or unclassified.
+
+Minimum coverage to keep visible or searchable:
+
+- Global and chain operations: `HALTTRADING`, `HALTSIGNING`, `HALTCHAINGLOBAL`, `HALT<CHAIN>TRADING`, `HALTSIGNING<CHAIN>`, `HALT<CHAIN>CHAIN`, `NODEPAUSECHAINGLOBAL`.
+- Liquidity operations: `PAUSELP`, `PAUSELP<CHAIN>`, `PAUSELPDEPOSIT-<ASSET>`, `StreamingSwapPause`.
+- TCY and legacy THORFi: `PAUSELOANS`, `HALTTCYTRADING`, `TCYCLAIMINGHALT`, `TCYCLAIMINGSWAPHALT`, `TCYSTAKINGHALT`, `TCYSTAKEDISTRIBUTIONHALT`, `TCYUNSTAKINGHALT`.
+- Trade, secured, and RUNEPool operations: `TRADEACCOUNTSENABLED`, `HALTSECUREDGLOBAL`, `HaltSecuredDeposit-<CHAIN>`, `HaltSecuredWithdraw-<CHAIN>`, `RUNEPOOLENABLED`, `RUNEPoolHaltDeposit`, `RUNEPoolHaltWithdraw`.
+- App-layer and operator controls: `HaltWasmGlobal`, `HaltWasmDeployer-<ADDRESS>`, `HaltWasmCs-<CHECKSUM>`, `HaltWasmContract-<SUFFIX>`, `HaltOracle`, `HaltMemoless`, `PauseBond`, `PauseUnbond`, `HaltRebond`, `HaltOperatorRotate`.
 
 ## Updating Static Records
 

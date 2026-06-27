@@ -12,6 +12,21 @@ ansible-playbook -i inventory/hosts.yml ansible-playbook.yml
 
 The playbook refuses mutable tags and missing versions.
 
+## Deploy And Evidence Boundaries
+
+Do not deploy from local work unless the user explicitly requests a deploy. Local release checks
+such as `npm run build`, `npm run smoke:standalone`, `git diff --check`, and Ansible syntax checks
+are local evidence only. They do not prove that GitHub CI passed, that a GHCR image was published,
+or that production changed.
+
+When reporting release state, keep these boundaries explicit:
+
+- Local proof: command, result, branch, and whether the worktree was dirty.
+- CI proof: GitHub run ID or URL, if actually checked.
+- Published-image proof: immutable GHCR digest, if actually published.
+- Production proof: live endpoint readback date/time, `/api/health`, `/api/version`, and expected
+  headers, if actually checked.
+
 ## Health And Version Checks
 
 Check the deployed app:
@@ -30,8 +45,10 @@ Expected:
 ## Rollback Behavior
 
 The Ansible playbook captures the previous container image before replacing the container.
-If health or version readback fails, it attempts to restart the previous image, verifies health,
-and still exits nonzero so CI does not report a successful deploy.
+It also reads the previous `/api/version` response and falls back to Docker environment metadata when
+that endpoint is unavailable. If health or version readback fails, it attempts to restart the previous
+image, restores that runtime metadata, verifies rollback health, version, image, and container
+environment including `VERSION`, and still exits nonzero so CI does not report a successful deploy.
 
 ## Logs
 

@@ -14,16 +14,36 @@ describe('trust helpers', () => {
   it('converts RUNE base units exactly once at display boundary', () => {
     expect(runeBaseUnitsToNumber('100000000')).toBe(1);
     expect(runeBaseUnitsToNumber(BigInt(200000000))).toBe(2);
+    expect(runeBaseUnitsToNumber(0)).toBe(0);
     expect(runeBaseUnitsToNumber('0')).toBe(0);
     expect(runeBaseUnitsToNumber('not-a-number')).toBeNull();
   });
 
+  it('rejects non-canonical base-unit source strings instead of coercing them', () => {
+    expect(runeBaseUnitsToNumber(' ')).toBeNull();
+    expect(runeBaseUnitsToNumber(' 0')).toBeNull();
+    expect(runeBaseUnitsToNumber('100000000 ')).toBeNull();
+    expect(runeBaseUnitsToNumber('0x10')).toBeNull();
+    expect(runeBaseUnitsToNumber('1e8')).toBeNull();
+    expect(runeBaseUnitsToNumber('100000000.0')).toBeNull();
+  });
+
   it('normalizes decimal and percentage shaped APY values', () => {
+    expect(normalizeApyToPercent('0', 'decimal')).toBe(0);
     expect(normalizeApyToPercent('0.12', 'decimal')).toBe(12);
     expect(normalizeApyToPercent('1.5', 'decimal')).toBe(150);
     expect(normalizeApyToPercent(12, 'percent')).toBe(12);
     expect(normalizeApyToPercent('150', 'percent')).toBe(150);
     expect(normalizeApyToPercent('bad')).toBeNull();
+  });
+
+  it('rejects APY source strings that JavaScript would otherwise coerce', () => {
+    expect(normalizeApyToPercent(' ')).toBeNull();
+    expect(normalizeApyToPercent(' 0')).toBeNull();
+    expect(normalizeApyToPercent('0 ')).toBeNull();
+    expect(normalizeApyToPercent('0x10')).toBeNull();
+    expect(normalizeApyToPercent('1e2')).toBeNull();
+    expect(normalizeApyToPercent('1.2.3')).toBeNull();
   });
 
   it('formats percentages and labels confidence/freshness', () => {

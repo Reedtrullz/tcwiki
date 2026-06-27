@@ -12,6 +12,7 @@ test.describe('THORChain Wiki Smoke Tests', () => {
     await page.goto('/stats');
     await expect(page.getByRole('heading', { name: /Network Statistics/i })).toBeVisible();
     await expect(page.getByRole('heading', { name: /Earnings History/i })).toBeVisible();
+    await expect(page.getByText(/Showing .* Midgard daily earnings intervals|Earnings history unavailable/i).first()).toBeVisible();
     await expect(page.getByText(/Current-only|Degraded|Loading live source/i).first()).toBeVisible();
   });
 
@@ -20,12 +21,18 @@ test.describe('THORChain Wiki Smoke Tests', () => {
     await expect(page.getByRole('heading', { name: /Search/i })).toBeVisible();
     await page.getByLabel(/Search the wiki/i).fill('universal settlement asset');
     await page.keyboard.press('Enter');
+    await expect(page).toHaveURL(/\/search\?q=universal(\+|%20)settlement(\+|%20)asset/);
     await expect(page.getByText(/result/i).first()).toBeVisible();
     await expect(page.getByText(/RUNE as the Universal Settlement Asset/i).first()).toBeVisible();
 
     await page.getByLabel(/Search the wiki/i).fill('traditional multisig');
     await page.keyboard.press('Enter');
+    await expect(page).toHaveURL(/\/search\?q=traditional(\+|%20)multisig/);
     await expect(page.getByText(/Threshold Signatures/i).first()).toBeVisible();
+
+    await page.goBack();
+    await expect(page).toHaveURL(/\/search\?q=universal(\+|%20)settlement(\+|%20)asset/);
+    await expect(page.getByText(/RUNE as the Universal Settlement Asset/i).first()).toBeVisible();
   });
 
   test('ecosystem page avoids nested-anchor hydration errors', async ({ page }) => {
@@ -61,6 +68,10 @@ test.describe('THORChain Wiki Smoke Tests', () => {
     await expect(page.getByRole('heading', { name: /Deep Dives/i })).toBeVisible();
     await page.getByText(/Incentive Pendulum/i).click();
     await expect(page.getByText(/self-correcting feedback loop/i)).toBeVisible();
+
+    const sources = page.getByRole('list', { name: /Article sources/i });
+    await expect(sources).toBeVisible();
+    expect(await sources.innerText()).not.toContain('·');
   });
 
   test('all deep-dive routes load', async ({ page }) => {

@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useEffect, useMemo, useState, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Search } from 'lucide-react';
 import lunr from 'lunr';
@@ -15,17 +15,54 @@ const searchIndex = lunr(function () {
   SEARCH_DOCUMENTS.forEach((doc) => this.add(doc));
 });
 
+const searchDocumentsById = new Map(SEARCH_DOCUMENTS.map((doc) => [doc.id, doc]));
+const SNIPPET_LENGTH = 180;
+
+function getQueryTerms(query: string) {
+  const normalizedQuery = query.trim().toLowerCase();
+  const terms = normalizedQuery
+    .split(/[^a-z0-9]+/i)
+    .map((term) => term.trim().toLowerCase())
+    .filter((term) => term.length > 1);
+
+  return Array.from(new Set([normalizedQuery, ...terms]))
+    .filter(Boolean)
+    .sort((a, b) => b.length - a.length);
+}
+
+function getSearchSnippet(content: string, query: string) {
+  const compactContent = content.replace(/\s+/g, ' ').trim();
+  const compactLower = compactContent.toLowerCase();
+  const matchIndex = getQueryTerms(query)
+    .map((term) => compactLower.indexOf(term))
+    .find((index) => index >= 0) ?? -1;
+
+  if (matchIndex < 0 || compactContent.length <= SNIPPET_LENGTH) {
+    return compactContent.length > SNIPPET_LENGTH
+      ? `${compactContent.slice(0, SNIPPET_LENGTH).trim()}...`
+      : compactContent;
+  }
+
+  const centeredStart = Math.max(0, matchIndex - Math.floor(SNIPPET_LENGTH / 2));
+  const startBoundary = compactContent.lastIndexOf(' ', centeredStart);
+  const start = centeredStart > 0 && startBoundary > 0 ? startBoundary + 1 : centeredStart;
+  const end = Math.min(compactContent.length, start + SNIPPET_LENGTH);
+  const endBoundary = compactContent.indexOf(' ', end);
+  const boundedEnd = endBoundary > end && endBoundary - start <= SNIPPET_LENGTH + 40 ? endBoundary : end;
+  const snippet = compactContent.slice(start, boundedEnd).trim();
+
+  return `${start > 0 ? '...' : ''}${snippet}${boundedEnd < compactContent.length ? '...' : ''}`;
+}
+
 function SearchResultsInner() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const query = searchParams.get('q') || '';
   const [localQuery, setLocalQuery] = useState(query);
-  const [prevQuery, setPrevQuery] = useState(query);
-  const [results, setResults] = useState<Array<SearchDoc & { score: number }>>([]);
 
-  if (query !== prevQuery) {
-    setPrevQuery(query);
+  useEffect(() => {
     setLocalQuery(query);
-  }
+  }, [query]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,27 +72,26 @@ function SearchResultsInner() {
     } else {
       params.delete('q');
     }
-    window.history.pushState(null, '', `?${params.toString()}`);
+    const nextQuery = params.toString();
+    router.push(nextQuery ? `/search?${nextQuery}` : '/search');
   };
 
-  useEffect(() => {
+  const results = useMemo<Array<SearchDoc & { score: number }>>(() => {
     if (query.trim()) {
       const raw = searchIndex.search(query);
-      // Map back and dedupe by slug (prefer higher score)
       const seen = new Set<string>();
       const mapped: Array<SearchDoc & { score: number }> = [];
       raw.forEach((r) => {
-        const doc = SEARCH_DOCUMENTS.find((entry) => entry.id === r.ref);
+        const doc = searchDocumentsById.get(r.ref);
         if (doc && !seen.has(doc.slug)) {
           seen.add(doc.slug);
           mapped.push({ ...doc, score: r.score });
         }
       });
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setResults(mapped);
-    } else {
-      setResults([]);
+      return mapped;
     }
+
+    return [];
   }, [query]);
 
   return (
@@ -83,7 +119,7 @@ function SearchResultsInner() {
         {results.map((r) => (
           <Link key={r.slug} href={r.slug} className="block p-4 rounded-lg bg-surface-elevated border border-border hover:border-accent/20 transition-colors">
             <h3 className="text-sm font-semibold">{r.title}</h3>
-            <p className="text-xs text-slate-500 mt-1">{r.content.slice(0, 180)}...</p>
+            <p className="text-xs text-slate-500 mt-1">{getSearchSnippet(r.content, query)}</p>
             <div className="flex items-center gap-2 mt-2 text-[11px] text-slate-600">
               <span>{r.slug}</span>
               <span>·</span>

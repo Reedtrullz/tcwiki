@@ -37,22 +37,23 @@ export function DeepDiveShell({ entryId, editPath, children }: DeepDiveShellProp
       </div>
 
       <div className="mb-6 rounded-lg border border-border bg-surface-elevated/60 p-4">
-        <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-500">
           <Badge variant="info">Deep Dive</Badge>
           <span>Reviewed {entry.reviewedAt}</span>
-          {entry.sources.map((source) => (
-            <span key={`${source.label}-${source.url}`} className="inline-flex items-center gap-2">
-              <span>·</span>
-              <a
-                href={source.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-slate-400 hover:text-slate-200 transition-colors"
-              >
-                {source.label}
-              </a>
-            </span>
-          ))}
+          <span role="list" aria-label="Article sources" className="contents">
+            {entry.sources.map((source) => (
+              <span key={`${source.label}-${source.url}`} role="listitem" className="inline-flex">
+                <a
+                  href={source.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="whitespace-nowrap text-slate-400 hover:text-slate-200 transition-colors"
+                >
+                  {source.label}
+                </a>
+              </span>
+            ))}
+          </span>
         </div>
         <p className="mt-2 text-sm text-slate-400">{entry.description}</p>
       </div>

@@ -1,7 +1,5 @@
 # syntax=docker/dockerfile:1.7
-ARG NODE_VERSION=22
-
-FROM node:${NODE_VERSION}-slim AS deps
+FROM node:22.22.3-slim@sha256:e21fc383b50d5347dc7a9f1cae45b8f4e2f0d39f7ade28e4eef7d2934522b752 AS deps
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -11,7 +9,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY package.json package-lock.json ./
 RUN npm ci --include=optional
 
-FROM node:${NODE_VERSION}-slim AS builder
+FROM node:22.22.3-slim@sha256:e21fc383b50d5347dc7a9f1cae45b8f4e2f0d39f7ade28e4eef7d2934522b752 AS builder
 WORKDIR /app
 
 ARG VERSION=unknown
@@ -25,7 +23,7 @@ COPY . .
 
 RUN npm run build
 
-FROM node:${NODE_VERSION}-slim AS runner
+FROM node:22.22.3-slim@sha256:e21fc383b50d5347dc7a9f1cae45b8f4e2f0d39f7ade28e4eef7d2934522b752 AS runner
 WORKDIR /app
 
 ARG VERSION=unknown

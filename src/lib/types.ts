@@ -1,4 +1,6 @@
-export type DataConfidence = 'official' | 'curated' | 'historical' | 'needs-review';
+export const DATA_CONFIDENCES = ['official', 'curated', 'historical', 'needs-review'] as const;
+
+export type DataConfidence = (typeof DATA_CONFIDENCES)[number];
 
 export interface SourceMeta {
   label: string;
@@ -263,7 +265,10 @@ export interface ChainOperationalStatus {
   halted: boolean;
   tradingPaused: boolean;
   lpActionsPaused: boolean;
+  lpDepositPaused: boolean;
   signingPaused: boolean;
+  activeMimirKeys: string[];
+  lpDepositPauseKeys: string[];
 }
 
 export type NetworkStatusState = 'operational' | 'paused' | 'degraded' | 'unknown';
@@ -282,11 +287,21 @@ export interface NetworkStatus {
   state: NetworkStatusState;
   summary: string;
   tradingPaused: boolean;
+  streamingSwapsPaused?: boolean | null;
+  memolessTransactionsHalted?: boolean | null;
   signingPaused: boolean;
   lpPaused: boolean;
   loansPaused: boolean;
   observedChainsPaused: boolean;
+  nodePauseChainGlobal?: boolean | null;
+  bondPaused?: boolean | null;
+  unbondPaused?: boolean | null;
+  rebondHalted?: boolean | null;
+  operatorRotateHalted?: boolean | null;
+  oracleHalted?: boolean | null;
   securedAssetsPaused: boolean | null;
+  securedAssetDepositPauseKeys?: string[];
+  securedAssetWithdrawPauseKeys?: string[];
   tcyClaimingPaused: boolean | null;
   tcyClaimingSwapPaused: boolean | null;
   tcyStakingPaused: boolean | null;
@@ -295,8 +310,19 @@ export interface NetworkStatus {
   tcyTradingPaused: boolean | null;
   tradeAccountsEnabled: boolean | null;
   runePoolEnabled: boolean | null;
+  runePoolDepositPaused?: boolean | null;
+  runePoolWithdrawPaused?: boolean | null;
   wasmPaused: boolean | null;
+  wasmDeployerHaltKeys?: string[];
+  wasmCodeHashHaltKeys?: string[];
+  wasmContractHaltKeys?: string[];
+  scopedWasmHaltKeys?: string[];
+  poolDepositPauseKeys: string[];
   chainStatuses: ChainOperationalStatus[];
+  activeControlKeys: string[];
+  activeChainKeys: string[];
+  activeEvidenceKeys: string[];
+  /** @deprecated Use activeControlKeys and activeEvidenceKeys for new UI. */
   activePauseKeys: string[];
   monitoredControls: OperationalControlStatus[];
   thorNodeVersion?: string;
