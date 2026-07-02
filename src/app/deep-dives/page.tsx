@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { DEEP_DIVE_ENTRIES } from '@/lib/content/registry';
 import { createRouteMetadata } from '@/lib/metadata';
+import { Badge } from '@/components/ui/Badge';
+import { getConfidenceLabel, getConfidenceTone } from '@/lib/trust';
 
 export const metadata = createRouteMetadata({
   title: 'THORChain Deep Dives | THORChain Wiki',
@@ -26,16 +28,18 @@ export default function DeepDivesIndex() {
           >
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-lg font-semibold group-hover:text-accent transition-colors">{dive.title}</h3>
-              <span className="text-[11px] text-slate-500">{dive.reviewedAt}</span>
+              <Badge variant={getConfidenceTone(dive.confidence)}>
+                {getConfidenceLabel(dive.confidence)}
+              </Badge>
             </div>
             <p className="text-sm text-slate-400 leading-relaxed">{dive.description}</p>
-            <p className="mt-3 text-[11px] text-slate-600">Sources: {dive.sources.map((source) => source.label).join(', ')}</p>
+            <p className="mt-3 text-[11px] text-slate-400">Reviewed {dive.reviewedAt} · Review due {dive.nextReviewDue} · Sources: {dive.sources.map((source) => source.label).join(', ')}</p>
             <div className="mt-4 text-xs text-accent group-hover:underline">Read deep dive →</div>
           </Link>
         ))}
       </div>
 
-      <div className="mt-12 text-sm text-slate-500">
+      <div className="mt-12 text-sm text-slate-400">
         More deep dives coming soon. Interested in contributing? See the <Link href="https://github.com/Reedtrullz/tcwiki" className="underline hover:text-accent">GitHub repo</Link>.
       </div>
     </PageContainer>

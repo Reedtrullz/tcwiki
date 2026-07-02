@@ -1,4 +1,10 @@
 const MAX_REPORT_BYTES = 16 * 1024;
+const REPORT_LOG_WINDOW_MS = 60_000;
+const MAX_UNIQUE_REPORT_LOGS_PER_WINDOW = 20;
+
+let reportWindowStartedAt = 0;
+let reportWindowLogCount = 0;
+const reportFingerprints = new Set<string>();
 
 function noStoreResponse(status: number) {
   return new Response(null, {
@@ -86,6 +92,36 @@ function extractCspReports(payload: unknown): CspReport[] {
   return [{ body: payload }];
 }
 
+function shouldLogReport(event: Record<string, unknown>) {
+  const now = Date.now();
+  if (now - reportWindowStartedAt > REPORT_LOG_WINDOW_MS) {
+    reportWindowStartedAt = now;
+    reportWindowLogCount = 0;
+    reportFingerprints.clear();
+  }
+
+  if (reportWindowLogCount >= MAX_UNIQUE_REPORT_LOGS_PER_WINDOW) {
+    return false;
+  }
+
+  const fingerprint = [
+    event.disposition,
+    event.effectiveDirective,
+    event.violatedDirective,
+    event.blockedUri,
+    event.documentUri,
+    event.sourceFile,
+  ].join('|');
+
+  if (reportFingerprints.has(fingerprint)) {
+    return false;
+  }
+
+  reportFingerprints.add(fingerprint);
+  reportWindowLogCount += 1;
+  return true;
+}
+
 function logCspReport(payload: unknown) {
   for (const report of extractCspReports(payload)) {
     const event = {
@@ -108,7 +144,9 @@ function logCspReport(payload: unknown) {
       event.documentUri ||
       event.sourceFile
     ) {
-      console.warn(JSON.stringify(event));
+      if (shouldLogReport(event)) {
+        console.warn(JSON.stringify(event));
+      }
     }
   }
 }

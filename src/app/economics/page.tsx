@@ -3,8 +3,9 @@ import { SectionHeader } from '@/components/ui/SectionHeader';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { Badge } from '@/components/ui/Badge';
 import { FreshnessMeta } from '@/components/ui/FreshnessMeta';
-import type { FreshnessMeta as FreshnessMetaType, SourceMeta } from '@/lib/types';
+import { TOKENOMICS_RECORDS } from '@/lib/data/static';
 import { createRouteMetadata } from '@/lib/metadata';
+import { getTokenomicsToneBadgeVariant, getTokenomicsToneLabel } from '@/lib/trust';
 
 export const metadata = createRouteMetadata({
   title: 'THORChain Economics | THORChain Wiki',
@@ -12,18 +13,7 @@ export const metadata = createRouteMetadata({
   path: '/economics',
 });
 
-const supplyFreshness: FreshnessMetaType = {
-  checkedAt: '2026-06-18',
-  confidence: 'official',
-  nextReviewDue: '2026-07-18',
-};
-
-const supplySources: SourceMeta[] = [
-  {
-    label: 'RUNE and TCY tokenomics',
-    url: 'https://docs.thorchain.org/tokenomics-rune-tcy',
-  },
-];
+const supplyRecord = TOKENOMICS_RECORDS.find((record) => record.data.id === 'rune-supply-framing') ?? TOKENOMICS_RECORDS[0];
 
 export default function EconomicsPage() {
   return (
@@ -42,30 +32,24 @@ export default function EconomicsPage() {
         ].map((card) => (
           <Card key={card.title}>
             <h3 className="text-sm font-semibold mb-1.5">{card.title}</h3>
-            <p className="text-xs text-slate-500 leading-relaxed">{card.desc}</p>
+            <p className="text-xs text-slate-400 leading-relaxed">{card.desc}</p>
           </Card>
         ))}
       </div>
 
       <SectionHeader>Supply & Emission</SectionHeader>
-      <p className="mb-4 text-sm text-slate-500">
-        Official tokenomics currently frames RUNE supply around a reduced supply near 425M, circulating supply near 350M,
-        and a reserve near 75M, with ongoing burn mechanics. Treat these as dated/source-backed figures, not hard-coded live balances.
+      <p className="mb-4 text-sm text-slate-400">
+        {supplyRecord.data.summary} Treat these as dated/source-backed figures, not hard-coded live balances.
       </p>
       <div className="mb-4">
-        <FreshnessMeta freshness={supplyFreshness} sources={supplySources} />
+        <FreshnessMeta freshness={supplyRecord.freshness} sources={supplyRecord.sources} />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-12">
-        {[
-          { label: 'Original Cap Context', value: '500M RUNE', tone: 'historical' },
-          { label: 'Current Supply Framing', value: '~425M and burning', tone: 'source-backed' },
-          { label: 'Circulating / Reserve', value: '~350M / ~75M', tone: 'source-backed' },
-          { label: 'Revenue Split', value: '75% nodes + LPs', tone: 'dynamic' },
-        ].map((row) => (
+        {supplyRecord.data.figures.slice(0, 5).map((row) => (
           <div key={row.label} className="flex items-center justify-between gap-4 p-4 rounded-lg bg-surface-elevated border border-border">
             <span className="text-xs text-slate-400">{row.label}</span>
             <span className="text-sm font-semibold text-right">{row.value}</span>
-            <Badge variant={row.tone === 'historical' ? 'info' : 'warning'}>{row.tone}</Badge>
+            <Badge variant={getTokenomicsToneBadgeVariant(row.tone)}>{getTokenomicsToneLabel(row.tone)}</Badge>
           </div>
         ))}
       </div>
@@ -81,23 +65,23 @@ export default function EconomicsPage() {
           <Card key={fee.fee}>
             <h3 className="text-sm font-semibold mb-2">{fee.fee}</h3>
             <p className="text-xl font-bold text-accent mb-1">{fee.rate}</p>
-            <p className="text-xs text-slate-500 leading-relaxed">{fee.desc}</p>
+            <p className="text-xs text-slate-400 leading-relaxed">{fee.desc}</p>
           </Card>
         ))}
       </div>
 
       <SectionHeader>Incentive Pendulum</SectionHeader>
-      <p className="mb-4 text-sm text-slate-500">
+      <p className="mb-4 text-sm text-slate-400">
         The pendulum allocates the node/LP share of network revenue based on the network&apos;s bond-to-liquidity posture.
       </p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-12">
         <Card className="border-rune/20">
           <h3 className="text-sm font-semibold text-rune mb-2">Low bond security</h3>
-          <p className="text-xs text-slate-500">When the network needs more security relative to liquidity, rewards shift toward node operators.</p>
+          <p className="text-xs text-slate-400">When the network needs more security relative to liquidity, rewards shift toward node operators.</p>
         </Card>
         <Card className="border-accent/20">
           <h3 className="text-sm font-semibold text-accent mb-2">Low pooled liquidity</h3>
-          <p className="text-xs text-slate-500">When the network needs more depth, rewards shift toward liquidity providers.</p>
+          <p className="text-xs text-slate-400">When the network needs more depth, rewards shift toward liquidity providers.</p>
         </Card>
       </div>
 
@@ -110,7 +94,7 @@ export default function EconomicsPage() {
         ].map((card) => (
           <Card key={card.title}>
             <h3 className="text-sm font-semibold mb-1.5">{card.title}</h3>
-            <p className="text-xs text-slate-500 leading-relaxed">{card.desc}</p>
+            <p className="text-xs text-slate-400 leading-relaxed">{card.desc}</p>
           </Card>
         ))}
       </div>

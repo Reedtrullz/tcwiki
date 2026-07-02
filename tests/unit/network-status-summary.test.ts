@@ -109,4 +109,51 @@ describe('network current-only state labels', () => {
       invalidKeyPatterns: [/^HALTSECURED(?:DEPOSIT|WITHDRAW)-/],
     })).toBe('Mimir warning');
   });
+
+  it('prioritizes optional-control Mimir warnings over not-monitored labels', () => {
+    const status = networkStatus({
+      monitoredControls: [
+        {
+          key: 'TCYCLAIMINGHALT',
+          label: 'TCY claiming',
+          state: 'unparseable',
+          active: false,
+          description: 'TCY claim actions are halted when active.',
+        },
+      ],
+      invalidMimirKeys: ['TCYCLAIMINGHALT'],
+    });
+
+    expect(getNetworkCurrentOnlyStateLabel({
+      paused: null,
+      statusLoading: false,
+      sourceUnavailable: false,
+      networkStatus: status,
+      controlKeys: ['TCYCLAIMINGHALT'],
+    })).toBe('Mimir warning');
+  });
+
+  it('renders malformed LP-deposit prefix controls as warnings instead of open', () => {
+    const status = networkStatus({
+      invalidMimirKeys: ['PAUSELPDEPOSIT-ETH-ETH'],
+      monitoredControls: [
+        {
+          key: 'PAUSELPDEPOSIT-*',
+          label: 'Pool deposits',
+          state: 'unparseable',
+          active: false,
+          description: '1 scoped key could not be parsed.',
+        },
+      ],
+    });
+
+    expect(getNetworkCurrentOnlyStateLabel({
+      paused: false,
+      statusLoading: false,
+      sourceUnavailable: false,
+      networkStatus: status,
+      controlKeys: ['PAUSELPDEPOSIT-*'],
+      invalidKeyPatterns: [/^PAUSELPDEPOSIT-/],
+    })).toBe('Mimir warning');
+  });
 });

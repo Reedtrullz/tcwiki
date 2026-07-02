@@ -6,6 +6,8 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
+  schedule:
+    - cron: '17 6 * * 1'
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -21,6 +23,7 @@ env:
 jobs:
   build-check:
     name: Lint + Typecheck + Tests + Build
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
@@ -30,6 +33,8 @@ jobs:
           cache: 'npm'
       - run: npm ci --include=optional
       - run: npm run audit:prod
+      - name: Audit full dependency tree
+        run: npm run audit:all
       - run: npm run check:content
       - run: npm run lint
       - run: npm run typecheck
@@ -38,6 +43,9 @@ jobs:
         env:
           CI: true
       - run: npm run smoke:standalone
+      - run: npm run smoke:standalone
+        env:
+          CSP_ENFORCE: '1'
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
         env:
@@ -53,6 +61,34 @@ jobs:
             --build-arg IMAGE_REF=ghcr.io/${{ github.repository }}@sha256:0000000000000000000000000000000000000000000000000000000000000000 \
             --tag tcwiki-pr:${{ github.sha }} \
             .
+      - name: Scan PR Docker image for runtime OS vulnerabilities
+        if: github.event_name == 'pull_request'
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: tcwiki-pr:${{ github.sha }}
+          scanners: vuln
+          vuln-type: os
+          severity: HIGH,CRITICAL
+          exit-code: '1'
+          format: table
+      - name: Run Docker image for PR runtime check
+        if: github.event_name == 'pull_request'
+        env:
+          IMAGE_REF: ghcr.io/${{ github.repository }}@sha256:0000000000000000000000000000000000000000000000000000000000000000
+        run: |
+          container_id="$(docker run --rm -d \
+            -p 127.0.0.1:3011:3000 \
+            -e APP_VERSION=${{ github.sha }} \
+            -e VERSION=${{ github.sha }} \
+            -e COMMIT_SHA=${{ github.sha }} \
+            -e IMAGE_REF="$IMAGE_REF" \
+            tcwiki-pr:${{ github.sha }})"
+          trap 'docker rm -f "$container_id"' EXIT
+          CHECK_BASE_URL=http://127.0.0.1:3011 \
+            EXPECTED_VERSION=${{ github.sha }} \
+            EXPECTED_COMMIT_SHA=${{ github.sha }} \
+            EXPECTED_IMAGE_REF="$IMAGE_REF" \
+            npm run check:runtime-url
       - name: Install pinned Ansible for PR syntax check
         if: github.event_name == 'pull_request'
         run: |
@@ -65,6 +101,20 @@ jobs:
           IMAGE_REF: ghcr.io/example/tcwiki@sha256:0000000000000000000000000000000000000000000000000000000000000000
           APP_VERSION: ${{ github.sha }}
         run: ansible-playbook -i inventory/hosts.yml ansible-playbook.yml --syntax-check
+
+  live-source-drift:
+    name: Live source drift check
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      - run: npm ci --include=optional
+      - run: npm run check:content
+      - run: npm run check:live-snapshot
 
   publish:
     name: Build & publish image
@@ -97,13 +147,14 @@ jobs:
           images: ${{ steps.image_name.outputs.name }}
           tags: |
             type=sha,prefix=sha-,format=long
-      - name: Build and push
+      - name: Build image for scan
         id: build
         uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
         with:
           context: .
           file: ./Dockerfile
-          push: true
+          load: true
+          push: false
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
@@ -111,14 +162,27 @@ jobs:
           build-args: |
             VERSION=${{ github.sha }}
             COMMIT_SHA=${{ github.sha }}
-      - name: Compute digest image ref
+      - name: Scan built image for runtime OS vulnerabilities
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: ${{ steps.meta.outputs.tags }}
+          scanners: vuln
+          vuln-type: os
+          severity: HIGH,CRITICAL
+          exit-code: '1'
+          format: table
+      - name: Push scanned image and compute digest ref
         id: image
-        run: echo "ref=${{ steps.image_name.outputs.name }}@${{ steps.build.outputs.digest }}" >> "$GITHUB_OUTPUT"
+        run: |
+          docker push "${{ steps.meta.outputs.tags }}"
+          digest="$(docker buildx imagetools inspect "${{ steps.meta.outputs.tags }}" --format '{{.Manifest.Digest}}')"
+          echo "ref=${{ steps.image_name.outputs.name }}@${digest}" >> "$GITHUB_OUTPUT"
+          echo "digest=${digest}" >> "$GITHUB_OUTPUT"
       - name: Summary
         run: |
           echo "### Image published" >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
-          echo "${{ steps.image_name.outputs.name }}@${{ steps.build.outputs.digest }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "${{ steps.image.outputs.ref }}" >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
 
   deploy:
@@ -126,8 +190,14 @@ jobs:
     needs: [publish]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
+    environment:
+      name: production
+      url: https://wiki.thorchain.no
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
       - name: Install Ansible
         run: |
           python3 -m pip install --upgrade pip
@@ -146,3 +216,10 @@ jobs:
           IMAGE_REF: ${{ needs.publish.outputs.image_ref }}
           APP_VERSION: ${{ needs.publish.outputs.app_version }}
         run: ansible-playbook -i inventory/hosts.yml ansible-playbook.yml
+      - name: Verify public production readback
+        env:
+          CHECK_BASE_URL: https://wiki.thorchain.no
+          EXPECTED_VERSION: ${{ needs.publish.outputs.app_version }}
+          EXPECTED_COMMIT_SHA: ${{ needs.publish.outputs.app_version }}
+          EXPECTED_IMAGE_REF: ${{ needs.publish.outputs.image_ref }}
+        run: npm run check:runtime-url

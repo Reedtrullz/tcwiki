@@ -20,10 +20,13 @@ function SourceDetails({ source, compact }: { source: SourceMeta; compact: boole
 
   return (
     <details className="inline-block align-baseline">
-      <summary className="inline cursor-pointer list-none text-slate-500 underline decoration-dotted underline-offset-4 hover:text-slate-300">
+      <summary
+        aria-label={`Show source details for ${source.label}`}
+        className="inline cursor-pointer list-none text-slate-400 underline decoration-dotted underline-offset-4 hover:text-slate-200"
+      >
         {compact ? 'details' : 'source details'}
       </summary>
-      <div className="mt-1 flex max-w-xs flex-col gap-1 rounded border border-border bg-surface px-2 py-1 leading-relaxed text-slate-500">
+      <div className="mt-1 flex max-w-xs flex-col gap-1 rounded border border-border bg-surface px-2 py-1 leading-relaxed text-slate-400">
         {source.retrievedAt && <span>Retrieved {source.retrievedAt}</span>}
         {source.notes && <span>{source.notes}</span>}
       </div>
@@ -49,7 +52,7 @@ export function FreshnessMeta({ freshness, sources = [], compact = false }: Fres
   const secondarySources = sources.slice(1);
 
   return (
-    <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
+    <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-400">
       <Badge variant={getConfidenceTone(freshness.confidence)}>
         {getConfidenceLabel(freshness.confidence)}
       </Badge>
@@ -76,7 +79,10 @@ export function FreshnessMeta({ freshness, sources = [], compact = false }: Fres
             <SourceDetails source={primarySource} compact={compact} />
             {secondarySources.length > 0 && (
               <details className="inline-block">
-                <summary className="inline cursor-pointer list-none text-slate-500 underline decoration-dotted underline-offset-4 hover:text-slate-300">
+                <summary
+                  aria-label={`Show ${secondarySources.length} additional source${secondarySources.length === 1 ? '' : 's'} for ${primarySource.label}`}
+                  className="inline cursor-pointer list-none text-slate-400 underline decoration-dotted underline-offset-4 hover:text-slate-200"
+                >
                   +{secondarySources.length} source{secondarySources.length === 1 ? '' : 's'}
                 </summary>
                 <div className="mt-1 flex flex-wrap gap-x-2 gap-y-1 rounded border border-border bg-surface px-2 py-1">

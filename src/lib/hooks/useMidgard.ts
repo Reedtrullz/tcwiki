@@ -4,6 +4,7 @@ import useSWR from 'swr';
 import MidgardAPI from '@/lib/api/midgard';
 import ThornodeAPI from '@/lib/api/thornode';
 import { HistoryItem, LiveDataResult, MidgardHealth, NetworkStats, NetworkStatus, Pool } from '@/lib/types';
+import { liveDegraded } from '@/lib/trust';
 
 const SWR_OPTIONS = {
   refreshInterval: 60000,
@@ -12,16 +13,17 @@ const SWR_OPTIONS = {
 
 function unwrapLiveResult<T>(result: LiveDataResult<T> | undefined, error: unknown, isLoading: boolean) {
   const errorMessage = error instanceof Error ? error.message : undefined;
+  const resolvedResult = result ?? (errorMessage ? liveDegraded<T>(errorMessage) : undefined);
   return {
-    result,
-    data: result?.data,
-    status: result?.status ?? (errorMessage ? 'degraded' : undefined),
-    error: errorMessage ?? result?.error,
-    source: result?.source,
-    sources: result?.sources,
-    checkedAt: result?.checkedAt,
+    result: resolvedResult,
+    data: resolvedResult?.data,
+    status: resolvedResult?.status,
+    error: errorMessage ?? resolvedResult?.error,
+    source: resolvedResult?.source,
+    sources: resolvedResult?.sources,
+    checkedAt: resolvedResult?.checkedAt,
     isLoading,
-    isDegraded: Boolean(errorMessage || result?.status === 'degraded'),
+    isDegraded: Boolean(resolvedResult?.status === 'degraded'),
   };
 }
 

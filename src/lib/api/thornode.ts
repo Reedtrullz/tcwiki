@@ -5,6 +5,7 @@ import {
   OperationalControlStatus,
   SourceMeta,
   ThornodeInboundAddress,
+  ThornodeLastBlock,
 } from '@/lib/types';
 import { CHAINS } from '@/lib/data/static';
 import { liveDegraded, liveOk } from '@/lib/trust';
@@ -22,7 +23,11 @@ const THORNODE_ENDPOINTS = [
 
 let activeEndpoint = 0;
 
-const MIMIR_NUMBER_PATTERN = /^[+-]?(?:\d+(?:\.\d+)?|\.\d+)$/;
+export function resetThornodeEndpointForTests() {
+  activeEndpoint = 0;
+}
+
+const MIMIR_INTEGER_PATTERN = /^[+-]?\d+$/;
 const EXACT_MONITORED_MIMIR_KEYS = [
   'HALTTRADING',
   'StreamingSwapPause',
@@ -49,11 +54,15 @@ const EXACT_MONITORED_MIMIR_KEYS = [
   'HALTTCYTRADING',
   'HALTWASMGLOBAL',
   'TRADEACCOUNTSENABLED',
+  'TRADEACCOUNTSDEPOSITENABLED',
+  'MANUALSWAPSTOSYNTHDISABLED',
   'RUNEPOOLENABLED',
+  'BANKSENDENABLED',
 ] as const;
 
 const PREFIX_MONITORED_MIMIR_KEYS = [
   'PAUSELPDEPOSIT-',
+  'PauseAsymWithdrawal-',
   'HaltSecuredDeposit-',
   'HaltSecuredWithdraw-',
   'HaltWasmDeployer-',
@@ -62,27 +71,20 @@ const PREFIX_MONITORED_MIMIR_KEYS = [
 ] as const;
 
 const NON_CHAIN_SCOPED_MIMIR_CODES = new Set(['TCY']);
-const CURATED_CHAIN_CODES = new Set(CHAINS.map((chain) => chain.chain.toUpperCase()));
+const CURATED_CHAIN_CODES = new Set([...CHAINS.map((chain) => chain.chain.toUpperCase()), 'THOR']);
+const KNOWN_NON_OPERATIONAL_PAUSE_KEYS = new Set(['PAUSEONSLASHTHRESHOLD']);
+
+type MimirActivationMode = 'positive' | 'at-or-after-height' | 'after-height' | 'until-height';
 
 type MimirNumericState =
   | { state: 'absent' }
   | { state: 'valid'; key: string; value: number }
   | { state: 'unparseable'; key: string };
 
-function presentSources(...sources: Array<SourceMeta | undefined>): SourceMeta[] {
-  const seen = new Set<string>();
-  return sources.filter((source): source is SourceMeta => {
-    if (!source) {
-      return false;
-    }
-    const key = `${source.label}:${source.url}`;
-    if (seen.has(key)) {
-      return false;
-    }
-    seen.add(key);
-    return true;
-  });
-}
+type MimirActivityState =
+  | { state: 'absent' }
+  | { state: 'unparseable'; key: string }
+  | { state: 'active' | 'inactive' | 'scheduled' | 'expired'; key: string; value: number };
 
 async function request<T>(path: string): Promise<LiveDataResult<T>> {
   const errors: string[] = [];
@@ -117,18 +119,130 @@ async function request<T>(path: string): Promise<LiveDataResult<T>> {
   return liveDegraded<T>(`THORNode source did not respond (${errors.join('; ')})`);
 }
 
+async function requestFromEndpoint<T>(endpoint: SourceMeta, path: string): Promise<T> {
+  const controller = new AbortController();
+  const timeoutId = globalThis.setTimeout(() => controller.abort(), 5000);
+
+  try {
+    const response = await fetch(`${endpoint.url}${path}`, {
+      signal: controller.signal,
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      throw new Error(`${response.status} ${response.statusText}`);
+    }
+
+    return await response.json() as T;
+  } finally {
+    globalThis.clearTimeout(timeoutId);
+  }
+}
+
 function toMimirNumber(value: unknown): number | null {
   if (typeof value === 'number') {
-    return Number.isFinite(value) ? value : null;
+    return Number.isSafeInteger(value) ? value : null;
   }
   if (typeof value === 'string') {
-    if (!MIMIR_NUMBER_PATTERN.test(value)) {
+    if (!MIMIR_INTEGER_PATTERN.test(value)) {
       return null;
     }
     const numeric = Number(value);
-    return Number.isFinite(numeric) ? numeric : null;
+    return Number.isSafeInteger(numeric) ? numeric : null;
   }
   return null;
+}
+
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+const INBOUND_OPERATION_FIELDS = [
+  'halted',
+  'global_trading_paused',
+  'chain_trading_paused',
+  'chain_lp_actions_paused',
+] as const satisfies readonly (keyof ThornodeInboundAddress)[];
+
+function missingInboundOperationFields(chain: ThornodeInboundAddress | undefined) {
+  if (!chain) {
+    return [];
+  }
+
+  return INBOUND_OPERATION_FIELDS.filter((field) => chain[field] === undefined);
+}
+
+function isThornodeInboundAddresses(value: unknown): value is ThornodeInboundAddress[] {
+  return Array.isArray(value) && value.every((item) => (
+    isPlainRecord(item) &&
+    typeof item.chain === 'string' &&
+    (item.halted === undefined || typeof item.halted === 'boolean') &&
+    (item.global_trading_paused === undefined || typeof item.global_trading_paused === 'boolean') &&
+    (item.chain_trading_paused === undefined || typeof item.chain_trading_paused === 'boolean') &&
+    (item.chain_lp_actions_paused === undefined || typeof item.chain_lp_actions_paused === 'boolean')
+  ));
+}
+
+function getThorchainHeight(lastBlocks: unknown): number | null {
+  if (!Array.isArray(lastBlocks)) {
+    return null;
+  }
+
+  const heights = lastBlocks
+    .map((item) => {
+      if (!isPlainRecord(item)) {
+        return null;
+      }
+      return toMimirNumber(item.thorchain);
+    })
+    .filter((height): height is number => height !== null && height >= 0);
+
+  return heights.length > 0 ? Math.max(...heights) : null;
+}
+
+function getThorNodeVersion(version: unknown): string | undefined {
+  if (!isPlainRecord(version)) {
+    return undefined;
+  }
+
+  const current = version.current;
+  if (typeof current === 'string' && current.length > 0) {
+    return current;
+  }
+
+  const legacyVersion = version.version;
+  return typeof legacyVersion === 'string' && legacyVersion.length > 0 ? legacyVersion : undefined;
+}
+
+function deriveValidatedNetworkStatusSnapshot(
+  mimir: unknown,
+  inbound: unknown,
+  version: unknown,
+  lastBlock: unknown
+): NetworkStatus {
+  if (!isPlainRecord(mimir)) {
+    throw new Error('THORNode Mimir response was not a plain object.');
+  }
+
+  if (!isThornodeInboundAddresses(inbound)) {
+    throw new Error('THORNode inbound_addresses response was not a valid chain list.');
+  }
+
+  const thorchainHeight = getThorchainHeight(lastBlock);
+  if (thorchainHeight === null) {
+    throw new Error('THORNode lastblock response did not include a usable THORChain height.');
+  }
+  const thorNodeVersion = getThorNodeVersion(version);
+  if (!thorNodeVersion) {
+    throw new Error('THORNode version response did not include a usable current version.');
+  }
+
+  return deriveNetworkStatus(
+    mimir,
+    inbound,
+    thorNodeVersion,
+    thorchainHeight
+  );
 }
 
 function getCanonicalMimirKey(mimir: Record<string, unknown>, key: string): string | undefined {
@@ -166,6 +280,41 @@ function getInvalidScopedMimirKey(mimir: Record<string, unknown>, key: string): 
   return value.state === 'unparseable' ? value.key : null;
 }
 
+function getMimirActivity(
+  mimir: Record<string, unknown>,
+  key: string,
+  mode: MimirActivationMode,
+  thorchainHeight?: number
+): MimirActivityState {
+  const value = getMimirNumericState(mimir, key);
+  if (value.state !== 'valid') {
+    return value;
+  }
+  if (value.value <= 0) {
+    return { state: 'inactive', key: value.key, value: value.value };
+  }
+  if (thorchainHeight === undefined) {
+    return { state: 'active', key: value.key, value: value.value };
+  }
+
+  switch (mode) {
+    case 'positive':
+      return { state: 'active', key: value.key, value: value.value };
+    case 'at-or-after-height':
+      return thorchainHeight >= value.value
+        ? { state: 'active', key: value.key, value: value.value }
+        : { state: 'scheduled', key: value.key, value: value.value };
+    case 'after-height':
+      return thorchainHeight > value.value
+        ? { state: 'active', key: value.key, value: value.value }
+        : { state: 'scheduled', key: value.key, value: value.value };
+    case 'until-height':
+      return thorchainHeight <= value.value
+        ? { state: 'active', key: value.key, value: value.value }
+        : { state: 'expired', key: value.key, value: value.value };
+  }
+}
+
 function getInvalidMimirKeysByPrefix(mimir: Record<string, unknown>, prefix: string): string[] {
   const normalizedPrefix = prefix.toUpperCase();
   return Object.entries(mimir)
@@ -190,6 +339,48 @@ function getChainCodeFromScopedMimirKey(key: string): string | null {
   return chainCode && !NON_CHAIN_SCOPED_MIMIR_CODES.has(chainCode) ? chainCode : null;
 }
 
+function getChainCodeFromDashScopedMimirKey(key: string, prefix: string): string | null {
+  const upperKey = key.toUpperCase();
+  const upperPrefix = prefix.toUpperCase();
+  if (!upperKey.startsWith(upperPrefix)) {
+    return null;
+  }
+
+  const chainCode = upperKey.slice(upperPrefix.length).split('-')[0] ?? null;
+  return chainCode && !NON_CHAIN_SCOPED_MIMIR_CODES.has(chainCode) ? chainCode : null;
+}
+
+function isKnownMonitoredMimirKey(key: string) {
+  const upperKey = key.toUpperCase();
+  return EXACT_MONITORED_MIMIR_KEYS.some((monitoredKey) => monitoredKey.toUpperCase() === upperKey) ||
+    PREFIX_MONITORED_MIMIR_KEYS.some((prefix) => upperKey.startsWith(prefix.toUpperCase())) ||
+    getChainCodeFromScopedMimirKey(key) !== null;
+}
+
+function getUnknownOperationMimirKeys(mimir: Record<string, unknown>): string[] {
+  return Object.entries(mimir)
+    .filter(([key, value]) => {
+      const upperKey = key.toUpperCase();
+      if (KNOWN_NON_OPERATIONAL_PAUSE_KEYS.has(upperKey) || isKnownMonitoredMimirKey(key)) {
+        return false;
+      }
+
+      const numericValue = toMimirNumber(value);
+      if (/^(HALT|PAUSE)/.test(upperKey)) {
+        return numericValue === null || numericValue > 0;
+      }
+      if (upperKey.includes('DISABLED')) {
+        return numericValue === null || numericValue > 0;
+      }
+      if (upperKey.includes('ENABLED')) {
+        return numericValue === null || numericValue <= 0;
+      }
+      return false;
+    })
+    .map(([key]) => key)
+    .sort();
+}
+
 function getInvalidChainScopedMimirKeys(mimir: Record<string, unknown>): string[] {
   return Object.entries(mimir)
     .filter(([key, value]) => toMimirNumber(value) === null && getChainCodeFromScopedMimirKey(key) !== null)
@@ -210,15 +401,54 @@ function collectInvalidMimirKeys(mimir: Record<string, unknown>, recognizedChain
   ).sort((a, b) => a.localeCompare(b));
 }
 
-function getActiveMimirKey(mimir: Record<string, unknown>, key: string): string | null {
-  const value = getMimirNumericState(mimir, key);
-  return value.state === 'valid' && value.value > 0 ? value.key : null;
+function getActiveMimirKeyByMode(
+  mimir: Record<string, unknown>,
+  key: string,
+  mode: MimirActivationMode,
+  thorchainHeight?: number
+): string | null {
+  const value = getMimirActivity(mimir, key, mode, thorchainHeight);
+  return value.state === 'active' ? value.key : null;
 }
 
-function getActiveMimirKeysByPrefix(mimir: Record<string, unknown>, prefix: string): string[] {
+function getScheduledMimirKeyByMode(
+  mimir: Record<string, unknown>,
+  key: string,
+  mode: MimirActivationMode,
+  thorchainHeight?: number
+): string | null {
+  const value = getMimirActivity(mimir, key, mode, thorchainHeight);
+  return value.state === 'scheduled' ? value.key : null;
+}
+
+function getActiveMimirKeysByPrefix(
+  mimir: Record<string, unknown>,
+  prefix: string,
+  mode: MimirActivationMode = 'positive',
+  thorchainHeight?: number
+): string[] {
   const normalizedPrefix = prefix.toUpperCase();
   return Object.entries(mimir)
-    .filter(([key, value]) => key.toUpperCase().startsWith(normalizedPrefix) && (toMimirNumber(value) ?? 0) > 0)
+    .filter(([key]) => (
+      key.toUpperCase().startsWith(normalizedPrefix) &&
+      getMimirActivity(mimir, key, mode, thorchainHeight).state === 'active'
+    ))
+    .map(([key]) => key)
+    .sort();
+}
+
+function getScheduledMimirKeysByPrefix(
+  mimir: Record<string, unknown>,
+  prefix: string,
+  mode: MimirActivationMode,
+  thorchainHeight?: number
+): string[] {
+  const normalizedPrefix = prefix.toUpperCase();
+  return Object.entries(mimir)
+    .filter(([key]) => (
+      key.toUpperCase().startsWith(normalizedPrefix) &&
+      getMimirActivity(mimir, key, mode, thorchainHeight).state === 'scheduled'
+    ))
     .map(([key]) => key)
     .sort();
 }
@@ -233,14 +463,27 @@ function uniqueKeys(...keyGroups: string[][]): string[] {
   return [...keys];
 }
 
-function getOptionalMimirActive(mimir: Record<string, unknown>, key: string): boolean | null {
-  const value = getMimirNumericState(mimir, key);
-  return value.state === 'valid' ? value.value > 0 : null;
+function getOptionalMimirActive(
+  mimir: Record<string, unknown>,
+  key: string,
+  mode: MimirActivationMode = 'positive',
+  thorchainHeight?: number
+): boolean | null {
+  const value = getMimirActivity(mimir, key, mode, thorchainHeight);
+  return value.state === 'active'
+    ? true
+    : value.state === 'inactive' || value.state === 'scheduled' || value.state === 'expired'
+      ? false
+      : null;
 }
 
-function isMimirActive(mimir: Record<string, unknown>, key: string): boolean {
-  const value = getMimirNumericState(mimir, key);
-  return value.state === 'valid' && value.value > 0;
+function isMimirActive(
+  mimir: Record<string, unknown>,
+  key: string,
+  mode: MimirActivationMode = 'positive',
+  thorchainHeight?: number
+): boolean {
+  return getMimirActivity(mimir, key, mode, thorchainHeight).state === 'active';
 }
 
 function isMimirEnabled(mimir: Record<string, unknown>, key: string): boolean | null {
@@ -252,9 +495,11 @@ function pauseControl(
   mimir: Record<string, unknown>,
   key: string,
   label: string,
-  description: string
+  description: string,
+  mode: MimirActivationMode = 'positive',
+  thorchainHeight?: number
 ): OperationalControlStatus {
-  const value = getMimirNumericState(mimir, key);
+  const value = getMimirActivity(mimir, key, mode, thorchainHeight);
   if (value.state === 'unparseable') {
     return {
       key,
@@ -264,13 +509,17 @@ function pauseControl(
       description,
     };
   }
-  const active = value.state === 'valid' && value.value > 0;
+  const active = value.state === 'active';
   return {
     key,
     label,
-    state: active ? 'active' : 'inactive',
+    state: active ? 'active' : value.state === 'scheduled' ? 'scheduled' : 'inactive',
     active,
-    description,
+    description: value.state === 'scheduled'
+      ? `${description} Scheduled for THORChain height ${value.value}.`
+      : value.state === 'expired'
+        ? `${description} Expired at THORChain height ${value.value}.`
+        : description,
   };
 }
 
@@ -278,9 +527,11 @@ function optionalPauseControl(
   mimir: Record<string, unknown>,
   key: string,
   label: string,
-  description: string
+  description: string,
+  mode: MimirActivationMode = 'positive',
+  thorchainHeight?: number
 ): OperationalControlStatus {
-  const value = getMimirNumericState(mimir, key);
+  const value = getMimirActivity(mimir, key, mode, thorchainHeight);
   if (value.state === 'unparseable') {
     return {
       key,
@@ -303,9 +554,13 @@ function optionalPauseControl(
   return {
     key,
     label,
-    state: value.value > 0 ? 'active' : 'inactive',
-    active: value.value > 0,
-    description,
+    state: value.state === 'active' ? 'active' : value.state === 'scheduled' ? 'scheduled' : 'inactive',
+    active: value.state === 'active',
+    description: value.state === 'scheduled'
+      ? `${description} Scheduled for THORChain height ${value.value}.`
+      : value.state === 'expired'
+        ? `${description} Expired at THORChain height ${value.value}.`
+        : description,
   };
 }
 
@@ -350,27 +605,34 @@ function aggregatePauseControl(
   activeKeys: string[],
   invalidKeys: string[],
   inactiveDescription: string,
-  activeDescription: string
+  activeDescription: string,
+  scheduledKeys: string[] = []
 ): OperationalControlStatus {
   const active = activeKeys.length > 0;
   const unparseable = !active && invalidKeys.length > 0;
+  const scheduled = !active && !unparseable && scheduledKeys.length > 0;
   return {
     key,
     label,
-    state: active ? 'active' : unparseable ? 'unparseable' : 'inactive',
+    state: active ? 'active' : unparseable ? 'unparseable' : scheduled ? 'scheduled' : 'inactive',
     active,
     description: active
       ? `${activeDescription} (${activeKeys.length} active key${activeKeys.length === 1 ? '' : 's'}).`
       : unparseable
         ? `${invalidKeys.length} scoped key${invalidKeys.length === 1 ? '' : 's'} could not be parsed.`
-        : inactiveDescription,
+        : scheduled
+          ? `${scheduledKeys.length} scoped key${scheduledKeys.length === 1 ? '' : 's'} scheduled for a future THORChain height.`
+          : inactiveDescription,
   };
 }
 
 function getInvalidMimirKeysForChain(
   mimir: Record<string, unknown>,
   chainCode: string,
-  invalidPoolDepositPauseKeys: string[]
+  invalidPoolDepositPauseKeys: string[],
+  invalidSecuredAssetDepositPauseKeys: string[],
+  invalidSecuredAssetWithdrawPauseKeys: string[],
+  invalidAsymWithdrawalPauseKeys: string[]
 ): string[] {
   const directScopedKeys = [
     `HALT${chainCode}CHAIN`,
@@ -385,14 +647,28 @@ function getInvalidMimirKeysForChain(
   const poolScopedKeys = invalidPoolDepositPauseKeys.filter((key) => (
     key.toUpperCase().startsWith(`PAUSELPDEPOSIT-${chainCode}-`)
   ));
+  const securedAssetDepositScopedKeys = invalidSecuredAssetDepositPauseKeys.filter((key) => (
+    getChainCodeFromDashScopedMimirKey(key, 'HaltSecuredDeposit-') === chainCode
+  ));
+  const securedAssetWithdrawScopedKeys = invalidSecuredAssetWithdrawPauseKeys.filter((key) => (
+    getChainCodeFromDashScopedMimirKey(key, 'HaltSecuredWithdraw-') === chainCode
+  ));
+  const asymWithdrawalScopedKeys = invalidAsymWithdrawalPauseKeys.filter((key) => (
+    getChainCodeFromDashScopedMimirKey(key, 'PauseAsymWithdrawal-') === chainCode
+  ));
 
-  return uniqueKeys(directScopedKeys, poolScopedKeys).sort((a, b) => a.localeCompare(b));
+  return uniqueKeys(
+    directScopedKeys,
+    poolScopedKeys,
+    securedAssetDepositScopedKeys,
+    securedAssetWithdrawScopedKeys,
+    asymWithdrawalScopedKeys
+  ).sort((a, b) => a.localeCompare(b));
 }
 
 function extractChainCodesFromMimir(
   mimir: Record<string, unknown>,
-  poolDepositPauseKeys: string[],
-  invalidPoolDepositPauseKeys: string[],
+  scopedDashKeys: string[],
   recognizedChainCodes: Set<string>
 ): string[] {
   const chainCodes = new Set<string>();
@@ -408,7 +684,7 @@ function extractChainCodesFromMimir(
     }
   }
 
-  for (const key of [...poolDepositPauseKeys, ...invalidPoolDepositPauseKeys]) {
+  for (const key of scopedDashKeys) {
     const [, chainCode] = key.toUpperCase().split('-');
     if (chainCode && recognizedChainCodes.has(chainCode)) {
       chainCodes.add(chainCode);
@@ -436,56 +712,97 @@ function getUnknownChainScopedMimirKeys(mimir: Record<string, unknown>, recogniz
 export function deriveNetworkStatus(
   mimir: Record<string, unknown>,
   inboundAddresses: ThornodeInboundAddress[],
-  thorNodeVersion?: string
+  thorNodeVersion?: string,
+  thorchainHeight?: number
 ): NetworkStatus {
-  const tradingPaused = isMimirActive(mimir, 'HALTTRADING');
-  const signingPaused = isMimirActive(mimir, 'HALTSIGNING');
-  const lpPaused = isMimirActive(mimir, 'PAUSELP');
+  const tradingPaused = isMimirActive(mimir, 'HALTTRADING', 'at-or-after-height', thorchainHeight);
+  const signingPaused = isMimirActive(mimir, 'HALTSIGNING', 'at-or-after-height', thorchainHeight);
+  const lpPaused = isMimirActive(mimir, 'PAUSELP', 'at-or-after-height', thorchainHeight);
   const loansPaused = isMimirActive(mimir, 'PAUSELOANS');
-  const observedChainsPaused = isMimirActive(mimir, 'HALTCHAINGLOBAL');
+  const observedChainsPaused = isMimirActive(mimir, 'HALTCHAINGLOBAL', 'at-or-after-height', thorchainHeight);
   const streamingSwapsPaused = getOptionalMimirActive(mimir, 'StreamingSwapPause');
   const memolessTransactionsHalted = getOptionalMimirActive(mimir, 'HaltMemoless');
-  const nodePauseChainGlobal = getOptionalMimirActive(mimir, 'NODEPAUSECHAINGLOBAL');
+  const nodePauseChainGlobal = getOptionalMimirActive(mimir, 'NODEPAUSECHAINGLOBAL', 'until-height', thorchainHeight);
   const bondPaused = getOptionalMimirActive(mimir, 'PauseBond');
   const unbondPaused = getOptionalMimirActive(mimir, 'PauseUnbond');
   const rebondHalted = getOptionalMimirActive(mimir, 'HaltRebond');
   const operatorRotateHalted = getOptionalMimirActive(mimir, 'HaltOperatorRotate');
   const oracleHalted = getOptionalMimirActive(mimir, 'HaltOracle');
-  const securedAssetsPaused = getOptionalMimirActive(mimir, 'HALTSECUREDGLOBAL');
+  const securedAssetsPaused = getOptionalMimirActive(mimir, 'HALTSECUREDGLOBAL', 'at-or-after-height', thorchainHeight);
   const tcyClaimingPaused = getOptionalMimirActive(mimir, 'TCYCLAIMINGHALT');
   const tcyClaimingSwapPaused = getOptionalMimirActive(mimir, 'TCYCLAIMINGSWAPHALT');
   const tcyStakingPaused = getOptionalMimirActive(mimir, 'TCYSTAKINGHALT');
   const tcyStakeDistributionPaused = getOptionalMimirActive(mimir, 'TCYSTAKEDISTRIBUTIONHALT');
   const tcyUnstakingPaused = getOptionalMimirActive(mimir, 'TCYUNSTAKINGHALT');
-  const tcyTradingPaused = getOptionalMimirActive(mimir, 'HALTTCYTRADING');
-  const wasmPaused = getOptionalMimirActive(mimir, 'HALTWASMGLOBAL');
+  const tcyTradingPaused = getOptionalMimirActive(mimir, 'HALTTCYTRADING', 'at-or-after-height', thorchainHeight);
+  const wasmPaused = getOptionalMimirActive(mimir, 'HALTWASMGLOBAL', 'after-height', thorchainHeight);
   const tradeAccountsEnabled = isMimirEnabled(mimir, 'TRADEACCOUNTSENABLED');
+  const tradeAccountDepositsEnabled = isMimirEnabled(mimir, 'TRADEACCOUNTSDEPOSITENABLED');
+  const manualSwapsToSynthDisabled = getOptionalMimirActive(mimir, 'MANUALSWAPSTOSYNTHDISABLED');
   const runePoolEnabled = isMimirEnabled(mimir, 'RUNEPOOLENABLED');
-  const runePoolDepositPaused = getOptionalMimirActive(mimir, 'RUNEPoolHaltDeposit');
-  const runePoolWithdrawPaused = getOptionalMimirActive(mimir, 'RUNEPoolHaltWithdraw');
+  const bankSendEnabled = isMimirEnabled(mimir, 'BANKSENDENABLED');
+  const runePoolDepositPaused = getOptionalMimirActive(mimir, 'RUNEPoolHaltDeposit', 'at-or-after-height', thorchainHeight);
+  const runePoolWithdrawPaused = getOptionalMimirActive(mimir, 'RUNEPoolHaltWithdraw', 'at-or-after-height', thorchainHeight);
   const poolDepositPauseKeys = getActiveMimirKeysByPrefix(mimir, 'PAUSELPDEPOSIT-');
-  const securedAssetDepositPauseKeys = getActiveMimirKeysByPrefix(mimir, 'HaltSecuredDeposit-');
-  const securedAssetWithdrawPauseKeys = getActiveMimirKeysByPrefix(mimir, 'HaltSecuredWithdraw-');
-  const wasmDeployerHaltKeys = getActiveMimirKeysByPrefix(mimir, 'HaltWasmDeployer-');
-  const wasmCodeHashHaltKeys = getActiveMimirKeysByPrefix(mimir, 'HaltWasmCs-');
-  const wasmContractHaltKeys = getActiveMimirKeysByPrefix(mimir, 'HaltWasmContract-');
+  const asymWithdrawalPauseKeys = getActiveMimirKeysByPrefix(mimir, 'PauseAsymWithdrawal-');
+  const securedAssetDepositPauseKeys = getActiveMimirKeysByPrefix(mimir, 'HaltSecuredDeposit-', 'at-or-after-height', thorchainHeight);
+  const securedAssetWithdrawPauseKeys = getActiveMimirKeysByPrefix(mimir, 'HaltSecuredWithdraw-', 'at-or-after-height', thorchainHeight);
+  const wasmDeployerHaltKeys = getActiveMimirKeysByPrefix(mimir, 'HaltWasmDeployer-', 'after-height', thorchainHeight);
+  const wasmCodeHashHaltKeys = getActiveMimirKeysByPrefix(mimir, 'HaltWasmCs-', 'after-height', thorchainHeight);
+  const wasmContractHaltKeys = getActiveMimirKeysByPrefix(mimir, 'HaltWasmContract-', 'after-height', thorchainHeight);
+  const scheduledExactMimirKeys = [
+    getScheduledMimirKeyByMode(mimir, 'HALTTRADING', 'at-or-after-height', thorchainHeight),
+    getScheduledMimirKeyByMode(mimir, 'HALTSIGNING', 'at-or-after-height', thorchainHeight),
+    getScheduledMimirKeyByMode(mimir, 'PAUSELP', 'at-or-after-height', thorchainHeight),
+    getScheduledMimirKeyByMode(mimir, 'HALTCHAINGLOBAL', 'at-or-after-height', thorchainHeight),
+    getScheduledMimirKeyByMode(mimir, 'HALTCHURNING', 'at-or-after-height', thorchainHeight),
+    getScheduledMimirKeyByMode(mimir, 'HALTSECUREDGLOBAL', 'at-or-after-height', thorchainHeight),
+    getScheduledMimirKeyByMode(mimir, 'HALTTCYTRADING', 'at-or-after-height', thorchainHeight),
+    getScheduledMimirKeyByMode(mimir, 'HALTWASMGLOBAL', 'after-height', thorchainHeight),
+    getScheduledMimirKeyByMode(mimir, 'RUNEPoolHaltDeposit', 'at-or-after-height', thorchainHeight),
+    getScheduledMimirKeyByMode(mimir, 'RUNEPoolHaltWithdraw', 'at-or-after-height', thorchainHeight),
+  ].filter((key): key is string => key !== null);
+  const scheduledSecuredAssetDepositPauseKeys = getScheduledMimirKeysByPrefix(mimir, 'HaltSecuredDeposit-', 'at-or-after-height', thorchainHeight);
+  const scheduledSecuredAssetWithdrawPauseKeys = getScheduledMimirKeysByPrefix(mimir, 'HaltSecuredWithdraw-', 'at-or-after-height', thorchainHeight);
+  const scheduledWasmDeployerHaltKeys = getScheduledMimirKeysByPrefix(mimir, 'HaltWasmDeployer-', 'after-height', thorchainHeight);
+  const scheduledWasmCodeHashHaltKeys = getScheduledMimirKeysByPrefix(mimir, 'HaltWasmCs-', 'after-height', thorchainHeight);
+  const scheduledWasmContractHaltKeys = getScheduledMimirKeysByPrefix(mimir, 'HaltWasmContract-', 'after-height', thorchainHeight);
   const invalidPoolDepositPauseKeys = getInvalidMimirKeysByPrefix(mimir, 'PAUSELPDEPOSIT-');
+  const invalidAsymWithdrawalPauseKeys = getInvalidMimirKeysByPrefix(mimir, 'PauseAsymWithdrawal-');
   const invalidSecuredAssetDepositPauseKeys = getInvalidMimirKeysByPrefix(mimir, 'HaltSecuredDeposit-');
   const invalidSecuredAssetWithdrawPauseKeys = getInvalidMimirKeysByPrefix(mimir, 'HaltSecuredWithdraw-');
   const invalidWasmDeployerHaltKeys = getInvalidMimirKeysByPrefix(mimir, 'HaltWasmDeployer-');
   const invalidWasmCodeHashHaltKeys = getInvalidMimirKeysByPrefix(mimir, 'HaltWasmCs-');
   const invalidWasmContractHaltKeys = getInvalidMimirKeysByPrefix(mimir, 'HaltWasmContract-');
   const scopedWasmHaltKeys = uniqueKeys(wasmDeployerHaltKeys, wasmCodeHashHaltKeys, wasmContractHaltKeys);
-  const nodePauseChainGlobalKey = getActiveMimirKey(mimir, 'NODEPAUSECHAINGLOBAL');
+  const scheduledScopedWasmHaltKeys = uniqueKeys(scheduledWasmDeployerHaltKeys, scheduledWasmCodeHashHaltKeys, scheduledWasmContractHaltKeys);
+  const nodePauseChainGlobalKey = getActiveMimirKeyByMode(mimir, 'NODEPAUSECHAINGLOBAL', 'until-height', thorchainHeight);
   const nodePauseChainGlobalKeys = nodePauseChainGlobalKey ? [nodePauseChainGlobalKey] : [];
   const inboundByChain = new Map(inboundAddresses.map((chain) => [chain.chain.toUpperCase(), chain]));
   const inboundChainCodes = inboundAddresses.map((chain) => chain.chain.toUpperCase());
   const recognizedChainCodes = new Set([...CURATED_CHAIN_CODES, ...inboundChainCodes]);
   const unknownChainScopedMimirKeys = getUnknownChainScopedMimirKeys(mimir, recognizedChainCodes);
+  const unknownOperationMimirKeys = getUnknownOperationMimirKeys(mimir);
+  const scheduledMimirKeys = uniqueKeys(
+    scheduledExactMimirKeys,
+    scheduledSecuredAssetDepositPauseKeys,
+    scheduledSecuredAssetWithdrawPauseKeys,
+    scheduledScopedWasmHaltKeys
+  ).sort((a, b) => a.localeCompare(b));
   const mimirOnlyChainCodes = extractChainCodesFromMimir(
     mimir,
-    poolDepositPauseKeys,
-    invalidPoolDepositPauseKeys,
+    [
+      ...poolDepositPauseKeys,
+      ...invalidPoolDepositPauseKeys,
+      ...asymWithdrawalPauseKeys,
+      ...invalidAsymWithdrawalPauseKeys,
+      ...securedAssetDepositPauseKeys,
+      ...invalidSecuredAssetDepositPauseKeys,
+      ...securedAssetWithdrawPauseKeys,
+      ...invalidSecuredAssetWithdrawPauseKeys,
+      ...scheduledSecuredAssetDepositPauseKeys,
+      ...scheduledSecuredAssetWithdrawPauseKeys,
+    ],
     recognizedChainCodes
   )
     .filter((chainCode) => !inboundByChain.has(chainCode));
@@ -493,14 +810,53 @@ export function deriveNetworkStatus(
 
   const chainStatuses: ChainOperationalStatus[] = chainCodes.map((chainCode) => {
     const chain = inboundByChain.get(chainCode);
-    const chainHaltKey = getActiveMimirKey(mimir, `HALT${chainCode}CHAIN`);
-    const chainSolvencyHaltKey = getActiveMimirKey(mimir, `SOLVENCYHALT${chainCode}CHAIN`);
-    const chainTradingKey = getActiveMimirKey(mimir, `HALT${chainCode}TRADING`);
-    const chainLpKey = getActiveMimirKey(mimir, `PAUSELP${chainCode}`);
-    const chainPrefixSigningKey = getActiveMimirKey(mimir, `HALTSIGNING${chainCode}`);
-    const chainSuffixSigningKey = getActiveMimirKey(mimir, `HALT${chainCode}SIGNING`);
+    const chainHaltKey = getActiveMimirKeyByMode(mimir, `HALT${chainCode}CHAIN`, 'at-or-after-height', thorchainHeight);
+    const chainSolvencyHaltKey = getActiveMimirKeyByMode(mimir, `SOLVENCYHALT${chainCode}CHAIN`, 'at-or-after-height', thorchainHeight);
+    const chainTradingKey = getActiveMimirKeyByMode(mimir, `HALT${chainCode}TRADING`, 'at-or-after-height', thorchainHeight);
+    const chainLpKey = getActiveMimirKeyByMode(mimir, `PAUSELP${chainCode}`, 'at-or-after-height', thorchainHeight);
+    const chainPrefixSigningKey = getActiveMimirKeyByMode(mimir, `HALTSIGNING${chainCode}`, 'at-or-after-height', thorchainHeight);
+    const chainSuffixSigningKey = getActiveMimirKeyByMode(mimir, `HALT${chainCode}SIGNING`, 'at-or-after-height', thorchainHeight);
+    const scheduledChainMimirKeys = [
+      getScheduledMimirKeyByMode(mimir, `HALT${chainCode}CHAIN`, 'at-or-after-height', thorchainHeight),
+      getScheduledMimirKeyByMode(mimir, `SOLVENCYHALT${chainCode}CHAIN`, 'at-or-after-height', thorchainHeight),
+      getScheduledMimirKeyByMode(mimir, `HALT${chainCode}TRADING`, 'at-or-after-height', thorchainHeight),
+      getScheduledMimirKeyByMode(mimir, `PAUSELP${chainCode}`, 'at-or-after-height', thorchainHeight),
+      getScheduledMimirKeyByMode(mimir, `HALTSIGNING${chainCode}`, 'at-or-after-height', thorchainHeight),
+      getScheduledMimirKeyByMode(mimir, `HALT${chainCode}SIGNING`, 'at-or-after-height', thorchainHeight),
+    ].filter((key): key is string => key !== null);
     const lpDepositPauseKeys = poolDepositPauseKeys.filter((key) => key.toUpperCase().startsWith(`PAUSELPDEPOSIT-${chainCode}-`));
-    const unparseableMimirKeys = getInvalidMimirKeysForChain(mimir, chainCode, invalidPoolDepositPauseKeys);
+    const securedAssetDepositChainKeys = securedAssetDepositPauseKeys.filter((key) => (
+      getChainCodeFromDashScopedMimirKey(key, 'HaltSecuredDeposit-') === chainCode
+    ));
+    const securedAssetWithdrawChainKeys = securedAssetWithdrawPauseKeys.filter((key) => (
+      getChainCodeFromDashScopedMimirKey(key, 'HaltSecuredWithdraw-') === chainCode
+    ));
+    const asymWithdrawalChainKeys = asymWithdrawalPauseKeys.filter((key) => (
+      getChainCodeFromDashScopedMimirKey(key, 'PauseAsymWithdrawal-') === chainCode
+    ));
+    const scheduledSecuredAssetDepositChainKeys = scheduledSecuredAssetDepositPauseKeys.filter((key) => (
+      getChainCodeFromDashScopedMimirKey(key, 'HaltSecuredDeposit-') === chainCode
+    ));
+    const scheduledSecuredAssetWithdrawChainKeys = scheduledSecuredAssetWithdrawPauseKeys.filter((key) => (
+      getChainCodeFromDashScopedMimirKey(key, 'HaltSecuredWithdraw-') === chainCode
+    ));
+    const chainScheduledMimirKeys = uniqueKeys(
+      scheduledChainMimirKeys,
+      scheduledSecuredAssetDepositChainKeys,
+      scheduledSecuredAssetWithdrawChainKeys
+    ).sort((a, b) => a.localeCompare(b));
+    const unparseableMimirKeys = getInvalidMimirKeysForChain(
+      mimir,
+      chainCode,
+      invalidPoolDepositPauseKeys,
+      invalidSecuredAssetDepositPauseKeys,
+      invalidSecuredAssetWithdrawPauseKeys,
+      invalidAsymWithdrawalPauseKeys
+    );
+    const missingInboundFields = missingInboundOperationFields(chain);
+    const chainSourceWarnings = missingInboundFields.length > 0
+      ? [`${chain?.chain ?? chainCode} inbound_addresses omitted ${missingInboundFields.join(', ')}; live chain operation state is partial.`]
+      : [];
     const activeMimirKeys = [
       chainHaltKey,
       chainSolvencyHaltKey,
@@ -512,13 +868,24 @@ export function deriveNetworkStatus(
 
     const chainStatus: ChainOperationalStatus = {
       chain: chain?.chain ?? chainCode,
-      halted: Boolean(chain?.halted || chainHaltKey || chainSolvencyHaltKey),
+      halted: Boolean(chain?.halted || observedChainsPaused || nodePauseChainGlobal || chainHaltKey || chainSolvencyHaltKey),
       tradingPaused: Boolean(tradingPaused || chain?.global_trading_paused || chain?.chain_trading_paused || chainTradingKey),
       lpActionsPaused: Boolean(lpPaused || chain?.chain_lp_actions_paused || chainLpKey),
       lpDepositPaused: lpDepositPauseKeys.length > 0,
       signingPaused: signingPaused || Boolean(chainPrefixSigningKey || chainSuffixSigningKey),
       activeMimirKeys,
       lpDepositPauseKeys,
+      ...(chainSourceWarnings.length > 0 ? { sourceWarnings: chainSourceWarnings } : {}),
+      ...(securedAssetDepositChainKeys.length > 0
+        ? { securedAssetDepositPaused: true, securedAssetDepositPauseKeys: securedAssetDepositChainKeys }
+        : {}),
+      ...(securedAssetWithdrawChainKeys.length > 0
+        ? { securedAssetWithdrawPaused: true, securedAssetWithdrawPauseKeys: securedAssetWithdrawChainKeys }
+        : {}),
+      ...(asymWithdrawalChainKeys.length > 0
+        ? { asymWithdrawalPaused: true, asymWithdrawalPauseKeys: asymWithdrawalChainKeys }
+        : {}),
+      ...(chainScheduledMimirKeys.length > 0 ? { scheduledMimirKeys: chainScheduledMimirKeys } : {}),
     };
 
     return unparseableMimirKeys.length > 0
@@ -527,11 +894,11 @@ export function deriveNetworkStatus(
   });
 
   const monitoredControls: OperationalControlStatus[] = [
-    pauseControl(mimir, 'HALTTRADING', 'Trading', 'Swaps and trading actions are paused when active.'),
+    pauseControl(mimir, 'HALTTRADING', 'Trading', 'Swaps and trading actions are paused when active.', 'at-or-after-height', thorchainHeight),
     optionalPauseControl(mimir, 'StreamingSwapPause', 'Streaming swaps', 'Streaming swaps are paused when active.'),
     optionalPauseControl(mimir, 'HaltMemoless', 'Memoless transactions', 'Memoless transaction handling is halted when active.'),
-    pauseControl(mimir, 'HALTSIGNING', 'Signing', 'Outbound signing is paused when active.'),
-    pauseControl(mimir, 'PAUSELP', 'LP actions', 'Liquidity-provider actions are paused when active.'),
+    pauseControl(mimir, 'HALTSIGNING', 'Signing', 'Outbound signing is paused when active.', 'at-or-after-height', thorchainHeight),
+    pauseControl(mimir, 'PAUSELP', 'LP actions', 'Liquidity-provider actions are paused when active.', 'at-or-after-height', thorchainHeight),
     aggregatePauseControl(
       'PAUSELPDEPOSIT-*',
       'Pool deposits',
@@ -540,25 +907,34 @@ export function deriveNetworkStatus(
       'No active pool-specific deposit pause keys were observed.',
       'Pool-specific liquidity deposits are paused for one or more assets'
     ),
-    optionalPauseControl(mimir, 'RUNEPoolHaltDeposit', 'RUNEPool deposits', 'RUNEPool deposits are halted when active.'),
-    optionalPauseControl(mimir, 'RUNEPoolHaltWithdraw', 'RUNEPool withdrawals', 'RUNEPool withdrawals are halted when active.'),
+    aggregatePauseControl(
+      'PauseAsymWithdrawal-*',
+      'Asym LP withdrawals',
+      asymWithdrawalPauseKeys,
+      invalidAsymWithdrawalPauseKeys,
+      'No active chain-specific asymmetric withdrawal pause keys were observed.',
+      'Asymmetric liquidity withdrawals are paused for one or more chains'
+    ),
+    optionalPauseControl(mimir, 'RUNEPoolHaltDeposit', 'RUNEPool deposits', 'RUNEPool deposits are halted when active.', 'at-or-after-height', thorchainHeight),
+    optionalPauseControl(mimir, 'RUNEPoolHaltWithdraw', 'RUNEPool withdrawals', 'RUNEPool withdrawals are halted when active.', 'at-or-after-height', thorchainHeight),
     pauseControl(mimir, 'PAUSELOANS', 'Loans', 'Legacy loan actions are paused when active.'),
-    pauseControl(mimir, 'HALTCHAINGLOBAL', 'Chain observation', 'Global chain observation is halted when active.'),
-    optionalPauseControl(mimir, 'NODEPAUSECHAINGLOBAL', 'Node chain pause', 'Node-requested chain pausing is active when this Mimir key is active.'),
-    pauseControl(mimir, 'HALTCHURNING', 'Churning', 'Validator/vault rotation is halted when active.'),
+    pauseControl(mimir, 'HALTCHAINGLOBAL', 'Chain observation', 'Global chain observation is halted when active.', 'at-or-after-height', thorchainHeight),
+    optionalPauseControl(mimir, 'NODEPAUSECHAINGLOBAL', 'Node chain pause', 'Node-requested chain pausing is active until this height when the Mimir key is active.', 'until-height', thorchainHeight),
+    pauseControl(mimir, 'HALTCHURNING', 'Churning', 'Validator/vault rotation is halted when active.', 'at-or-after-height', thorchainHeight),
     optionalPauseControl(mimir, 'PauseBond', 'Bonding', 'Node bond actions are paused when active.'),
     optionalPauseControl(mimir, 'PauseUnbond', 'Unbonding', 'Node unbond actions are paused when active.'),
     optionalPauseControl(mimir, 'HaltRebond', 'Rebonding', 'Node rebond actions are halted when active.'),
     optionalPauseControl(mimir, 'HaltOperatorRotate', 'Operator rotation', 'Node operator rotation is halted when active.'),
     optionalPauseControl(mimir, 'HaltOracle', 'Oracle', 'Oracle operations are halted when active.'),
-    optionalPauseControl(mimir, 'HALTSECUREDGLOBAL', 'Secured assets', 'Secured-asset operations are halted when active.'),
+    optionalPauseControl(mimir, 'HALTSECUREDGLOBAL', 'Secured assets', 'Secured-asset operations are halted when active.', 'at-or-after-height', thorchainHeight),
     aggregatePauseControl(
       'HaltSecuredDeposit-*',
       'Secured deposits',
       securedAssetDepositPauseKeys,
       invalidSecuredAssetDepositPauseKeys,
       'No active secured-asset deposit pause keys were observed.',
-      'Secured-asset deposits are paused for one or more scoped assets'
+      'Secured-asset deposits are paused for one or more chains',
+      scheduledSecuredAssetDepositPauseKeys
     ),
     aggregatePauseControl(
       'HaltSecuredWithdraw-*',
@@ -566,22 +942,24 @@ export function deriveNetworkStatus(
       securedAssetWithdrawPauseKeys,
       invalidSecuredAssetWithdrawPauseKeys,
       'No active secured-asset withdrawal pause keys were observed.',
-      'Secured-asset withdrawals are paused for one or more scoped assets'
+      'Secured-asset withdrawals are paused for one or more chains',
+      scheduledSecuredAssetWithdrawPauseKeys
     ),
     optionalPauseControl(mimir, 'TCYCLAIMINGHALT', 'TCY claiming', 'TCY claim actions are halted when active.'),
     optionalPauseControl(mimir, 'TCYCLAIMINGSWAPHALT', 'TCY claim swaps', 'TCY claim swap actions are halted when active.'),
     optionalPauseControl(mimir, 'TCYSTAKINGHALT', 'TCY staking', 'TCY staking actions are halted when active.'),
     optionalPauseControl(mimir, 'TCYSTAKEDISTRIBUTIONHALT', 'TCY distributions', 'TCY stake distribution is halted when active.'),
     optionalPauseControl(mimir, 'TCYUNSTAKINGHALT', 'TCY unstaking', 'TCY unstaking actions are halted when active.'),
-    optionalPauseControl(mimir, 'HALTTCYTRADING', 'TCY trading', 'TCY trading is halted when active.'),
-    optionalPauseControl(mimir, 'HALTWASMGLOBAL', 'WASM/app layer', 'WASM/app-layer actions are halted when active.'),
+    optionalPauseControl(mimir, 'HALTTCYTRADING', 'TCY trading', 'TCY trading is halted when active.', 'at-or-after-height', thorchainHeight),
+    optionalPauseControl(mimir, 'HALTWASMGLOBAL', 'WASM/app layer', 'WASM/app-layer actions are halted when active.', 'after-height', thorchainHeight),
     aggregatePauseControl(
       'HaltWasmDeployer-*',
       'WASM deployers',
       wasmDeployerHaltKeys,
       invalidWasmDeployerHaltKeys,
       'No active WASM deployer halt keys were observed.',
-      'WASM deployments are halted for one or more scoped deployers'
+      'WASM deployments are halted for one or more scoped deployers',
+      scheduledWasmDeployerHaltKeys
     ),
     aggregatePauseControl(
       'HaltWasmCs-*',
@@ -589,7 +967,8 @@ export function deriveNetworkStatus(
       wasmCodeHashHaltKeys,
       invalidWasmCodeHashHaltKeys,
       'No active WASM code-checksum halt keys were observed.',
-      'WASM code checksum execution is halted for one or more scoped checksums'
+      'WASM code checksum execution is halted for one or more scoped checksums',
+      scheduledWasmCodeHashHaltKeys
     ),
     aggregatePauseControl(
       'HaltWasmContract-*',
@@ -597,28 +976,42 @@ export function deriveNetworkStatus(
       wasmContractHaltKeys,
       invalidWasmContractHaltKeys,
       'No active WASM contract halt keys were observed.',
-      'WASM contract execution is halted for one or more scoped contracts'
+      'WASM contract execution is halted for one or more scoped contracts',
+      scheduledWasmContractHaltKeys
     ),
     enablementControl(mimir, 'TRADEACCOUNTSENABLED', 'Trade accounts', 'Trade accounts are unavailable when disabled.'),
+    enablementControl(mimir, 'TRADEACCOUNTSDEPOSITENABLED', 'Trade deposits', 'Trade-account deposits are unavailable when disabled.'),
+    optionalPauseControl(mimir, 'MANUALSWAPSTOSYNTHDISABLED', 'Manual synth swaps', 'Manual swaps to synthetic assets are disabled when active.'),
     enablementControl(mimir, 'RUNEPOOLENABLED', 'RUNEPool', 'RUNEPool is unavailable when disabled.'),
+    enablementControl(mimir, 'BANKSENDENABLED', 'Bank sends', 'Native bank-send messages are unavailable when disabled.'),
   ];
 
   const activeControlKeys = monitoredControls
     .filter((control) => control.active)
     .map((control) => control.key);
   const invalidMimirKeys = collectInvalidMimirKeys(mimir, recognizedChainCodes);
+  const chainSourceWarnings = uniqueKeys(chainStatuses.flatMap((chain) => chain.sourceWarnings ?? []));
   const sourceWarnings = [
+    ...chainSourceWarnings,
     ...(invalidMimirKeys.length > 0
       ? [`${invalidMimirKeys.length} monitored Mimir key${invalidMimirKeys.length === 1 ? '' : 's'} could not be parsed.`]
       : []),
     ...(unknownChainScopedMimirKeys.length > 0
       ? [`Unknown chain-scoped Mimir key${unknownChainScopedMimirKeys.length === 1 ? '' : 's'} ignored: ${unknownChainScopedMimirKeys.join(', ')}.`]
       : []),
+    ...(unknownOperationMimirKeys.length > 0
+      ? [`Unknown operation-like Mimir key${unknownOperationMimirKeys.length === 1 ? '' : 's'} need review: ${unknownOperationMimirKeys.join(', ')}.`]
+      : []),
   ];
   const activeChainKeys = uniqueKeys(chainStatuses.flatMap((chain) => chain.activeMimirKeys));
+  const allScheduledMimirKeys = uniqueKeys(
+    scheduledMimirKeys,
+    chainStatuses.flatMap((chain) => chain.scheduledMimirKeys ?? [])
+  ).sort((a, b) => a.localeCompare(b));
   const activeEvidenceKeys = uniqueKeys(
     activeChainKeys,
     poolDepositPauseKeys,
+    asymWithdrawalPauseKeys,
     securedAssetDepositPauseKeys,
     securedAssetWithdrawPauseKeys,
     scopedWasmHaltKeys,
@@ -627,19 +1020,29 @@ export function deriveNetworkStatus(
   const activePauseKeys = uniqueKeys(activeControlKeys, activeEvidenceKeys);
 
   const pausedChainCount = chainStatuses.filter(
-    (chain) => chain.halted || chain.tradingPaused || chain.lpActionsPaused || chain.lpDepositPaused || chain.signingPaused
+    (chain) => (
+      chain.halted ||
+      chain.tradingPaused ||
+      chain.lpActionsPaused ||
+      chain.lpDepositPaused ||
+      chain.signingPaused ||
+      chain.securedAssetDepositPaused ||
+      chain.securedAssetWithdrawPaused ||
+      chain.asymWithdrawalPaused
+    )
   ).length;
   const isPaused = activeControlKeys.length > 0 || activeEvidenceKeys.length > 0 || pausedChainCount > 0;
   const hasSourceWarnings = sourceWarnings.length > 0;
+  const hasPartialInboundWarnings = chainSourceWarnings.length > 0;
 
   return {
-    state: isPaused ? 'paused' : 'operational',
+    state: isPaused ? 'paused' : hasPartialInboundWarnings ? 'degraded' : 'operational',
     summary: isPaused
       ? hasSourceWarnings
         ? 'Current-only live sources show one or more THORChain operations paused, with source warnings to review.'
         : 'Current-only live sources show one or more THORChain operations paused.'
       : hasSourceWarnings
-        ? 'Current-only live sources do not show active halt flags, but some Mimir source warnings need review.'
+        ? 'Current-only live sources do not show active halt flags, but source warnings need review.'
         : 'Current-only live sources do not show global halt flags.',
     tradingPaused,
     streamingSwapsPaused,
@@ -657,6 +1060,7 @@ export function deriveNetworkStatus(
     securedAssetsPaused,
     securedAssetDepositPauseKeys,
     securedAssetWithdrawPauseKeys,
+    asymWithdrawalPauseKeys,
     tcyClaimingPaused,
     tcyClaimingSwapPaused,
     tcyStakingPaused,
@@ -664,7 +1068,10 @@ export function deriveNetworkStatus(
     tcyUnstakingPaused,
     tcyTradingPaused,
     tradeAccountsEnabled,
+    tradeAccountDepositsEnabled,
+    manualSwapsToSynthDisabled,
     runePoolEnabled,
+    bankSendEnabled,
     runePoolDepositPaused,
     runePoolWithdrawPaused,
     wasmPaused,
@@ -673,6 +1080,7 @@ export function deriveNetworkStatus(
     wasmContractHaltKeys,
     scopedWasmHaltKeys,
     poolDepositPauseKeys,
+    scheduledMimirKeys: allScheduledMimirKeys,
     chainStatuses,
     activeControlKeys,
     activeChainKeys,
@@ -680,6 +1088,7 @@ export function deriveNetworkStatus(
     activePauseKeys,
     monitoredControls,
     thorNodeVersion,
+    thorchainHeight,
     invalidMimirKeys,
     sourceWarnings,
   };
@@ -698,34 +1107,37 @@ export class ThornodeAPI {
     return request<{ current?: string; version?: string }>('/version');
   }
 
+  static async getLastBlock(): Promise<LiveDataResult<ThornodeLastBlock[]>> {
+    return request<ThornodeLastBlock[]>('/lastblock');
+  }
+
   static async getNetworkStatus(): Promise<LiveDataResult<NetworkStatus>> {
     const checkedAt = new Date().toISOString();
-    const [mimir, inbound, version] = await Promise.all([
-      this.getMimir(),
-      this.getInboundAddresses(),
-      this.getVersion(),
-    ]);
+    const errors: string[] = [];
 
-    if (mimir.status !== 'ok' || inbound.status !== 'ok' || !mimir.data || !inbound.data) {
-      const error = [mimir.error, inbound.error, version.error]
-        .filter((message): message is string => Boolean(message))
-        .join('; ');
-      return liveDegraded<NetworkStatus>(
-        error || 'THORNode status sources did not respond',
-        presentSources(mimir.source, inbound.source, version.source),
-        checkedAt
-      );
+    for (let i = 0; i < THORNODE_ENDPOINTS.length; i += 1) {
+      const endpointIndex = (activeEndpoint + i) % THORNODE_ENDPOINTS.length;
+      const endpoint = THORNODE_ENDPOINTS[endpointIndex];
+
+      try {
+        const [mimir, inbound, version, lastBlock] = await Promise.all([
+          requestFromEndpoint<unknown>(endpoint, '/mimir'),
+          requestFromEndpoint<unknown>(endpoint, '/inbound_addresses'),
+          requestFromEndpoint<unknown>(endpoint, '/version'),
+          requestFromEndpoint<unknown>(endpoint, '/lastblock'),
+        ]);
+        const status = deriveValidatedNetworkStatusSnapshot(mimir, inbound, version, lastBlock);
+        activeEndpoint = endpointIndex;
+        return liveOk(status, endpoint, checkedAt);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unknown THORNode status error';
+        errors.push(`${endpoint.label}: ${message}`);
+      }
     }
 
-    const status = deriveNetworkStatus(
-      mimir.data,
-      inbound.data,
-      version.data?.current ?? version.data?.version
-    );
-
-    return liveOk(
-      status,
-      presentSources(mimir.source, inbound.source, version.source),
+    return liveDegraded<NetworkStatus>(
+      `THORNode status sources did not provide a usable snapshot (${errors.join('; ')})`,
+      THORNODE_ENDPOINTS,
       checkedAt
     );
   }

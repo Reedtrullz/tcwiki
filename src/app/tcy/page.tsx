@@ -1,6 +1,8 @@
 import { PageContainer } from '@/components/layout/PageContainer';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
+import { FreshnessMeta } from '@/components/ui/FreshnessMeta';
+import { TOKENOMICS_RECORDS } from '@/lib/data/static';
 import { createRouteMetadata } from '@/lib/metadata';
 
 export const metadata = createRouteMetadata({
@@ -9,11 +11,7 @@ export const metadata = createRouteMetadata({
   path: '/tcy',
 });
 
-const sources = [
-  { label: 'Archived Savers/Lending docs', href: 'https://docs.thorchain.org/thornodes/archived' },
-  { label: 'TCY tokenomics', href: 'https://docs.thorchain.org/tokenomics-rune-tcy' },
-  { label: 'TCY developer guide', href: 'https://dev.thorchain.org/concepts/tcy.html' },
-];
+const tcyRecord = TOKENOMICS_RECORDS.find((record) => record.data.id === 'tcy-recovery-context') ?? TOKENOMICS_RECORDS[0];
 
 export default function TCYPage() {
   return (
@@ -30,10 +28,11 @@ export default function TCYPage() {
           <Badge variant="danger">Deprecated products</Badge>
         </div>
         <p className="text-sm text-slate-300">
-          Do not treat Savers or Lending as active yield products. Current availability, TCY claiming, and
-          staking state are live protocol facts and should be checked from THORNode/Mimir before making any
-          current claim.
+          {tcyRecord.data.summary} Do not treat Savers or Lending as active yield products.
         </p>
+        <div className="mt-3">
+          <FreshnessMeta freshness={tcyRecord.freshness} sources={tcyRecord.sources} compact />
+        </div>
       </div>
 
       <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-5">Historical Timeline</h2>
@@ -54,7 +53,7 @@ export default function TCYPage() {
         ].map((card) => (
           <Card key={card.title}>
             <h3 className="text-sm font-semibold mb-1.5">{card.title}</h3>
-            <p className="text-xs text-slate-500 leading-relaxed">{card.desc}</p>
+            <p className="text-xs text-slate-400 leading-relaxed">{card.desc}</p>
           </Card>
         ))}
       </div>
@@ -63,7 +62,7 @@ export default function TCYPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-12">
         <Card className="border-amber-500/20">
           <h3 className="text-sm font-semibold text-amber-300 mb-2">Savers and Lending</h3>
-          <ul className="space-y-2 text-xs text-slate-500">
+          <ul className="space-y-2 text-xs text-slate-400">
             <li>Archived docs mark both features as deprecated and no longer available.</li>
             <li>Historical mechanics are useful for understanding THORFi, but they are not current deposit instructions.</li>
             <li>Current claim, stake, and pause state must come from live protocol sources.</li>
@@ -71,7 +70,7 @@ export default function TCYPage() {
         </Card>
         <Card className="border-accent/20">
           <h3 className="text-sm font-semibold text-accent mb-2">TCY</h3>
-          <ul className="space-y-2 text-xs text-slate-500">
+          <ul className="space-y-2 text-xs text-slate-400">
             <li>TCY is the recovery-token context for the THORFi unwind.</li>
             <li>Supply, claiming, and staking details should be dated and source-linked.</li>
             <li>The wiki should avoid financial or recovery-value advice.</li>
@@ -80,11 +79,14 @@ export default function TCYPage() {
       </div>
 
       <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-5">Sources</h2>
+      <div className="mb-4">
+        <FreshnessMeta freshness={tcyRecord.freshness} sources={tcyRecord.sources} />
+      </div>
       <div className="flex flex-wrap gap-2">
-        {sources.map((source) => (
+        {tcyRecord.sources.map((source) => (
           <a
-            key={source.href}
-            href={source.href}
+            key={source.url}
+            href={source.url}
             target="_blank"
             rel="noopener noreferrer"
             className="rounded-lg border border-border bg-surface-elevated px-4 py-3 text-sm text-slate-400 hover:border-accent/30 hover:text-slate-200 transition-colors"

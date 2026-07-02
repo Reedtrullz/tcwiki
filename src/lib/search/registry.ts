@@ -4,6 +4,7 @@ import {
   PROTOCOL_MILESTONE_RECORDS,
   RESEARCH_REPORT_RECORDS,
   SECURITY_INCIDENT_RECORDS,
+  SOURCE_MAP_SECTION_RECORDS,
 } from '@/lib/data/static';
 import { CONTENT_ENTRIES } from '@/lib/content/registry';
 import { GLOSSARY_TERMS } from '@/lib/content/glossary';
@@ -21,7 +22,8 @@ export type SearchDocType =
   | 'governance'
   | 'milestone'
   | 'mimir'
-  | 'glossary';
+  | 'glossary'
+  | 'source-map';
 
 export interface SearchDoc {
   id: string;
@@ -33,6 +35,7 @@ export interface SearchDoc {
   anchor?: string;
   confidence: DataConfidence;
   reviewedAt: string;
+  nextReviewDue: string;
   sources: SourceMeta[];
   description: string;
 }
@@ -46,6 +49,7 @@ const OPERATIONAL_HALT_SEARCH_DOCUMENTS: SearchDoc[] = [
     title: 'Official Mimir halt and enablement controls',
     confidence: 'official',
     reviewedAt: '2026-07-02',
+    nextReviewDue: '2026-07-16',
     sources: [
       {
         label: 'THORChain Network Halts',
@@ -58,8 +62,11 @@ const OPERATIONAL_HALT_SEARCH_DOCUMENTS: SearchDoc[] = [
       'StreamingSwapPause means streaming swap pause behavior should be checked from live Mimir.',
       'HaltMemoless means memoless transaction handling may be halted.',
       'RUNEPoolHaltDeposit means RUNEPool deposits may be halted; use RUNEPool deposit halt as the human-readable phrase.',
-      'Related controls include HALTTRADING, HALTSIGNING, PAUSELP, PAUSELOANS, HALTCHURNING, HALTWASMGLOBAL, TRADEACCOUNTSENABLED, and RUNEPOOLENABLED.',
-      'Treat halt, pause, disabled, enabled, RUNEPool, trade accounts, app layer, signing, trading, LP actions, and memoless availability as current-only source-backed status.',
+      'RUNEPoolHaltWithdraw means RUNEPool withdrawals may be halted.',
+      'Related controls include HALTTRADING, HALTSIGNING, PAUSELP, PAUSELOANS, HALTCHURNING, HALTWASMGLOBAL, TRADEACCOUNTSENABLED, TRADEACCOUNTSDEPOSITENABLED, MANUALSWAPSTOSYNTHDISABLED, RUNEPOOLENABLED, and BANKSENDENABLED.',
+      'Node and operator controls include PauseBond, PauseUnbond, HaltRebond, HaltOperatorRotate, and HaltOracle.',
+      'Scoped controls include PAUSELPDEPOSIT, PauseAsymWithdrawal, HaltSecuredDeposit, HaltSecuredWithdraw, HaltWasmDeployer, HaltWasmCs, and HaltWasmContract.',
+      'Treat halt, pause, disabled, enabled, RUNEPool, trade accounts, app layer, signing, trading, LP actions, asymmetric withdrawals, secured assets, bank sends, and memoless availability as current-only source-backed status.',
     ].join(' '),
   },
 ];
@@ -75,6 +82,7 @@ function searchMeta<T>(record: SourcedRecord<T>) {
   return {
     confidence: record.freshness.confidence,
     reviewedAt: record.freshness.checkedAt,
+    nextReviewDue: record.freshness.nextReviewDue ?? record.freshness.checkedAt,
     sources: record.sources,
   };
 }
@@ -89,6 +97,7 @@ export const SEARCH_DOCUMENTS: SearchDoc[] = [
     title: entry.title,
     confidence: entry.confidence,
     reviewedAt: entry.reviewedAt,
+    nextReviewDue: entry.nextReviewDue,
     sources: entry.sources,
     description: entry.description,
     content: [
@@ -104,6 +113,23 @@ export const SEARCH_DOCUMENTS: SearchDoc[] = [
     href: doc.slug,
     type: doc.slug.startsWith('/deep-dives/') ? 'deep-dive' as const : 'resource' as const,
   })),
+  ...SOURCE_MAP_SECTION_RECORDS.map((record) => ({
+    id: `source-map:${record.data.id}`,
+    slug: '/docs',
+    href: withAnchor('/docs', record.data.id),
+    anchor: record.data.id,
+    type: 'source-map' as const,
+    title: record.data.title,
+    description: record.data.use,
+    ...searchMeta(record),
+    content: [
+      record.data.title,
+      record.data.use,
+      record.data.caveat,
+      record.data.links.map((source) => `${source.label} ${source.notes ?? ''}`).join(' '),
+      record.sources.map((source) => source.label).join(' '),
+    ].join(' '),
+  })),
   ...SECURITY_INCIDENT_RECORDS.map((record) => {
     const anchor = recordAnchor('incident', record.data.id);
     return {
@@ -116,8 +142,12 @@ export const SEARCH_DOCUMENTS: SearchDoc[] = [
       description: record.data.description,
       ...searchMeta(record),
       content: [
+        `Date: ${record.data.date}.`,
+        `Type: ${record.data.type}.`,
         record.data.description,
         `Impact: ${record.data.impact}.`,
+        `Resolved: ${record.data.resolved ? 'yes' : 'no'}.`,
+        record.data.resolutionDate ? `Resolution date: ${record.data.resolutionDate}.` : '',
         `Lessons: ${record.data.lessons.join('; ')}.`,
         record.data.url ?? '',
         record.sources.map((source) => source.label).join(' '),
@@ -163,7 +193,7 @@ export const SEARCH_DOCUMENTS: SearchDoc[] = [
       title: record.data.title,
       description: record.data.description,
       ...searchMeta(record),
-      content: `${record.data.description} ${record.data.type} ${record.data.status} ${record.sources.map((source) => source.label).join(' ')}`,
+      content: `${record.data.description} Type: ${record.data.type}. Status: ${record.data.status}. Created: ${record.data.createdDate}. Expires: ${record.data.expiryDate}. Voting period: ${record.data.votingPeriod}. ${record.sources.map((source) => source.label).join(' ')}`,
     };
   }),
   ...PROTOCOL_MILESTONE_RECORDS.map((record) => {
@@ -177,7 +207,7 @@ export const SEARCH_DOCUMENTS: SearchDoc[] = [
       title: record.data.title,
       description: record.data.description,
       ...searchMeta(record),
-      content: `${record.data.description} ${record.sources.map((source) => source.label).join(' ')}`,
+      content: `Date: ${record.data.date}. Title: ${record.data.title}. ${record.data.description} ${record.sources.map((source) => source.label).join(' ')}`,
     };
   }),
   ...GLOSSARY_TERMS.map((term) => {
@@ -192,6 +222,7 @@ export const SEARCH_DOCUMENTS: SearchDoc[] = [
       description: term.definition,
       confidence: term.confidence,
       reviewedAt: term.reviewedAt,
+      nextReviewDue: term.nextReviewDue,
       sources: term.sources,
       content: `${term.term} ${term.definition} ${term.category} ${term.sources.map((source) => source.label).join(' ')}`,
     };

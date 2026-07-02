@@ -34,7 +34,10 @@ export default function StatsPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center pt-[52px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent"></div>
+        <div role="status" aria-live="polite" className="flex flex-col items-center gap-3 text-sm text-slate-400">
+          <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-accent" aria-hidden="true"></div>
+          <span>Loading live network statistics...</span>
+        </div>
       </div>
     );
   }
@@ -83,7 +86,7 @@ export default function StatsPage() {
 
       <div className="mb-12">
         <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-5">Earnings History (30 days)</h2>
-        <p id="earnings-history-summary" className="mb-3 text-sm text-slate-500">
+        <p id="earnings-history-summary" className="mb-3 text-sm text-slate-400">
           {earningsSummary}
         </p>
         <div className="mb-3">
@@ -105,7 +108,7 @@ export default function StatsPage() {
                 </LineChart>
               </ResponsiveContainer>
               <div className="mt-6 overflow-x-auto">
-                <table className="w-full min-w-[520px] text-left text-xs text-slate-500">
+                <table className="w-full min-w-[520px] text-left text-xs text-slate-400">
                   <caption className="sr-only">Thirty day earnings history from Midgard</caption>
                   <thead className="text-[11px] uppercase tracking-wider text-slate-400">
                     <tr>
@@ -129,7 +132,7 @@ export default function StatsPage() {
               </div>
             </>
           ) : (
-            <p className="text-slate-500 text-center py-20">Earnings history unavailable from live sources.</p>
+            <p className="text-slate-400 text-center py-20">Earnings history unavailable from live sources.</p>
           )}
         </div>
       </div>

@@ -3,9 +3,6 @@ import { fileURLToPath } from "node:url";
 import type { NextConfig } from "next";
 
 const rootDir = dirname(fileURLToPath(import.meta.url));
-const scriptSrc = process.env.NODE_ENV === 'production'
-  ? "script-src 'self' 'unsafe-inline'"
-  : "script-src 'self' 'unsafe-inline' 'unsafe-eval'";
 
 const nextConfig: NextConfig = {
   output: "standalone",
@@ -41,19 +38,6 @@ const nextConfig: NextConfig = {
           {
             key: 'Permissions-Policy',
             value: 'camera=(), microphone=(), geolocation=(), payment=(), usb=()',
-          },
-          {
-            key: 'Content-Security-Policy-Report-Only',
-            value: [
-              "default-src 'self'",
-              scriptSrc,
-              "style-src 'self' 'unsafe-inline'",
-              "img-src 'self' data: https:",
-              "font-src 'self'",
-              "connect-src 'self' https://gateway.liquify.com https://midgard.thorchain.network https://thornode.thorchain.network",
-              "frame-ancestors 'none'",
-              "report-uri /api/csp-report",
-            ].join('; '),
           },
         ],
       },

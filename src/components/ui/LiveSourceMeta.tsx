@@ -32,22 +32,45 @@ function healthLabel(health: MidgardHealth) {
   return 'Lag unavailable';
 }
 
+function sourceBadge(result: LiveDataResult<unknown>, health: MidgardHealth | undefined, healthUnavailable: boolean) {
+  if (result.status === 'degraded') {
+    return { label: 'Degraded', variant: 'warning' as const };
+  }
+  if (healthUnavailable || health?.severity === 'degraded') {
+    return { label: 'Source degraded', variant: 'danger' as const };
+  }
+  if (health?.severity === 'warning' || health?.severity === 'unknown') {
+    return { label: 'Source warning', variant: 'warning' as const };
+  }
+  return { label: 'Current-only', variant: 'success' as const };
+}
+
+function sameSourceGroup(sourceUrl: string, candidateUrl: string) {
+  try {
+    return new URL(sourceUrl).origin === new URL(candidateUrl).origin;
+  } catch {
+    return sourceUrl === candidateUrl;
+  }
+}
+
 export function LiveSourceMeta({ result, health, healthResult }: LiveSourceMetaProps) {
   if (!result) {
-    return <p className="text-[11px] text-slate-600">Loading live source...</p>;
+    return <p className="text-xs text-slate-400">Loading live source...</p>;
   }
 
   const checkedAt = new Date(result.checkedAt).toLocaleString();
   const sources = result.sources?.length ? result.sources : result.source ? [result.source] : [];
-  const resolvedHealth = healthResult ? healthResult.data : health;
-  const healthUnavailable = Boolean(healthResult && !healthResult.data);
+  const healthSource = healthResult?.source;
+  const healthMatchesMetric = !healthSource || sources.length === 0 ||
+    sources.some((source) => sameSourceGroup(source.url, healthSource.url));
+  const resolvedHealth = healthMatchesMetric ? (healthResult ? healthResult.data : health) : undefined;
+  const healthUnavailable = Boolean(healthResult && !healthResult.data && healthMatchesMetric);
+  const primaryBadge = sourceBadge(result, resolvedHealth, healthUnavailable);
 
   return (
     <div className="space-y-1">
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-500">
-        <Badge variant={result.status === 'ok' ? 'success' : 'warning'}>
-          {result.status === 'ok' ? 'Current-only' : 'Degraded'}
-        </Badge>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-400">
+        <Badge variant={primaryBadge.variant}>{primaryBadge.label}</Badge>
         <span>Checked {checkedAt}</span>
         {sources.length > 0 && (
           <span role="list" aria-label="Live data sources" className="contents">
@@ -67,7 +90,7 @@ export function LiveSourceMeta({ result, health, healthResult }: LiveSourceMetaP
         )}
       </div>
       {resolvedHealth && (
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-slate-500">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-400">
           <Badge variant={healthVariant(resolvedHealth.severity)}>
             Midgard {resolvedHealth.severity}
           </Badge>
@@ -80,8 +103,15 @@ export function LiveSourceMeta({ result, health, healthResult }: LiveSourceMetaP
           ))}
         </div>
       )}
+      {!healthMatchesMetric && healthSource && (
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-400">
+          <Badge variant="warning">Health source differs</Badge>
+          <span>Metric via {sources.map((source) => source.label).join(', ') || 'unknown source'}</span>
+          <span>health via {healthSource.label}</span>
+        </div>
+      )}
       {healthUnavailable && (
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-slate-500">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-400">
           <Badge variant="danger">
             Midgard health degraded
           </Badge>

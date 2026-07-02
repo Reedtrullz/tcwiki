@@ -2,8 +2,9 @@ import { PageContainer } from '@/components/layout/PageContainer';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { FreshnessMeta } from '@/components/ui/FreshnessMeta';
-import type { FreshnessMeta as FreshnessMetaType, SourceMeta } from '@/lib/types';
+import { TOKENOMICS_RECORDS } from '@/lib/data/static';
 import { createRouteMetadata } from '@/lib/metadata';
+import { getTokenomicsToneBadgeVariant, getTokenomicsToneLabel } from '@/lib/trust';
 
 export const metadata = createRouteMetadata({
   title: 'RUNE | THORChain Wiki',
@@ -11,18 +12,7 @@ export const metadata = createRouteMetadata({
   path: '/rune',
 });
 
-const supplyFreshness: FreshnessMetaType = {
-  checkedAt: '2026-06-18',
-  confidence: 'official',
-  nextReviewDue: '2026-07-18',
-};
-
-const supplySources: SourceMeta[] = [
-  {
-    label: 'RUNE and TCY tokenomics',
-    url: 'https://docs.thorchain.org/tokenomics-rune-tcy',
-  },
-];
+const supplyRecord = TOKENOMICS_RECORDS.find((record) => record.data.id === 'rune-supply-framing') ?? TOKENOMICS_RECORDS[0];
 
 export default function RunePage() {
   return (
@@ -42,34 +32,24 @@ export default function RunePage() {
         ].map((card) => (
           <Card key={card.title}>
             <h3 className="text-sm font-semibold mb-1.5">{card.title}</h3>
-            <p className="text-xs text-slate-500 leading-relaxed">{card.desc}</p>
+            <p className="text-xs text-slate-400 leading-relaxed">{card.desc}</p>
           </Card>
         ))}
       </div>
 
       <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-5">Token Economics</h2>
-      <p className="mb-4 text-sm text-slate-500">
-        The original cap context was 500M RUNE, but current official tokenomics emphasizes a reduced supply near
-        425M, circulating supply near 350M, reserve near 75M, and ongoing burns. Recheck live/source data before
-        quoting exact balances.
+      <p className="mb-4 text-sm text-slate-400">
+        {supplyRecord.data.summary} Recheck live/source data before quoting exact balances.
       </p>
       <div className="mb-4">
-        <FreshnessMeta freshness={supplyFreshness} sources={supplySources} />
+        <FreshnessMeta freshness={supplyRecord.freshness} sources={supplyRecord.sources} />
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-12">
-        {[
-          { label: 'Original Cap Context', value: '500M RUNE', badge: 'historical' },
-          { label: 'Current Supply Framing', value: '~425M and burning', badge: 'source-backed' },
-          { label: 'Circulating Supply', value: '~350M source figure', badge: 'source-backed' },
-          { label: 'Reserve', value: '~75M source figure', badge: 'source-backed' },
-          { label: 'Network Income', value: 'Fees, emissions, burns, TCY share', badge: 'dynamic' },
-          { label: 'Bond Requirement', value: 'Check constants + Mimir', badge: 'current-only' },
-          { label: 'Slash Penalty', value: 'Check constants + Mimir', badge: 'current-only' },
-        ].map((row) => (
+        {supplyRecord.data.figures.map((row) => (
           <div key={row.label} className="flex items-center justify-between gap-4 p-4 rounded-lg bg-surface-elevated border border-border">
             <span className="text-xs text-slate-400">{row.label}</span>
             <span className="text-sm font-semibold text-right">{row.value}</span>
-            <Badge variant={row.badge === 'historical' ? 'info' : 'warning'}>{row.badge}</Badge>
+            <Badge variant={getTokenomicsToneBadgeVariant(row.tone)}>{getTokenomicsToneLabel(row.tone)}</Badge>
           </div>
         ))}
       </div>
@@ -78,15 +58,15 @@ export default function RunePage() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-12">
         <Card>
           <h3 className="text-sm font-semibold text-accent mb-2">1. Swaps</h3>
-          <p className="text-xs text-slate-500">A swap routes through RUNE-paired pools. RUNE acts as the common settlement layer between native assets.</p>
+          <p className="text-xs text-slate-400">A swap routes through RUNE-paired pools. RUNE acts as the common settlement layer between native assets.</p>
         </Card>
         <Card>
           <h3 className="text-sm font-semibold text-accent mb-2">2. Liquidity</h3>
-          <p className="text-xs text-slate-500">Liquidity providers supply pool depth and earn source-dependent fees and rewards according to current protocol rules.</p>
+          <p className="text-xs text-slate-400">Liquidity providers supply pool depth and earn source-dependent fees and rewards according to current protocol rules.</p>
         </Card>
         <Card>
           <h3 className="text-sm font-semibold text-accent mb-2">3. Security</h3>
-          <p className="text-xs text-slate-500">Node operators bond RUNE. Misbehavior can put that bond at risk through slash mechanisms and churn rules.</p>
+          <p className="text-xs text-slate-400">Node operators bond RUNE. Misbehavior can put that bond at risk through slash mechanisms and churn rules.</p>
         </Card>
       </div>
     </PageContainer>

@@ -11,6 +11,7 @@ export interface ContentEntry {
   body: string;
   tags: string[];
   reviewedAt: string;
+  nextReviewDue: string;
   sources: SourceMeta[];
   nav?: boolean;
   footer?: boolean;
@@ -69,6 +70,7 @@ export const CONTENT_ENTRIES: ContentEntry[] = [
     body: 'THORChain protocol architecture native cross-chain swaps Bifrost observers TSS vaults Mimir halts inbound addresses refunds streaming swaps StreamingSwapPause HaltMemoless RUNEPoolHaltDeposit app layer CosmWasm.',
     tags: ['architecture', 'swaps', 'mimir', 'halts'],
     reviewedAt: '2026-06-18',
+    nextReviewDue: '2026-07-18',
     sources: [docsSource, devDocsSource, networkHaltsSource, exploitReportSource],
     nav: true,
     footer: true,
@@ -84,6 +86,7 @@ export const CONTENT_ENTRIES: ContentEntry[] = [
     body: 'Network security nodes churning slashing GG20 TSS DKLS signer halts Mimir operational parameters vault solvency current-only status official halt keys HALTTRADING HALTSIGNING HALTCHURNING HALTWASMGLOBAL StreamingSwapPause HaltMemoless RUNEPoolHaltDeposit memoless halt streaming swap pause RUNEPool deposit halt.',
     tags: ['nodes', 'security', 'slashing', 'churning'],
     reviewedAt: '2026-06-18',
+    nextReviewDue: '2026-07-18',
     sources: [docsSource, networkHaltsSource, exploitReportSource],
     nav: true,
     footer: true,
@@ -99,6 +102,7 @@ export const CONTENT_ENTRIES: ContentEntry[] = [
     body: 'RUNE settlement asset CLP slip ratio liquidity fee affiliate fee outbound fee incentive pendulum RUNEPool protocol owned liquidity trade assets secured assets liquidity units APY.',
     tags: ['rune', 'clp', 'fees', 'runepool'],
     reviewedAt: '2026-06-18',
+    nextReviewDue: '2026-07-18',
     sources: [docsSource, devDocsSource, tokenomicsSource],
     nav: true,
     footer: true,
@@ -114,6 +118,7 @@ export const CONTENT_ENTRIES: ContentEntry[] = [
     body: 'THORChain ecosystem interfaces wallets explorers THORSwap AsgardEX RuneScan SwapKit XChainJS supported chains inbound addresses TRON SOL XRP.',
     tags: ['apps', 'interfaces', 'wallets', 'chains'],
     reviewedAt: '2026-06-18',
+    nextReviewDue: '2026-07-18',
     sources: [docsSource],
     nav: true,
     footer: true,
@@ -129,6 +134,7 @@ export const CONTENT_ENTRIES: ContentEntry[] = [
     body: 'Governance ADR Mimir halt trading halt signing pause LP incidents exploit THORFi unwind TCY recovery source-backed history.',
     tags: ['governance', 'incidents', 'mimir', 'adr'],
     reviewedAt: '2026-06-18',
+    nextReviewDue: '2026-07-18',
     sources: [docsSource, networkHaltsSource, exploitReportSource],
     nav: true,
     footer: true,
@@ -144,6 +150,7 @@ export const CONTENT_ENTRIES: ContentEntry[] = [
     body: 'Network statistics live Midgard current-only source-backed pooled RUNE bonding APY active nodes reserve earnings history degraded data source did not respond.',
     tags: ['stats', 'midgard', 'thornode', 'live'],
     reviewedAt: '2026-06-18',
+    nextReviewDue: '2026-07-18',
     sources: [devDocsSource],
     nav: true,
     footer: true,
@@ -158,8 +165,10 @@ export const CONTENT_ENTRIES: ContentEntry[] = [
     body: 'RUNE token settlement asset security bond liquidity pair tokenomics current supply framing reduced supply circulating supply reserve burns TCY recovery protocol owned liquidity.',
     tags: ['rune', 'tokenomics'],
     reviewedAt: '2026-06-18',
+    nextReviewDue: '2026-07-18',
     sources: [docsSource, tokenomicsSource],
     nav: true,
+    footer: true,
   },
   {
     id: 'tcy',
@@ -171,8 +180,10 @@ export const CONTENT_ENTRIES: ContentEntry[] = [
     body: 'TCY THORFi unwind Savers deprecated Lending deprecated archived January 2025 historical yield liabilities recovery.',
     tags: ['tcy', 'savers', 'lending', 'historical'],
     reviewedAt: '2026-06-18',
+    nextReviewDue: '2026-07-18',
     sources: [archivedSource, docsSource],
     nav: true,
+    footer: true,
   },
   {
     id: 'deep-dives',
@@ -184,6 +195,7 @@ export const CONTENT_ENTRIES: ContentEntry[] = [
     body: 'Deep dives CLP Bifrost TSS churning slashing incentive pendulum RUNE settlement Savers historical halt Mimir swap lifecycle.',
     tags: ['deep-dives', 'education'],
     reviewedAt: '2026-06-18',
+    nextReviewDue: '2026-07-18',
     sources: [docsSource],
     nav: true,
     footer: true,
@@ -199,6 +211,7 @@ export const CONTENT_ENTRIES: ContentEntry[] = [
     body: 'Glossary definitions Mimir Current-only CLP TSS Bifrost RUNEPool Savers TCY Asgard vault protocol economics operations history developer terminology.',
     tags: ['glossary', 'terms', 'definitions'],
     reviewedAt: '2026-07-02',
+    nextReviewDue: '2026-08-02',
     sources: [docsSource, devDocsSource, networkHaltsSource],
     footer: true,
   },
@@ -209,9 +222,10 @@ export const CONTENT_ENTRIES: ContentEntry[] = [
     category: 'resource',
     confidence: 'curated',
     description: 'Official documentation, developer resources, and live API references.',
-    body: 'Official THORChain docs developer docs Midgard API THORNode API network halts Mimir halt keys StreamingSwapPause HaltMemoless RUNEPoolHaltDeposit querying inbound addresses fees.',
-    tags: ['docs', 'resources'],
+    body: 'Official THORChain docs developer docs Midgard API THORNode API network halts Mimir halt keys StreamingSwapPause HaltMemoless RUNEPoolHaltDeposit RUNEPoolHaltWithdraw querying inbound addresses fees Liquify Midgard Gateway Liquify THORNode Gateway gateway failover source map RuneScan ViewBlock Messari GitHub.',
+    tags: ['docs', 'resources', 'midgard', 'thornode', 'liquify', 'gateway'],
     reviewedAt: '2026-06-18',
+    nextReviewDue: '2026-07-18',
     sources: [docsSource, devDocsSource, networkHaltsSource],
     nav: true,
     footer: true,
@@ -226,6 +240,7 @@ export const CONTENT_ENTRIES: ContentEntry[] = [
     body: 'Continuous Liquidity Pools CLP slip ratio x divided by X plus x liquidity fee output amount RUNE paired pools slippage liquidity providers native cross-chain swaps. Savers are historical and deprecated.',
     tags: ['clp', 'fees', 'swaps'],
     reviewedAt: '2026-06-18',
+    nextReviewDue: '2026-07-18',
     sources: [docsSource, devDocsSource],
     featured: true,
   },
@@ -239,6 +254,7 @@ export const CONTENT_ENTRIES: ContentEntry[] = [
     body: 'Incentive Pendulum bonded RUNE pooled RUNE rewards node operators liquidity providers security liquidity ratio self-correcting.',
     tags: ['economics', 'rewards'],
     reviewedAt: '2026-06-18',
+    nextReviewDue: '2026-07-18',
     sources: [docsSource],
     featured: true,
   },
@@ -252,6 +268,7 @@ export const CONTENT_ENTRIES: ContentEntry[] = [
     body: 'Threshold Signature Scheme TSS GG20 DKLS vault key shares signing ceremony exploit May 2026 solvency checker halt signing.',
     tags: ['tss', 'security', 'vaults'],
     reviewedAt: '2026-06-18',
+    nextReviewDue: '2026-07-18',
     sources: [docsSource, exploitReportSource],
     featured: true,
   },
@@ -265,6 +282,7 @@ export const CONTENT_ENTRIES: ContentEntry[] = [
     body: 'Churning node lifecycle active standby ready whitelisted churn interval vault rotation unbonding forced churn slash points.',
     tags: ['nodes', 'churning'],
     reviewedAt: '2026-06-18',
+    nextReviewDue: '2026-07-18',
     sources: [docsSource],
   },
   {
@@ -277,6 +295,7 @@ export const CONTENT_ENTRIES: ContentEntry[] = [
     body: 'Slashing economic security bonded RUNE slash points signing observation failures constants Mimir current-only.',
     tags: ['security', 'slashing'],
     reviewedAt: '2026-06-18',
+    nextReviewDue: '2026-07-18',
     sources: [docsSource, devDocsSource],
   },
   {
@@ -289,6 +308,7 @@ export const CONTENT_ENTRIES: ContentEntry[] = [
     body: 'Bifrost observers external chains inbound transactions outbound confirmations chain reorgs finality two thirds observation.',
     tags: ['bifrost', 'observation'],
     reviewedAt: '2026-06-18',
+    nextReviewDue: '2026-07-18',
     sources: [docsSource],
   },
   {
@@ -301,6 +321,7 @@ export const CONTENT_ENTRIES: ContentEntry[] = [
     body: 'RUNE settlement universal settlement asset BTC RUNE ETH pool pairs unified liquidity price discovery security bond liquidity pair.',
     tags: ['rune', 'settlement'],
     reviewedAt: '2026-06-18',
+    nextReviewDue: '2026-07-18',
     sources: [docsSource],
   },
   {
@@ -313,6 +334,7 @@ export const CONTENT_ENTRIES: ContentEntry[] = [
     body: 'Savers deprecated Lending deprecated THORFi historical single-sided exposure synthetics liabilities TCY January 2025 archived docs.',
     tags: ['savers', 'lending', 'tcy', 'historical'],
     reviewedAt: '2026-06-18',
+    nextReviewDue: '2026-07-18',
     sources: [archivedSource, docsSource],
   },
 ];

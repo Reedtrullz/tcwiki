@@ -12,6 +12,7 @@ const jiti = createJiti(import.meta.url, {
   moduleCache: false,
 });
 const { SEARCH_DOCUMENTS: actualSearchDocuments } = await jiti.import(join(root, 'src/lib/search/registry.ts'));
+const { DEEP_DIVE_TOC: actualDeepDiveToc } = await jiti.import(join(root, 'src/lib/content/registry.ts'));
 const staticPath = join(root, 'src/lib/data/static.ts');
 const typesPath = join(root, 'src/lib/types.ts');
 const registryPath = join(root, 'src/lib/content/registry.ts');
@@ -39,9 +40,17 @@ const contentCategories = new Set(['section', 'deep-dive', 'resource']);
 const expectedChains = ['BTC', 'ETH', 'BSC', 'AVAX', 'GAIA', 'DOGE', 'LTC', 'BCH', 'TRON', 'BASE', 'SOL', 'XRP'];
 const forbiddenChainCodes = new Set(['TRX', 'ARB', 'MATIC', 'OP']);
 const liveInboundUrl = 'https://thornode.thorchain.network/thorchain/inbound_addresses';
+const contentCheckToday = process.env.CONTENT_CHECK_TODAY ?? new Date().toISOString().slice(0, 10);
+const allowOverdueContent = process.env.ALLOW_OVERDUE_CONTENT === '1';
 
 function fail(path, message) {
   failures.push(`${path}: ${message}`);
+}
+
+function validateReviewDueDate(value, path) {
+  if (!allowOverdueContent && isIsoDate(value) && value < contentCheckToday) {
+    fail(path, `is overdue as of ${contentCheckToday}; refresh the content or set ALLOW_OVERDUE_CONTENT=1 with release evidence`);
+  }
 }
 
 function declarationName(declaration) {
@@ -374,6 +383,8 @@ function validateRecord(collectionName, record, index, allowedConfidences, stati
     fail(`${path}.freshness.nextReviewDue`, 'must be YYYY-MM-DD');
   } else if (record.freshness.nextReviewDue < record.freshness.checkedAt) {
     fail(`${path}.freshness.nextReviewDue`, 'must not be before checkedAt');
+  } else {
+    validateReviewDueDate(record.freshness.nextReviewDue, `${path}.freshness.nextReviewDue`);
   }
   if (!allowedConfidences.has(record.freshness.confidence)) {
     fail(`${path}.freshness.confidence`, `unsupported confidence ${record.freshness.confidence}`);
@@ -435,6 +446,47 @@ function validateEcosystemChains(records) {
   }
 }
 
+function validateSourceMapSections(records) {
+  for (const [index, record] of records.entries()) {
+    const path = `SOURCE_MAP_SECTION_RECORDS[${recordKey(record, index)}]`;
+    for (const field of ['id', 'title', 'use', 'caveat']) {
+      if (typeof record.data?.[field] !== 'string' || record.data[field].trim() === '') {
+        fail(`${path}.data.${field}`, 'must be a non-empty string');
+      }
+    }
+    if (!Array.isArray(record.data?.links) || record.data.links.length === 0) {
+      fail(`${path}.data.links`, 'must include at least one source link');
+      continue;
+    }
+
+    const sourceUrls = new Set(record.sources.map((source) => source.url));
+    const linkUrls = new Set();
+    record.data.links.forEach((link, linkIndex) => {
+      validateRegistrySource(link, `${path}.data.links[${linkIndex}]`, linkUrls);
+      if (isHttpsUrl(link.url) && !sourceUrls.has(link.url)) {
+        fail(`${path}.data.links[${linkIndex}].url`, 'must also appear in record.sources');
+      }
+    });
+  }
+}
+
+function validateSecurityIncidentTrackerStatus(records) {
+  const allowedTrackerStatuses = new Set(['current', 'needs-review', 'historical-open']);
+  for (const [index, record] of records.entries()) {
+    const path = `SECURITY_INCIDENT_RECORDS[${recordKey(record, index)}].data`;
+    const status = record.data?.trackerStatus;
+    if (status !== undefined && !allowedTrackerStatuses.has(status)) {
+      fail(`${path}.trackerStatus`, `unsupported tracker status ${status}`);
+    }
+    if (record.data?.resolved === false && status === undefined) {
+      fail(`${path}.trackerStatus`, 'unresolved incidents must declare current, needs-review, or historical-open');
+    }
+    if (record.data?.resolved === true && status !== undefined) {
+      fail(`${path}.trackerStatus`, 'resolved incidents must not declare current tracker status');
+    }
+  }
+}
+
 function splitInternalHref(href) {
   if (typeof href !== 'string') {
     return { path: href, anchor: undefined, hasExtraFragment: false };
@@ -480,6 +532,19 @@ function mdxHeadingForSlug(slug) {
   return source.match(/^#\s+(.+)$/m)?.[1]?.trim();
 }
 
+function mdxAnchorsForSlug(slug) {
+  const source = readFileSync(mdxPathForSlug(slug), 'utf8');
+  const anchors = new Set();
+  for (const match of source.matchAll(/^#{2,3}\s+(.+)$/gm)) {
+    anchors.add(slugifyHeading(match[1]));
+  }
+  return anchors;
+}
+
+function slugifyHeading(value) {
+  return slugifyFragment(value.trim());
+}
+
 function normalizedTitleWords(value) {
   return value
     .toLowerCase()
@@ -513,7 +578,7 @@ function validateRegistryEntryShape(entry, index, allowedConfidences) {
     fail(path, 'entry must be an object');
     return;
   }
-  for (const field of ['id', 'title', 'href', 'description', 'body', 'reviewedAt']) {
+  for (const field of ['id', 'title', 'href', 'description', 'body', 'reviewedAt', 'nextReviewDue']) {
     if (typeof entry[field] !== 'string' || entry[field].trim() === '') {
       fail(`${path}.${field}`, 'must be a non-empty string');
     }
@@ -535,6 +600,13 @@ function validateRegistryEntryShape(entry, index, allowedConfidences) {
   }
   if (!isIsoDate(entry.reviewedAt)) {
     fail(`${path}.reviewedAt`, 'must be YYYY-MM-DD');
+  }
+  if (!isIsoDate(entry.nextReviewDue)) {
+    fail(`${path}.nextReviewDue`, 'must be YYYY-MM-DD');
+  } else if (isIsoDate(entry.reviewedAt) && entry.nextReviewDue < entry.reviewedAt) {
+    fail(`${path}.nextReviewDue`, 'must not be before reviewedAt');
+  } else {
+    validateReviewDueDate(entry.nextReviewDue, `${path}.nextReviewDue`);
   }
   if (typeof entry.href === 'string') {
     if (!entry.href.startsWith('/')) {
@@ -590,6 +662,31 @@ function validateRegistryDeepDive(entry, deepDiveMdxSlugs, deepDiveRouteSlugs) {
   if (titleWords.length > 0 && missingTitleWords.length > Math.floor(titleWords.length / 2)) {
     fail(`${path}.title`, `does not appear to match MDX heading "${heading}"`);
   }
+
+  const toc = actualDeepDiveToc?.[entry.id] ?? [];
+  if (!Array.isArray(toc)) {
+    fail(`${path}.toc`, 'deep-dive table of contents must be an array');
+    return;
+  }
+  const mdxAnchors = mdxAnchorsForSlug(slug);
+  toc.forEach((item, itemIndex) => {
+    const tocPath = `DEEP_DIVE_TOC[${entry.id}][${itemIndex}]`;
+    if (!item || typeof item !== 'object') {
+      fail(tocPath, 'TOC item must be an object');
+      return;
+    }
+    if (typeof item.title !== 'string' || item.title.trim() === '') {
+      fail(`${tocPath}.title`, 'must be a non-empty string');
+    }
+    if (typeof item.href !== 'string' || !item.href.startsWith('#') || item.href.length < 2) {
+      fail(`${tocPath}.href`, 'must be a non-empty fragment link');
+      return;
+    }
+    const anchor = item.href.slice(1);
+    if (!mdxAnchors.has(anchor)) {
+      fail(`${tocPath}.href`, `unknown MDX heading anchor ${item.href} in ${relative(root, mdxPathForSlug(slug))}`);
+    }
+  });
 }
 
 function validateContentRegistry(entries, allowedConfidences) {
@@ -656,7 +753,7 @@ function validateGlossaryTerms(terms, allowedConfidences) {
       fail(path, 'term must be an object');
       return;
     }
-    for (const field of ['id', 'term', 'definition', 'category', 'reviewedAt']) {
+    for (const field of ['id', 'term', 'definition', 'category', 'reviewedAt', 'nextReviewDue']) {
       if (typeof term[field] !== 'string' || term[field].trim() === '') {
         fail(`${path}.${field}`, 'must be a non-empty string');
       }
@@ -673,6 +770,13 @@ function validateGlossaryTerms(terms, allowedConfidences) {
     }
     if (!isIsoDate(term.reviewedAt)) {
       fail(`${path}.reviewedAt`, 'must be YYYY-MM-DD');
+    }
+    if (!isIsoDate(term.nextReviewDue)) {
+      fail(`${path}.nextReviewDue`, 'must be YYYY-MM-DD');
+    } else if (isIsoDate(term.reviewedAt) && term.nextReviewDue < term.reviewedAt) {
+      fail(`${path}.nextReviewDue`, 'must not be before reviewedAt');
+    } else {
+      validateReviewDueDate(term.nextReviewDue, `${path}.nextReviewDue`);
     }
     if (!Array.isArray(term.sources) || term.sources.length === 0) {
       fail(`${path}.sources`, 'must include at least one source');
@@ -707,6 +811,9 @@ function collectKnownRouteAnchors(collections, glossaryTerms) {
   }
   for (const record of collections.ECOSYSTEM_PROJECT_RECORDS) {
     addRouteAnchor(anchorsByRoute, '/ecosystem', recordAnchor('ecosystem', record.data.id));
+  }
+  for (const record of collections.SOURCE_MAP_SECTION_RECORDS) {
+    addRouteAnchor(anchorsByRoute, '/docs', record.data.id);
   }
   for (const term of glossaryTerms) {
     addRouteAnchor(anchorsByRoute, '/glossary', `term-${term.id}`);
@@ -799,6 +906,13 @@ function validateSearchDocumentMetadata(doc, path, allowedConfidences) {
   if (!isIsoDate(doc.reviewedAt)) {
     fail(`${path}.reviewedAt`, 'must be YYYY-MM-DD');
   }
+  if (!isIsoDate(doc.nextReviewDue)) {
+    fail(`${path}.nextReviewDue`, 'must be YYYY-MM-DD');
+  } else if (isIsoDate(doc.reviewedAt) && doc.nextReviewDue < doc.reviewedAt) {
+    fail(`${path}.nextReviewDue`, 'must not be before reviewedAt');
+  } else {
+    validateReviewDueDate(doc.nextReviewDue, `${path}.nextReviewDue`);
+  }
   if (!Array.isArray(doc.sources) || doc.sources.length === 0) {
     fail(`${path}.sources`, 'must include at least one source');
     return;
@@ -827,6 +941,12 @@ function buildExpectedAnchoredSearchDocuments(collections, glossaryTerms) {
         anchor,
       };
     }),
+    ...collections.SOURCE_MAP_SECTION_RECORDS.map((record) => ({
+      id: `source-map:${record.data.id}`,
+      href: `/docs#${record.data.id}`,
+      type: 'source-map',
+      anchor: record.data.id,
+    })),
     ...collections.RESEARCH_REPORT_RECORDS.map((record) => {
       const anchor = recordAnchor('research', record.data.id);
       return {
@@ -916,6 +1036,9 @@ function validateExpectedSearchCoverage(searchDocuments, collections, contentEnt
     if (doc.reviewedAt !== entry.reviewedAt) {
       fail(`${path}.reviewedAt`, `must be ${entry.reviewedAt}`);
     }
+    if (doc.nextReviewDue !== entry.nextReviewDue) {
+      fail(`${path}.nextReviewDue`, `must be ${entry.nextReviewDue}`);
+    }
   });
 
   const contentEntrySlugs = new Set(contentEntries.map((entry) => entry.href));
@@ -971,7 +1094,7 @@ function validateSearchSurface(collections, contentEntries, glossaryTerms, allow
     });
   });
 
-  for (const field of ['href', 'type', 'confidence', 'reviewedAt', 'sources', 'recordAnchor']) {
+  for (const field of ['href', 'type', 'confidence', 'reviewedAt', 'nextReviewDue', 'sources', 'recordAnchor']) {
     if (!searchRegistrySource.includes(field)) {
       fail('src/lib/search/registry.ts', `search registry must include ${field}`);
     }
@@ -993,7 +1116,7 @@ function validateSearchSurface(collections, contentEntries, glossaryTerms, allow
     fail('src/app/glossary/page.tsx', 'missing glossary term anchors for search results');
   }
 
-  for (const field of ['"href"', '"type"', '"description"', '"confidence"', '"reviewedAt"', '"sources"']) {
+  for (const field of ['"href"', '"type"', '"description"', '"confidence"', '"reviewedAt"', '"nextReviewDue"', '"sources"']) {
     if (!generatedSearchSource.includes(field)) {
       fail('src/lib/search/mdx-documents.generated.ts', `generated MDX search documents must include ${field}`);
     }
@@ -1017,6 +1140,8 @@ const collections = {
   SECURITY_INCIDENT_RECORDS: readRecordArray('SECURITY_INCIDENT_RECORDS', scope, staticDataLastUpdated, nextReviewDue),
   GOVERNANCE_PROPOSAL_RECORDS: readRecordArray('GOVERNANCE_PROPOSAL_RECORDS', scope, staticDataLastUpdated, nextReviewDue),
   PROTOCOL_MILESTONE_RECORDS: readRecordArray('PROTOCOL_MILESTONE_RECORDS', scope, staticDataLastUpdated, nextReviewDue),
+  TOKENOMICS_RECORDS: readRecordArray('TOKENOMICS_RECORDS', scope, staticDataLastUpdated, nextReviewDue),
+  SOURCE_MAP_SECTION_RECORDS: readRecordArray('SOURCE_MAP_SECTION_RECORDS', scope, staticDataLastUpdated, nextReviewDue),
 };
 
 if (!isIsoDate(staticDataLastUpdated)) {
@@ -1030,6 +1155,8 @@ for (const [collectionName, records] of Object.entries(collections)) {
 
 validateChains(collections.CHAIN_RECORDS);
 validateEcosystemChains(collections.ECOSYSTEM_PROJECT_RECORDS);
+validateSourceMapSections(collections.SOURCE_MAP_SECTION_RECORDS);
+validateSecurityIncidentTrackerStatus(collections.SECURITY_INCIDENT_RECORDS);
 const contentEntries = readContentEntries(registryScope);
 const glossaryTerms = readGlossaryTerms(glossaryScope);
 

@@ -15,7 +15,7 @@ export default function HomePage() {
   const { data: networkData, result: networkResult, isDegraded: networkDegraded } = useNetworkData();
   const { result: midgardHealthResult } = useMidgardHealth();
   const { result: statusResult, isLoading: statusLoading } = useNetworkStatus();
-  const { data: pools, isDegraded: poolsDegraded } = usePools();
+  const { data: pools, result: poolsResult, isDegraded: poolsDegraded } = usePools();
 
   const poolCount = pools && !poolsDegraded ? String(pools.length) : 'Unavailable';
   const runePooled = networkData ? formatRuneFromBaseUnits(networkData.totalPooledRune) : 'Unavailable';
@@ -44,7 +44,7 @@ export default function HomePage() {
               className="block rounded-lg border border-border bg-surface-elevated px-4 py-3 transition-colors hover:border-accent/30"
             >
               <p className="text-sm font-semibold text-slate-200">{journey.label}</p>
-              <p className="mt-1 text-[11px] leading-relaxed text-slate-500">{journey.description}</p>
+              <p className="mt-1 text-[11px] leading-relaxed text-slate-400">{journey.description}</p>
             </Link>
           ))}
         </div>
@@ -62,10 +62,17 @@ export default function HomePage() {
           <StatCard icon={<Shield className="h-4 w-4" />} label="Active Nodes" value={String(activeNodes)} />
           <StatCard icon={<Activity className="h-4 w-4" />} label="Available Pools" value={poolCount} />
         </div>
-        <div className="mt-3">
-          <LiveSourceMeta result={networkResult} healthResult={midgardHealthResult} />
-          {networkDegraded && (
-            <p className="mt-2 text-xs text-amber-300">Midgard source did not respond; values are unavailable rather than assumed zero.</p>
+        <div className="mt-3 grid gap-3 lg:grid-cols-2">
+          <div>
+            <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Network metrics source</p>
+            <LiveSourceMeta result={networkResult} healthResult={midgardHealthResult} />
+          </div>
+          <div>
+            <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Pool count source</p>
+            <LiveSourceMeta result={poolsResult} healthResult={midgardHealthResult} />
+          </div>
+          {(networkDegraded || poolsDegraded) && (
+            <p className="text-xs text-amber-300 lg:col-span-2">Midgard source did not respond; values are unavailable rather than assumed zero.</p>
           )}
         </div>
       </section>
@@ -81,7 +88,7 @@ export default function HomePage() {
               className="block p-5 rounded-lg bg-surface-elevated border border-border hover:border-accent/30 transition-colors group"
             >
               <h3 className="text-sm font-semibold mb-1.5 group-hover:text-accent transition-colors">{t.title}</h3>
-              <p className="text-xs text-slate-500 leading-relaxed">{t.description}</p>
+              <p className="text-xs text-slate-400 leading-relaxed">{t.description}</p>
             </Link>
           ))}
         </div>
@@ -91,7 +98,7 @@ export default function HomePage() {
       <section className="px-6 max-w-7xl mx-auto mb-16">
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">Ecosystem</h2>
-          <Link href="/ecosystem" className="text-xs text-slate-500 hover:text-slate-300 transition-colors">View all →</Link>
+          <Link href="/ecosystem" className="text-xs text-slate-400 hover:text-slate-300 transition-colors">View all →</Link>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
           {ECOSYSTEM_PROJECTS.slice(0, 8).map((p) => (
@@ -101,7 +108,7 @@ export default function HomePage() {
               className="block p-4 rounded-lg bg-surface-elevated border border-border hover:border-accent/20 transition-colors group"
             >
               <p className="text-sm font-medium group-hover:text-accent transition-colors">{p.name}</p>
-              <p className="text-[11px] text-slate-500 mt-1">{p.category}</p>
+              <p className="text-[11px] text-slate-400 mt-1">{p.category}</p>
             </Link>
           ))}
         </div>
@@ -119,9 +126,9 @@ export default function HomePage() {
               rel="noopener noreferrer"
               className="block p-5 rounded-lg bg-surface-elevated border border-border hover:border-accent/20 transition-colors"
             >
-              <p className="text-[11px] text-slate-500 mb-1">{r.date} · {r.source}</p>
+              <p className="text-[11px] text-slate-400 mb-1">{r.date} · {r.source}</p>
               <h3 className="text-sm font-semibold mb-2">{r.title}</h3>
-              <p className="text-xs text-slate-500 leading-relaxed line-clamp-2">{r.summary}</p>
+              <p className="text-xs text-slate-400 leading-relaxed line-clamp-2">{r.summary}</p>
             </a>
           ))}
         </div>

@@ -54,6 +54,7 @@ export interface ThorNodeReadiness {
   status: 'ready' | 'degraded';
   checkedAt: string;
   version?: string;
+  thorchainHeight?: number;
   sourceCount: number;
   reasons: string[];
   invalidMimirKeys: string[];
@@ -75,6 +76,13 @@ export interface ReadinessResponse {
       status: LiveDataStatus;
       source?: SourceMeta;
       health?: MidgardHealth;
+      heightLagBlocks?: number;
+      visibleData: {
+        network: ReadinessSourceCheck;
+        pools: ReadinessSourceCheck;
+        earnings: ReadinessSourceCheck;
+      };
+      sourceWarnings: string[];
       error?: string;
     };
     thornode: {
@@ -83,12 +91,20 @@ export interface ReadinessResponse {
       state?: NetworkStatusState;
       summary?: string;
       version?: string;
+      thorchainHeight?: number;
+      heightLagBlocks?: number;
       invalidMimirKeys: string[];
       sourceWarnings: string[];
       error?: string;
     };
   };
   reasons: string[];
+}
+
+export interface ReadinessSourceCheck {
+  status: LiveDataStatus;
+  source?: SourceMeta;
+  error?: string;
 }
 
 export interface Pool {
@@ -211,6 +227,25 @@ export interface HistoryItem {
   pools: unknown[];
 }
 
+export interface TokenomicsSnapshot {
+  id: string;
+  title: string;
+  summary: string;
+  figures: {
+    label: string;
+    value: string;
+    tone: 'historical' | 'source-backed' | 'dynamic' | 'current-only';
+  }[];
+}
+
+export interface SourceMapSection {
+  id: string;
+  title: string;
+  use: string;
+  caveat: string;
+  links: SourceMeta[];
+}
+
 export interface Swap {
   inHash: string;
   outHash: string;
@@ -287,6 +322,7 @@ export interface SecurityIncident {
   description: string;
   impact: string;
   resolved: boolean;
+  trackerStatus?: 'current' | 'needs-review' | 'historical-open';
   resolutionDate?: string;
   lessons: string[];
   url?: string;
@@ -327,6 +363,11 @@ export interface ThornodeInboundAddress {
   gas_rate?: string;
 }
 
+export interface ThornodeLastBlock {
+  chain?: string;
+  thorchain?: number | string;
+}
+
 export interface ChainOperationalStatus {
   chain: string;
   halted: boolean;
@@ -336,12 +377,20 @@ export interface ChainOperationalStatus {
   signingPaused: boolean;
   activeMimirKeys: string[];
   lpDepositPauseKeys: string[];
+  sourceWarnings?: string[];
+  securedAssetDepositPaused?: boolean;
+  securedAssetWithdrawPaused?: boolean;
+  asymWithdrawalPaused?: boolean;
+  securedAssetDepositPauseKeys?: string[];
+  securedAssetWithdrawPauseKeys?: string[];
+  asymWithdrawalPauseKeys?: string[];
+  scheduledMimirKeys?: string[];
   unparseableMimirKeys?: string[];
 }
 
 export type NetworkStatusState = 'operational' | 'paused' | 'degraded' | 'unknown';
 
-export type OperationalControlState = 'active' | 'inactive' | 'disabled' | 'not-monitored' | 'unparseable';
+export type OperationalControlState = 'active' | 'inactive' | 'disabled' | 'scheduled' | 'not-monitored' | 'unparseable';
 
 export interface OperationalControlStatus {
   key: string;
@@ -370,6 +419,7 @@ export interface NetworkStatus {
   securedAssetsPaused: boolean | null;
   securedAssetDepositPauseKeys?: string[];
   securedAssetWithdrawPauseKeys?: string[];
+  asymWithdrawalPauseKeys?: string[];
   tcyClaimingPaused: boolean | null;
   tcyClaimingSwapPaused: boolean | null;
   tcyStakingPaused: boolean | null;
@@ -377,7 +427,10 @@ export interface NetworkStatus {
   tcyUnstakingPaused: boolean | null;
   tcyTradingPaused: boolean | null;
   tradeAccountsEnabled: boolean | null;
+  tradeAccountDepositsEnabled?: boolean | null;
+  manualSwapsToSynthDisabled?: boolean | null;
   runePoolEnabled: boolean | null;
+  bankSendEnabled?: boolean | null;
   runePoolDepositPaused?: boolean | null;
   runePoolWithdrawPaused?: boolean | null;
   wasmPaused: boolean | null;
@@ -386,6 +439,7 @@ export interface NetworkStatus {
   wasmContractHaltKeys?: string[];
   scopedWasmHaltKeys?: string[];
   poolDepositPauseKeys: string[];
+  scheduledMimirKeys?: string[];
   chainStatuses: ChainOperationalStatus[];
   activeControlKeys: string[];
   activeChainKeys: string[];
@@ -394,6 +448,7 @@ export interface NetworkStatus {
   activePauseKeys: string[];
   monitoredControls: OperationalControlStatus[];
   thorNodeVersion?: string;
+  thorchainHeight?: number;
   invalidMimirKeys: string[];
   sourceWarnings: string[];
 }

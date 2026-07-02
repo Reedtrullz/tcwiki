@@ -5,10 +5,12 @@ import {
   LiveDataResult,
   SourceMeta,
   SourcedRecord,
+  TokenomicsSnapshot,
 } from '@/lib/types';
 
 const RUNE_BASE_UNITS = BigInt(100000000);
 const ZERO_BIGINT = BigInt(0);
+const MAX_SAFE_INTEGER_BIGINT = BigInt(Number.MAX_SAFE_INTEGER);
 const BASE_UNIT_DECIMAL_PATTERN = /^\d+$/;
 const DECIMAL_NUMBER_PATTERN = /^[+-]?(?:\d+(?:\.\d+)?|\.\d+)$/;
 
@@ -37,7 +39,7 @@ function strictDecimalNumber(value: string): number | null {
   return Number.isFinite(numeric) ? numeric : null;
 }
 
-export function runeBaseUnitsToNumber(baseUnits: string | number | bigint | undefined): number | null {
+function runeBaseUnitsToBigInt(baseUnits: string | number | bigint | undefined): bigint | null {
   if (baseUnits === undefined || baseUnits === null || baseUnits === '') {
     return null;
   }
@@ -46,32 +48,46 @@ export function runeBaseUnitsToNumber(baseUnits: string | number | bigint | unde
     if (!BASE_UNIT_DECIMAL_PATTERN.test(baseUnits)) {
       return null;
     }
-    return Number(BigInt(baseUnits)) / Number(RUNE_BASE_UNITS);
+    return BigInt(baseUnits);
   }
 
   if (typeof baseUnits === 'number') {
     if (!Number.isSafeInteger(baseUnits) || baseUnits < 0) {
       return null;
     }
-    return Number(BigInt(baseUnits)) / Number(RUNE_BASE_UNITS);
+    return BigInt(baseUnits);
   }
 
   if (baseUnits < ZERO_BIGINT) {
     return null;
   }
 
-  return Number(baseUnits) / Number(RUNE_BASE_UNITS);
+  return baseUnits;
+}
+
+export function runeBaseUnitsToNumber(baseUnits: string | number | bigint | undefined): number | null {
+  const units = runeBaseUnitsToBigInt(baseUnits);
+  if (units === null) {
+    return null;
+  }
+
+  const whole = units / RUNE_BASE_UNITS;
+  if (whole > MAX_SAFE_INTEGER_BIGINT) {
+    return null;
+  }
+
+  const fractional = units % RUNE_BASE_UNITS;
+  return Number(whole) + Number(fractional) / Number(RUNE_BASE_UNITS);
 }
 
 export function formatRuneFromBaseUnits(baseUnits: string | number | bigint | undefined): string {
-  const runeValue = runeBaseUnitsToNumber(baseUnits);
-  if (runeValue === null) {
+  const units = runeBaseUnitsToBigInt(baseUnits);
+  if (units === null) {
     return 'Unavailable';
   }
 
-  return runeValue.toLocaleString(undefined, {
-    maximumFractionDigits: 0,
-  });
+  const roundedRune = (units + (RUNE_BASE_UNITS / BigInt(2))) / RUNE_BASE_UNITS;
+  return roundedRune.toLocaleString();
 }
 
 type ApyInputScale = 'decimal' | 'percent';
@@ -122,6 +138,35 @@ export function getConfidenceTone(confidence: DataConfidence): 'success' | 'info
     case 'historical':
       return 'warning';
     case 'needs-review':
+      return 'danger';
+  }
+}
+
+type TokenomicsFigureTone = TokenomicsSnapshot['figures'][number]['tone'];
+type BadgeTone = 'success' | 'info' | 'warning' | 'danger';
+
+export function getTokenomicsToneLabel(tone: TokenomicsFigureTone): string {
+  switch (tone) {
+    case 'historical':
+      return 'Historical';
+    case 'source-backed':
+      return 'Source-backed';
+    case 'dynamic':
+      return 'Dynamic';
+    case 'current-only':
+      return 'Current-only';
+  }
+}
+
+export function getTokenomicsToneBadgeVariant(tone: TokenomicsFigureTone): BadgeTone {
+  switch (tone) {
+    case 'source-backed':
+      return 'success';
+    case 'historical':
+      return 'info';
+    case 'dynamic':
+      return 'warning';
+    case 'current-only':
       return 'danger';
   }
 }

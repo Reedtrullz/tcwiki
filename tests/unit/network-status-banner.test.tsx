@@ -135,6 +135,95 @@ describe('NetworkStatusBanner', () => {
     expect(html).not.toContain('PAUSELPDEPOSIT-*');
   });
 
+  it('renders scoped secured and WASM evidence instead of only counting aggregate controls', () => {
+    const result: LiveDataResult<NetworkStatus> = {
+      ...liveResult,
+      data: {
+        ...baseStatus,
+        activeControlKeys: ['HaltSecuredDeposit-*', 'HaltWasmContract-*'],
+        activeChainKeys: [],
+        activeEvidenceKeys: ['HaltSecuredDeposit-ETH', 'HaltWasmContract-thor1contract'],
+        activePauseKeys: ['HaltSecuredDeposit-*', 'HaltWasmContract-*', 'HaltSecuredDeposit-ETH', 'HaltWasmContract-thor1contract'],
+        securedAssetDepositPauseKeys: ['HaltSecuredDeposit-ETH'],
+        wasmContractHaltKeys: ['HaltWasmContract-thor1contract'],
+        scopedWasmHaltKeys: ['HaltWasmContract-thor1contract'],
+        chainStatuses: [
+          {
+            chain: 'ETH',
+            halted: false,
+            tradingPaused: false,
+            lpActionsPaused: false,
+            lpDepositPaused: false,
+            signingPaused: false,
+            activeMimirKeys: [],
+            lpDepositPauseKeys: [],
+            securedAssetDepositPaused: true,
+            securedAssetDepositPauseKeys: ['HaltSecuredDeposit-ETH'],
+          },
+        ],
+      },
+    };
+    const html = renderToStaticMarkup(<NetworkStatusBanner result={result} />);
+
+    expect(html).toContain('aria-label="ETH: secured deposits"');
+    expect(html).toContain('2 keys');
+    expect(html).toContain('HaltSecuredDeposit-ETH');
+    expect(html).toContain('Secured deposit halt');
+    expect(html).toContain('HaltWasmContract-thor1contract');
+    expect(html).toContain('WASM contract halt');
+    expect(html).not.toContain('HaltSecuredDeposit-*');
+    expect(html).not.toContain('HaltWasmContract-*');
+  });
+
+  it('renders scheduled Mimir controls without calling them active pauses', () => {
+    const result: LiveDataResult<NetworkStatus> = {
+      ...liveResult,
+      data: {
+        ...baseStatus,
+        state: 'operational',
+        summary: 'Current-only live sources do not show active halt flags.',
+        signingPaused: false,
+        thorchainHeight: 100,
+        activeChainKeys: [],
+        activeEvidenceKeys: [],
+        activePauseKeys: [],
+        scheduledMimirKeys: ['HALTTRADING'],
+        chainStatuses: [
+          {
+            chain: 'BTC',
+            halted: false,
+            tradingPaused: false,
+            lpActionsPaused: false,
+            lpDepositPaused: false,
+            signingPaused: false,
+            activeMimirKeys: [],
+            lpDepositPauseKeys: [],
+            scheduledMimirKeys: ['HALTTRADING'],
+          },
+        ],
+        monitoredControls: [
+          {
+            key: 'HALTTRADING',
+            label: 'Trading',
+            state: 'scheduled',
+            active: false,
+            description: 'Swaps and trading actions are paused when active. Scheduled for THORChain height 200.',
+          },
+        ],
+      },
+    };
+    const html = renderToStaticMarkup(<NetworkStatusBanner result={result} />);
+
+    expect(html).toContain('Live sources show scheduled Mimir controls');
+    expect(html).toContain('Scheduled monitored controls: 1 key. These are not counted as paused at THORChain height 100.');
+    expect(html).toContain('Scheduled monitored Mimir keys');
+    expect(html).toContain('HALTTRADING');
+    expect(html).toContain('Trading: scheduled');
+    expect(html).toContain('aria-label="BTC: scheduled"');
+    expect(html).not.toContain('Live sources show paused operations');
+    expect(html).not.toContain('Active monitored controls:');
+  });
+
   it('renders enablement controls as enabled or disabled instead of inactive', () => {
     const result: LiveDataResult<NetworkStatus> = {
       ...liveResult,
@@ -207,8 +296,8 @@ describe('NetworkStatusBanner', () => {
     expect(html).toContain('Live sources have unparseable Mimir controls');
     expect(html).toContain('1 monitored Mimir key could not be parsed.');
     expect(html).toContain('aria-label="BTC: Mimir warning"');
-    expect(html).toContain('aria-label="BTC unparseable Mimir keys"');
-    expect(html).toContain('Warning: 1 key');
+    expect(html).toContain('aria-label="BTC source warnings"');
+    expect(html).toContain('Warning: 1 issue');
     expect(html).toContain('Unparseable monitored Mimir keys');
     expect(html).toContain('HALTSIGNINGBTC');
     expect(html).toContain('Signing: unparseable');
@@ -251,5 +340,44 @@ describe('NetworkStatusBanner', () => {
     expect(html).toContain('Unknown chain-scoped Mimir key ignored: HALTBTCHAIN.');
     expect(html).not.toContain('Live sources have unparseable Mimir controls');
     expect(html).not.toContain('Unparseable monitored Mimir keys');
+  });
+
+  it('renders partial inbound-address source warnings as degraded chain state', () => {
+    const warning = 'BTC inbound_addresses omitted halted, global_trading_paused, chain_trading_paused, chain_lp_actions_paused; live chain operation state is partial.';
+    const result: LiveDataResult<NetworkStatus> = {
+      ...liveResult,
+      data: {
+        ...baseStatus,
+        state: 'degraded',
+        summary: 'Current-only live sources do not show active halt flags, but source warnings need review.',
+        signingPaused: false,
+        activeChainKeys: [],
+        activeEvidenceKeys: [],
+        activePauseKeys: [],
+        invalidMimirKeys: [],
+        sourceWarnings: [warning],
+        chainStatuses: [
+          {
+            chain: 'BTC',
+            halted: false,
+            tradingPaused: false,
+            lpActionsPaused: false,
+            lpDepositPaused: false,
+            signingPaused: false,
+            activeMimirKeys: [],
+            lpDepositPauseKeys: [],
+            sourceWarnings: [warning],
+          },
+        ],
+      },
+    };
+    const html = renderToStaticMarkup(<NetworkStatusBanner result={result} />);
+
+    expect(html).toContain('Network status source degraded');
+    expect(html).toContain('aria-label="BTC: source warning"');
+    expect(html).toContain('aria-label="BTC source warnings"');
+    expect(html).toContain('Warning: 1 issue');
+    expect(html).toContain(warning);
+    expect(html).not.toContain('aria-label="BTC: open"');
   });
 });

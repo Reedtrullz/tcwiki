@@ -31,7 +31,7 @@ export default function Footer() {
               </div>
               <span className="text-sm font-semibold">THORChain Wiki</span>
             </div>
-            <p className="text-xs text-slate-500 leading-relaxed">
+            <p className="text-xs text-slate-400 leading-relaxed">
               Community-maintained encyclopedia of THORChain protocol,
               data, and ecosystem.
             </p>
@@ -42,7 +42,7 @@ export default function Footer() {
             <ul className="space-y-2">
               {FOOTER_NAV_ITEMS.map((l) => (
                 <li key={l.href}>
-                  <Link href={l.href} className="text-sm text-slate-500 hover:text-slate-300 transition-colors">{l.label}</Link>
+                  <Link href={l.href} className="text-sm text-slate-400 hover:text-slate-300 transition-colors">{l.label}</Link>
                 </li>
               ))}
             </ul>
@@ -53,7 +53,7 @@ export default function Footer() {
             <ul className="space-y-2">
               {resourceLinks.map((l) => (
                 <li key={l.href}>
-                  <a href={l.href} target="_blank" rel="noopener noreferrer" className="text-sm text-slate-500 hover:text-slate-300 transition-colors">{l.label}</a>
+                  <a href={l.href} target="_blank" rel="noopener noreferrer" className="text-sm text-slate-400 hover:text-slate-300 transition-colors">{l.label}</a>
                 </li>
               ))}
             </ul>
@@ -64,14 +64,14 @@ export default function Footer() {
             <ul className="space-y-2">
               {communityLinks.map((l) => (
                 <li key={l.href}>
-                  <a href={l.href} target="_blank" rel="noopener noreferrer" className="text-sm text-slate-500 hover:text-slate-300 transition-colors">{l.label}</a>
+                  <a href={l.href} target="_blank" rel="noopener noreferrer" className="text-sm text-slate-400 hover:text-slate-300 transition-colors">{l.label}</a>
                 </li>
               ))}
             </ul>
           </div>
         </div>
 
-        <div className="mt-10 pt-6 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-600">
+        <div className="mt-10 pt-6 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-400">
           <p>Live data is current-only from Midgard/THORNode sources. Not affiliated with THORChain. Curated data last reviewed {STATIC_DATA_LAST_UPDATED}.</p>
           <p>© {new Date().getFullYear()} THORChain Wiki</p>
         </div>

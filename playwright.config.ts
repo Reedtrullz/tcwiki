@@ -29,9 +29,9 @@ export default defineConfig({
   webServer: externalBaseURL
     ? undefined
     : {
-        command: process.env.PLAYWRIGHT_WEB_SERVER_COMMAND || 'npm run dev',
+        command: process.env.PLAYWRIGHT_WEB_SERVER_COMMAND || 'npm run start:standalone',
         url: 'http://localhost:3000',
-        reuseExistingServer: !process.env.CI,
+        reuseExistingServer: false,
         timeout: 120 * 1000,
       },
 });

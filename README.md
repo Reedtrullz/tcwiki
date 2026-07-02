@@ -59,16 +59,28 @@ Recommended local release-shaped gate:
 
 ```bash
 nvm use
+df -h /System/Volumes/Data # stop if free space is below 50 GiB
 npm run check:content
+npm run check:live-snapshot
+npm run audit:prod
+npm run audit:all
 npm run typecheck
 npm run test:unit
 npm run lint
 npm run build
 npm run smoke:standalone
+CSP_ENFORCE=1 npm run smoke:standalone
 npm run test:e2e
+IMAGE_REF=ghcr.io/example/tcwiki@sha256:0000000000000000000000000000000000000000000000000000000000000000 APP_VERSION=local ansible-playbook -i inventory/hosts.yml ansible-playbook.yml --syntax-check
 ```
 
-The deployment setup is intentionally simple, but not blue/green. The existing container is replaced and rollback is attempted if health or version readback fails.
+`npm run test:e2e` starts a fresh standalone server by default. To test an already running standalone server or a remote deployment instead, set `PLAYWRIGHT_BASE_URL`, for example:
+
+```bash
+PLAYWRIGHT_BASE_URL=https://wiki.thorchain.no npm run test:e2e
+```
+
+The deployment setup preflights a candidate container on localhost before replacing the live container. It is still not a full blue/green traffic switch, but bad image/version/readiness-shape candidates are rejected before the existing container is touched, and rollback is attempted if replacement health or version readback fails.
 
 ## Tech Stack
 

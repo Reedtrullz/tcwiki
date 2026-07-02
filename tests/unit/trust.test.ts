@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
   formatPercent,
+  formatRuneFromBaseUnits,
   getConfidenceLabel,
   getFreshnessLabel,
   getLiveDataCopy,
+  getTokenomicsToneBadgeVariant,
+  getTokenomicsToneLabel,
   liveDegraded,
   liveOk,
   normalizeApyToPercent,
@@ -26,6 +29,14 @@ describe('trust helpers', () => {
     expect(runeBaseUnitsToNumber('0x10')).toBeNull();
     expect(runeBaseUnitsToNumber('1e8')).toBeNull();
     expect(runeBaseUnitsToNumber('100000000.0')).toBeNull();
+  });
+
+  it('formats large RUNE base units without unsafe Number coercion', () => {
+    expect(runeBaseUnitsToNumber('900719925474099100000000')).toBe(Number.MAX_SAFE_INTEGER);
+    expect(runeBaseUnitsToNumber('900719925474099200000000000000000')).toBeNull();
+    expect(formatRuneFromBaseUnits('900719925474099212345678')).toBe('9,007,199,254,740,992');
+    expect(formatRuneFromBaseUnits('149999999')).toBe('1');
+    expect(formatRuneFromBaseUnits('150000000')).toBe('2');
   });
 
   it('normalizes decimal and percentage shaped APY values', () => {
@@ -52,6 +63,14 @@ describe('trust helpers', () => {
     expect(getConfidenceLabel('official')).toBe('Official source');
     expect(getConfidenceLabel('needs-review')).toBe('Needs review');
     expect(getFreshnessLabel({ checkedAt: '2026-06-18', confidence: 'curated' })).toBe('Checked 2026-06-18');
+  });
+
+  it('keeps tokenomics provenance tones visually distinct', () => {
+    expect(getTokenomicsToneLabel('source-backed')).toBe('Source-backed');
+    expect(getTokenomicsToneBadgeVariant('source-backed')).toBe('success');
+    expect(getTokenomicsToneBadgeVariant('historical')).toBe('info');
+    expect(getTokenomicsToneBadgeVariant('dynamic')).toBe('warning');
+    expect(getTokenomicsToneBadgeVariant('current-only')).toBe('danger');
   });
 
   it('creates current-only and degraded live data copy', () => {

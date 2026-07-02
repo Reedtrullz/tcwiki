@@ -8,6 +8,7 @@ export interface GlossaryTerm {
   category: 'protocol' | 'economics' | 'operations' | 'history' | 'developer';
   confidence: DataConfidence;
   reviewedAt: string;
+  nextReviewDue: string;
   sources: SourceMeta[];
   relatedHrefs: string[];
 }
@@ -40,6 +41,7 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     category: 'protocol',
     confidence: 'curated',
     reviewedAt: '2026-07-02',
+    nextReviewDue: '2026-08-02',
     sources: [docsSource],
     relatedHrefs: ['/deep-dives/tss', '/deep-dives/churning'],
   },
@@ -50,6 +52,7 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     category: 'protocol',
     confidence: 'curated',
     reviewedAt: '2026-07-02',
+    nextReviewDue: '2026-08-02',
     sources: [docsSource],
     relatedHrefs: ['/deep-dives/bifrost'],
   },
@@ -60,6 +63,7 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     category: 'economics',
     confidence: 'curated',
     reviewedAt: '2026-07-02',
+    nextReviewDue: '2026-08-02',
     sources: [docsSource, devDocsSource],
     relatedHrefs: ['/deep-dives/clp', '/economics'],
   },
@@ -70,6 +74,7 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     category: 'operations',
     confidence: 'curated',
     reviewedAt: '2026-07-02',
+    nextReviewDue: '2026-08-02',
     sources: [devDocsSource],
     relatedHrefs: ['/stats', '/network'],
   },
@@ -80,6 +85,7 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     category: 'operations',
     confidence: 'official',
     reviewedAt: '2026-07-02',
+    nextReviewDue: '2026-08-02',
     sources: [networkHaltsSource],
     relatedHrefs: ['/network', '/governance'],
   },
@@ -90,6 +96,7 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     category: 'economics',
     confidence: 'curated',
     reviewedAt: '2026-07-02',
+    nextReviewDue: '2026-08-02',
     sources: [docsSource, networkHaltsSource],
     relatedHrefs: ['/rune', '/network'],
   },
@@ -100,6 +107,7 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     category: 'history',
     confidence: 'official',
     reviewedAt: '2026-07-02',
+    nextReviewDue: '2026-08-02',
     sources: [archivedSource],
     relatedHrefs: ['/tcy', '/deep-dives/savers'],
   },
@@ -110,6 +118,7 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     category: 'history',
     confidence: 'needs-review',
     reviewedAt: '2026-07-02',
+    nextReviewDue: '2026-07-16',
     sources: [docsSource, archivedSource],
     relatedHrefs: ['/tcy', '/governance'],
   },
@@ -120,6 +129,7 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     category: 'protocol',
     confidence: 'curated',
     reviewedAt: '2026-07-02',
+    nextReviewDue: '2026-08-02',
     sources: [docsSource],
     relatedHrefs: ['/deep-dives/tss'],
   },

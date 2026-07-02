@@ -7,8 +7,10 @@ import {
   PROTOCOL_MILESTONE_RECORDS,
   RESEARCH_REPORT_RECORDS,
   SECURITY_INCIDENT_RECORDS,
+  SOURCE_MAP_SECTION_RECORDS,
 } from '@/lib/data/static';
 import { GLOSSARY_TERMS } from '@/lib/content/glossary';
+import { CONTENT_ENTRIES, FOOTER_NAV_ITEMS } from '@/lib/content/registry';
 import { SEARCH_DOCUMENTS } from '@/lib/search/registry';
 import type { SearchDocType } from '@/lib/search/registry';
 import { recordAnchor } from '@/lib/utils';
@@ -53,6 +55,11 @@ function anchoredSearchExpectations(): AnchoredSearchExpectation[] {
       id: `ecosystem:${record.data.id}`,
       href: `/ecosystem#${recordAnchor('ecosystem', record.data.id)}`,
       type: 'ecosystem' as const,
+    })),
+    ...SOURCE_MAP_SECTION_RECORDS.map((record) => ({
+      id: `source-map:${record.data.id}`,
+      href: `/docs#${record.data.id}`,
+      type: 'source-map' as const,
     })),
     ...RESEARCH_REPORT_RECORDS.map((record) => ({
       id: `research:${record.data.id}`,
@@ -166,6 +173,8 @@ describe('SEARCH_DOCUMENTS', () => {
       expect(doc.description, `${doc.id} description`).toBeTruthy();
       expect(doc.confidence, `${doc.id} confidence`).toBeTruthy();
       expect(doc.reviewedAt, `${doc.id} reviewedAt`).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(doc.nextReviewDue, `${doc.id} nextReviewDue`).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(doc.nextReviewDue >= doc.reviewedAt, `${doc.id} review cadence`).toBe(true);
       expect(doc.sources.length, `${doc.id} sources`).toBeGreaterThan(0);
       expect(doc.sources.every((source) => source.label && source.url.startsWith('https://')), `${doc.id} source URLs`).toBe(true);
     }
@@ -185,6 +194,7 @@ describe('SEARCH_DOCUMENTS', () => {
       expect(doc?.href, `${id} href`).toBe(expectation.href);
       expect(doc?.type, `${id} type`).toBe(expectation.type);
       expect(doc?.confidence, `${id} confidence`).toBeTruthy();
+      expect(doc?.nextReviewDue, `${id} nextReviewDue`).toBeTruthy();
       expect(doc?.sources?.length, `${id} sources`).toBeGreaterThan(0);
     }
   });
@@ -195,5 +205,23 @@ describe('SEARCH_DOCUMENTS', () => {
     expect(mimir?.href).toBe('/glossary#term-mimir');
     expect(mimir?.type).toBe('glossary');
     expect(mimir?.confidence).toBe('official');
+  });
+
+  it('indexes runtime providers and monitored Mimir control families', () => {
+    expect(docsMatching('Liquify').some((doc) => doc.slug === '/docs')).toBe(true);
+    expect(docsMatching('gateway').some((doc) => doc.slug === '/docs')).toBe(true);
+    expect(docsMatching('current-only snapshots').some((doc) => doc.id === 'source-map:current-protocol-state')).toBe(true);
+    expect(docsMatching('PauseBond').some((doc) => doc.type === 'mimir')).toBe(true);
+    expect(docsMatching('RUNEPoolHaltWithdraw').some((doc) => doc.type === 'mimir')).toBe(true);
+    expect(docsMatching('HaltWasmDeployer').some((doc) => doc.type === 'mimir')).toBe(true);
+  });
+
+  it('keeps top-level navigation sections reachable from the footer', () => {
+    const footerHrefs = new Set(FOOTER_NAV_ITEMS.map((item) => item.href));
+    const topLevelNavSections = CONTENT_ENTRIES.filter((entry) => entry.nav && entry.category === 'section');
+
+    for (const entry of topLevelNavSections) {
+      expect(footerHrefs.has(entry.href), `${entry.title} footer link`).toBe(true);
+    }
   });
 });

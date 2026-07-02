@@ -21,7 +21,7 @@ Do not hard-code these as timeless claims:
 - TCY claim/stake state
 - RUNEPool/POL state
 - trade-account and secured-asset enablement
-- streaming-swap, memoless-transaction, secured-asset deposit/withdraw, app-layer/WASM, oracle, and node-operator halt flags
+- streaming-swap, memoless-transaction, asymmetric-withdrawal, secured-asset deposit/withdraw, app-layer/WASM, oracle, trade-account, RUNEPool, bank-send, and node-operator halt flags
 
 ## Operational Halt Coverage
 
@@ -30,10 +30,12 @@ When updating live status code or copy, check both exact Mimir keys and key fami
 Minimum coverage to keep visible or searchable:
 
 - Global and chain operations: `HALTTRADING`, `HALTSIGNING`, `HALTCHAINGLOBAL`, `HALT<CHAIN>TRADING`, `HALTSIGNING<CHAIN>`, `HALT<CHAIN>CHAIN`, `NODEPAUSECHAINGLOBAL`.
-- Liquidity operations: `PAUSELP`, `PAUSELP<CHAIN>`, `PAUSELPDEPOSIT-<ASSET>`, `StreamingSwapPause`.
+- Liquidity operations: `PAUSELP`, `PAUSELP<CHAIN>`, `PAUSELPDEPOSIT-<ASSET>`, `PauseAsymWithdrawal-<CHAIN>`, `StreamingSwapPause`.
 - TCY and legacy THORFi: `PAUSELOANS`, `HALTTCYTRADING`, `TCYCLAIMINGHALT`, `TCYCLAIMINGSWAPHALT`, `TCYSTAKINGHALT`, `TCYSTAKEDISTRIBUTIONHALT`, `TCYUNSTAKINGHALT`.
-- Trade, secured, and RUNEPool operations: `TRADEACCOUNTSENABLED`, `HALTSECUREDGLOBAL`, `HaltSecuredDeposit-<CHAIN>`, `HaltSecuredWithdraw-<CHAIN>`, `RUNEPOOLENABLED`, `RUNEPoolHaltDeposit`, `RUNEPoolHaltWithdraw`.
+- Trade, secured, and RUNEPool operations: `TRADEACCOUNTSENABLED`, `TRADEACCOUNTSDEPOSITENABLED`, `HALTSECUREDGLOBAL`, `HaltSecuredDeposit-<CHAIN>`, `HaltSecuredWithdraw-<CHAIN>`, `RUNEPOOLENABLED`, `RUNEPoolHaltDeposit`, `RUNEPoolHaltWithdraw`, `BANKSENDENABLED`.
 - App-layer and operator controls: `HaltWasmGlobal`, `HaltWasmDeployer-<ADDRESS>`, `HaltWasmCs-<CHECKSUM>`, `HaltWasmContract-<SUFFIX>`, `HaltOracle`, `HaltMemoless`, `PauseBond`, `PauseUnbond`, `HaltRebond`, `HaltOperatorRotate`.
+
+Height-shaped controls require a live THORChain height from `/thorchain/lastblock`; do not interpret every positive value as active. Most halt controls activate at or after their configured height, `NodePauseChainGlobal` is active until its expiry height, and WASM halt controls activate after their configured height. Pure toggles and enablement controls must stay explicitly classified.
 
 ## Updating Static Records
 
@@ -64,6 +66,7 @@ Useful current-state endpoints:
 ```bash
 curl -fsS https://thornode.thorchain.network/thorchain/mimir | jq
 curl -fsS https://thornode.thorchain.network/thorchain/inbound_addresses | jq
+curl -fsS https://thornode.thorchain.network/thorchain/lastblock | jq
 curl -fsS https://midgard.thorchain.network/v2/health | jq
 curl -fsS https://midgard.thorchain.network/v2/network | jq
 curl -fsS https://midgard.thorchain.network/v2/pools | jq 'map(.asset)'

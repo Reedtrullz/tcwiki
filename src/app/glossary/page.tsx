@@ -45,7 +45,7 @@ export default function GlossaryPage() {
                     freshness={{
                       checkedAt: term.reviewedAt,
                       confidence: term.confidence,
-                      nextReviewDue: '2026-08-02',
+                      nextReviewDue: term.nextReviewDue,
                     }}
                     sources={term.sources}
                     compact

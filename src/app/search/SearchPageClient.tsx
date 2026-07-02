@@ -49,6 +49,52 @@ function typeLabel(type: SearchDoc['type']) {
   return type.replace('-', ' ');
 }
 
+function SourceList({ sources, resultTitle }: { sources: SearchDoc['sources']; resultTitle: string }) {
+  const visibleSources = sources.slice(0, 2);
+  const remainingSources = sources.slice(2);
+
+  return (
+    <>
+      {visibleSources.map((source, index) => (
+        <span key={source.url}>
+          {index > 0 ? ', ' : ''}
+          <a
+            href={source.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-slate-400 underline-offset-4 hover:text-slate-200 hover:underline"
+          >
+            {source.label}
+          </a>
+        </span>
+      ))}
+      {remainingSources.length > 0 && (
+        <details className="ml-1 inline-block align-baseline">
+          <summary
+            aria-label={`Show ${remainingSources.length} additional source${remainingSources.length === 1 ? '' : 's'} for ${resultTitle}`}
+            className="inline cursor-pointer list-none text-slate-400 underline decoration-dotted underline-offset-4 hover:text-slate-200"
+          >
+            +{remainingSources.length} source{remainingSources.length === 1 ? '' : 's'}
+          </summary>
+          <div className="mt-1 flex max-w-xs flex-wrap gap-x-2 gap-y-1 rounded border border-border bg-surface px-2 py-1">
+            {remainingSources.map((source) => (
+              <a
+                key={source.url}
+                href={source.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-slate-400 underline-offset-4 hover:text-slate-200 hover:underline"
+              >
+                {source.label}
+              </a>
+            ))}
+          </div>
+        </details>
+      )}
+    </>
+  );
+}
+
 function SearchResultsInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -89,57 +135,77 @@ function SearchResultsInner() {
 
   return (
     <div>
-      <form onSubmit={handleSearchSubmit} className="mb-8">
+      <form role="search" aria-label="Search wiki content" onSubmit={handleSearchSubmit} className="mb-8">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-500" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
           <input
             aria-label="Search the wiki"
             type="text"
             value={localQuery}
             onChange={(e) => setLocalQuery(e.target.value)}
             placeholder="Search the wiki..."
-            className="w-full pl-10 pr-4 py-3 bg-surface border border-border rounded-lg text-base text-slate-100 placeholder-slate-600 focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all shadow-lg"
+            className="w-full pl-10 pr-12 py-3 bg-surface border border-border rounded-lg text-base text-slate-100 placeholder-slate-600 focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all shadow-lg"
           />
+          <button
+            type="submit"
+            aria-label="Submit search page query"
+            className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-md p-2 text-slate-400 transition-colors hover:bg-slate-800/70 hover:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
+          >
+            <Search className="h-5 w-5" />
+          </button>
         </div>
       </form>
 
       {query ? (
-        <p aria-live="polite" aria-atomic="true" className="text-sm text-slate-500 mb-6">{results.length} result{results.length !== 1 ? 's' : ''} for &ldquo;{query}&rdquo;</p>
+        <p aria-live="polite" aria-atomic="true" className="text-sm text-slate-400 mb-6">{results.length} result{results.length !== 1 ? 's' : ''} for &ldquo;{query}&rdquo;</p>
       ) : (
-        <p className="text-sm text-slate-500 mb-6">Enter a search term above to find content across the wiki.</p>
+        <p className="text-sm text-slate-400 mb-6">Enter a search term above to find content across the wiki.</p>
       )}
       <div className="space-y-2">
         {results.map((r) => (
-          <Link key={r.id} href={r.href} className="block p-4 rounded-lg bg-surface-elevated border border-border hover:border-accent/20 transition-colors">
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="info">{typeLabel(r.type)}</Badge>
-              {r.confidence && (
-                <Badge variant={getConfidenceTone(r.confidence)}>
-                  {getConfidenceLabel(r.confidence)}
-                </Badge>
-              )}
-              <h3 className="text-sm font-semibold">{r.title}</h3>
-            </div>
-            <p className="text-xs text-slate-500 mt-2">{getSearchSnippet(r.content, query)}</p>
-            <div className="flex items-center gap-2 mt-2 text-[11px] text-slate-600">
-              <span>{r.href}</span>
+          <article key={r.id} className="p-4 rounded-lg bg-surface-elevated border border-border">
+            <Link href={r.href} className="block rounded-sm transition-colors hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant="info">{typeLabel(r.type)}</Badge>
+                {r.confidence && (
+                  <Badge variant={getConfidenceTone(r.confidence)}>
+                    {getConfidenceLabel(r.confidence)}
+                  </Badge>
+                )}
+                <h3 className="text-sm font-semibold">{r.title}</h3>
+              </div>
+            </Link>
+            <p className="text-xs text-slate-400 mt-2">{getSearchSnippet(r.content, query)}</p>
+            <dl className="mt-3 grid gap-1 text-xs text-slate-400 sm:flex sm:flex-wrap sm:items-center sm:gap-x-2">
+              <div className="flex min-w-0 gap-1">
+                <dt className="text-slate-400">Route</dt>
+                <dd className="min-w-0 break-all text-slate-400">{r.href}</dd>
+              </div>
               {r.sources && (
-                <>
-                  <span>·</span>
-                  <span>{r.sources.length} source{r.sources.length === 1 ? '' : 's'}</span>
-                </>
+                <div className="flex min-w-0 gap-1">
+                  <dt className="text-slate-400">Source</dt>
+                  <dd className="min-w-0">
+                    <SourceList sources={r.sources} resultTitle={r.title} />
+                  </dd>
+                </div>
               )}
               {r.reviewedAt && (
-                <>
-                  <span>·</span>
-                  <span>Reviewed {r.reviewedAt}</span>
-                </>
+                <div className="flex gap-1">
+                  <dt className="text-slate-400">Reviewed</dt>
+                  <dd className="text-slate-400">{r.reviewedAt}</dd>
+                </div>
               )}
-            </div>
-          </Link>
+              {r.nextReviewDue && (
+                <div className="flex gap-1">
+                  <dt className="text-slate-400">Review due</dt>
+                  <dd className="text-slate-400">{r.nextReviewDue}</dd>
+                </div>
+              )}
+            </dl>
+          </article>
         ))}
         {query && results.length === 0 && (
-          <p className="text-slate-500 py-12 text-center text-sm">No results for &ldquo;{query}&rdquo;. Try &ldquo;RUNE&rdquo;, &ldquo;pools&rdquo;, or &ldquo;security&rdquo;.</p>
+          <p className="text-slate-400 py-12 text-center text-sm">No results for &ldquo;{query}&rdquo;. Try &ldquo;RUNE&rdquo;, &ldquo;pools&rdquo;, or &ldquo;security&rdquo;.</p>
         )}
       </div>
     </div>
@@ -150,7 +216,7 @@ export default function SearchPage() {
   return (
     <PageContainer maxWidth="narrow">
       <h1 className="text-3xl font-bold tracking-tight mb-8">Search</h1>
-      <Suspense fallback={<p className="text-sm text-slate-500">Loading...</p>}>
+      <Suspense fallback={<p className="text-sm text-slate-400">Loading...</p>}>
         <SearchResultsInner />
       </Suspense>
     </PageContainer>

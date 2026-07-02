@@ -29,7 +29,10 @@ function isExactMimirKey(key: string) {
 }
 
 function isEnablementControlKey(key: string) {
-  return key === 'TRADEACCOUNTSENABLED' || key === 'RUNEPOOLENABLED';
+  return key === 'TRADEACCOUNTSENABLED' ||
+    key === 'TRADEACCOUNTSDEPOSITENABLED' ||
+    key === 'RUNEPOOLENABLED' ||
+    key === 'BANKSENDENABLED';
 }
 
 function getControlStateLabel(key: string, state: string) {
@@ -55,24 +58,78 @@ function getControlClassName(state: string, active: boolean) {
   if (state === 'unparseable') {
     return 'border-amber-500/30 bg-amber-500/10 text-amber-200';
   }
+  if (state === 'scheduled') {
+    return 'border-sky-500/30 bg-sky-500/10 text-sky-200';
+  }
   if (state === 'not-monitored') {
-    return 'border-slate-700 bg-slate-900 text-slate-500';
+    return 'border-slate-700 bg-slate-900 text-slate-400';
   }
   return 'border-emerald-500/20 bg-emerald-500/5 text-emerald-300';
+}
+
+function getDashScopedChain(key: string, prefix: string) {
+  const upperKey = key.toUpperCase();
+  const upperPrefix = prefix.toUpperCase();
+  return upperKey.startsWith(upperPrefix) ? upperKey.slice(upperPrefix.length).split('-')[0] : null;
+}
+
+function getEvidenceScope(key: string) {
+  return getDashScopedChain(key, 'PAUSELPDEPOSIT-') ??
+    getDashScopedChain(key, 'PAUSEASYMWITHDRAWAL-') ??
+    getDashScopedChain(key, 'HALTSECUREDDEPOSIT-') ??
+    getDashScopedChain(key, 'HALTSECUREDWITHDRAW-') ??
+    (key.toUpperCase().startsWith('HALTWASM') ? 'WASM/app layer' : 'Network');
+}
+
+function getEvidenceImpact(key: string) {
+  const upperKey = key.toUpperCase();
+  if (upperKey.startsWith('PAUSELPDEPOSIT-')) {
+    return 'LP deposit pause';
+  }
+  if (upperKey.startsWith('PAUSEASYMWITHDRAWAL-')) {
+    return 'Asym withdrawal pause';
+  }
+  if (upperKey.startsWith('HALTSECUREDDEPOSIT-')) {
+    return 'Secured deposit halt';
+  }
+  if (upperKey.startsWith('HALTSECUREDWITHDRAW-')) {
+    return 'Secured withdrawal halt';
+  }
+  if (upperKey.startsWith('HALTWASMDEPLOYER-')) {
+    return 'WASM deployer halt';
+  }
+  if (upperKey.startsWith('HALTWASMCS-')) {
+    return 'WASM checksum halt';
+  }
+  if (upperKey.startsWith('HALTWASMCONTRACT-')) {
+    return 'WASM contract halt';
+  }
+  if (upperKey === 'NODEPAUSECHAINGLOBAL') {
+    return 'Node chain pause';
+  }
+  return 'Monitored control flag';
 }
 
 export function NetworkStatusBanner({ result, isLoading = false }: NetworkStatusBannerProps) {
   const status = result?.data;
   const isPaused = status?.state === 'paused';
-  const isDegraded = result?.status === 'degraded';
+  const isDegraded = result?.status === 'degraded' || status?.state === 'degraded';
   const isUnavailable = !result && !isLoading;
   const hasInvalidMimirKeys = Boolean(status && status.invalidMimirKeys.length > 0);
   const hasSourceWarnings = Boolean(status && (hasInvalidMimirKeys || status.sourceWarnings.length > 0));
+  const scheduledMimirKeys = status?.scheduledMimirKeys ?? [];
+  const hasScheduledMimirKeys = scheduledMimirKeys.length > 0;
   const activeControlKeys = status?.activeControlKeys ?? status?.activePauseKeys ?? [];
   const chainsWithEvidence = status?.chainStatuses
     .map((chain) => ({
       chain: chain.chain,
-      keys: uniqueStrings([...chain.activeMimirKeys, ...chain.lpDepositPauseKeys]),
+      keys: uniqueStrings([
+        ...chain.activeMimirKeys,
+        ...chain.lpDepositPauseKeys,
+        ...(chain.securedAssetDepositPauseKeys ?? []),
+        ...(chain.securedAssetWithdrawPauseKeys ?? []),
+        ...(chain.asymWithdrawalPauseKeys ?? []),
+      ]),
     }))
     .filter((chain) => chain.keys.length > 0) ?? [];
   const activeEvidenceKeys = status?.activeEvidenceKeys ?? [...new Set(chainsWithEvidence.flatMap((chain) => chain.keys))];
@@ -89,13 +146,25 @@ export function NetworkStatusBanner({ result, isLoading = false }: NetworkStatus
     chain.keys.map((key) => ({
       id: `${chain.chain}:${key}`,
       scope: chain.chain,
-      impact: key.startsWith('PAUSELPDEPOSIT-') ? 'LP deposit pause' : 'Chain operation flag',
+      impact: getEvidenceImpact(key),
       key,
     }))
   ));
-  const evidenceRows = [...controlEvidenceRows, ...chainEvidenceRows];
-  const evidenceCount = activeEvidenceKeys.length > 0 ? activeEvidenceKeys.length : evidenceRows.length;
-  const Icon = isPaused || isDegraded || isUnavailable || hasSourceWarnings ? AlertTriangle : CheckCircle2;
+  const describedEvidenceKeys = new Set([
+    ...controlEvidenceRows.map((row) => row.key),
+    ...chainEvidenceRows.map((row) => row.key),
+  ]);
+  const scopedEvidenceRows: EvidenceRow[] = activeEvidenceKeys
+    .filter((key) => !describedEvidenceKeys.has(key))
+    .map((key) => ({
+      id: `scoped:${key}`,
+      scope: getEvidenceScope(key),
+      impact: getEvidenceImpact(key),
+      key,
+    }));
+  const evidenceRows = [...controlEvidenceRows, ...chainEvidenceRows, ...scopedEvidenceRows];
+  const evidenceCount = evidenceRows.length;
+  const Icon = isPaused || isDegraded || isUnavailable || hasSourceWarnings || hasScheduledMimirKeys ? AlertTriangle : CheckCircle2;
   const title = isLoading
     ? 'Checking live network status'
     : isUnavailable
@@ -108,20 +177,24 @@ export function NetworkStatusBanner({ result, isLoading = false }: NetworkStatus
           ? hasInvalidMimirKeys
             ? 'Live sources have unparseable Mimir controls'
             : 'Live sources have Mimir warnings to review'
+      : hasScheduledMimirKeys
+          ? 'Live sources show scheduled Mimir controls'
           : 'Live sources show no global halt flags';
 
   return (
-    <Card className={isPaused || isDegraded || isUnavailable || hasSourceWarnings ? 'border-amber-500/30 bg-amber-500/5' : 'border-emerald-500/20'}>
+    <Card
+      className={isPaused || isDegraded || isUnavailable || hasSourceWarnings || hasScheduledMimirKeys ? 'border-amber-500/30 bg-amber-500/5' : 'border-emerald-500/20'}
+    >
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div className="flex gap-3">
           <div className="mt-0.5 text-accent">
             <Icon className="h-5 w-5" />
           </div>
-          <div>
+          <div role="status" aria-live="polite" aria-atomic="true" aria-busy={isLoading}>
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="text-sm font-semibold">{title}</h2>
               {status?.state && (
-                <Badge variant={isPaused || hasSourceWarnings ? 'warning' : 'success'}>
+                <Badge variant={isPaused || hasSourceWarnings || hasScheduledMimirKeys ? 'warning' : 'success'}>
                   {status.state}
                 </Badge>
               )}
@@ -134,6 +207,11 @@ export function NetworkStatusBanner({ result, isLoading = false }: NetworkStatus
             {activeControlKeys.length > 0 && (
               <p className="mt-2 text-xs text-amber-300">
                 Active monitored controls: {formatKeyCount(activeControlKeys.length)}. Supporting source keys are listed in operational evidence.
+              </p>
+            )}
+            {hasScheduledMimirKeys && (
+              <p className="mt-2 text-xs text-sky-300">
+                Scheduled monitored controls: {formatKeyCount(scheduledMimirKeys.length)}. These are not counted as paused at THORChain height {status?.thorchainHeight ?? 'unavailable'}.
               </p>
             )}
             {hasSourceWarnings && (
@@ -149,54 +227,86 @@ export function NetworkStatusBanner({ result, isLoading = false }: NetworkStatus
         <div className="min-w-52">
           <LiveSourceMeta result={result} />
           {status?.thorNodeVersion && (
-            <p className="mt-1 text-[11px] text-slate-600">THORNode {status.thorNodeVersion}</p>
+            <p className="mt-1 text-[11px] text-slate-400">THORNode {status.thorNodeVersion}</p>
           )}
         </div>
       </div>
 
       {status && status.chainStatuses.length > 0 && (
-        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6" role="list" aria-label="Per-chain live operation state">
           {status.chainStatuses.map((chain) => {
             const unparseableKeys = chain.unparseableMimirKeys ?? [];
-            const paused = chain.halted || chain.tradingPaused || chain.lpActionsPaused || chain.lpDepositPaused || chain.signingPaused;
-            const hasChainWarning = unparseableKeys.length > 0;
+            const chainSourceWarnings = chain.sourceWarnings ?? [];
+            const scheduledKeys = chain.scheduledMimirKeys ?? [];
+            const paused = chain.halted ||
+              chain.tradingPaused ||
+              chain.lpActionsPaused ||
+              chain.lpDepositPaused ||
+              chain.signingPaused ||
+              Boolean(chain.securedAssetDepositPaused) ||
+              Boolean(chain.securedAssetWithdrawPaused) ||
+              Boolean(chain.asymWithdrawalPaused);
+            const hasChainWarning = unparseableKeys.length > 0 || chainSourceWarnings.length > 0;
             const details = [
               chain.halted ? 'halted' : null,
               chain.tradingPaused ? 'trading' : null,
               chain.signingPaused ? 'signing' : null,
               chain.lpActionsPaused ? 'LP' : null,
               !chain.lpActionsPaused && chain.lpDepositPaused ? 'LP deposits' : null,
-              hasChainWarning ? 'Mimir warning' : null,
+              chain.securedAssetDepositPaused ? 'secured deposits' : null,
+              chain.securedAssetWithdrawPaused ? 'secured withdrawals' : null,
+              chain.asymWithdrawalPaused ? 'asym withdrawals' : null,
+              scheduledKeys.length > 0 ? 'scheduled' : null,
+              unparseableKeys.length > 0 ? 'Mimir warning' : null,
+              chainSourceWarnings.length > 0 ? 'source warning' : null,
             ].filter((item): item is string => item !== null);
             const statusText = details.length > 0 ? details.join(' / ') : 'open';
-            const sourceKeyCount = uniqueStrings([...chain.activeMimirKeys, ...chain.lpDepositPauseKeys]).length;
+            const sourceKeyCount = uniqueStrings([
+              ...chain.activeMimirKeys,
+              ...chain.lpDepositPauseKeys,
+              ...(chain.securedAssetDepositPauseKeys ?? []),
+              ...(chain.securedAssetWithdrawPauseKeys ?? []),
+              ...(chain.asymWithdrawalPauseKeys ?? []),
+            ]).length;
+            const hasChainScheduled = scheduledKeys.length > 0;
             return (
               <div
                 key={chain.chain}
+                role="listitem"
                 aria-label={`${chain.chain}: ${statusText}`}
-                className={`rounded-md border px-3 py-2 ${paused || hasChainWarning ? 'border-amber-500/20 bg-amber-500/5' : 'border-border bg-surface/70'}`}
+                className={`rounded-md border px-3 py-2 ${paused || hasChainWarning || hasChainScheduled ? 'border-amber-500/20 bg-amber-500/5' : 'border-border bg-surface/70'}`}
               >
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-xs font-semibold">{chain.chain}</span>
-                  <RadioTower aria-hidden="true" className={paused || hasChainWarning ? 'h-3.5 w-3.5 text-amber-400' : 'h-3.5 w-3.5 text-emerald-400'} />
+                  <RadioTower aria-hidden="true" className={paused || hasChainWarning ? 'h-3.5 w-3.5 text-amber-400' : hasChainScheduled ? 'h-3.5 w-3.5 text-sky-400' : 'h-3.5 w-3.5 text-emerald-400'} />
                 </div>
-                <p className="mt-1 text-[11px] text-slate-500">
+                <p className="mt-1 text-[11px] text-slate-400">
                   {statusText}
                 </p>
                 {sourceKeyCount > 0 && (
-                  <p className="mt-1 text-[10px] text-slate-600" aria-label={`${chain.chain} active Mimir key count`}>
+                  <p className="mt-1 text-[11px] text-slate-400" aria-label={`${chain.chain} active Mimir key count`}>
                     Evidence: {formatKeyCount(sourceKeyCount)}
                   </p>
                 )}
+                {scheduledKeys.length > 0 && (
+                  <p className="mt-1 text-[11px] text-sky-300" aria-label={`${chain.chain} scheduled Mimir key count`}>
+                    Scheduled: {formatKeyCount(scheduledKeys.length)}
+                  </p>
+                )}
                 {hasChainWarning && (
-                  <div className="mt-2 space-y-1" aria-label={`${chain.chain} unparseable Mimir keys`}>
-                    <p className="text-[10px] text-amber-300">
-                      Warning: {formatKeyCount(unparseableKeys.length)}
+                  <div className="mt-2 space-y-1" aria-label={`${chain.chain} source warnings`}>
+                    <p className="text-[11px] text-amber-300">
+                      Warning: {unparseableKeys.length + chainSourceWarnings.length} issue{unparseableKeys.length + chainSourceWarnings.length === 1 ? '' : 's'}
                     </p>
                     {unparseableKeys.map((key) => (
                       <code key={key} className="block break-all rounded border border-amber-500/20 bg-slate-950/40 px-1.5 py-1 text-[10px] text-amber-200">
                         {key}
                       </code>
+                    ))}
+                    {chainSourceWarnings.map((warning) => (
+                      <p key={warning} className="text-[10px] leading-relaxed text-amber-200">
+                        {warning}
+                      </p>
                     ))}
                   </div>
                 )}
@@ -210,10 +320,10 @@ export function NetworkStatusBanner({ result, isLoading = false }: NetworkStatus
         <details className="mt-4 rounded-md border border-border bg-surface/50">
           <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2 text-xs font-semibold text-slate-300">
             <span>Operational evidence</span>
-            <span className="shrink-0 text-[11px] font-normal text-slate-500">{formatKeyCount(evidenceCount)}</span>
+            <span className="shrink-0 text-[11px] font-normal text-slate-400">{formatKeyCount(evidenceCount)}</span>
           </summary>
           <div className="border-t border-border px-3 py-3">
-            <p className="text-[11px] text-slate-500">
+            <p className="text-[11px] text-slate-400">
               Supporting active Mimir keys from the live THORNode source above. These keys explain the compact chain-card states.
             </p>
             <div className="mt-3 space-y-2 sm:hidden" role="list" aria-label="Active Mimir key evidence for network operation state">
@@ -221,8 +331,8 @@ export function NetworkStatusBanner({ result, isLoading = false }: NetworkStatus
                 <div key={`mobile:${row.id}`} role="listitem" className="rounded-md border border-border bg-slate-950/30 p-2">
                   <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px]">
                     <span className="font-semibold text-slate-300">{row.scope}</span>
-                    <span className="text-slate-600">/</span>
-                    <span className="text-slate-500">{row.impact}</span>
+                    <span className="text-slate-400">/</span>
+                    <span className="text-slate-400">{row.impact}</span>
                   </div>
                   <code className="mt-1 block break-all font-mono text-[10px] leading-relaxed text-amber-200">
                     {row.key}
@@ -233,7 +343,7 @@ export function NetworkStatusBanner({ result, isLoading = false }: NetworkStatus
             <div className="mt-3 hidden overflow-x-auto sm:block">
               <table className="min-w-[640px] text-left text-[11px]">
                 <caption className="sr-only">Active Mimir key evidence for network operation state</caption>
-                <thead className="text-slate-500">
+                <thead className="text-slate-400">
                   <tr>
                     <th scope="col" className="whitespace-nowrap pb-2 pr-4 font-medium">Scope</th>
                     <th scope="col" className="whitespace-nowrap pb-2 pr-4 font-medium">Impact</th>
@@ -244,7 +354,7 @@ export function NetworkStatusBanner({ result, isLoading = false }: NetworkStatus
                   {evidenceRows.map((row) => (
                     <tr key={row.id}>
                       <td className="whitespace-nowrap py-2 pr-4 font-medium">{row.scope}</td>
-                      <td className="whitespace-nowrap py-2 pr-4 text-slate-500">{row.impact}</td>
+                      <td className="whitespace-nowrap py-2 pr-4 text-slate-400">{row.impact}</td>
                       <td className="py-2">
                         <code className="break-all rounded border border-border bg-slate-950/50 px-1.5 py-1 text-[10px] text-amber-200">
                           {row.key}
@@ -254,6 +364,27 @@ export function NetworkStatusBanner({ result, isLoading = false }: NetworkStatus
                   ))}
                 </tbody>
               </table>
+            </div>
+          </div>
+        </details>
+      )}
+
+      {scheduledMimirKeys.length > 0 && (
+        <details className="mt-4 rounded-md border border-sky-500/20 bg-sky-500/5">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2 text-xs font-semibold text-sky-200">
+            <span>Scheduled monitored Mimir keys</span>
+            <span className="shrink-0 text-[11px] font-normal text-sky-300/80">{formatKeyCount(scheduledMimirKeys.length)}</span>
+          </summary>
+          <div className="border-t border-sky-500/20 px-3 py-3">
+            <p className="text-[11px] text-sky-100/70">
+              These height-based controls exist in live Mimir but are not active at the sampled THORChain height.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {scheduledMimirKeys.map((key) => (
+                <code key={key} className="break-all rounded border border-sky-500/20 bg-slate-950/50 px-1.5 py-1 text-[10px] text-sky-100">
+                  {key}
+                </code>
+              ))}
             </div>
           </div>
         </details>
@@ -282,7 +413,7 @@ export function NetworkStatusBanner({ result, isLoading = false }: NetworkStatus
 
       {status && status.monitoredControls.length > 0 && (
         <div className="mt-4 border-t border-border pt-4">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
             Monitored Mimir controls
           </p>
           <div className="mt-2 flex flex-wrap gap-2">
@@ -296,9 +427,9 @@ export function NetworkStatusBanner({ result, isLoading = false }: NetworkStatus
               </span>
             ))}
           </div>
-          <p className="mt-2 text-[11px] text-slate-600">
+          <p className="mt-2 text-[11px] text-slate-400">
             Current actions depend on these controls and per-chain flags; check live sources before assuming swaps,
-            signing, LP actions, TCY, trade-account, secured-asset, or app-layer availability.
+            signing, LP actions, asymmetric withdrawals, TCY, trade-account, secured-asset, bank-send, or app-layer availability.
           </p>
         </div>
       )}

@@ -30,7 +30,11 @@ export default function NetworkPage() {
     ? networkStatus.lpPaused || networkStatus.chainStatuses.some((chain) => chain.lpActionsPaused)
     : undefined;
   const lpDepositsPaused = networkStatus ? networkStatus.poolDepositPauseKeys.length > 0 : undefined;
+  const asymWithdrawalsPaused = networkStatus ? (networkStatus.asymWithdrawalPauseKeys?.length ?? 0) > 0 : undefined;
   const securedAssetsPaused = getSecuredAssetsSummaryPaused(networkStatus);
+  const availabilityDisabled = (enabled: boolean | null | undefined) => (
+    enabled === undefined ? undefined : enabled === null ? null : !enabled
+  );
 
   return (
     <PageContainer>
@@ -54,7 +58,7 @@ export default function NetworkPage() {
         ].map((node) => (
           <Card key={node.type}>
             <h3 className={`text-sm font-semibold mb-1.5 ${node.color}`}>{node.type}</h3>
-            <p className="text-xs text-slate-500 leading-relaxed">{node.desc}</p>
+            <p className="text-xs text-slate-400 leading-relaxed">{node.desc}</p>
           </Card>
         ))}
       </div>
@@ -71,13 +75,13 @@ export default function NetworkPage() {
         ].map((feature) => (
           <Card key={feature.title}>
             <h3 className="text-sm font-semibold mb-1.5">{feature.title}</h3>
-            <p className="text-xs text-slate-500 leading-relaxed">{feature.desc}</p>
+            <p className="text-xs text-slate-400 leading-relaxed">{feature.desc}</p>
           </Card>
         ))}
       </div>
 
       <SectionHeader>Current-Only Numbers</SectionHeader>
-      <p className="text-sm text-slate-500 mb-4">
+      <p className="text-sm text-slate-400 mb-4">
         Values below are either live from Midgard or intentionally marked as current-only because constants can be overridden by Mimir.
       </p>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
@@ -91,6 +95,7 @@ export default function NetworkPage() {
           { label: 'Signing State', value: liveStateValue(networkStatus?.signingPaused, ['HALTSIGNING'], [/^HALTSIGNING[A-Z0-9]+$/, /^HALT[A-Z0-9]+SIGNING$/]) },
           { label: 'LP Actions', value: liveStateValue(lpActionsPaused, ['PAUSELP'], [/^PAUSELP[A-Z0-9]+$/]) },
           { label: 'LP Deposits', value: liveStateValue(lpDepositsPaused, ['PAUSELPDEPOSIT-*'], [/^PAUSELPDEPOSIT-/]) },
+          { label: 'Asym Withdrawals', value: liveStateValue(asymWithdrawalsPaused, ['PauseAsymWithdrawal-*'], [/^PAUSEASYMWITHDRAWAL-/]) },
           { label: 'TCY Claims', value: liveStateValue(networkStatus?.tcyClaimingPaused, ['TCYCLAIMINGHALT']) },
           { label: 'TCY Claim Swaps', value: liveStateValue(networkStatus?.tcyClaimingSwapPaused, ['TCYCLAIMINGSWAPHALT']) },
           { label: 'TCY Staking', value: liveStateValue(networkStatus?.tcyStakingPaused, ['TCYSTAKINGHALT']) },
@@ -98,14 +103,27 @@ export default function NetworkPage() {
           { label: 'TCY Unstaking', value: liveStateValue(networkStatus?.tcyUnstakingPaused, ['TCYUNSTAKINGHALT']) },
           { label: 'TCY Trading', value: liveStateValue(networkStatus?.tcyTradingPaused, ['HALTTCYTRADING']) },
           { label: 'Secured Assets', value: liveStateValue(securedAssetsPaused, ['HALTSECUREDGLOBAL', 'HaltSecuredDeposit-*', 'HaltSecuredWithdraw-*'], [/^HALTSECURED(?:DEPOSIT|WITHDRAW)-/]) },
+          { label: 'Trade Accounts', value: liveStateValue(availabilityDisabled(networkStatus?.tradeAccountsEnabled), ['TRADEACCOUNTSENABLED']) },
+          { label: 'Trade Deposits', value: liveStateValue(availabilityDisabled(networkStatus?.tradeAccountDepositsEnabled), ['TRADEACCOUNTSDEPOSITENABLED']) },
+          { label: 'RUNEPool', value: liveStateValue(availabilityDisabled(networkStatus?.runePoolEnabled), ['RUNEPOOLENABLED']) },
+          { label: 'Bank Sends', value: liveStateValue(availabilityDisabled(networkStatus?.bankSendEnabled), ['BANKSENDENABLED']) },
         ].map((stat) => (
           <Card key={stat.label} padding="sm" className="text-center">
             <p className="text-xl font-bold text-accent">{stat.value}</p>
-            <p className="text-[11px] text-slate-500 mt-1">{stat.label}</p>
+            <p className="text-[11px] text-slate-400 mt-1">{stat.label}</p>
           </Card>
         ))}
       </div>
-      <LiveSourceMeta result={networkResult} healthResult={midgardHealthResult} />
+      <div className="grid gap-3 lg:grid-cols-2">
+        <div>
+          <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Midgard node-count source</p>
+          <LiveSourceMeta result={networkResult} healthResult={midgardHealthResult} />
+        </div>
+        <div>
+          <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">THORNode operation-state source</p>
+          <LiveSourceMeta result={statusResult} />
+        </div>
+      </div>
     </PageContainer>
   );
 }

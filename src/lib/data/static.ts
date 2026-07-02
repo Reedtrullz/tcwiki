@@ -6,8 +6,10 @@ import type {
   GovernanceProposal,
   ResearchReport,
   SecurityIncident,
+  SourceMapSection,
   SourceMeta,
   SourcedRecord,
+  TokenomicsSnapshot,
 } from '@/lib/types';
 import { unwrapRecord, withFreshness } from '@/lib/trust';
 
@@ -77,6 +79,111 @@ const nineRealmsQ3Source: SourceMeta = {
 const trmBybitSource: SourceMeta = {
   label: 'TRM Labs Bybit laundering update',
   url: 'https://www.trmlabs.com/resources/blog/bybit-hack-update-north-korea-moves-to-next-stage-of-laundering',
+};
+
+const thornodeMimirSource: SourceMeta = {
+  label: 'THORNode Mimir',
+  url: 'https://thornode.thorchain.network/thorchain/mimir',
+  notes: 'Current-only operational controls; malformed values must not be treated as inactive.',
+};
+
+const midgardHealthSource: SourceMeta = {
+  label: 'Midgard v2 Health',
+  url: 'https://midgard.thorchain.network/v2/health',
+  notes: 'Use to check Midgard provider health, sync state, and lag before trusting live metrics.',
+};
+
+const midgardNetworkSource: SourceMeta = {
+  label: 'Midgard v2 Network',
+  url: 'https://midgard.thorchain.network/v2/network',
+  notes: 'Current-only network metrics; source label and health should be shown beside values.',
+};
+
+const liquifyMidgardHealthSource: SourceMeta = {
+  label: 'Liquify Midgard Gateway',
+  url: 'https://gateway.liquify.com/chain/thorchain_midgard/v2/health',
+  notes: 'Runtime failover source used only after response-shape validation.',
+};
+
+const thornodeVersionSource: SourceMeta = {
+  label: 'THORChain THORNode Version',
+  url: 'https://thornode.thorchain.network/thorchain/version',
+};
+
+const liquifyThornodeVersionSource: SourceMeta = {
+  label: 'Liquify THORNode Gateway',
+  url: 'https://gateway.liquify.com/chain/thorchain_api/thorchain/version',
+  notes: 'Runtime failover source used only after response-shape validation.',
+};
+
+const queryingThorchainSource: SourceMeta = {
+  label: 'Querying THORChain',
+  url: 'https://dev.thorchain.org/concepts/querying-thorchain.html',
+};
+
+const feesSource: SourceMeta = {
+  label: 'Fees',
+  url: 'https://dev.thorchain.org/concepts/fees.html',
+};
+
+const assetNotationSource: SourceMeta = {
+  label: 'Asset Notation',
+  url: 'https://dev.thorchain.org/concepts/asset-notation.html',
+};
+
+const cosmwasmSource: SourceMeta = {
+  label: 'CosmWasm',
+  url: 'https://docs.thorchain.org/technical-documentation/technology/cosmwasm',
+};
+
+const tcyGuideSource: SourceMeta = {
+  label: 'TCY Developer Guide',
+  url: 'https://dev.thorchain.org/concepts/tcy.html',
+};
+
+const thorfiUnwindSource: SourceMeta = {
+  label: 'THORFi Unwind Announcement',
+  url: 'https://medium.com/thorchain/thorfi-unwind-96b46dff72c0',
+};
+
+const runescanSource: SourceMeta = {
+  label: 'RuneScan',
+  url: 'https://runescan.io',
+};
+
+const viewblockSource: SourceMeta = {
+  label: 'ViewBlock THORChain',
+  url: 'https://viewblock.io/thorchain',
+};
+
+const messariReportsSource: SourceMeta = {
+  label: 'Messari THORChain Reports',
+  url: 'https://messari.io/project/thorchain',
+};
+
+const thorchainGithubSource: SourceMeta = {
+  label: 'THORChain GitHub',
+  url: 'https://github.com/thorchain',
+};
+
+const discordSource: SourceMeta = {
+  label: 'Discord',
+  url: 'https://discord.com/invite/thorchaincommunity',
+};
+
+const twitterSource: SourceMeta = {
+  label: 'Twitter/X',
+  url: 'https://x.com/thorchain_org',
+};
+
+const telegramSource: SourceMeta = {
+  label: 'Telegram',
+  url: 'https://t.me/thorchain_org',
+};
+
+const redditSource: SourceMeta = {
+  label: 'Reddit',
+  url: 'https://reddit.com/r/THORChain',
 };
 
 const checkedFreshness = (confidence: DataConfidence, nextReviewDue = '2026-07-18'): FreshnessMeta => ({
@@ -188,6 +295,87 @@ export const CHAIN_RECORDS: SourcedRecord<Chain>[] = [
 export const CHAINS: Chain[] = CHAIN_RECORDS.map(unwrapRecord);
 
 const chainCodes = CHAINS.map((chain) => chain.chain);
+
+export const SOURCE_MAP_SECTION_RECORDS: SourcedRecord<SourceMapSection>[] = [
+  record({
+    id: 'current-protocol-state',
+    title: 'Current Protocol State',
+    use: 'Use these for source-backed current state, live availability, halt flags, pool metrics, and operational checks.',
+    caveat: 'Live API responses are current-only snapshots. A successful response is not durable historical proof.',
+    links: [thornodeMimirSource, liveInboundSource, midgardHealthSource, midgardNetworkSource],
+  }, [thornodeMimirSource, liveInboundSource, midgardHealthSource, midgardNetworkSource], 'official'),
+  record({
+    id: 'runtime-live-data-failover',
+    title: 'Runtime Live-Data Failover',
+    use: 'Use these to understand the providers this wiki tries before it renders Midgard or THORNode status.',
+    caveat: 'The app validates response shape before trusting a provider. Visible source labels identify the selected source for that snapshot.',
+    links: [liquifyMidgardHealthSource, midgardHealthSource, liquifyThornodeVersionSource, thornodeVersionSource],
+  }, [liquifyMidgardHealthSource, midgardHealthSource, liquifyThornodeVersionSource, thornodeVersionSource], 'curated'),
+  record({
+    id: 'developer-integration',
+    title: 'Developer Integration',
+    use: 'Use these for integration behavior, API concepts, asset notation, fees, memos, and querying guidance.',
+    caveat: 'Developer docs explain intended interfaces; still check live endpoints for current halts, fees, and chain availability.',
+    links: [developerDocs, queryingThorchainSource, feesSource, assetNotationSource],
+  }, [developerDocs, queryingThorchainSource, feesSource, assetNotationSource], 'official'),
+  record({
+    id: 'official-protocol-documentation',
+    title: 'Official Protocol Documentation',
+    use: 'Use for high-level protocol architecture, tokenomics, node concepts, RUNE, TCY, and canonical educational context.',
+    caveat: 'Static docs can lag live protocol state. Prefer dated language when describing fast-moving operational controls.',
+    links: [officialDocs, networkHaltsSource, tokenomicsSource, cosmwasmSource],
+  }, [officialDocs, networkHaltsSource, tokenomicsSource, cosmwasmSource], 'official'),
+  record({
+    id: 'historical-features-and-recovery',
+    title: 'Historical Features And Recovery',
+    use: 'Use for Savers/Lending deprecation, THORFi unwind, incident reports, recovery records, and source-dated historical context.',
+    caveat: 'Historical records should not be converted into current availability claims without live or newly reviewed sources.',
+    links: [archivedFeaturesSource, tcyGuideSource, thorfiUnwindSource, exploitReportSource],
+  }, [archivedFeaturesSource, tcyGuideSource, thorfiUnwindSource, exploitReportSource], 'historical'),
+  record({
+    id: 'external-analytics-and-explorers',
+    title: 'External Analytics And Explorers',
+    use: 'Use to inspect transactions, pools, nodes, and market or flow context outside this wiki.',
+    caveat: 'Explorer and analytics data may use their own indexing rules. Treat them as references unless independently reconciled.',
+    links: [runescanSource, viewblockSource, messariReportsSource, thorchainGithubSource],
+  }, [runescanSource, viewblockSource, messariReportsSource, thorchainGithubSource], 'curated'),
+  record({
+    id: 'community-channels',
+    title: 'Community Channels',
+    use: 'Use these for community discussion, announcements, open-source repositories, and social context.',
+    caveat: 'Community and social channels are not canonical protocol proof. Use official docs, live APIs, or dated incident reports for claims.',
+    links: [discordSource, twitterSource, telegramSource, redditSource, thorchainGithubSource],
+  }, [discordSource, twitterSource, telegramSource, redditSource, thorchainGithubSource], 'curated'),
+];
+
+export const SOURCE_MAP_SECTIONS: SourceMapSection[] = SOURCE_MAP_SECTION_RECORDS.map(unwrapRecord);
+
+export const TOKENOMICS_RECORDS: SourcedRecord<TokenomicsSnapshot>[] = [
+  record({
+    id: 'rune-supply-framing',
+    title: 'RUNE Supply Framing',
+    summary: 'As reviewed on 2026-06-18, the official tokenomics source frames RUNE around a reduced supply near 425M, circulating supply near 350M, reserve near 75M, and ongoing burn mechanics.',
+    figures: [
+      { label: 'Original Cap Context', value: '500M RUNE', tone: 'historical' },
+      { label: 'Current Supply Framing', value: '~425M and burning', tone: 'source-backed' },
+      { label: 'Circulating Supply', value: '~350M source figure', tone: 'source-backed' },
+      { label: 'Reserve', value: '~75M source figure', tone: 'source-backed' },
+      { label: 'Network Income', value: 'Fees, emissions, burns, TCY share', tone: 'dynamic' },
+      { label: 'Bond Requirement', value: 'Check constants + Mimir', tone: 'current-only' },
+      { label: 'Slash Penalty', value: 'Check constants + Mimir', tone: 'current-only' },
+    ],
+  }, [tokenomicsSource], 'official'),
+  record({
+    id: 'tcy-recovery-context',
+    title: 'TCY Recovery Context',
+    summary: 'TCY is recovery-token context associated with the THORFi unwind; current claiming, staking, and recovery status must stay dated and source-linked.',
+    figures: [
+      { label: 'Recovery framing', value: 'TCY', tone: 'source-backed' },
+      { label: 'Current claim state', value: 'Check THORNode/Mimir', tone: 'current-only' },
+      { label: 'Savers/Lending state', value: 'Deprecated historical products', tone: 'historical' },
+    ],
+  }, [tokenomicsSource, archivedFeaturesSource], 'needs-review'),
+];
 
 export const ECOSYSTEM_PROJECT_RECORDS: SourcedRecord<EcosystemProject>[] = [
   record({
@@ -330,6 +518,7 @@ export const SECURITY_INCIDENT_RECORDS: SourcedRecord<SecurityIncident>[] = [
     description: 'Savers and Lending were deprecated and moved to archived documentation after THORFi liability concerns.',
     impact: 'Deprecated Savers and Lending products; TCY became the main recovery token framing.',
     resolved: false,
+    trackerStatus: 'historical-open',
     lessons: ['Experimental yield and lending features need explicit solvency and liability framing'],
     url: 'https://docs.thorchain.org/thornodes/archived',
   }, [archivedFeaturesSource, tokenomicsSource], 'official'),
@@ -341,6 +530,7 @@ export const SECURITY_INCIDENT_RECORDS: SourcedRecord<SecurityIncident>[] = [
     description: 'THORChain saw controversial post-exchange-hack flow; this was not a THORChain protocol exploit.',
     impact: 'High-volume illicit-flow and interface-policy debate rather than a protocol drain.',
     resolved: false,
+    trackerStatus: 'historical-open',
     lessons: ['Separate protocol exploits from illicit usage of open infrastructure', 'Use precise source-backed labels'],
     url: 'https://www.trmlabs.com/resources/blog/bybit-hack-update-north-korea-moves-to-next-stage-of-laundering',
   }, [trmBybitSource], 'needs-review'),
@@ -352,6 +542,7 @@ export const SECURITY_INCIDENT_RECORDS: SourcedRecord<SecurityIncident>[] = [
     description: 'A newly churned node operator exploited a GG20 TSS vulnerability and drained one vault before automatic and manual halts contained the incident.',
     impact: 'Approximately $10.7M drained from a single vault; remaining vaults were reported unaffected in the first official report.',
     resolved: false,
+    trackerStatus: 'current',
     lessons: [
       'Current halt and signing state must be displayed from live Mimir, not hard-coded copy',
       'Recovery and root-cause status should remain dated and source-linked',

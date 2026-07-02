@@ -34,6 +34,7 @@ Check the deployed app:
 ```bash
 curl -fsS https://wiki.thorchain.no/api/health
 curl -fsS https://wiki.thorchain.no/api/version
+curl -fsS https://wiki.thorchain.no/api/ready
 ```
 
 Expected:
@@ -41,6 +42,7 @@ Expected:
 - `status` is `healthy`.
 - `version` matches the deployed commit SHA.
 - `image` is a digest ref when set by deployment.
+- `/api/ready` returns `ready: true` and `status: ready` before claiming upstream readiness.
 
 ## Rollback Behavior
 
@@ -78,4 +80,4 @@ Expected response headers include:
 - `Permissions-Policy`
 - `Content-Security-Policy-Report-Only`
 
-Use report-only CSP until a stricter policy has been tested against Next.js inline scripts.
+The default CSP is nonce-based report-only and must not include `unsafe-inline` or `unsafe-eval`. The root layout is intentionally dynamic so Next can attach the per-request nonce to framework scripts. Set `CSP_ENFORCE=1` for local enforced-policy smoke, and keep Playwright’s no-report CSP check passing, before considering production enforcement.

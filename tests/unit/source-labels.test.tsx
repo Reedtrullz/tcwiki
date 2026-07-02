@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
+import { EcosystemFilterList } from '@/components/features/EcosystemFilterList';
 import { FreshnessMeta } from '@/components/ui/FreshnessMeta';
 import { LiveSourceMeta } from '@/components/ui/LiveSourceMeta';
+import { CHAIN_RECORDS, ECOSYSTEM_PROJECT_RECORDS } from '@/lib/data/static';
 
 describe('source and freshness labels', () => {
   it('renders confidence labels and source links', () => {
@@ -20,6 +22,15 @@ describe('source and freshness labels', () => {
     expect(html).toContain('THORChain Docs');
     expect(html).toContain('+1 source');
     expect(html).toContain('THORChain Dev Docs');
+  });
+
+  it('renders ecosystem confidence as user-facing labels', () => {
+    const html = renderToStaticMarkup(
+      <EcosystemFilterList projectRecords={ECOSYSTEM_PROJECT_RECORDS.slice(0, 2)} chainRecords={CHAIN_RECORDS.slice(0, 2)} />
+    );
+
+    expect(html).toContain('Curated');
+    expect(html).not.toContain('>curated<');
   });
 
   it('renders source notes, retrieved timestamps, and reviewer metadata', () => {
@@ -117,7 +128,7 @@ describe('source and freshness labels', () => {
       />
     );
 
-    expect(html).toContain('Current-only');
+    expect(html).toContain('Source degraded');
     expect(html).toContain('Midgard network');
     expect(html).toContain('Midgard health degraded');
     expect(html).toContain('Lag unavailable');
@@ -148,9 +159,41 @@ describe('source and freshness labels', () => {
     );
 
     expect(html).toContain('Midgard health degraded');
+    expect(html).toContain('Source degraded');
     expect(html).toContain('Fresh health result failed');
+    expect(html).not.toContain('Current-only');
     expect(html).not.toContain('Stale Midgard');
     expect(html).not.toContain('Stale lag should not render.');
     expect(html).not.toContain('4 block lag');
+  });
+
+  it('does not apply a different provider health status to the metric badge', () => {
+    const html = renderToStaticMarkup(
+      <LiveSourceMeta
+        result={{
+          status: 'ok',
+          checkedAt: '2026-06-18T00:00:00.000Z',
+          source: { label: 'Liquify Midgard network', url: 'https://gateway.liquify.com/chain/thorchain_midgard/v2/network' },
+        }}
+        healthResult={{
+          status: 'ok',
+          checkedAt: '2026-06-18T00:00:00.000Z',
+          source: { label: 'THORChain Midgard health', url: 'https://midgard.thorchain.network/v2/health' },
+          data: {
+            provider: 'THORChain Midgard health',
+            severity: 'degraded',
+            reasons: ['Different provider lag.'],
+            checkedAt: '2026-06-18T00:00:00.000Z',
+          },
+        }}
+      />
+    );
+
+    expect(html).toContain('Current-only');
+    expect(html).toContain('Health source differs');
+    expect(html).toContain('Metric via Liquify Midgard network');
+    expect(html).toContain('health via THORChain Midgard health');
+    expect(html).not.toContain('Source degraded');
+    expect(html).not.toContain('Different provider lag.');
   });
 });

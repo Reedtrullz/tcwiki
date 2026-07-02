@@ -1,11 +1,20 @@
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createJiti } from 'jiti';
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const contentDir = join(root, 'content/deep-dives');
 const outputPath = join(root, 'src/lib/search/mdx-documents.generated.ts');
 const checkOnly = process.argv.includes('--check');
+const jiti = createJiti(import.meta.url, {
+  alias: {
+    '@': join(root, 'src'),
+  },
+  moduleCache: false,
+});
+const { CONTENT_ENTRIES } = await jiti.import(join(root, 'src/lib/content/registry.ts'));
+const registryByHref = new Map(CONTENT_ENTRIES.map((entry) => [entry.href, entry]));
 
 function toTitle(source, slug) {
   const heading = source.match(/^#\s+(.+)$/m)?.[1]?.trim();
@@ -52,6 +61,7 @@ const documents = readdirSync(contentDir)
     const slugPath = `/deep-dives/${slug}`;
     const source = readFileSync(join(contentDir, file), 'utf8');
     const content = toPlainText(source);
+    const registryEntry = registryByHref.get(slugPath);
     return {
       id: `mdx:${slug}`,
       slug: slugPath,
@@ -59,9 +69,10 @@ const documents = readdirSync(contentDir)
       type: 'deep-dive',
       title: toTitle(source, slug),
       description: toDescription(content),
-      confidence: 'curated',
-      reviewedAt: '2026-07-02',
-      sources: [mdxSource],
+      confidence: registryEntry?.confidence ?? 'curated',
+      reviewedAt: registryEntry?.reviewedAt ?? '2026-07-02',
+      nextReviewDue: registryEntry?.nextReviewDue ?? '2026-08-02',
+      sources: registryEntry?.sources ?? [mdxSource],
       content,
     };
   });

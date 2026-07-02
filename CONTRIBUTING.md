@@ -11,16 +11,25 @@ Thank you for helping make THORChain more accessible! This guide explains how to
 5. Make changes, then run the local gate below before opening a PR.
 
 ```bash
+nvm use
+df -h /System/Volumes/Data # stop if free space is below 50 GiB
 npm run check:content
+npm run check:live-snapshot
+npm run audit:prod
+npm run audit:all
 npm run typecheck
 npm run test:unit
 npm run lint
 npm run build
 npm run smoke:standalone
+CSP_ENFORCE=1 npm run smoke:standalone
 npm run test:e2e
+IMAGE_REF=ghcr.io/example/tcwiki@sha256:0000000000000000000000000000000000000000000000000000000000000000 APP_VERSION=local ansible-playbook -i inventory/hosts.yml ansible-playbook.yml --syntax-check
 ```
 
-CI will run audit, content checks, lint, typecheck, unit tests, build, standalone smoke, Playwright, and PR-only Docker/Ansible syntax checks.
+`npm run test:e2e` starts a fresh standalone server by default. Set `PLAYWRIGHT_BASE_URL` only when you intentionally want to test an existing local standalone server or a remote deployment.
+
+CI will run audits, content checks, lint, typecheck, unit tests, build, standalone smoke in report-only and enforced CSP modes, Playwright, and PR-only Docker image build/scan/runtime plus Ansible syntax checks.
 
 ## How Content Works Today
 
