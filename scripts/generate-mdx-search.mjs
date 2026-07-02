@@ -32,17 +32,37 @@ function toPlainText(source) {
     .trim();
 }
 
+function toDescription(content) {
+  const [sentence] = content.split(/(?<=[.!?])\s+/);
+  return sentence && sentence.length <= 180
+    ? sentence
+    : `${content.slice(0, 177).trim()}...`;
+}
+
+const mdxSource = {
+  label: 'THORChain Wiki deep-dive source',
+  url: 'https://github.com/Reedtrullz/tcwiki/tree/main/content/deep-dives',
+};
+
 const documents = readdirSync(contentDir)
   .filter((file) => file.endsWith('.mdx'))
   .sort()
   .map((file) => {
     const slug = file.replace(/\.mdx$/, '');
+    const slugPath = `/deep-dives/${slug}`;
     const source = readFileSync(join(contentDir, file), 'utf8');
+    const content = toPlainText(source);
     return {
       id: `mdx:${slug}`,
-      slug: `/deep-dives/${slug}`,
+      slug: slugPath,
+      href: slugPath,
+      type: 'deep-dive',
       title: toTitle(source, slug),
-      content: toPlainText(source),
+      description: toDescription(content),
+      confidence: 'curated',
+      reviewedAt: '2026-07-02',
+      sources: [mdxSource],
+      content,
     };
   });
 

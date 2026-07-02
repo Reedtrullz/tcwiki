@@ -1,6 +1,13 @@
 import { PageContainer } from '@/components/layout/PageContainer';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
+import { createRouteMetadata } from '@/lib/metadata';
+
+export const metadata = createRouteMetadata({
+  title: 'TCY And THORFi History | THORChain Wiki',
+  description: 'Historical, source-backed context for TCY, deprecated Savers/Lending, THORFi unwind, and recovery framing.',
+  path: '/tcy',
+});
 
 const sources = [
   { label: 'Archived Savers/Lending docs', href: 'https://docs.thorchain.org/thornodes/archived' },

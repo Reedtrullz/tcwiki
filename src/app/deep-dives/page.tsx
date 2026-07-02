@@ -1,6 +1,13 @@
 import Link from 'next/link';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { DEEP_DIVE_ENTRIES } from '@/lib/content/registry';
+import { createRouteMetadata } from '@/lib/metadata';
+
+export const metadata = createRouteMetadata({
+  title: 'THORChain Deep Dives | THORChain Wiki',
+  description: 'Long-form source-backed explainers for CLP, Bifrost, TSS, churning, slashing, RUNE settlement, and historical Savers/Lending.',
+  path: '/deep-dives',
+});
 
 export default function DeepDivesIndex() {
   return (

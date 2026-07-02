@@ -23,8 +23,8 @@ jobs:
     name: Lint + Typecheck + Tests + Build
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
@@ -43,6 +43,28 @@ jobs:
         env:
           CI: true
           PLAYWRIGHT_WEB_SERVER_COMMAND: npm run start:standalone
+      - name: Build Docker image for PR runtime check
+        if: github.event_name == 'pull_request'
+        run: |
+          docker build \
+            --pull \
+            --build-arg VERSION=${{ github.sha }} \
+            --build-arg COMMIT_SHA=${{ github.sha }} \
+            --build-arg IMAGE_REF=ghcr.io/${{ github.repository }}@sha256:0000000000000000000000000000000000000000000000000000000000000000 \
+            --tag tcwiki-pr:${{ github.sha }} \
+            .
+      - name: Install pinned Ansible for PR syntax check
+        if: github.event_name == 'pull_request'
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install -r requirements-ci.txt
+          ansible-galaxy collection install -r requirements.yml
+      - name: Ansible syntax check
+        if: github.event_name == 'pull_request'
+        env:
+          IMAGE_REF: ghcr.io/example/tcwiki@sha256:0000000000000000000000000000000000000000000000000000000000000000
+          APP_VERSION: ${{ github.sha }}
+        run: ansible-playbook -i inventory/hosts.yml ansible-playbook.yml --syntax-check
 
   publish:
     name: Build & publish image
@@ -56,11 +78,11 @@ jobs:
       image_ref: ${{ steps.image.outputs.ref }}
       app_version: ${{ github.sha }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v4
+        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4
       - name: Login to GHCR
-        uses: docker/login-action@v4
+        uses: docker/login-action@c99871dec2022cc055c062a10cc1a1310835ceb4 # v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -70,14 +92,14 @@ jobs:
         run: echo "name=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
       - name: Extract image metadata
         id: meta
-        uses: docker/metadata-action@v6
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6
         with:
           images: ${{ steps.image_name.outputs.name }}
           tags: |
             type=sha,prefix=sha-,format=long
       - name: Build and push
         id: build
-        uses: docker/build-push-action@v7
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
         with:
           context: .
           file: ./Dockerfile
@@ -105,12 +127,12 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
       - name: Install Ansible
         run: |
           python3 -m pip install --upgrade pip
-          pip install ansible
-          ansible-galaxy collection install community.docker
+          python3 -m pip install -r requirements-ci.txt
+          ansible-galaxy collection install -r requirements.yml
       - name: Set up SSH key and pinned known hosts
         run: |
           mkdir -p ~/.ssh

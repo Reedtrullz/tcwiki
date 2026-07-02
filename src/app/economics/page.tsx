@@ -4,6 +4,13 @@ import { PageContainer } from '@/components/layout/PageContainer';
 import { Badge } from '@/components/ui/Badge';
 import { FreshnessMeta } from '@/components/ui/FreshnessMeta';
 import type { FreshnessMeta as FreshnessMetaType, SourceMeta } from '@/lib/types';
+import { createRouteMetadata } from '@/lib/metadata';
+
+export const metadata = createRouteMetadata({
+  title: 'THORChain Economics | THORChain Wiki',
+  description: 'Source-backed THORChain economics covering RUNE settlement, CLP pricing, fees, incentive pendulum, RUNEPool, and protocol-owned liquidity.',
+  path: '/economics',
+});
 
 const supplyFreshness: FreshnessMetaType = {
   checkedAt: '2026-06-18',

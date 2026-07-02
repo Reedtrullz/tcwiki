@@ -18,11 +18,14 @@ The goal is to make THORChain more approachable for users, node operators, devel
 ## Getting Started
 
 ```bash
+nvm use
 npm ci --include=optional
 npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000).
+
+This project requires Node 22; npm enforces the `package.json` engine range.
 
 ## Project Structure
 
@@ -50,7 +53,20 @@ We welcome improvements! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for:
 - **Production**: Self-hosted via Docker (standalone Next.js output) + Ansible on a VPS.
 - **CI**: GitHub Actions audits production dependencies, lints, type-checks, runs unit tests, builds, and runs Playwright smoke tests.
 - **Images**: GHCR images are deployed by immutable digest, not mutable `latest`.
-- **Health and version checks**: The site exposes `/api/health` and `/api/version`; Ansible verifies health, version, image, and runtime metadata. Rollback uses the previous `/api/version` readback with Docker env fallback, verifies restored metadata, then fails closed after rollback attempts.
+- **Health, readiness, and version checks**: The site exposes `/api/health`, `/api/ready`, and `/api/version`. `/api/health` is liveness-only; `/api/ready` carries upstream source confidence. Ansible keeps the Docker health check on liveness and verifies health, version, image, and runtime metadata. Rollback uses the previous `/api/version` readback with Docker env fallback, verifies restored metadata, then fails closed after rollback attempts.
+
+Recommended local release-shaped gate:
+
+```bash
+nvm use
+npm run check:content
+npm run typecheck
+npm run test:unit
+npm run lint
+npm run build
+npm run smoke:standalone
+npm run test:e2e
+```
 
 The deployment setup is intentionally simple, but not blue/green. The existing container is replaced and rollback is attempted if health or version readback fails.
 

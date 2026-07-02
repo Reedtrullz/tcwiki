@@ -3,6 +3,13 @@ import { Card } from '@/components/ui/Card';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { Badge } from '@/components/ui/Badge';
+import { createRouteMetadata } from '@/lib/metadata';
+
+export const metadata = createRouteMetadata({
+  title: 'THORChain Protocol Overview | THORChain Wiki',
+  description: 'Source-backed overview of THORChain architecture, native swaps, Bifrost, TSS vaults, Mimir, and supported-chain context.',
+  path: '/protocol',
+});
 
 export default function ProtocolPage() {
   return (

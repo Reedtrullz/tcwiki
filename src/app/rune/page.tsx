@@ -3,6 +3,13 @@ import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { FreshnessMeta } from '@/components/ui/FreshnessMeta';
 import type { FreshnessMeta as FreshnessMetaType, SourceMeta } from '@/lib/types';
+import { createRouteMetadata } from '@/lib/metadata';
+
+export const metadata = createRouteMetadata({
+  title: 'RUNE | THORChain Wiki',
+  description: 'Source-backed overview of RUNE as THORChain settlement, bond, liquidity, and tokenomics asset.',
+  path: '/rune',
+});
 
 const supplyFreshness: FreshnessMetaType = {
   checkedAt: '2026-06-18',

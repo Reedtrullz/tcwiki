@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { Search, Menu, X } from 'lucide-react';
-import { NAV_ITEMS } from '@/lib/content/registry';
+import { JOURNEY_LINKS, NAV_ITEMS } from '@/lib/content/registry';
 
 export default function Header() {
   const pathname = usePathname();
@@ -102,6 +102,18 @@ export default function Header() {
                 autoFocus
               />
             </div>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {JOURNEY_LINKS.map((journey) => (
+                <Link
+                  key={journey.href}
+                  href={journey.href}
+                  className="rounded-md border border-border px-2.5 py-1 text-xs text-slate-400 hover:border-accent/30 hover:text-slate-100"
+                  onClick={() => setShowSearch(false)}
+                >
+                  {journey.label}
+                </Link>
+              ))}
+            </div>
           </form>
         </div>
       )}
@@ -118,6 +130,17 @@ export default function Header() {
                 onClick={() => setIsOpen(false)}
               >
                 {item.name}
+              </Link>
+            ))}
+            <div className="my-2 border-t border-border" />
+            {JOURNEY_LINKS.map((journey) => (
+              <Link
+                key={journey.href}
+                href={journey.href}
+                className="block px-3 py-2 text-sm text-slate-400 hover:text-slate-100 hover:bg-slate-800/50 rounded-md transition-colors"
+                onClick={() => setIsOpen(false)}
+              >
+                {journey.label}
               </Link>
             ))}
           </nav>

@@ -24,6 +24,8 @@ export interface SourcedRecord<T> {
 
 export type LiveDataStatus = 'ok' | 'degraded';
 
+export type SourceHealthSeverity = 'ok' | 'warning' | 'degraded' | 'unknown';
+
 export interface LiveDataResult<T> {
   status: LiveDataStatus;
   checkedAt: string;
@@ -31,6 +33,62 @@ export interface LiveDataResult<T> {
   source?: SourceMeta;
   sources?: SourceMeta[];
   error?: string;
+}
+
+export interface MidgardHealth {
+  provider?: string;
+  database?: boolean;
+  inSync?: boolean;
+  latestHeight?: number;
+  aggregatedHeight?: number;
+  scannerHeight?: number;
+  lagBlocks?: number;
+  lagSeconds?: number;
+  severity: SourceHealthSeverity;
+  reasons: string[];
+  checkedAt: string;
+}
+
+export interface ThorNodeReadiness {
+  ready: boolean;
+  status: 'ready' | 'degraded';
+  checkedAt: string;
+  version?: string;
+  sourceCount: number;
+  reasons: string[];
+  invalidMimirKeys: string[];
+  sourceWarnings: string[];
+}
+
+/** @deprecated Use ThorNodeReadiness. */
+export type ThornodeReadiness = ThorNodeReadiness;
+
+export interface ReadinessResponse {
+  status: 'ready' | 'degraded';
+  ready: boolean;
+  checkedAt: string;
+  version: string;
+  commit: string;
+  image: string;
+  sources: {
+    midgard: {
+      status: LiveDataStatus;
+      source?: SourceMeta;
+      health?: MidgardHealth;
+      error?: string;
+    };
+    thornode: {
+      status: LiveDataStatus;
+      sources?: SourceMeta[];
+      state?: NetworkStatusState;
+      summary?: string;
+      version?: string;
+      invalidMimirKeys: string[];
+      sourceWarnings: string[];
+      error?: string;
+    };
+  };
+  reasons: string[];
 }
 
 export interface Pool {
@@ -74,14 +132,18 @@ export interface NetworkStats {
 }
 
 export interface Node {
-  address: string;
-  bond: string;
-  status: string;
-  version: string;
-  slashPoints: number;
   nodeAddress: string;
-  isActive: boolean;
-  bondUSD: string;
+  address: string;
+  bond?: string;
+  status?: string;
+  version?: string;
+  slashPoints?: number;
+  isActive?: boolean;
+  bondUSD?: string;
+  pubkeys?: {
+    ed25519?: string;
+    secp256k1?: string;
+  };
 }
 
 export interface Transaction {
@@ -123,12 +185,17 @@ export interface Asset {
 
 export interface ChainData {
   chain: string;
-  height: string;
-  thorchainHeight: number;
-  inboundPaused: boolean;
-  outboundPaused: boolean;
-  halted: boolean;
-  gasRate: string;
+  height?: string;
+  thorchainHeight?: number;
+  inboundPaused?: boolean;
+  outboundPaused?: boolean;
+  halted?: boolean;
+  gasRate?: string;
+}
+
+export interface AssetPrice {
+  assetPrice: string;
+  runePrice: string;
 }
 
 export interface HistoryItem {
@@ -269,11 +336,12 @@ export interface ChainOperationalStatus {
   signingPaused: boolean;
   activeMimirKeys: string[];
   lpDepositPauseKeys: string[];
+  unparseableMimirKeys?: string[];
 }
 
 export type NetworkStatusState = 'operational' | 'paused' | 'degraded' | 'unknown';
 
-export type OperationalControlState = 'active' | 'inactive' | 'disabled' | 'not-monitored';
+export type OperationalControlState = 'active' | 'inactive' | 'disabled' | 'not-monitored' | 'unparseable';
 
 export interface OperationalControlStatus {
   key: string;
@@ -326,4 +394,6 @@ export interface NetworkStatus {
   activePauseKeys: string[];
   monitoredControls: OperationalControlStatus[];
   thorNodeVersion?: string;
+  invalidMimirKeys: string[];
+  sourceWarnings: string[];
 }

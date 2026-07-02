@@ -55,6 +55,99 @@ describe('MidgardAPI', () => {
     expect(result.data).toEqual([{ startTime: '1', earnings: '100000000' }]);
   });
 
+  it('normalizes Midgard health with explicit lag severity', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(makeResponse(true, {
+        database: true,
+        inSync: true,
+        lastAggregated: { height: 10, timestamp: 1000 },
+        lastCommitted: { height: 15, timestamp: 1360 },
+        lastFetched: { height: 15, timestamp: 1360 },
+        lastThorNode: { height: 15, timestamp: 1360 },
+        scannerHeight: '16',
+      }))
+    );
+
+    const result = await MidgardAPI.getHealth();
+
+    expect(result.status).toBe('ok');
+    expect(result.data?.severity).toBe('warning');
+    expect(result.data?.latestHeight).toBe(16);
+    expect(result.data?.aggregatedHeight).toBe(10);
+    expect(result.data?.lagBlocks).toBe(6);
+    expect(result.data?.lagSeconds).toBe(360);
+    expect(result.data?.reasons).toContain('Midgard lag is 6 blocks.');
+    expect(result.data?.reasons).toContain('Midgard lag is 6 minutes.');
+  });
+
+  it('normalizes Midgard nodes without requiring absent legacy fields', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(makeResponse(true, [{
+        nodeAddress: 'thor1node',
+        ed25519: 'thorpub1ed',
+        secp256k1: 'thorpub1sec',
+      }]))
+    );
+
+    const result = await MidgardAPI.getNodes();
+
+    expect(result.status).toBe('ok');
+    expect(result.data?.[0]).toEqual({
+      nodeAddress: 'thor1node',
+      address: 'thor1node',
+      bond: undefined,
+      status: undefined,
+      version: undefined,
+      slashPoints: undefined,
+      isActive: undefined,
+      bondUSD: undefined,
+      pubkeys: {
+        ed25519: 'thorpub1ed',
+        secp256k1: 'thorpub1sec',
+      },
+    });
+  });
+
+  it('normalizes chain and asset price responses when endpoints provide the expected shape', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(makeResponse(true, [{
+        chain: 'BTC',
+        height: '123',
+        thorchain_height: '456',
+        inbound_paused: false,
+        outbound_paused: 'true',
+        halted: false,
+        gas_rate: '10',
+      }]))
+      .mockResolvedValueOnce(makeResponse(true, {
+        runePrice: '1.2',
+        assetPrice: '100000',
+      }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const chains = await MidgardAPI.getChains();
+    const price = await MidgardAPI.getAssetPrice('BTC.BTC');
+
+    expect(chains.status).toBe('ok');
+    expect(chains.data?.[0]).toEqual({
+      chain: 'BTC',
+      height: '123',
+      thorchainHeight: 456,
+      inboundPaused: false,
+      outboundPaused: true,
+      halted: false,
+      gasRate: '10',
+    });
+    expect(price.status).toBe('ok');
+    expect(price.data).toEqual({
+      runePrice: '1.2',
+      assetPrice: '100000',
+    });
+  });
+
   it('returns degraded when history intervals are missing', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(makeResponse(true, { total: 'bad-shape' })));
 

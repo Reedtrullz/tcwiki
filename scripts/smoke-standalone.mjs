@@ -38,11 +38,15 @@ child.stderr.on('data', (chunk) => {
 });
 
 async function fetchUntilReady(path) {
+  return fetchUntilStatus(path, (response) => response.ok);
+}
+
+async function fetchUntilStatus(path, isExpectedStatus) {
   let lastError;
   for (let attempt = 0; attempt < 60; attempt += 1) {
     try {
       const response = await fetch(`${baseUrl}${path}`, { cache: 'no-store' });
-      if (response.ok) {
+      if (isExpectedStatus(response)) {
         return response;
       }
       lastError = new Error(`${path} returned ${response.status}`);
@@ -75,6 +79,13 @@ try {
     throw new Error(`Unexpected version response: ${JSON.stringify(versionJson)}`);
   }
   expectHeader(version.headers, 'cache-control', 'no-store');
+
+  const ready = await fetchUntilStatus('/api/ready', (response) => response.status === 200 || response.status === 503);
+  const readyJson = await ready.json();
+  if (!['ready', 'degraded'].includes(readyJson.status) || !readyJson.version || !readyJson.sources?.midgard || !readyJson.sources?.thornode) {
+    throw new Error(`Unexpected readiness response: ${JSON.stringify(readyJson)}`);
+  }
+  expectHeader(ready.headers, 'cache-control', 'no-store');
 
   const rootResponse = await fetchUntilReady('/');
   if (rootResponse.headers.has('x-powered-by')) {

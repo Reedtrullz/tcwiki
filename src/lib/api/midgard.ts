@@ -1,7 +1,9 @@
 import {
+  AssetPrice,
   ChainData,
   HistoryItem,
   LiveDataResult,
+  MidgardHealth,
   NetworkStats,
   Node,
   Pool,
@@ -24,6 +26,9 @@ let activeEndpoint = 0;
 
 type RawNetworkStats = Partial<Record<keyof NetworkStats, unknown>>;
 type RawPool = Record<string, unknown>;
+type RawNode = Record<string, unknown>;
+type RawChain = Record<string, unknown>;
+type RawAssetPrice = Record<string, unknown>;
 type RawHistoryResponse = {
   intervals?: unknown;
 };
@@ -112,6 +117,35 @@ function asNonNegativeInteger(value: unknown, field: string): number {
   return numeric;
 }
 
+function asOptionalNonNegativeInteger(value: unknown, field: string): number | undefined {
+  if (value === undefined || value === null || value === '') {
+    return undefined;
+  }
+  return asNonNegativeInteger(value, field);
+}
+
+function asBoolean(value: unknown): boolean | undefined {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+  if (typeof value === 'string') {
+    const normalized = value.toLowerCase();
+    if (normalized === 'true') {
+      return true;
+    }
+    if (normalized === 'false') {
+      return false;
+    }
+  }
+  return undefined;
+}
+
+function asRecord(value: unknown): Record<string, unknown> | undefined {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : undefined;
+}
+
 function asStringOrRecord(value: unknown): string | Record<string, unknown> | undefined {
   const stringValue = asString(value);
   if (stringValue !== undefined) {
@@ -121,6 +155,189 @@ function asStringOrRecord(value: unknown): string | Record<string, unknown> | un
     return value as Record<string, unknown>;
   }
   return undefined;
+}
+
+function normalizeNode(raw: RawNode): Node {
+  const nodeAddress = asRequiredString(raw.nodeAddress ?? raw.node_address ?? raw.address, 'node.nodeAddress');
+  const status = asString(raw.status);
+
+  return {
+    nodeAddress,
+    address: nodeAddress,
+    bond: asString(raw.bond),
+    status,
+    version: asString(raw.version),
+    slashPoints: asOptionalNonNegativeInteger(raw.slashPoints ?? raw.slash_points, 'node.slashPoints'),
+    isActive: status ? status.toLowerCase() === 'active' : undefined,
+    bondUSD: asString(raw.bondUSD ?? raw.bond_usd),
+    pubkeys: {
+      ed25519: asString(raw.ed25519),
+      secp256k1: asString(raw.secp256k1),
+    },
+  };
+}
+
+function normalizeNodes(result: LiveDataResult<RawNode[]>): LiveDataResult<Node[]> {
+  if (result.status !== 'ok' || !result.data) {
+    return liveDegraded<Node[]>(result.error ?? 'Midgard nodes did not load', result.sources ?? result.source, result.checkedAt);
+  }
+
+  if (!Array.isArray(result.data)) {
+    return liveDegraded<Node[]>('Midgard nodes response was not an array', result.sources ?? result.source, result.checkedAt);
+  }
+
+  try {
+    return {
+      ...result,
+      data: result.data.map(normalizeNode),
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Midgard nodes response could not be normalized';
+    return liveDegraded<Node[]>(message, result.sources ?? result.source, result.checkedAt);
+  }
+}
+
+function normalizeChain(raw: RawChain): ChainData {
+  return {
+    chain: asRequiredString(raw.chain, 'chain.chain'),
+    height: asString(raw.height),
+    thorchainHeight: asOptionalNonNegativeInteger(raw.thorchainHeight ?? raw.thorchain_height, 'chain.thorchainHeight'),
+    inboundPaused: asBoolean(raw.inboundPaused ?? raw.inbound_paused),
+    outboundPaused: asBoolean(raw.outboundPaused ?? raw.outbound_paused),
+    halted: asBoolean(raw.halted),
+    gasRate: asString(raw.gasRate ?? raw.gas_rate),
+  };
+}
+
+function normalizeChains(result: LiveDataResult<RawChain[]>): LiveDataResult<ChainData[]> {
+  if (result.status !== 'ok' || !result.data) {
+    return liveDegraded<ChainData[]>(result.error ?? 'Midgard chains did not load', result.sources ?? result.source, result.checkedAt);
+  }
+
+  if (!Array.isArray(result.data)) {
+    return liveDegraded<ChainData[]>('Midgard chains response was not an array', result.sources ?? result.source, result.checkedAt);
+  }
+
+  try {
+    return {
+      ...result,
+      data: result.data.map(normalizeChain),
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Midgard chains response could not be normalized';
+    return liveDegraded<ChainData[]>(message, result.sources ?? result.source, result.checkedAt);
+  }
+}
+
+function normalizeAssetPrice(result: LiveDataResult<RawAssetPrice>): LiveDataResult<AssetPrice> {
+  if (result.status !== 'ok' || !result.data) {
+    return liveDegraded<AssetPrice>(result.error ?? 'Midgard asset price did not load', result.sources ?? result.source, result.checkedAt);
+  }
+
+  try {
+    return {
+      ...result,
+      data: {
+        runePrice: asRequiredString(result.data.runePrice ?? result.data.rune_price, 'price.runePrice'),
+        assetPrice: asRequiredString(result.data.assetPrice ?? result.data.asset_price, 'price.assetPrice'),
+      },
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Midgard asset price response could not be normalized';
+    return liveDegraded<AssetPrice>(message, result.sources ?? result.source, result.checkedAt);
+  }
+}
+
+function normalizeHealth(result: LiveDataResult<Record<string, unknown>>): LiveDataResult<MidgardHealth> {
+  if (result.status !== 'ok' || !result.data) {
+    return liveDegraded<MidgardHealth>(
+      result.error ?? 'Midgard health did not load',
+      result.sources ?? result.source,
+      result.checkedAt
+    );
+  }
+
+  try {
+    const lastAggregated = asRecord(result.data.lastAggregated);
+    const lastCommitted = asRecord(result.data.lastCommitted);
+    const lastFetched = asRecord(result.data.lastFetched);
+    const lastThorNode = asRecord(result.data.lastThorNode);
+    const aggregatedHeight = asOptionalNonNegativeInteger(lastAggregated?.height, 'health.lastAggregated.height');
+    const committedHeight = asOptionalNonNegativeInteger(lastCommitted?.height, 'health.lastCommitted.height');
+    const fetchedHeight = asOptionalNonNegativeInteger(lastFetched?.height, 'health.lastFetched.height');
+    const thorNodeHeight = asOptionalNonNegativeInteger(lastThorNode?.height, 'health.lastThorNode.height');
+    const scannerHeight = asOptionalNonNegativeInteger(result.data.scannerHeight, 'health.scannerHeight');
+    const heightCandidates = [scannerHeight, thorNodeHeight, committedHeight, fetchedHeight]
+      .filter((height): height is number => height !== undefined);
+    const latestHeight = heightCandidates.length > 0 ? Math.max(...heightCandidates) : undefined;
+    const aggregatedTimestamp = asOptionalNonNegativeInteger(lastAggregated?.timestamp, 'health.lastAggregated.timestamp');
+    const latestTimestampCandidates = [
+      asOptionalNonNegativeInteger(lastThorNode?.timestamp, 'health.lastThorNode.timestamp'),
+      asOptionalNonNegativeInteger(lastCommitted?.timestamp, 'health.lastCommitted.timestamp'),
+      asOptionalNonNegativeInteger(lastFetched?.timestamp, 'health.lastFetched.timestamp'),
+    ].filter((timestamp): timestamp is number => timestamp !== undefined);
+    const latestTimestamp = latestTimestampCandidates.length > 0 ? Math.max(...latestTimestampCandidates) : undefined;
+    const lagBlocks = latestHeight !== undefined && aggregatedHeight !== undefined
+      ? Math.max(0, latestHeight - aggregatedHeight)
+      : undefined;
+    const lagSeconds = latestTimestamp !== undefined && aggregatedTimestamp !== undefined
+      ? Math.max(0, latestTimestamp - aggregatedTimestamp)
+      : undefined;
+    const database = asBoolean(result.data.database);
+    const inSync = asBoolean(result.data.inSync);
+    const reasons: string[] = [];
+
+    if (database === false) {
+      reasons.push('Midgard database reported unhealthy.');
+    }
+    if (inSync === false) {
+      reasons.push('Midgard reported out of sync.');
+    }
+    if (lagBlocks === undefined && lagSeconds === undefined) {
+      reasons.push('Midgard lag unavailable.');
+    }
+    if (lagBlocks !== undefined && lagBlocks > 20) {
+      reasons.push(`Midgard is ${lagBlocks} blocks behind.`);
+    } else if (lagBlocks !== undefined && lagBlocks > 3) {
+      reasons.push(`Midgard lag is ${lagBlocks} blocks.`);
+    }
+    if (lagSeconds !== undefined && lagSeconds > 1800) {
+      reasons.push(`Midgard is ${Math.round(lagSeconds / 60)} minutes behind.`);
+    } else if (lagSeconds !== undefined && lagSeconds > 300) {
+      reasons.push(`Midgard lag is ${Math.round(lagSeconds / 60)} minutes.`);
+    }
+
+    const severity = database === false ||
+      inSync === false ||
+      (lagBlocks !== undefined && lagBlocks > 20) ||
+      (lagSeconds !== undefined && lagSeconds > 1800)
+      ? 'degraded'
+      : (lagBlocks === undefined && lagSeconds === undefined)
+        ? 'unknown'
+        : ((lagBlocks !== undefined && lagBlocks > 3) || (lagSeconds !== undefined && lagSeconds > 300))
+          ? 'warning'
+          : 'ok';
+
+    return {
+      ...result,
+      data: {
+        provider: result.source?.label,
+        database,
+        inSync,
+        latestHeight,
+        aggregatedHeight,
+        scannerHeight,
+        lagBlocks,
+        lagSeconds,
+        severity,
+        reasons,
+        checkedAt: result.checkedAt,
+      },
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Midgard health response could not be normalized';
+    return liveDegraded<MidgardHealth>(message, result.sources ?? result.source, result.checkedAt);
+  }
 }
 
 function normalizePool(raw: RawPool): Pool {
@@ -258,11 +475,11 @@ export class MidgardAPI {
   }
 
   static async getNodes(): Promise<LiveDataResult<Node[]>> {
-    return request<Node[]>('/nodes');
+    return normalizeNodes(await request<RawNode[]>('/nodes'));
   }
 
-  static async getHealth(): Promise<LiveDataResult<Record<string, unknown>>> {
-    return request<Record<string, unknown>>('/health');
+  static async getHealth(): Promise<LiveDataResult<MidgardHealth>> {
+    return normalizeHealth(await request<Record<string, unknown>>('/health'));
   }
 
   static async getHistory(interval = 'day', count = 30): Promise<LiveDataResult<HistoryItem[]>> {
@@ -278,7 +495,7 @@ export class MidgardAPI {
   }
 
   static async getChains(): Promise<LiveDataResult<ChainData[]>> {
-    return request<ChainData[]>('/chains');
+    return normalizeChains(await request<RawChain[]>('/chains'));
   }
 
   static async getActions(): Promise<LiveDataResult<Record<string, unknown>[]>> {
@@ -293,8 +510,8 @@ export class MidgardAPI {
     return request<Record<string, unknown>>(`/member/${encodeURIComponent(address)}`);
   }
 
-  static async getAssetPrice(asset: string): Promise<LiveDataResult<{ runePrice: string; assetPrice: string }>> {
-    return request<{ runePrice: string; assetPrice: string }>(`/price/${encodeURIComponent(asset)}`);
+  static async getAssetPrice(asset: string): Promise<LiveDataResult<AssetPrice>> {
+    return normalizeAssetPrice(await request<RawAssetPrice>(`/price/${encodeURIComponent(asset)}`));
   }
 
   static async getRunePriceHistory(interval = 'day', count = 365): Promise<LiveDataResult<Record<string, unknown>[]>> {

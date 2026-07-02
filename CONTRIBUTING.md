@@ -5,10 +5,22 @@ Thank you for helping make THORChain more accessible! This guide explains how to
 ## Quick Start
 
 1. Fork the repo and clone your fork.
-2. `npm ci --include=optional`
-3. `npm run dev` — site runs at http://localhost:3000
-4. Make changes, run `npm run lint && npm run typecheck && npm run test:unit && npm run build` locally.
-5. Open a PR. CI will run audit, lint, typecheck, unit tests, build, and Playwright smoke tests.
+2. `nvm use` — this project requires Node 22 and npm enforces the engine range.
+3. `npm ci --include=optional`
+4. `npm run dev` — site runs at http://localhost:3000
+5. Make changes, then run the local gate below before opening a PR.
+
+```bash
+npm run check:content
+npm run typecheck
+npm run test:unit
+npm run lint
+npm run build
+npm run smoke:standalone
+npm run test:e2e
+```
+
+CI will run audit, content checks, lint, typecheck, unit tests, build, standalone smoke, Playwright, and PR-only Docker/Ansible syntax checks.
 
 ## How Content Works Today
 
@@ -51,17 +63,20 @@ Most of the site is **curated, hand-written content** in React components and MD
 - **Accuracy over hype**: THORChain has a complex and sometimes dramatic history. Be factual and balanced, especially around incidents and THORFi.
 - **Current-only where needed**: Halt flags, inbound addresses, gas rates, fees, APYs, node counts, Mimir values, constants overrides, TCY state, and RUNEPool/POL data are live facts.
 - **Link generously** to official sources rather than duplicating deep technical content.
-- Run `npm run lint && npm run typecheck && npm run test:unit && npm run build` before pushing.
+- Run the full local gate from Quick Start before pushing substantial changes.
 
 ## CI & Quality Gates
 
 Every PR runs:
 - Production dependency audit (`npm run audit:prod`)
+- Curated content and generated search checks (`npm run check:content`)
 - ESLint (web-vitals + TypeScript rules)
 - TypeScript type checking (`tsc --noEmit`)
 - Vitest unit tests
 - Full production build
+- Standalone server smoke tests
 - Playwright smoke tests
+- Docker image build and Ansible syntax validation for PRs
 
 The "Build & publish image" job only runs on pushes to `main`.
 

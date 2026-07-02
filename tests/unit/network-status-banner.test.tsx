@@ -27,6 +27,8 @@ const baseStatus: NetworkStatus = {
   activeEvidenceKeys: ['HALTSIGNINGBTC'],
   activePauseKeys: ['HALTSIGNINGBTC'],
   monitoredControls: [],
+  invalidMimirKeys: [],
+  sourceWarnings: [],
   chainStatuses: [
     {
       chain: 'BTC',
@@ -161,5 +163,93 @@ describe('NetworkStatusBanner', () => {
     expect(html).toContain('Trade accounts: disabled');
     expect(html).toContain('RUNEPool: enabled');
     expect(html).not.toContain('RUNEPool: inactive');
+  });
+
+  it('renders unparseable Mimir warnings without hiding operational context', () => {
+    const result: LiveDataResult<NetworkStatus> = {
+      ...liveResult,
+      data: {
+        ...baseStatus,
+        state: 'operational',
+        summary: 'Current-only live sources do not show active halt flags, but some monitored Mimir values were unparseable.',
+        signingPaused: false,
+        activeChainKeys: [],
+        activeEvidenceKeys: [],
+        activePauseKeys: [],
+        chainStatuses: [
+          {
+            chain: 'BTC',
+            halted: false,
+            tradingPaused: false,
+            lpActionsPaused: false,
+            lpDepositPaused: false,
+            signingPaused: false,
+            activeMimirKeys: [],
+            lpDepositPauseKeys: [],
+            unparseableMimirKeys: ['HALTSIGNINGBTC'],
+          },
+        ],
+        invalidMimirKeys: ['HALTSIGNINGBTC'],
+        sourceWarnings: ['1 monitored Mimir key could not be parsed.'],
+        monitoredControls: [
+          {
+            key: 'HALTSIGNING',
+            label: 'Signing',
+            state: 'unparseable',
+            active: false,
+            description: 'Outbound signing is paused when active.',
+          },
+        ],
+      },
+    };
+    const html = renderToStaticMarkup(<NetworkStatusBanner result={result} />);
+
+    expect(html).toContain('Live sources have unparseable Mimir controls');
+    expect(html).toContain('1 monitored Mimir key could not be parsed.');
+    expect(html).toContain('aria-label="BTC: Mimir warning"');
+    expect(html).toContain('aria-label="BTC unparseable Mimir keys"');
+    expect(html).toContain('Warning: 1 key');
+    expect(html).toContain('Unparseable monitored Mimir keys');
+    expect(html).toContain('HALTSIGNINGBTC');
+    expect(html).toContain('Signing: unparseable');
+    expect(html).not.toContain('aria-label="BTC: open"');
+    expect(html).not.toContain('aria-label="BTC active Mimir key count"');
+    expect(html).not.toContain('Signing: inactive');
+  });
+
+  it('renders broader source warnings without calling them unparseable controls', () => {
+    const result: LiveDataResult<NetworkStatus> = {
+      ...liveResult,
+      data: {
+        ...baseStatus,
+        state: 'operational',
+        summary: 'Current-only live sources do not show active halt flags, but some Mimir source warnings need review.',
+        signingPaused: false,
+        activeChainKeys: [],
+        activeEvidenceKeys: [],
+        activePauseKeys: [],
+        chainStatuses: [
+          {
+            chain: 'BTC',
+            halted: false,
+            tradingPaused: false,
+            lpActionsPaused: false,
+            lpDepositPaused: false,
+            signingPaused: false,
+            activeMimirKeys: [],
+            lpDepositPauseKeys: [],
+          },
+        ],
+        invalidMimirKeys: [],
+        sourceWarnings: ['Unknown chain-scoped Mimir key ignored: HALTBTCHAIN.'],
+        monitoredControls: [],
+      },
+    };
+    const html = renderToStaticMarkup(<NetworkStatusBanner result={result} />);
+
+    expect(html).toContain('Live sources have Mimir warnings to review');
+    expect(html).toContain('Unknown chain-scoped Mimir key ignored: HALTBTCHAIN.');
+    expect(html).not.toContain('Live sources have unparseable Mimir controls');
+    expect(html).not.toContain('Unparseable monitored Mimir keys');
   });
 });

@@ -352,6 +352,133 @@ describe('deriveNetworkStatus', () => {
     });
   });
 
+  it('marks observed chain signing and solvency halt keys as active source evidence', () => {
+    const status = deriveNetworkStatus(
+      {
+        HALTETHSIGNING: 1,
+        SOLVENCYHALTBTCCHAIN: '1',
+      },
+      []
+    );
+
+    expect(status.state).toBe('paused');
+    expect(status.signingPaused).toBe(true);
+    expect(status.activeControlKeys).toEqual([]);
+    expect(status.activeChainKeys).toEqual(['SOLVENCYHALTBTCCHAIN', 'HALTETHSIGNING']);
+    expect(status.activeEvidenceKeys).toEqual(['SOLVENCYHALTBTCCHAIN', 'HALTETHSIGNING']);
+    expect(status.activePauseKeys).toEqual(['SOLVENCYHALTBTCCHAIN', 'HALTETHSIGNING']);
+    expect(status.invalidMimirKeys).toEqual([]);
+    expect(status.sourceWarnings).toEqual([]);
+    expect(status.chainStatuses).toEqual([
+      {
+        chain: 'BTC',
+        halted: true,
+        tradingPaused: false,
+        lpActionsPaused: false,
+        lpDepositPaused: false,
+        signingPaused: false,
+        activeMimirKeys: ['SOLVENCYHALTBTCCHAIN'],
+        lpDepositPauseKeys: [],
+      },
+      {
+        chain: 'ETH',
+        halted: false,
+        tradingPaused: false,
+        lpActionsPaused: false,
+        lpDepositPaused: false,
+        signingPaused: true,
+        activeMimirKeys: ['HALTETHSIGNING'],
+        lpDepositPauseKeys: [],
+      },
+    ]);
+  });
+
+  it('scopes malformed direct chain Mimir keys to the affected chain without active evidence', () => {
+    const status = deriveNetworkStatus(
+      {
+        HALTSIGNINGBTC: 'not-a-number',
+        HALTBTCTRADING: 'true',
+        HALTBTCCHAIN: '',
+        PAUSELPBTC: ' ',
+      },
+      []
+    );
+
+    expect(status.state).toBe('operational');
+    expect(status.activeControlKeys).toEqual([]);
+    expect(status.activeChainKeys).toEqual([]);
+    expect(status.activeEvidenceKeys).toEqual([]);
+    expect(status.activePauseKeys).toEqual([]);
+    expect(status.invalidMimirKeys).toEqual([
+      'HALTBTCCHAIN',
+      'HALTBTCTRADING',
+      'HALTSIGNINGBTC',
+      'PAUSELPBTC',
+    ]);
+    expect(status.sourceWarnings).toEqual(['4 monitored Mimir keys could not be parsed.']);
+    expect(status.chainStatuses).toEqual([
+      {
+        chain: 'BTC',
+        halted: false,
+        tradingPaused: false,
+        lpActionsPaused: false,
+        lpDepositPaused: false,
+        signingPaused: false,
+        activeMimirKeys: [],
+        lpDepositPauseKeys: [],
+        unparseableMimirKeys: [
+          'HALTBTCCHAIN',
+          'HALTBTCTRADING',
+          'HALTSIGNINGBTC',
+          'PAUSELPBTC',
+        ],
+      },
+    ]);
+  });
+
+  it('scopes malformed observed chain Mimir keys without active evidence', () => {
+    const status = deriveNetworkStatus(
+      {
+        HALTETHSIGNING: 'paused',
+        SOLVENCYHALTBTCCHAIN: 'halted',
+      },
+      []
+    );
+
+    expect(status.state).toBe('operational');
+    expect(status.signingPaused).toBe(false);
+    expect(status.activeControlKeys).toEqual([]);
+    expect(status.activeChainKeys).toEqual([]);
+    expect(status.activeEvidenceKeys).toEqual([]);
+    expect(status.activePauseKeys).toEqual([]);
+    expect(status.invalidMimirKeys).toEqual(['HALTETHSIGNING', 'SOLVENCYHALTBTCCHAIN']);
+    expect(status.sourceWarnings).toEqual(['2 monitored Mimir keys could not be parsed.']);
+    expect(status.chainStatuses).toEqual([
+      {
+        chain: 'BTC',
+        halted: false,
+        tradingPaused: false,
+        lpActionsPaused: false,
+        lpDepositPaused: false,
+        signingPaused: false,
+        activeMimirKeys: [],
+        lpDepositPauseKeys: [],
+        unparseableMimirKeys: ['SOLVENCYHALTBTCCHAIN'],
+      },
+      {
+        chain: 'ETH',
+        halted: false,
+        tradingPaused: false,
+        lpActionsPaused: false,
+        lpDepositPaused: false,
+        signingPaused: false,
+        activeMimirKeys: [],
+        lpDepositPauseKeys: [],
+        unparseableMimirKeys: ['HALTETHSIGNING'],
+      },
+    ]);
+  });
+
   it('marks clean state operational', () => {
     const status = deriveNetworkStatus(
       { HALTTRADING: 0, HALTSIGNING: 0, PAUSELP: 0 },
@@ -363,9 +490,11 @@ describe('deriveNetworkStatus', () => {
     expect(status.activeChainKeys).toEqual([]);
     expect(status.activeEvidenceKeys).toEqual([]);
     expect(status.activePauseKeys).toEqual([]);
+    expect(status.invalidMimirKeys).toEqual([]);
+    expect(status.sourceWarnings).toEqual([]);
   });
 
-  it('does not treat malformed Mimir numeric values as active evidence', () => {
+  it('surfaces malformed monitored Mimir numeric values without treating them as active evidence', () => {
     const status = deriveNetworkStatus(
       {
         HALTTRADING: '',
@@ -375,6 +504,8 @@ describe('deriveNetworkStatus', () => {
         'HaltSecuredDeposit-ETH-ETH': '1e0',
         'HaltWasmContract-thor1contract': '1.0.0',
         NODEPAUSECHAINGLOBAL: ' ',
+        TRADEACCOUNTSENABLED: 'maybe',
+        RUNEPOOLENABLED: ' ',
       },
       [{ chain: 'BTC', halted: false }, { chain: 'ETH', halted: false }]
     );
@@ -383,6 +514,8 @@ describe('deriveNetworkStatus', () => {
     expect(status.tradingPaused).toBe(false);
     expect(status.chainStatuses.find((chain) => chain.chain === 'BTC')?.signingPaused).toBe(false);
     expect(status.chainStatuses.find((chain) => chain.chain === 'ETH')?.lpDepositPaused).toBe(false);
+    expect(status.chainStatuses.find((chain) => chain.chain === 'BTC')?.unparseableMimirKeys).toEqual(['HALTSIGNINGBTC']);
+    expect(status.chainStatuses.find((chain) => chain.chain === 'ETH')?.unparseableMimirKeys).toEqual(['PAUSELPDEPOSIT-ETH-ETH']);
     expect(status.activeControlKeys).toEqual([]);
     expect(status.activeChainKeys).toEqual([]);
     expect(status.activeEvidenceKeys).toEqual([]);
@@ -391,5 +524,48 @@ describe('deriveNetworkStatus', () => {
     expect(status.nodePauseChainGlobal).toBeNull();
     expect(status.securedAssetDepositPauseKeys).toEqual([]);
     expect(status.wasmContractHaltKeys).toEqual([]);
+    expect(status.invalidMimirKeys).toEqual([
+      'HaltSecuredDeposit-ETH-ETH',
+      'HALTSIGNINGBTC',
+      'HALTTRADING',
+      'HaltWasmContract-thor1contract',
+      'NODEPAUSECHAINGLOBAL',
+      'PAUSELPDEPOSIT-ETH-ETH',
+      'RUNEPOOLENABLED',
+      'StreamingSwapPause',
+      'TRADEACCOUNTSENABLED',
+    ]);
+    expect(status.sourceWarnings).toEqual(['9 monitored Mimir keys could not be parsed.']);
+    expect(status.summary).toContain('source warnings');
+    expect(status.monitoredControls.find((control) => control.key === 'HALTTRADING')?.state).toBe('unparseable');
+    expect(status.monitoredControls.find((control) => control.key === 'StreamingSwapPause')?.state).toBe('unparseable');
+    expect(status.monitoredControls.find((control) => control.key === 'NODEPAUSECHAINGLOBAL')?.state).toBe('unparseable');
+    expect(status.monitoredControls.find((control) => control.key === 'PAUSELPDEPOSIT-*')?.state).toBe('unparseable');
+    expect(status.monitoredControls.find((control) => control.key === 'HaltSecuredDeposit-*')?.state).toBe('unparseable');
+    expect(status.monitoredControls.find((control) => control.key === 'HaltWasmContract-*')?.state).toBe('unparseable');
+    expect(status.monitoredControls.find((control) => control.key === 'TRADEACCOUNTSENABLED')?.state).toBe('unparseable');
+    expect(status.monitoredControls.find((control) => control.key === 'RUNEPOOLENABLED')?.state).toBe('unparseable');
+  });
+
+  it('warns on unknown chain-scoped Mimir keys without creating phantom chain cards', () => {
+    const status = deriveNetworkStatus(
+      {
+        HALTBTCHAIN: 1,
+        HALTFOOTRADING: 'bad',
+        PAUSELPFOO: ' ',
+      },
+      [{ chain: 'BTC', halted: false }]
+    );
+
+    expect(status.state).toBe('operational');
+    expect(status.chainStatuses.map((chain) => chain.chain)).toEqual(['BTC']);
+    expect(status.activeChainKeys).toEqual([]);
+    expect(status.activeEvidenceKeys).toEqual([]);
+    expect(status.activePauseKeys).toEqual([]);
+    expect(status.invalidMimirKeys).toEqual([]);
+    expect(status.sourceWarnings).toEqual([
+      'Unknown chain-scoped Mimir keys ignored: HALTBTCHAIN, HALTFOOTRADING, PAUSELPFOO.',
+    ]);
+    expect(status.summary).toContain('source warnings');
   });
 });

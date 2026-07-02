@@ -3,7 +3,7 @@
 import useSWR from 'swr';
 import MidgardAPI from '@/lib/api/midgard';
 import ThornodeAPI from '@/lib/api/thornode';
-import { HistoryItem, LiveDataResult, NetworkStats, NetworkStatus, Pool } from '@/lib/types';
+import { HistoryItem, LiveDataResult, MidgardHealth, NetworkStats, NetworkStatus, Pool } from '@/lib/types';
 
 const SWR_OPTIONS = {
   refreshInterval: 60000,
@@ -18,6 +18,7 @@ function unwrapLiveResult<T>(result: LiveDataResult<T> | undefined, error: unkno
     status: result?.status ?? (errorMessage ? 'degraded' : undefined),
     error: errorMessage ?? result?.error,
     source: result?.source,
+    sources: result?.sources,
     checkedAt: result?.checkedAt,
     isLoading,
     isDegraded: Boolean(errorMessage || result?.status === 'degraded'),
@@ -37,6 +38,15 @@ export function usePools() {
   const { data, error, isLoading } = useSWR<LiveDataResult<Pool[]>>(
     'midgard:pools',
     () => MidgardAPI.getPools(),
+    SWR_OPTIONS
+  );
+  return unwrapLiveResult(data, error, isLoading);
+}
+
+export function useMidgardHealth() {
+  const { data, error, isLoading } = useSWR<LiveDataResult<MidgardHealth>>(
+    'midgard:health',
+    () => MidgardAPI.getHealth(),
     SWR_OPTIONS
   );
   return unwrapLiveResult(data, error, isLoading);

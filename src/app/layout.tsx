@@ -16,12 +16,20 @@ export const metadata: Metadata = {
     description: "Community-maintained encyclopedia of THORChain with current-only live network status and sourced protocol content.",
     type: "website",
     url: "https://wiki.thorchain.no",
+    images: [
+      {
+        url: "/opengraph-image",
+        width: 1200,
+        height: 630,
+        alt: "THORChain Wiki source-backed protocol encyclopedia",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "THORChain Wiki - Protocol Encyclopedia & Source-Backed Data",
     description: "Sourced protocol context for THORChain, RUNE, TCY, Midgard, THORNode, Mimir, and native cross-chain swaps.",
-    site: "@thorchain_org",
+    images: ["/twitter-image"],
   },
   robots: "index, follow",
   metadataBase: new URL("https://wiki.thorchain.no"),
@@ -35,8 +43,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={`${inter.variable} ${mono.variable} dark`}>
       <head>
         <meta name="theme-color" content="#00D4AA" />
-        <link rel="alternate" hrefLang="en" href="https://wiki.thorchain.no" />
-        <link rel="alternate" hrefLang="x-default" href="https://wiki.thorchain.no" />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
