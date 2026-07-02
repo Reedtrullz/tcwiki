@@ -24,7 +24,7 @@ export default function StatsPage() {
     isLoading: earningsLoading,
     isDegraded: earningsDegraded,
   } = useEarningsHistory('day', 30);
-  const { data: midgardHealth } = useMidgardHealth();
+  const { result: midgardHealthResult } = useMidgardHealth();
   const { result: statusResult, isLoading: statusLoading } = useNetworkStatus();
 
   const isLoading = networkLoading || earningsLoading;
@@ -78,7 +78,7 @@ export default function StatsPage() {
         </div>
       )}
       <div className="mb-12">
-        <LiveSourceMeta result={networkResult} health={midgardHealth} />
+        <LiveSourceMeta result={networkResult} healthResult={midgardHealthResult} />
       </div>
 
       <div className="mb-12">
@@ -87,7 +87,7 @@ export default function StatsPage() {
           {earningsSummary}
         </p>
         <div className="mb-3">
-          <LiveSourceMeta result={earningsResult} health={midgardHealth} />
+          <LiveSourceMeta result={earningsResult} healthResult={midgardHealthResult} />
         </div>
         <div className="bg-surface-elevated border border-border rounded-lg p-6" aria-describedby="earnings-history-summary">
           {earningsChart.length > 0 ? (

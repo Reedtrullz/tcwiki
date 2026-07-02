@@ -1,9 +1,17 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createJiti } from 'jiti';
 import ts from 'typescript';
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
+const jiti = createJiti(import.meta.url, {
+  alias: {
+    '@': join(root, 'src'),
+  },
+  moduleCache: false,
+});
+const { SEARCH_DOCUMENTS: actualSearchDocuments } = await jiti.import(join(root, 'src/lib/search/registry.ts'));
 const staticPath = join(root, 'src/lib/data/static.ts');
 const typesPath = join(root, 'src/lib/types.ts');
 const registryPath = join(root, 'src/lib/content/registry.ts');
@@ -287,6 +295,13 @@ function readOperationalSearchDocuments() {
 
 function readGeneratedSearchDocuments() {
   return readConstArray(generatedSearchDeclarations, 'MDX_SEARCH_DOCUMENTS');
+}
+
+function readActualSearchDocuments() {
+  if (!Array.isArray(actualSearchDocuments)) {
+    throw new Error('SEARCH_DOCUMENTS must be an exported array');
+  }
+  return actualSearchDocuments;
 }
 
 function isIsoDate(value) {
@@ -792,113 +807,154 @@ function validateSearchDocumentMetadata(doc, path, allowedConfidences) {
   doc.sources.forEach((source, sourceIndex) => validateRegistrySource(source, `${path}.sources[${sourceIndex}]`, sourceUrls));
 }
 
-function searchDocMeta(record) {
-  return {
-    confidence: record.freshness.confidence,
-    reviewedAt: record.freshness.checkedAt,
-    sources: record.sources,
-  };
-}
-
-function buildExpectedSearchDocuments(collections, contentEntries, glossaryTerms) {
-  const contentEntrySlugs = new Set(contentEntries.map((entry) => entry.href));
+function buildExpectedAnchoredSearchDocuments(collections, glossaryTerms) {
   return [
-    ...readOperationalSearchDocuments(),
-    ...contentEntries.map((entry) => ({
-      id: entry.id,
-      slug: entry.href,
-      href: entry.href,
-      type: entry.category,
-      title: entry.title,
-      description: entry.description,
-      confidence: entry.confidence,
-      reviewedAt: entry.reviewedAt,
-      sources: entry.sources,
-      content: [entry.description, entry.body, entry.tags.join(' ')].join(' '),
-    })),
-    ...readGeneratedSearchDocuments().filter((doc) => !contentEntrySlugs.has(doc.slug)),
     ...collections.SECURITY_INCIDENT_RECORDS.map((record) => {
       const anchor = recordAnchor('incident', record.data.id);
       return {
         id: `incident:${record.data.id}`,
-        slug: '/governance',
         href: `/governance#${anchor}`,
         type: 'incident',
-        title: record.data.title,
-        description: record.data.description,
-        ...searchDocMeta(record),
-        content: record.data.description,
+        anchor,
       };
     }),
     ...collections.ECOSYSTEM_PROJECT_RECORDS.map((record) => {
       const anchor = recordAnchor('ecosystem', record.data.id);
       return {
         id: `ecosystem:${record.data.id}`,
-        slug: '/ecosystem',
         href: `/ecosystem#${anchor}`,
         type: 'ecosystem',
-        title: record.data.name,
-        description: record.data.description,
-        ...searchDocMeta(record),
-        content: record.data.description,
+        anchor,
       };
     }),
     ...collections.RESEARCH_REPORT_RECORDS.map((record) => {
       const anchor = recordAnchor('research', record.data.id);
       return {
         id: `research:${record.data.id}`,
-        slug: '/governance',
         href: `/governance#${anchor}`,
         type: 'research',
-        title: record.data.title,
-        description: record.data.summary,
-        ...searchDocMeta(record),
-        content: record.data.summary,
+        anchor,
       };
     }),
     ...collections.GOVERNANCE_PROPOSAL_RECORDS.map((record) => {
       const anchor = recordAnchor('governance', record.data.id);
       return {
         id: `governance:${record.data.id}`,
-        slug: '/governance',
         href: `/governance#${anchor}`,
         type: 'governance',
-        title: record.data.title,
-        description: record.data.description,
-        ...searchDocMeta(record),
-        content: record.data.description,
+        anchor,
       };
     }),
     ...collections.PROTOCOL_MILESTONE_RECORDS.map((record) => {
       const anchor = recordAnchor('milestone', `${record.data.date}-${record.data.title}`);
       return {
         id: `milestone:${record.data.date}:${record.data.title}`,
-        slug: '/governance',
         href: `/governance#${anchor}`,
         type: 'milestone',
-        title: record.data.title,
-        description: record.data.description,
-        ...searchDocMeta(record),
-        content: record.data.description,
+        anchor,
       };
     }),
-    ...glossaryTerms.map((term) => ({
-      id: `glossary:${term.id}`,
-      slug: '/glossary',
-      href: `/glossary#term-${term.id}`,
-      type: 'glossary',
-      title: term.term,
-      description: term.definition,
-      confidence: term.confidence,
-      reviewedAt: term.reviewedAt,
-      sources: term.sources,
-      content: term.definition,
-    })),
+    ...glossaryTerms.map((term) => {
+      const anchor = `term-${term.id}`;
+      return {
+        id: `glossary:${term.id}`,
+        href: `/glossary#${anchor}`,
+        type: 'glossary',
+        anchor,
+      };
+    }),
   ];
 }
 
+function expectSearchDoc(docsById, id, path) {
+  const doc = docsById.get(id);
+  if (!doc) {
+    fail(path, 'missing from actual SEARCH_DOCUMENTS export');
+  }
+  return doc;
+}
+
+function validateExpectedSearchCoverage(searchDocuments, collections, contentEntries, glossaryTerms) {
+  const docsById = new Map();
+  searchDocuments.forEach((doc, index) => {
+    if (typeof doc?.id === 'string') {
+      docsById.set(doc.id, doc);
+    } else {
+      fail(`SEARCH_DOCUMENTS[${index}].id`, 'must be a string before coverage validation');
+    }
+  });
+
+  readOperationalSearchDocuments().forEach((expected) => {
+    const path = `SEARCH_DOCUMENTS[${expected.id}]`;
+    const doc = expectSearchDoc(docsById, expected.id, path);
+    if (!doc) {
+      return;
+    }
+    if (doc.href !== expected.href) {
+      fail(`${path}.href`, `must be ${expected.href}`);
+    }
+    if (doc.type !== expected.type) {
+      fail(`${path}.type`, `must be ${expected.type}`);
+    }
+  });
+
+  contentEntries.forEach((entry) => {
+    const path = `SEARCH_DOCUMENTS[${entry.id}]`;
+    const doc = expectSearchDoc(docsById, entry.id, path);
+    if (!doc) {
+      return;
+    }
+    if (doc.href !== entry.href) {
+      fail(`${path}.href`, `must be ${entry.href}`);
+    }
+    if (doc.type !== entry.category) {
+      fail(`${path}.type`, `must be ${entry.category}`);
+    }
+    if (doc.confidence !== entry.confidence) {
+      fail(`${path}.confidence`, `must be ${entry.confidence}`);
+    }
+    if (doc.reviewedAt !== entry.reviewedAt) {
+      fail(`${path}.reviewedAt`, `must be ${entry.reviewedAt}`);
+    }
+  });
+
+  const contentEntrySlugs = new Set(contentEntries.map((entry) => entry.href));
+  readGeneratedSearchDocuments()
+    .filter((doc) => !contentEntrySlugs.has(doc.slug))
+    .forEach((expected) => {
+      const path = `SEARCH_DOCUMENTS[${expected.id}]`;
+      const doc = expectSearchDoc(docsById, expected.id, path);
+      if (!doc) {
+        return;
+      }
+      if (doc.href !== expected.href) {
+        fail(`${path}.href`, `must be ${expected.href}`);
+      }
+      if (doc.type !== expected.type) {
+        fail(`${path}.type`, `must be ${expected.type}`);
+      }
+    });
+
+  buildExpectedAnchoredSearchDocuments(collections, glossaryTerms).forEach((expected) => {
+    const path = `SEARCH_DOCUMENTS[${expected.id}]`;
+    const doc = expectSearchDoc(docsById, expected.id, path);
+    if (!doc) {
+      return;
+    }
+    if (doc.href !== expected.href) {
+      fail(`${path}.href`, `must be ${expected.href}`);
+    }
+    if (doc.anchor !== expected.anchor) {
+      fail(`${path}.anchor`, `must be ${expected.anchor}`);
+    }
+    if (doc.type !== expected.type) {
+      fail(`${path}.type`, `must be ${expected.type}`);
+    }
+  });
+}
+
 function validateSearchSurface(collections, contentEntries, glossaryTerms, allowedConfidences) {
-  const searchDocuments = buildExpectedSearchDocuments(collections, contentEntries, glossaryTerms);
+  const searchDocuments = readActualSearchDocuments();
   const anchorsByRoute = collectKnownRouteAnchors(collections, glossaryTerms);
 
   validateUnique('SEARCH_DOCUMENT_IDS', searchDocuments.map((doc) => ({ data: { id: doc.id } })));
@@ -907,6 +963,7 @@ function validateSearchSurface(collections, contentEntries, glossaryTerms, allow
     validateSearchDocumentMetadata(doc, path, allowedConfidences);
     validateInternalHref(doc.href, `${path}.href`, anchorsByRoute);
   });
+  validateExpectedSearchCoverage(searchDocuments, collections, contentEntries, glossaryTerms);
 
   glossaryTerms.forEach((term) => {
     term.relatedHrefs?.forEach((href, index) => {

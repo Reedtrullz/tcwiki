@@ -6,6 +6,7 @@ test.describe('THORChain Wiki Smoke Tests', () => {
     await expect(page.getByRole('heading', { name: /THORChain Wiki/i })).toBeVisible();
     await expect(page.getByText(/Community-maintained encyclopedia/i).first()).toBeVisible();
     await expect(page.getByText(/live sources|checking live network status|source degraded/i).first()).toBeVisible();
+    await expect(page.getByRole('link', { name: /THORChain Swap/i })).toHaveAttribute('href', '/ecosystem#ecosystem-thorchain-swap');
   });
 
   test('stats page loads with data or graceful error state', async ({ page }) => {

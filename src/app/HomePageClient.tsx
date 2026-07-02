@@ -9,10 +9,11 @@ import { NetworkStatusBanner } from '@/components/features/NetworkStatusBanner';
 import { FEATURED_ENTRIES, JOURNEY_LINKS } from '@/lib/content/registry';
 import { formatPercent, formatRuneFromBaseUnits, normalizeApyToPercent } from '@/lib/trust';
 import { LiveSourceMeta } from '@/components/ui/LiveSourceMeta';
+import { recordAnchor } from '@/lib/utils';
 
 export default function HomePage() {
   const { data: networkData, result: networkResult, isDegraded: networkDegraded } = useNetworkData();
-  const { data: midgardHealth } = useMidgardHealth();
+  const { result: midgardHealthResult } = useMidgardHealth();
   const { result: statusResult, isLoading: statusLoading } = useNetworkStatus();
   const { data: pools, isDegraded: poolsDegraded } = usePools();
 
@@ -62,7 +63,7 @@ export default function HomePage() {
           <StatCard icon={<Activity className="h-4 w-4" />} label="Available Pools" value={poolCount} />
         </div>
         <div className="mt-3">
-          <LiveSourceMeta result={networkResult} health={midgardHealth} />
+          <LiveSourceMeta result={networkResult} healthResult={midgardHealthResult} />
           {networkDegraded && (
             <p className="mt-2 text-xs text-amber-300">Midgard source did not respond; values are unavailable rather than assumed zero.</p>
           )}
@@ -94,16 +95,14 @@ export default function HomePage() {
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
           {ECOSYSTEM_PROJECTS.slice(0, 8).map((p) => (
-            <a
+            <Link
               key={p.id}
-              href={p.url}
-              target="_blank"
-              rel="noopener noreferrer"
+              href={`/ecosystem#${recordAnchor('ecosystem', p.id)}`}
               className="block p-4 rounded-lg bg-surface-elevated border border-border hover:border-accent/20 transition-colors group"
             >
               <p className="text-sm font-medium group-hover:text-accent transition-colors">{p.name}</p>
               <p className="text-[11px] text-slate-500 mt-1">{p.category}</p>
-            </a>
+            </Link>
           ))}
         </div>
       </section>

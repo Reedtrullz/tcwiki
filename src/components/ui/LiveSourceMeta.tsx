@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/Badge';
 interface LiveSourceMetaProps {
   result?: LiveDataResult<unknown>;
   health?: MidgardHealth;
+  healthResult?: LiveDataResult<MidgardHealth>;
 }
 
 function healthVariant(severity: SourceHealthSeverity) {
@@ -31,13 +32,15 @@ function healthLabel(health: MidgardHealth) {
   return 'Lag unavailable';
 }
 
-export function LiveSourceMeta({ result, health }: LiveSourceMetaProps) {
+export function LiveSourceMeta({ result, health, healthResult }: LiveSourceMetaProps) {
   if (!result) {
     return <p className="text-[11px] text-slate-600">Loading live source...</p>;
   }
 
   const checkedAt = new Date(result.checkedAt).toLocaleString();
   const sources = result.sources?.length ? result.sources : result.source ? [result.source] : [];
+  const resolvedHealth = healthResult ? healthResult.data : health;
+  const healthUnavailable = Boolean(healthResult && !healthResult.data);
 
   return (
     <div className="space-y-1">
@@ -63,18 +66,29 @@ export function LiveSourceMeta({ result, health }: LiveSourceMetaProps) {
           </span>
         )}
       </div>
-      {health && (
+      {resolvedHealth && (
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-slate-500">
-          <Badge variant={healthVariant(health.severity)}>
-            Midgard {health.severity}
+          <Badge variant={healthVariant(resolvedHealth.severity)}>
+            Midgard {resolvedHealth.severity}
           </Badge>
-          <span>{healthLabel(health)}</span>
-          {health.provider && <span>via {health.provider}</span>}
-          {health.reasons.map((reason) => (
+          <span>{healthLabel(resolvedHealth)}</span>
+          {resolvedHealth.provider && <span>via {resolvedHealth.provider}</span>}
+          {resolvedHealth.reasons.map((reason) => (
             <span key={reason} className="text-amber-300">
               {reason}
             </span>
           ))}
+        </div>
+      )}
+      {healthUnavailable && (
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-slate-500">
+          <Badge variant="danger">
+            Midgard health degraded
+          </Badge>
+          <span>Lag unavailable</span>
+          {healthResult?.error && (
+            <span className="text-amber-300">{healthResult.error}</span>
+          )}
         </div>
       )}
     </div>

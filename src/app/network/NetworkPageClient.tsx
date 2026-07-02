@@ -3,13 +3,14 @@
 import { Card } from '@/components/ui/Card';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { PageContainer } from '@/components/layout/PageContainer';
-import { useNetworkData, useNetworkStatus } from '@/lib/hooks/useMidgard';
+import { useMidgardHealth, useNetworkData, useNetworkStatus } from '@/lib/hooks/useMidgard';
 import { NetworkStatusBanner } from '@/components/features/NetworkStatusBanner';
 import { LiveSourceMeta } from '@/components/ui/LiveSourceMeta';
 import { getNetworkCurrentOnlyStateLabel, getSecuredAssetsSummaryPaused } from '@/lib/network-status-summary';
 
 export default function NetworkPage() {
   const { data: networkData, result: networkResult } = useNetworkData();
+  const { result: midgardHealthResult } = useMidgardHealth();
   const { result: statusResult, isLoading: statusLoading, isDegraded: statusDegraded } = useNetworkStatus();
   const networkStatus = statusResult?.data;
 
@@ -104,7 +105,7 @@ export default function NetworkPage() {
           </Card>
         ))}
       </div>
-      <LiveSourceMeta result={networkResult} />
+      <LiveSourceMeta result={networkResult} healthResult={midgardHealthResult} />
     </PageContainer>
   );
 }

@@ -100,4 +100,57 @@ describe('source and freshness labels', () => {
     expect(html).toContain('4 block lag');
     expect(html).toContain('Midgard lag is 4 blocks.');
   });
+
+  it('renders unavailable Midgard health when the metric source itself loaded', () => {
+    const html = renderToStaticMarkup(
+      <LiveSourceMeta
+        result={{
+          status: 'ok',
+          checkedAt: '2026-06-18T00:00:00.000Z',
+          source: { label: 'Midgard network', url: 'https://midgard.thorchain.network/v2/network' },
+        }}
+        healthResult={{
+          status: 'degraded',
+          checkedAt: '2026-06-18T00:00:00.000Z',
+          error: 'Midgard health did not load',
+        }}
+      />
+    );
+
+    expect(html).toContain('Current-only');
+    expect(html).toContain('Midgard network');
+    expect(html).toContain('Midgard health degraded');
+    expect(html).toContain('Lag unavailable');
+    expect(html).toContain('Midgard health did not load');
+  });
+
+  it('treats full Midgard health results as authoritative over legacy health props', () => {
+    const html = renderToStaticMarkup(
+      <LiveSourceMeta
+        result={{
+          status: 'ok',
+          checkedAt: '2026-06-18T00:00:00.000Z',
+          source: { label: 'Midgard network', url: 'https://midgard.thorchain.network/v2/network' },
+        }}
+        health={{
+          provider: 'Stale Midgard',
+          severity: 'warning',
+          reasons: ['Stale lag should not render.'],
+          checkedAt: '2026-06-18T00:00:00.000Z',
+          lagBlocks: 4,
+        }}
+        healthResult={{
+          status: 'degraded',
+          checkedAt: '2026-06-18T00:00:00.000Z',
+          error: 'Fresh health result failed',
+        }}
+      />
+    );
+
+    expect(html).toContain('Midgard health degraded');
+    expect(html).toContain('Fresh health result failed');
+    expect(html).not.toContain('Stale Midgard');
+    expect(html).not.toContain('Stale lag should not render.');
+    expect(html).not.toContain('4 block lag');
+  });
 });
