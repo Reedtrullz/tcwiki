@@ -156,4 +156,27 @@ describe('network current-only state labels', () => {
       invalidKeyPatterns: [/^PAUSELPDEPOSIT-/],
     })).toBe('Mimir warning');
   });
+
+  it('does not call broad unknown or source-warning states open', () => {
+    expect(getNetworkCurrentOnlyStateLabel({
+      paused: false,
+      statusLoading: false,
+      sourceUnavailable: false,
+      networkStatus: networkStatus({ state: 'unknown' }),
+    })).toBe('Unknown');
+
+    expect(getNetworkCurrentOnlyStateLabel({
+      paused: false,
+      statusLoading: false,
+      sourceUnavailable: false,
+      networkStatus: networkStatus({ sourceWarnings: ['BTC inbound_addresses omitted halted.'] }),
+    })).toBe('Source warning');
+
+    expect(getNetworkCurrentOnlyStateLabel({
+      paused: true,
+      statusLoading: false,
+      sourceUnavailable: false,
+      networkStatus: networkStatus({ sourceWarnings: ['warning'] }),
+    })).toBe('Paused');
+  });
 });

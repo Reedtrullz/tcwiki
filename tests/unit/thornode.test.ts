@@ -14,6 +14,7 @@ interface SnapshotFixture {
   inbound: unknown;
   version: unknown;
   lastBlock: unknown;
+  latestBlock: unknown;
 }
 
 function completeInbound(chain: string, overrides: Partial<ThornodeInboundAddress> = {}): ThornodeInboundAddress {
@@ -32,7 +33,8 @@ function snapshotFixture(overrides: Partial<SnapshotFixture> = {}): SnapshotFixt
     mimir: { HALTTRADING: 0 },
     inbound: [completeInbound('BTC')],
     version: { current: '3.19.2' },
-    lastBlock: [{ chain: 'THOR', thorchain: 100 }],
+    lastBlock: [{ chain: 'BTC', thorchain: 100, last_observed_in: 1000, last_signed_out: 99 }],
+    latestBlock: { block: { header: { height: '101', time: new Date().toISOString() } } },
     ...overrides,
   };
 }
@@ -40,19 +42,23 @@ function snapshotFixture(overrides: Partial<SnapshotFixture> = {}): SnapshotFixt
 function stubNetworkStatusSnapshots(liquify: SnapshotFixture, publicThornode: SnapshotFixture) {
   vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
     const url = String(input);
+    const pathname = new URL(url).pathname;
     const snapshot = url.includes('gateway.liquify.com') ? liquify : publicThornode;
 
-    if (url.endsWith('/mimir')) {
+    if (pathname.endsWith('/mimir')) {
       return makeResponse(true, snapshot.mimir);
     }
-    if (url.endsWith('/inbound_addresses')) {
+    if (pathname.endsWith('/inbound_addresses')) {
       return makeResponse(true, snapshot.inbound);
     }
-    if (url.endsWith('/version')) {
+    if (pathname.endsWith('/version')) {
       return makeResponse(true, snapshot.version);
     }
-    if (url.endsWith('/lastblock')) {
+    if (pathname.endsWith('/lastblock')) {
       return makeResponse(true, snapshot.lastBlock);
+    }
+    if (pathname.endsWith('/base/tendermint/v1beta1/blocks/latest')) {
+      return makeResponse(true, snapshot.latestBlock);
     }
 
     return makeResponse(false, {}, 404, 'Not Found');
@@ -65,6 +71,7 @@ describe('deriveNetworkStatus', () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
   });
@@ -84,6 +91,7 @@ describe('deriveNetworkStatus', () => {
     expect(status.activeChainKeys).toEqual([]);
     expect(status.activeEvidenceKeys).toEqual([]);
     expect(status.activePauseKeys).toEqual(['HALTTRADING', 'HALTSIGNING', 'PAUSELP']);
+    expect(status.chainStatuses[0]?.inheritedMimirKeys).toEqual(['HALTTRADING', 'HALTSIGNING', 'PAUSELP']);
     expect(status.thorNodeVersion).toBe('3.19.1');
   });
 
@@ -158,6 +166,12 @@ describe('deriveNetworkStatus', () => {
       signingPaused: false,
       activeMimirKeys: [],
       lpDepositPauseKeys: [],
+      inboundAddressEvidenceFields: [
+        'halted',
+        'global_trading_paused',
+        'chain_trading_paused',
+        'chain_lp_actions_paused',
+      ],
     });
   });
 
@@ -398,6 +412,20 @@ describe('deriveNetworkStatus', () => {
     expect(status.monitoredControls.find((control) => control.key === 'NODEPAUSECHAINGLOBAL')?.state).toBe('active');
   });
 
+  it('does not warn on reviewed non-pausing operational Mimir families', () => {
+    const status = deriveNetworkStatus(
+      {
+        HALTTRADING: 0,
+        'EVMALLOWANCECHECK-AVAX': 1,
+        'DYNAMICFEE-WHITELIST-SYMBIOSIS': 1,
+      },
+      [completeInbound('AVAX')]
+    );
+
+    expect(status.state).toBe('operational');
+    expect(status.sourceWarnings).toEqual([]);
+  });
+
   it('uses THORChain height semantics for future halts and expired node pauses', () => {
     const status = deriveNetworkStatus(
       {
@@ -438,6 +466,7 @@ describe('deriveNetworkStatus', () => {
       signingPaused: false,
       activeMimirKeys: [],
       lpDepositPauseKeys: [],
+      inheritedMimirKeys: ['PAUSELP'],
       scheduledMimirKeys: ['HALTSIGNINGBTC'],
     });
     expect(status.monitoredControls.find((control) => control.key === 'HALTTRADING')?.state).toBe('scheduled');
@@ -628,7 +657,7 @@ describe('deriveNetworkStatus', () => {
       []
     );
 
-    expect(status.state).toBe('operational');
+    expect(status.state).toBe('degraded');
     expect(status.activeControlKeys).toEqual([]);
     expect(status.activeChainKeys).toEqual([]);
     expect(status.activeEvidenceKeys).toEqual([]);
@@ -669,7 +698,7 @@ describe('deriveNetworkStatus', () => {
       []
     );
 
-    expect(status.state).toBe('operational');
+    expect(status.state).toBe('degraded');
     expect(status.signingPaused).toBe(false);
     expect(status.activeControlKeys).toEqual([]);
     expect(status.activeChainKeys).toEqual([]);
@@ -762,7 +791,7 @@ describe('deriveNetworkStatus', () => {
       [completeInbound('BTC'), completeInbound('ETH')]
     );
 
-    expect(status.state).toBe('operational');
+    expect(status.state).toBe('degraded');
     expect(status.tradingPaused).toBe(false);
     expect(status.chainStatuses.find((chain) => chain.chain === 'BTC')?.signingPaused).toBe(false);
     expect(status.chainStatuses.find((chain) => chain.chain === 'ETH')?.lpDepositPaused).toBe(false);
@@ -817,7 +846,7 @@ describe('deriveNetworkStatus', () => {
       100
     );
 
-    expect(status.state).toBe('operational');
+    expect(status.state).toBe('degraded');
     expect(status.activeControlKeys).toEqual([]);
     expect(status.activeEvidenceKeys).toEqual([]);
     expect(status.invalidMimirKeys).toEqual([
@@ -843,7 +872,7 @@ describe('deriveNetworkStatus', () => {
       [completeInbound('BTC')]
     );
 
-    expect(status.state).toBe('operational');
+    expect(status.state).toBe('degraded');
     expect(status.chainStatuses.map((chain) => chain.chain)).toEqual(['BTC']);
     expect(status.activeChainKeys).toEqual([]);
     expect(status.activeEvidenceKeys).toEqual([]);
@@ -865,12 +894,62 @@ describe('deriveNetworkStatus', () => {
       [completeInbound('BTC')]
     );
 
-    expect(status.state).toBe('operational');
+    expect(status.state).toBe('degraded');
     expect(status.activeControlKeys).toEqual([]);
     expect(status.activeEvidenceKeys).toEqual([]);
     expect(status.sourceWarnings).toEqual([
       'Unknown operation-like Mimir keys need review: NewFeatureEnabled, OtherFeatureDisabled.',
     ]);
+  });
+
+  it('warns on explicit high-impact operational Mimir families that are not yet modeled', () => {
+    const status = deriveNetworkStatus(
+      {
+        'COMPROMISEDVAULT-thor1vault': 1,
+        STOPSOLVENCYCHECK: 1,
+        EVMDISABLECONTRACTWHITELIST: 1,
+        'ENABLESWITCH-BTC': 1,
+        BURNSYNTHS: 1,
+        SCHEDULEDMIGRATION: 1,
+        FUNDMIGRATIONINTERVAL: 720,
+        'RAGNAROK-BTC': 1,
+        MimirRecallFundFoo: 1,
+        MimirUpgradeContractBar: 1,
+        'DYNAMICFEE-WHITELIST-SS': 1,
+        'EVMALLOWANCECHECK-AVAX': 1,
+      },
+      [completeInbound('BTC'), completeInbound('AVAX')]
+    );
+
+    expect(status.state).toBe('degraded');
+    expect(status.sourceWarnings).toEqual([
+      'Unknown operation-like Mimir keys need review: BURNSYNTHS, COMPROMISEDVAULT-thor1vault, ENABLESWITCH-BTC, EVMDISABLECONTRACTWHITELIST, FUNDMIGRATIONINTERVAL, MimirRecallFundFoo, MimirUpgradeContractBar, RAGNAROK-BTC, SCHEDULEDMIGRATION, STOPSOLVENCYCHECK.',
+    ]);
+  });
+
+  it('adds inbound-address evidence fields for chain pause booleans', () => {
+    const status = deriveNetworkStatus(
+      {},
+      [
+        completeInbound('BSC', {
+          halted: true,
+          chain_trading_paused: true,
+          chain_lp_actions_paused: true,
+        }),
+      ],
+      '3.19.2',
+      100
+    );
+
+    expect(status.state).toBe('paused');
+    expect(status.activeEvidenceKeys).toEqual([]);
+    expect(status.chainStatuses[0]).toMatchObject({
+      chain: 'BSC',
+      halted: true,
+      tradingPaused: true,
+      lpActionsPaused: true,
+      inboundAddressEvidenceFields: ['halted', 'chain_trading_paused', 'chain_lp_actions_paused'],
+    });
   });
 
   it('falls back to a complete second THORNode endpoint when the first snapshot shape is unusable', async () => {
@@ -879,13 +958,13 @@ describe('deriveNetworkStatus', () => {
         mimir: [],
         inbound: [completeInbound('ETH', { halted: true })],
         version: { current: 'first-provider' },
-        lastBlock: [{ chain: 'THOR', thorchain: 100 }],
+        lastBlock: [{ chain: 'BTC', thorchain: 100, last_observed_in: 1000, last_signed_out: 99 }],
       }),
       snapshotFixture({
         mimir: { HALTTRADING: 0 },
         inbound: [completeInbound('BTC')],
         version: { current: 'second-provider' },
-        lastBlock: [{ chain: 'THOR', thorchain: 101 }],
+        lastBlock: [{ chain: 'BTC', thorchain: 100, last_observed_in: 1000, last_signed_out: 99 }],
       })
     );
 
@@ -895,8 +974,46 @@ describe('deriveNetworkStatus', () => {
     expect(result.source?.label).toBe('THORChain THORNode');
     expect(result.data?.state).toBe('operational');
     expect(result.data?.thorNodeVersion).toBe('second-provider');
-    expect(result.data?.thorchainHeight).toBe(101);
+    expect(result.data?.thorchainHeight).toBe(100);
     expect(result.data?.chainStatuses.map((chain) => chain.chain)).toEqual(['BTC']);
+  });
+
+  it('pins THORNode status reads to the conservative snapshot height before deriving Mimir state', async () => {
+    const fetchSpy = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      const pathname = new URL(url).pathname;
+
+      if (pathname.endsWith('/base/tendermint/v1beta1/blocks/latest')) {
+        return makeResponse(true, { block: { header: { height: '100', time: new Date().toISOString() } } });
+      }
+      if (pathname.endsWith('/mimir')) {
+        return makeResponse(true, { HALTTRADING: 99 });
+      }
+      if (pathname.endsWith('/inbound_addresses')) {
+        return makeResponse(true, [completeInbound('BTC')]);
+      }
+      if (pathname.endsWith('/version')) {
+        return makeResponse(true, { current: '3.19.2' });
+      }
+      if (pathname.endsWith('/lastblock')) {
+        return makeResponse(true, [{ chain: 'BTC', thorchain: 99, last_observed_in: 1000, last_signed_out: 99 }]);
+      }
+      return makeResponse(false, {}, 404, 'Not Found');
+    });
+    vi.stubGlobal('fetch', fetchSpy);
+
+    const result = await ThornodeAPI.getNetworkStatus();
+    const requestedUrls = fetchSpy.mock.calls.map(([input]) => String(input));
+
+    expect(result.status).toBe('ok');
+    expect(result.data?.state).toBe('paused');
+    expect(result.data?.tradingPaused).toBe(true);
+    expect(result.data?.thorchainHeight).toBe(99);
+    expect(result.data?.thorchainSnapshotPinned).toBe(true);
+    expect(requestedUrls).toContain('https://gateway.liquify.com/chain/thorchain_api/thorchain/mimir?height=99');
+    expect(requestedUrls).toContain('https://gateway.liquify.com/chain/thorchain_api/thorchain/inbound_addresses?height=99');
+    expect(requestedUrls).toContain('https://gateway.liquify.com/chain/thorchain_api/thorchain/version?height=99');
+    expect(requestedUrls).toContain('https://gateway.liquify.com/chain/thorchain_api/thorchain/lastblock?height=99');
   });
 
   it('does not mix THORNode snapshot parts across providers', async () => {
@@ -911,7 +1028,7 @@ describe('deriveNetworkStatus', () => {
         mimir: { HALTTRADING: 0 },
         inbound: [completeInbound('BTC')],
         version: { current: 'second-provider' },
-        lastBlock: [{ chain: 'THOR', thorchain: 100 }],
+        lastBlock: [{ chain: 'BTC', thorchain: 100, last_observed_in: 1000, last_signed_out: 99 }],
       })
     );
 
@@ -929,11 +1046,11 @@ describe('deriveNetworkStatus', () => {
     stubNetworkStatusSnapshots(
       snapshotFixture({
         version: { current: '' },
-        lastBlock: [{ chain: 'THOR', thorchain: 100 }],
+        lastBlock: [{ chain: 'BTC', thorchain: 100, last_observed_in: 1000, last_signed_out: 99 }],
       }),
       snapshotFixture({
         version: { current: 'second-provider' },
-        lastBlock: [{ chain: 'THOR', thorchain: 101 }],
+        lastBlock: [{ chain: 'BTC', thorchain: 100, last_observed_in: 1000, last_signed_out: 99 }],
       })
     );
 
@@ -942,7 +1059,231 @@ describe('deriveNetworkStatus', () => {
     expect(result.status).toBe('ok');
     expect(result.source?.label).toBe('THORChain THORNode');
     expect(result.data?.thorNodeVersion).toBe('second-provider');
-    expect(result.data?.thorchainHeight).toBe(101);
+    expect(result.data?.thorchainHeight).toBe(100);
+  });
+
+  it('falls back when a THORNode provider returns an empty inbound address list', async () => {
+    stubNetworkStatusSnapshots(
+      snapshotFixture({
+        inbound: [],
+        version: { current: 'first-provider' },
+        lastBlock: [{ chain: 'BTC', thorchain: 100, last_observed_in: 1000, last_signed_out: 99 }],
+      }),
+      snapshotFixture({
+        inbound: [completeInbound('BTC')],
+        version: { current: 'second-provider' },
+        lastBlock: [{ chain: 'BTC', thorchain: 100, last_observed_in: 1000, last_signed_out: 99 }],
+      })
+    );
+
+    const result = await ThornodeAPI.getNetworkStatus();
+
+    expect(result.status).toBe('ok');
+    expect(result.source?.label).toBe('THORChain THORNode');
+    expect(result.data?.chainStatuses.map((chain) => chain.chain)).toEqual(['BTC']);
+    expect(result.data?.thorNodeVersion).toBe('second-provider');
+  });
+
+  it('degrades when every THORNode endpoint returns an empty inbound address list', async () => {
+    stubNetworkStatusSnapshots(
+      snapshotFixture({ inbound: [] }),
+      snapshotFixture({ inbound: [] })
+    );
+
+    const result = await ThornodeAPI.getNetworkStatus();
+
+    expect(result.status).toBe('degraded');
+    expect(result.data).toBeUndefined();
+    expect(result.error).toContain('THORNode inbound_addresses response did not include any chain entries.');
+  });
+
+  it('prefers a clean provider over a source-warning snapshot', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-03T12:00:00.000Z'));
+    stubNetworkStatusSnapshots(
+      snapshotFixture({
+        latestBlock: {
+          block: {
+            header: {
+              height: '100',
+              time: '2026-07-03T11:29:00.000Z',
+            },
+          },
+        },
+        lastBlock: [{ chain: 'BTC', thorchain: 99, last_observed_in: 1000, last_signed_out: 98 }],
+      }),
+      snapshotFixture({
+        version: { current: 'second-provider' },
+        inbound: [completeInbound('BTC')],
+      })
+    );
+
+    const result = await ThornodeAPI.getNetworkStatus();
+
+    expect(result.status).toBe('ok');
+    expect(result.source?.label).toBe('THORChain THORNode');
+    expect(result.data?.state).toBe('operational');
+    expect(result.data?.thorNodeVersion).toBe('second-provider');
+    expect(result.data?.sourceWarnings).toEqual([]);
+  });
+
+  it('surfaces stale THORNode block timestamps as source warnings when every provider is stale', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-03T12:00:00.000Z'));
+    const staleLatestBlock = {
+      block: {
+        header: {
+          height: '100',
+          time: '2026-07-03T11:59:39.000Z',
+        },
+      },
+    };
+    stubNetworkStatusSnapshots(
+      snapshotFixture({
+        latestBlock: staleLatestBlock,
+        lastBlock: [{ chain: 'BTC', thorchain: 99, last_observed_in: 1000, last_signed_out: 98 }],
+      }),
+      snapshotFixture({
+        latestBlock: staleLatestBlock,
+        lastBlock: [{ chain: 'BTC', thorchain: 99, last_observed_in: 1000, last_signed_out: 98 }],
+      })
+    );
+
+    const result = await ThornodeAPI.getNetworkStatus();
+
+    expect(result.status).toBe('ok');
+    expect(result.data?.state).toBe('degraded');
+    expect(result.data?.thorchainBlockTime).toBeDefined();
+    expect(result.data?.thorchainBlockAgeSeconds).toBe(21);
+    expect(result.data?.sourceWarnings).toEqual([
+      'THORNode latest block timestamp is 21 seconds old; live operation state may be stale.',
+    ]);
+  });
+
+  it('surfaces future THORNode block timestamps as source warnings', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-03T12:00:00.000Z'));
+    const futureLatestBlock = {
+      block: {
+        header: {
+          height: '100',
+          time: '2026-07-03T12:00:21.000Z',
+        },
+      },
+    };
+    stubNetworkStatusSnapshots(
+      snapshotFixture({
+        latestBlock: futureLatestBlock,
+        lastBlock: [{ chain: 'BTC', thorchain: 99, last_observed_in: 1000, last_signed_out: 98 }],
+      }),
+      snapshotFixture({
+        latestBlock: futureLatestBlock,
+        lastBlock: [{ chain: 'BTC', thorchain: 99, last_observed_in: 1000, last_signed_out: 98 }],
+      })
+    );
+
+    const result = await ThornodeAPI.getNetworkStatus();
+
+    expect(result.status).toBe('ok');
+    expect(result.data?.state).toBe('degraded');
+    expect(result.data?.thorchainBlockAgeSeconds).toBe(-21);
+    expect(result.data?.sourceWarnings).toEqual([
+      'THORNode latest block timestamp is 21 seconds in the future; live operation state may be stale.',
+    ]);
+  });
+
+  it('falls back when pinned THORNode lastblock heights do not match the snapshot height', async () => {
+    stubNetworkStatusSnapshots(
+      snapshotFixture({
+        lastBlock: [
+          { chain: 'BTC', thorchain: 100, last_observed_in: 1000, last_signed_out: 99 },
+          { chain: 'ETH', thorchain: 110, last_observed_in: 2000, last_signed_out: 109 },
+        ],
+        latestBlock: { block: { header: { height: '110', time: new Date().toISOString() } } },
+      }),
+      snapshotFixture({ version: { current: 'second-provider' } })
+    );
+
+    const result = await ThornodeAPI.getNetworkStatus();
+
+    expect(result.status).toBe('ok');
+    expect(result.source?.label).toBe('THORChain THORNode');
+    expect(result.data?.state).toBe('operational');
+    expect(result.data?.thorNodeVersion).toBe('second-provider');
+  });
+
+  it('surfaces missing per-chain lastblock evidence as a chain source warning', async () => {
+    stubNetworkStatusSnapshots(
+      snapshotFixture({
+        inbound: [completeInbound('BTC')],
+        lastBlock: [{ chain: 'ETH', thorchain: 100, last_observed_in: 2000, last_signed_out: 99 }],
+      }),
+      snapshotFixture({
+        inbound: [completeInbound('BTC')],
+        lastBlock: [{ chain: 'ETH', thorchain: 100, last_observed_in: 2000, last_signed_out: 99 }],
+      })
+    );
+
+    const result = await ThornodeAPI.getNetworkStatus();
+
+    expect(result.status).toBe('ok');
+    expect(result.data?.state).toBe('degraded');
+    expect(result.data?.chainStatuses[0]).toMatchObject({
+      chain: 'BTC',
+      sourceWarnings: ['BTC lastblock evidence omitted this chain; live observation/signing state is partial.'],
+    });
+    expect(result.data?.sourceWarnings).toContain('BTC lastblock evidence omitted this chain; live observation/signing state is partial.');
+  });
+
+  it('falls back when a THORNode provider returns duplicate inbound chain entries', async () => {
+    stubNetworkStatusSnapshots(
+      snapshotFixture({
+        inbound: [completeInbound('BTC'), completeInbound('btc')],
+        version: { current: 'first-provider' },
+      }),
+      snapshotFixture({
+        inbound: [completeInbound('ETH')],
+        version: { current: 'second-provider' },
+      })
+    );
+
+    const result = await ThornodeAPI.getNetworkStatus();
+
+    expect(result.status).toBe('ok');
+    expect(result.source?.label).toBe('THORChain THORNode');
+    expect(result.data?.thorNodeVersion).toBe('second-provider');
+    expect(result.data?.chainStatuses.map((chain) => chain.chain)).toEqual(['ETH']);
+  });
+
+  it('degrades when every THORNode provider returns invalid inbound chain identities', async () => {
+    stubNetworkStatusSnapshots(
+      snapshotFixture({ inbound: [completeInbound('')] }),
+      snapshotFixture({ inbound: [completeInbound('BTC'), completeInbound('BTC')] })
+    );
+
+    const result = await ThornodeAPI.getNetworkStatus();
+
+    expect(result.status).toBe('degraded');
+    expect(result.error).toContain('THORNode inbound_addresses response was not a valid chain list.');
+    expect(result.error).toContain('THORNode inbound_addresses response included duplicate chain entries: BTC.');
+  });
+
+  it('falls back when a THORNode provider returns an unusable latest block shape', async () => {
+    stubNetworkStatusSnapshots(
+      snapshotFixture({
+        latestBlock: { block: { header: { height: '100' } } },
+        version: { current: 'first-provider' },
+      }),
+      snapshotFixture({
+        version: { current: 'second-provider' },
+      })
+    );
+
+    const result = await ThornodeAPI.getNetworkStatus();
+
+    expect(result.status).toBe('ok');
+    expect(result.source?.label).toBe('THORChain THORNode');
+    expect(result.data?.thorNodeVersion).toBe('second-provider');
   });
 
   it('degrades network status when every THORNode endpoint has an unusable snapshot', async () => {
@@ -957,7 +1298,7 @@ describe('deriveNetworkStatus', () => {
     expect(result.data).toBeUndefined();
     expect(result.error).toContain('THORNode status sources did not provide a usable snapshot');
     expect(result.error).toContain('THORNode inbound_addresses response was not a valid chain list.');
-    expect(result.error).toContain('THORNode lastblock response did not include a usable THORChain height.');
+    expect(result.error).toContain('THORNode lastblock response did not include usable required chain, thorchain, last_observed_in, and last_signed_out fields.');
     expect(result.sources?.map((source) => source.label)).toEqual(['Liquify THORNode', 'THORChain THORNode']);
   });
 });

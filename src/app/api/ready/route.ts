@@ -15,7 +15,9 @@ function runtimeMetadata() {
 function sourceCheck<T>(result: LiveDataResult<T>): ReadinessSourceCheck {
   return {
     status: result.status,
+    checkedAt: result.checkedAt,
     source: result.source,
+    sources: result.sources,
     error: result.error,
   };
 }
@@ -54,6 +56,10 @@ async function safeLiveCheck<T>(
 
 function degradedReason(label: string, result: LiveDataResult<unknown>) {
   return result.error ?? `${label} did not provide usable data.`;
+}
+
+function thornodeStateReady(state: string | undefined) {
+  return state === 'operational' || state === 'paused';
 }
 
 function sameSourceGroup(leftUrl: string, rightUrl: string) {
@@ -110,6 +116,9 @@ export async function GET() {
   if (thornodeHeightLagBlocks !== undefined && thornodeHeightLagBlocks > 20) {
     computedThornodeWarnings.push(`THORNode lastblock is ${thornodeHeightLagBlocks} blocks behind Midgard latest height.`);
   }
+  if (thornode.status === 'ok' && thornode.data !== undefined && thornode.data.chainStatuses.length === 0) {
+    computedThornodeWarnings.push('THORNode inbound_addresses did not include any chain operation evidence.');
+  }
   const midgardSourceWarnings = [
     ...(midgardHeightLagBlocks !== undefined && midgardHeightLagBlocks > 20
       ? [`Midgard latest height is ${midgardHeightLagBlocks} blocks behind THORNode lastblock.`]
@@ -127,7 +136,11 @@ export async function GET() {
     midgard.data.severity !== 'unknown';
   const midgardReady = midgardHealthReady && midgardSourceWarnings.length === 0;
   const visibleMidgardReady = dataReady(midgardNetwork) && nonEmptyDataReady(midgardPools) && nonEmptyDataReady(midgardEarnings);
-  const thornodeReady = thornode.status === 'ok' && thornode.data !== undefined && thornodeSourceWarnings.length === 0;
+  const thornodeHasUsableState = thornodeStateReady(thornode.data?.state);
+  const thornodeReady = thornode.status === 'ok' &&
+    thornode.data !== undefined &&
+    thornodeHasUsableState &&
+    thornodeSourceWarnings.length === 0;
 
   if (!midgardHealthReady) {
     reasons.push(midgard.error ?? midgard.data?.reasons.join(' ') ?? 'Midgard readiness degraded.');
@@ -146,6 +159,9 @@ export async function GET() {
   }
   if (thornode.status !== 'ok' || thornode.data === undefined) {
     reasons.push(thornode.error ?? 'THORNode readiness degraded.');
+  }
+  if (thornode.status === 'ok' && thornode.data !== undefined && !thornodeHasUsableState) {
+    reasons.push(`THORNode network status is ${thornode.data.state}.`);
   }
   if (thornodeSourceWarnings.length) {
     reasons.push(...thornodeSourceWarnings);
@@ -174,12 +190,27 @@ export async function GET() {
       },
       thornode: {
         status: thornode.status,
+        checkedAt: thornode.checkedAt,
+        source: thornode.source,
         sources: thornode.sources,
+        sourceCount: thornode.sources?.length ?? (thornode.source ? 1 : 0),
         state: thornode.data?.state,
         summary: thornode.data?.summary,
         version: thornode.data?.thorNodeVersion,
         thorchainHeight: thornode.data?.thorchainHeight,
+        thorchainSnapshotPinned: thornode.data?.thorchainSnapshotPinned,
+        thorchainLastblockMinHeight: thornode.data?.thorchainLastblockMinHeight,
+        thorchainLastblockMaxHeight: thornode.data?.thorchainLastblockMaxHeight,
+        thorchainLastblockSpread: thornode.data?.thorchainLastblockSpread,
+        thorchainBlockTime: thornode.data?.thorchainBlockTime,
+        thorchainBlockAgeSeconds: thornode.data?.thorchainBlockAgeSeconds,
         heightLagBlocks: thornodeHeightLagBlocks,
+        activeControlKeys: thornode.data?.activeControlKeys ?? [],
+        activeChainKeys: thornode.data?.activeChainKeys ?? [],
+        activeEvidenceKeys: thornode.data?.activeEvidenceKeys ?? [],
+        scheduledMimirKeys: thornode.data?.scheduledMimirKeys ?? [],
+        chainStatuses: thornode.data?.chainStatuses ?? [],
+        monitoredControls: thornode.data?.monitoredControls ?? [],
         invalidMimirKeys: thornode.data?.invalidMimirKeys ?? [],
         sourceWarnings: thornodeSourceWarnings,
         error: thornode.error,

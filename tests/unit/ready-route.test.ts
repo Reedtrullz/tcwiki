@@ -55,7 +55,18 @@ function networkStatus(overrides: Partial<NetworkStatus> = {}): NetworkStatus {
     runePoolEnabled: null,
     wasmPaused: null,
     poolDepositPauseKeys: [],
-    chainStatuses: [],
+    chainStatuses: [
+      {
+        chain: 'BTC',
+        halted: false,
+        tradingPaused: false,
+        lpActionsPaused: false,
+        lpDepositPaused: false,
+        signingPaused: false,
+        activeMimirKeys: [],
+        lpDepositPauseKeys: [],
+      },
+    ],
     activeControlKeys: [],
     activeChainKeys: [],
     activeEvidenceKeys: [],
@@ -71,6 +82,7 @@ function thornodeStatus(overrides: Partial<NetworkStatus> = {}): LiveDataResult<
   return {
     status: 'ok',
     checkedAt: '2026-07-02T00:00:00.000Z',
+    source: { label: 'THORNode', url: 'https://thornode.thorchain.network/thorchain' },
     data: networkStatus(overrides),
   };
 }
@@ -153,6 +165,9 @@ describe('/api/ready', () => {
     expect(body.sources.midgard.visibleData.pools.status).toBe('ok');
     expect(body.sources.midgard.visibleData.earnings.status).toBe('ok');
     expect(body.sources.midgard.sourceWarnings).toEqual([]);
+    expect(body.sources.thornode.sourceCount).toBe(1);
+    expect(body.sources.thornode.checkedAt).toBe('2026-07-02T00:00:00.000Z');
+    expect(body.sources.thornode.chainStatuses).toHaveLength(1);
   });
 
   it('returns degraded when a source is unavailable', async () => {
@@ -266,6 +281,9 @@ describe('/api/ready', () => {
     vi.mocked(MidgardAPI.getHealth).mockResolvedValue(midgardHealth('ok'));
     vi.mocked(ThornodeAPI.getNetworkStatus).mockResolvedValue(thornodeStatus({
       invalidMimirKeys: ['HALTTRADING'],
+      activeControlKeys: ['HALTTRADING'],
+      activeEvidenceKeys: ['HALTTRADING'],
+      scheduledMimirKeys: ['HALTSIGNING'],
       sourceWarnings: ['1 monitored Mimir key could not be parsed.'],
     }));
 
@@ -276,8 +294,144 @@ describe('/api/ready', () => {
     expect(body.status).toBe('degraded');
     expect(body.ready).toBe(false);
     expect(body.sources.thornode.invalidMimirKeys).toEqual(['HALTTRADING']);
+    expect(body.sources.thornode.activeControlKeys).toEqual(['HALTTRADING']);
+    expect(body.sources.thornode.activeEvidenceKeys).toEqual(['HALTTRADING']);
+    expect(body.sources.thornode.scheduledMimirKeys).toEqual(['HALTSIGNING']);
     expect(body.sources.thornode.sourceWarnings).toEqual(['1 monitored Mimir key could not be parsed.']);
     expect(body.reasons).toEqual(['1 monitored Mimir key could not be parsed.']);
+  });
+
+  it('keeps paused THORNode state ready while exposing active evidence', async () => {
+    vi.mocked(ThornodeAPI.getNetworkStatus).mockResolvedValue(thornodeStatus({
+      state: 'paused',
+      summary: 'Current-only live sources show one or more THORChain operations paused.',
+      tradingPaused: true,
+      activeControlKeys: ['HALTTRADING'],
+      activeEvidenceKeys: ['HALTTRADING'],
+      chainStatuses: [
+        {
+          chain: 'BTC',
+          halted: false,
+          tradingPaused: true,
+          lpActionsPaused: false,
+          lpDepositPaused: false,
+          signingPaused: false,
+          activeMimirKeys: [],
+          lpDepositPauseKeys: [],
+        },
+      ],
+    }));
+
+    const response = await GET();
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.ready).toBe(true);
+    expect(body.sources.thornode.state).toBe('paused');
+    expect(body.sources.thornode.activeControlKeys).toEqual(['HALTTRADING']);
+    expect(body.sources.thornode.activeEvidenceKeys).toEqual(['HALTTRADING']);
+    expect(body.reasons).toEqual([]);
+  });
+
+  it('keeps scheduled-only THORNode state ready while exposing scheduled controls', async () => {
+    vi.mocked(ThornodeAPI.getNetworkStatus).mockResolvedValue(thornodeStatus({
+      scheduledMimirKeys: ['HALTTRADING'],
+    }));
+
+    const response = await GET();
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.ready).toBe(true);
+    expect(body.sources.thornode.scheduledMimirKeys).toEqual(['HALTTRADING']);
+    expect(body.reasons).toEqual([]);
+  });
+
+  it.each(['unknown', 'degraded'] as const)('returns degraded when THORNode state is %s', async (state) => {
+    vi.mocked(ThornodeAPI.getNetworkStatus).mockResolvedValue(thornodeStatus({
+      state,
+      summary: `THORNode state is ${state}.`,
+    }));
+
+    const response = await GET();
+    const body = await response.json();
+
+    expect(response.status).toBe(503);
+    expect(body.ready).toBe(false);
+    expect(body.sources.thornode.state).toBe(state);
+    expect(body.reasons).toEqual([`THORNode network status is ${state}.`]);
+  });
+
+  it('returns degraded with THORNode source-warning freshness and chain evidence fields', async () => {
+    const warning = 'THORNode latest block timestamp is 21 seconds in the future; live operation state may be stale.';
+    vi.mocked(ThornodeAPI.getNetworkStatus).mockResolvedValue(thornodeStatus({
+      state: 'degraded',
+      summary: 'Current-only live sources do not show active halt flags, but source warnings need review.',
+      thorchainHeight: 100,
+      thorchainSnapshotPinned: true,
+      thorchainLastblockMinHeight: 100,
+      thorchainLastblockMaxHeight: 100,
+      thorchainLastblockSpread: 0,
+      thorchainBlockTime: '2026-07-03T12:00:21.000Z',
+      thorchainBlockAgeSeconds: -21,
+      sourceWarnings: [warning],
+      chainStatuses: [
+        {
+          chain: 'BTC',
+          halted: false,
+          tradingPaused: false,
+          lpActionsPaused: false,
+          lpDepositPaused: false,
+          signingPaused: false,
+          activeMimirKeys: [],
+          lpDepositPauseKeys: [],
+          lastObservedIn: 1000,
+          lastSignedOut: 99,
+          lastThorchainHeight: 100,
+          sourceWarnings: [warning],
+        },
+      ],
+    }));
+
+    const response = await GET();
+    const body = await response.json();
+
+    expect(response.status).toBe(503);
+    expect(body.ready).toBe(false);
+    expect(body.sources.thornode.thorchainSnapshotPinned).toBe(true);
+    expect(body.sources.thornode.thorchainLastblockMinHeight).toBe(100);
+    expect(body.sources.thornode.thorchainLastblockMaxHeight).toBe(100);
+    expect(body.sources.thornode.thorchainLastblockSpread).toBe(0);
+    expect(body.sources.thornode.thorchainBlockTime).toBe('2026-07-03T12:00:21.000Z');
+    expect(body.sources.thornode.thorchainBlockAgeSeconds).toBe(-21);
+    expect(body.sources.thornode.chainStatuses[0]).toMatchObject({
+      chain: 'BTC',
+      lastObservedIn: 1000,
+      lastSignedOut: 99,
+      lastThorchainHeight: 100,
+      sourceWarnings: [warning],
+    });
+    expect(body.sources.thornode.sourceWarnings).toEqual([warning]);
+    expect(body.reasons).toEqual(['THORNode network status is degraded.', warning]);
+  });
+
+  it('returns degraded when THORNode chain operation evidence is empty', async () => {
+    vi.mocked(ThornodeAPI.getNetworkStatus).mockResolvedValue(thornodeStatus({
+      chainStatuses: [],
+    }));
+
+    const response = await GET();
+    const body = await response.json();
+
+    expect(response.status).toBe(503);
+    expect(body.ready).toBe(false);
+    expect(body.sources.thornode.chainStatuses).toEqual([]);
+    expect(body.sources.thornode.sourceWarnings).toEqual([
+      'THORNode inbound_addresses did not include any chain operation evidence.',
+    ]);
+    expect(body.reasons).toEqual([
+      'THORNode inbound_addresses did not include any chain operation evidence.',
+    ]);
   });
 
   it('keeps Midgard warning severity ready', async () => {

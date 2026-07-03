@@ -1,5 +1,6 @@
 import {
   ChainOperationalStatus,
+  InboundOperationField,
   LiveDataResult,
   NetworkStatus,
   OperationalControlStatus,
@@ -10,16 +11,28 @@ import {
 import { CHAINS } from '@/lib/data/static';
 import { liveDegraded, liveOk } from '@/lib/trust';
 
-const THORNODE_ENDPOINTS = [
+type ThornodeEndpoint = SourceMeta & {
+  cosmosUrl: string;
+};
+
+const THORNODE_ENDPOINTS: ThornodeEndpoint[] = [
   {
     label: 'Liquify THORNode',
     url: 'https://gateway.liquify.com/chain/thorchain_api/thorchain',
+    cosmosUrl: 'https://gateway.liquify.com/chain/thorchain_api/cosmos',
   },
   {
     label: 'THORChain THORNode',
     url: 'https://thornode.thorchain.network/thorchain',
+    cosmosUrl: 'https://thornode.thorchain.network/cosmos',
   },
 ];
+
+const THORNODE_BLOCK_STALE_WARNING_SECONDS = 12;
+const THORNODE_BLOCK_STALE_DEGRADED_SECONDS = 30;
+const THORNODE_BLOCK_FUTURE_WARNING_SECONDS = 12;
+const THORNODE_BLOCK_FUTURE_DEGRADED_SECONDS = 30;
+const THORNODE_LASTBLOCK_SPREAD_WARNING_BLOCKS = 3;
 
 let activeEndpoint = 0;
 
@@ -73,6 +86,25 @@ const PREFIX_MONITORED_MIMIR_KEYS = [
 const NON_CHAIN_SCOPED_MIMIR_CODES = new Set(['TCY']);
 const CURATED_CHAIN_CODES = new Set([...CHAINS.map((chain) => chain.chain.toUpperCase()), 'THOR']);
 const KNOWN_NON_OPERATIONAL_PAUSE_KEYS = new Set(['PAUSEONSLASHTHRESHOLD']);
+const REVIEWED_NON_PAUSING_OPERATIONAL_MIMIR_PREFIXES = [
+  'DYNAMICFEE-WHITELIST-',
+  'EVMALLOWANCECHECK-',
+  'ADR',
+  'POL-',
+  'TORANCHOR-',
+] as const;
+const UNKNOWN_OPERATION_REVIEW_MIMIR_PREFIXES = [
+  'COMPROMISEDVAULT-',
+  'STOPSOLVENCYCHECK',
+  'EVMDISABLECONTRACTWHITELIST',
+  'ENABLESWITCH-',
+  'BURNSYNTHS',
+  'SCHEDULEDMIGRATION',
+  'FUNDMIGRATIONINTERVAL',
+  'RAGNAROK-',
+  'MIMIRRECALLFUND',
+  'MIMIRUPGRADECONTRACT',
+] as const;
 
 type MimirActivationMode = 'positive' | 'at-or-after-height' | 'after-height' | 'until-height';
 
@@ -85,6 +117,21 @@ type MimirActivityState =
   | { state: 'absent' }
   | { state: 'unparseable'; key: string }
   | { state: 'active' | 'inactive' | 'scheduled' | 'expired'; key: string; value: number };
+
+type LastBlockChainEvidence = {
+  chain: string;
+  thorchain: number;
+  lastObservedIn: number;
+  lastSignedOut: number;
+};
+
+type ThorchainHeightEvidence = {
+  height: number;
+  minHeight: number;
+  maxHeight: number;
+  spread: number;
+  byChain: Map<string, LastBlockChainEvidence>;
+};
 
 async function request<T>(path: string): Promise<LiveDataResult<T>> {
   const errors: string[] = [];
@@ -119,12 +166,12 @@ async function request<T>(path: string): Promise<LiveDataResult<T>> {
   return liveDegraded<T>(`THORNode source did not respond (${errors.join('; ')})`);
 }
 
-async function requestFromEndpoint<T>(endpoint: SourceMeta, path: string): Promise<T> {
+async function requestJson<T>(url: string): Promise<T> {
   const controller = new AbortController();
   const timeoutId = globalThis.setTimeout(() => controller.abort(), 5000);
 
   try {
-    const response = await fetch(`${endpoint.url}${path}`, {
+    const response = await fetch(url, {
       signal: controller.signal,
       cache: 'no-store',
     });
@@ -137,6 +184,26 @@ async function requestFromEndpoint<T>(endpoint: SourceMeta, path: string): Promi
   } finally {
     globalThis.clearTimeout(timeoutId);
   }
+}
+
+function withQueryHeight(path: string, height: number | undefined) {
+  if (height === undefined) {
+    return path;
+  }
+
+  return `${path}${path.includes('?') ? '&' : '?'}height=${height}`;
+}
+
+function getConservativeSnapshotHeight(latestHeight: number) {
+  return Math.max(0, latestHeight - 1);
+}
+
+async function requestFromEndpoint<T>(endpoint: SourceMeta, path: string, height?: number): Promise<T> {
+  return requestJson<T>(`${endpoint.url}${withQueryHeight(path, height)}`);
+}
+
+async function requestCosmosFromEndpoint<T>(endpoint: ThornodeEndpoint, path: string): Promise<T> {
+  return requestJson<T>(`${endpoint.cosmosUrl}${path}`);
 }
 
 function toMimirNumber(value: unknown): number | null {
@@ -162,7 +229,7 @@ const INBOUND_OPERATION_FIELDS = [
   'global_trading_paused',
   'chain_trading_paused',
   'chain_lp_actions_paused',
-] as const satisfies readonly (keyof ThornodeInboundAddress)[];
+] as const satisfies readonly InboundOperationField[];
 
 function missingInboundOperationFields(chain: ThornodeInboundAddress | undefined) {
   if (!chain) {
@@ -176,6 +243,7 @@ function isThornodeInboundAddresses(value: unknown): value is ThornodeInboundAdd
   return Array.isArray(value) && value.every((item) => (
     isPlainRecord(item) &&
     typeof item.chain === 'string' &&
+    item.chain.trim().length > 0 &&
     (item.halted === undefined || typeof item.halted === 'boolean') &&
     (item.global_trading_paused === undefined || typeof item.global_trading_paused === 'boolean') &&
     (item.chain_trading_paused === undefined || typeof item.chain_trading_paused === 'boolean') &&
@@ -183,21 +251,85 @@ function isThornodeInboundAddresses(value: unknown): value is ThornodeInboundAdd
   ));
 }
 
-function getThorchainHeight(lastBlocks: unknown): number | null {
+function getDuplicateInboundChains(inbound: ThornodeInboundAddress[]) {
+  const seen = new Set<string>();
+  const duplicates = new Set<string>();
+  for (const chain of inbound) {
+    const chainCode = chain.chain.trim().toUpperCase();
+    if (seen.has(chainCode)) {
+      duplicates.add(chainCode);
+    }
+    seen.add(chainCode);
+  }
+  return [...duplicates].sort();
+}
+
+function getThorchainHeightEvidence(lastBlocks: unknown): ThorchainHeightEvidence | null {
   if (!Array.isArray(lastBlocks)) {
     return null;
   }
 
-  const heights = lastBlocks
-    .map((item) => {
-      if (!isPlainRecord(item)) {
-        return null;
-      }
-      return toMimirNumber(item.thorchain);
-    })
-    .filter((height): height is number => height !== null && height >= 0);
+  const byChain = new Map<string, LastBlockChainEvidence>();
+  for (const item of lastBlocks) {
+    if (!isPlainRecord(item) || typeof item.chain !== 'string' || item.chain.trim().length === 0) {
+      return null;
+    }
 
-  return heights.length > 0 ? Math.max(...heights) : null;
+    const chain = item.chain.trim().toUpperCase();
+    if (byChain.has(chain)) {
+      return null;
+    }
+
+    const thorchain = toMimirNumber(item.thorchain);
+    const lastObservedIn = toMimirNumber(item.last_observed_in);
+    const lastSignedOut = toMimirNumber(item.last_signed_out);
+    if (
+      thorchain === null ||
+      lastObservedIn === null ||
+      lastSignedOut === null ||
+      thorchain < 0 ||
+      lastObservedIn < 0 ||
+      lastSignedOut < 0
+    ) {
+      return null;
+    }
+
+    byChain.set(chain, {
+      chain,
+      thorchain,
+      lastObservedIn,
+      lastSignedOut,
+    });
+  }
+
+  if (byChain.size === 0) {
+    return null;
+  }
+
+  const heights = [...byChain.values()].map((item) => item.thorchain);
+  const minHeight = Math.min(...heights);
+  const maxHeight = Math.max(...heights);
+  return {
+    height: maxHeight,
+    minHeight,
+    maxHeight,
+    spread: maxHeight - minHeight,
+    byChain,
+  };
+}
+
+function getTendermintLatestBlockInfo(value: unknown): { height: number; time: string } | null {
+  if (!isPlainRecord(value) || !isPlainRecord(value.block) || !isPlainRecord(value.block.header)) {
+    return null;
+  }
+
+  const height = toMimirNumber(value.block.header.height);
+  const time = value.block.header.time;
+  if (height === null || height < 0 || typeof time !== 'string' || Number.isNaN(Date.parse(time))) {
+    return null;
+  }
+
+  return { height, time };
 }
 
 function getThorNodeVersion(version: unknown): string | undefined {
@@ -214,11 +346,27 @@ function getThorNodeVersion(version: unknown): string | undefined {
   return typeof legacyVersion === 'string' && legacyVersion.length > 0 ? legacyVersion : undefined;
 }
 
+function formatAgeSeconds(seconds: number) {
+  const absolute = Math.abs(seconds);
+  if (absolute < 60) {
+    return `${absolute} second${absolute === 1 ? '' : 's'}`;
+  }
+
+  const minutes = Math.round(absolute / 60);
+  return `${minutes} minute${minutes === 1 ? '' : 's'}`;
+}
+
 function deriveValidatedNetworkStatusSnapshot(
   mimir: unknown,
   inbound: unknown,
   version: unknown,
-  lastBlock: unknown
+  lastBlock: unknown,
+  latestBlock: unknown,
+  checkedAt: string,
+  options: {
+    snapshotPinned?: boolean;
+    snapshotHeight?: number;
+  } = {}
 ): NetworkStatus {
   if (!isPlainRecord(mimir)) {
     throw new Error('THORNode Mimir response was not a plain object.');
@@ -227,21 +375,85 @@ function deriveValidatedNetworkStatusSnapshot(
   if (!isThornodeInboundAddresses(inbound)) {
     throw new Error('THORNode inbound_addresses response was not a valid chain list.');
   }
+  if (inbound.length === 0) {
+    throw new Error('THORNode inbound_addresses response did not include any chain entries.');
+  }
+  const duplicateInboundChains = getDuplicateInboundChains(inbound);
+  if (duplicateInboundChains.length > 0) {
+    throw new Error(`THORNode inbound_addresses response included duplicate chain entries: ${duplicateInboundChains.join(', ')}.`);
+  }
 
-  const thorchainHeight = getThorchainHeight(lastBlock);
-  if (thorchainHeight === null) {
-    throw new Error('THORNode lastblock response did not include a usable THORChain height.');
+  const thorchainHeightEvidence = getThorchainHeightEvidence(lastBlock);
+  if (thorchainHeightEvidence === null) {
+    throw new Error('THORNode lastblock response did not include usable required chain, thorchain, last_observed_in, and last_signed_out fields.');
+  }
+  const latestBlockInfo = getTendermintLatestBlockInfo(latestBlock);
+  if (latestBlockInfo === null) {
+    throw new Error('THORNode latest block response did not include a usable height and timestamp.');
   }
   const thorNodeVersion = getThorNodeVersion(version);
   if (!thorNodeVersion) {
     throw new Error('THORNode version response did not include a usable current version.');
   }
+  const snapshotHeight = options.snapshotHeight ?? latestBlockInfo.height;
+  if (options.snapshotPinned && thorchainHeightEvidence.byChain.size > 0) {
+    const mismatchedRows = [...thorchainHeightEvidence.byChain.values()]
+      .filter((row) => row.thorchain !== snapshotHeight)
+      .map((row) => `${row.chain}:${row.thorchain}`);
+    if (mismatchedRows.length > 0) {
+      throw new Error(`THORNode lastblock response was not pinned to height ${snapshotHeight}: ${mismatchedRows.join(', ')}.`);
+    }
+  }
+  const futureSignedRows = [...thorchainHeightEvidence.byChain.values()]
+    .filter((row) => row.lastSignedOut > row.thorchain)
+    .map((row) => `${row.chain}:${row.lastSignedOut}`);
+  if (futureSignedRows.length > 0) {
+    throw new Error(`THORNode lastblock response included last_signed_out above thorchain height: ${futureSignedRows.join(', ')}.`);
+  }
+
+  const checkedAtMs = Date.parse(checkedAt);
+  const blockTimeMs = Date.parse(latestBlockInfo.time);
+  const blockAgeSeconds = Number.isNaN(checkedAtMs) || Number.isNaN(blockTimeMs)
+    ? undefined
+    : Math.round((checkedAtMs - blockTimeMs) / 1000);
+  const heightDivergence = Math.abs(snapshotHeight - thorchainHeightEvidence.height);
+  const sourceWarnings = [
+    ...(options.snapshotPinned
+      ? []
+      : ['THORNode network status snapshot was not pinned to a single block height.']),
+    ...(thorchainHeightEvidence.spread > THORNODE_LASTBLOCK_SPREAD_WARNING_BLOCKS
+      ? [`THORNode lastblock THORChain heights diverge by ${thorchainHeightEvidence.spread} blocks across chains.`]
+      : []),
+    ...(blockAgeSeconds !== undefined && blockAgeSeconds < -THORNODE_BLOCK_FUTURE_DEGRADED_SECONDS
+      ? [`THORNode latest block timestamp is ${formatAgeSeconds(blockAgeSeconds)} in the future; live operation state is stale.`]
+      : blockAgeSeconds !== undefined && blockAgeSeconds < -THORNODE_BLOCK_FUTURE_WARNING_SECONDS
+        ? [`THORNode latest block timestamp is ${formatAgeSeconds(blockAgeSeconds)} in the future; live operation state may be stale.`]
+        : []),
+    ...(blockAgeSeconds !== undefined && blockAgeSeconds > THORNODE_BLOCK_STALE_DEGRADED_SECONDS
+      ? [`THORNode latest block timestamp is ${formatAgeSeconds(blockAgeSeconds)} old; live operation state is stale.`]
+      : blockAgeSeconds !== undefined && blockAgeSeconds > THORNODE_BLOCK_STALE_WARNING_SECONDS
+        ? [`THORNode latest block timestamp is ${formatAgeSeconds(blockAgeSeconds)} old; live operation state may be stale.`]
+        : []),
+    ...(!options.snapshotPinned && heightDivergence > 0
+      ? [`THORNode latest block height differs from lastblock height by ${heightDivergence} blocks.`]
+      : []),
+  ];
 
   return deriveNetworkStatus(
     mimir,
     inbound,
     thorNodeVersion,
-    thorchainHeight
+    snapshotHeight,
+    {
+      sourceWarnings,
+      lastBlockByChain: thorchainHeightEvidence.byChain,
+      thorchainSnapshotPinned: options.snapshotPinned ?? false,
+      thorchainLastblockMinHeight: thorchainHeightEvidence.minHeight,
+      thorchainLastblockMaxHeight: thorchainHeightEvidence.maxHeight,
+      thorchainLastblockSpread: thorchainHeightEvidence.spread,
+      thorchainBlockTime: latestBlockInfo.time,
+      thorchainBlockAgeSeconds: blockAgeSeconds,
+    }
   );
 }
 
@@ -361,11 +573,17 @@ function getUnknownOperationMimirKeys(mimir: Record<string, unknown>): string[] 
   return Object.entries(mimir)
     .filter(([key, value]) => {
       const upperKey = key.toUpperCase();
+      if (REVIEWED_NON_PAUSING_OPERATIONAL_MIMIR_PREFIXES.some((prefix) => upperKey.startsWith(prefix))) {
+        return false;
+      }
       if (KNOWN_NON_OPERATIONAL_PAUSE_KEYS.has(upperKey) || isKnownMonitoredMimirKey(key)) {
         return false;
       }
 
       const numericValue = toMimirNumber(value);
+      if (UNKNOWN_OPERATION_REVIEW_MIMIR_PREFIXES.some((prefix) => upperKey.startsWith(prefix))) {
+        return numericValue === null || numericValue > 0;
+      }
       if (/^(HALT|PAUSE)/.test(upperKey)) {
         return numericValue === null || numericValue > 0;
       }
@@ -713,13 +931,27 @@ export function deriveNetworkStatus(
   mimir: Record<string, unknown>,
   inboundAddresses: ThornodeInboundAddress[],
   thorNodeVersion?: string,
-  thorchainHeight?: number
+  thorchainHeight?: number,
+  options: {
+    sourceWarnings?: string[];
+    lastBlockByChain?: Map<string, LastBlockChainEvidence>;
+    thorchainSnapshotPinned?: boolean;
+    thorchainLastblockMinHeight?: number;
+    thorchainLastblockMaxHeight?: number;
+    thorchainLastblockSpread?: number;
+    thorchainBlockTime?: string;
+    thorchainBlockAgeSeconds?: number;
+  } = {}
 ): NetworkStatus {
-  const tradingPaused = isMimirActive(mimir, 'HALTTRADING', 'at-or-after-height', thorchainHeight);
-  const signingPaused = isMimirActive(mimir, 'HALTSIGNING', 'at-or-after-height', thorchainHeight);
-  const lpPaused = isMimirActive(mimir, 'PAUSELP', 'at-or-after-height', thorchainHeight);
+  const tradingPausedKey = getActiveMimirKeyByMode(mimir, 'HALTTRADING', 'at-or-after-height', thorchainHeight);
+  const signingPausedKey = getActiveMimirKeyByMode(mimir, 'HALTSIGNING', 'at-or-after-height', thorchainHeight);
+  const lpPausedKey = getActiveMimirKeyByMode(mimir, 'PAUSELP', 'at-or-after-height', thorchainHeight);
+  const observedChainsPausedKey = getActiveMimirKeyByMode(mimir, 'HALTCHAINGLOBAL', 'at-or-after-height', thorchainHeight);
+  const tradingPaused = Boolean(tradingPausedKey);
+  const signingPaused = Boolean(signingPausedKey);
+  const lpPaused = Boolean(lpPausedKey);
   const loansPaused = isMimirActive(mimir, 'PAUSELOANS');
-  const observedChainsPaused = isMimirActive(mimir, 'HALTCHAINGLOBAL', 'at-or-after-height', thorchainHeight);
+  const observedChainsPaused = Boolean(observedChainsPausedKey);
   const streamingSwapsPaused = getOptionalMimirActive(mimir, 'StreamingSwapPause');
   const memolessTransactionsHalted = getOptionalMimirActive(mimir, 'HaltMemoless');
   const nodePauseChainGlobal = getOptionalMimirActive(mimir, 'NODEPAUSECHAINGLOBAL', 'until-height', thorchainHeight);
@@ -778,8 +1010,8 @@ export function deriveNetworkStatus(
   const scheduledScopedWasmHaltKeys = uniqueKeys(scheduledWasmDeployerHaltKeys, scheduledWasmCodeHashHaltKeys, scheduledWasmContractHaltKeys);
   const nodePauseChainGlobalKey = getActiveMimirKeyByMode(mimir, 'NODEPAUSECHAINGLOBAL', 'until-height', thorchainHeight);
   const nodePauseChainGlobalKeys = nodePauseChainGlobalKey ? [nodePauseChainGlobalKey] : [];
-  const inboundByChain = new Map(inboundAddresses.map((chain) => [chain.chain.toUpperCase(), chain]));
-  const inboundChainCodes = inboundAddresses.map((chain) => chain.chain.toUpperCase());
+  const inboundByChain = new Map(inboundAddresses.map((chain) => [chain.chain.trim().toUpperCase(), chain]));
+  const inboundChainCodes = inboundAddresses.map((chain) => chain.chain.trim().toUpperCase());
   const recognizedChainCodes = new Set([...CURATED_CHAIN_CODES, ...inboundChainCodes]);
   const unknownChainScopedMimirKeys = getUnknownChainScopedMimirKeys(mimir, recognizedChainCodes);
   const unknownOperationMimirKeys = getUnknownOperationMimirKeys(mimir);
@@ -810,6 +1042,19 @@ export function deriveNetworkStatus(
 
   const chainStatuses: ChainOperationalStatus[] = chainCodes.map((chainCode) => {
     const chain = inboundByChain.get(chainCode);
+    const lastBlockEvidence = options.lastBlockByChain?.get(chainCode);
+    const inboundAddressEvidenceFields = chain
+      ? INBOUND_OPERATION_FIELDS.filter((field) => chain[field] === true)
+      : [];
+    const inheritedMimirKeys = uniqueKeys(
+      [
+        tradingPausedKey,
+        signingPausedKey,
+        lpPausedKey,
+        observedChainsPausedKey,
+        nodePauseChainGlobalKey,
+      ].filter((key): key is string => key !== null)
+    );
     const chainHaltKey = getActiveMimirKeyByMode(mimir, `HALT${chainCode}CHAIN`, 'at-or-after-height', thorchainHeight);
     const chainSolvencyHaltKey = getActiveMimirKeyByMode(mimir, `SOLVENCYHALT${chainCode}CHAIN`, 'at-or-after-height', thorchainHeight);
     const chainTradingKey = getActiveMimirKeyByMode(mimir, `HALT${chainCode}TRADING`, 'at-or-after-height', thorchainHeight);
@@ -854,9 +1099,14 @@ export function deriveNetworkStatus(
       invalidAsymWithdrawalPauseKeys
     );
     const missingInboundFields = missingInboundOperationFields(chain);
-    const chainSourceWarnings = missingInboundFields.length > 0
-      ? [`${chain?.chain ?? chainCode} inbound_addresses omitted ${missingInboundFields.join(', ')}; live chain operation state is partial.`]
-      : [];
+    const chainSourceWarnings = [
+      ...(missingInboundFields.length > 0
+        ? [`${chain?.chain ?? chainCode} inbound_addresses omitted ${missingInboundFields.join(', ')}; live chain operation state is partial.`]
+        : []),
+      ...(chain && options.lastBlockByChain && !lastBlockEvidence
+        ? [`${chain.chain} lastblock evidence omitted this chain; live observation/signing state is partial.`]
+        : []),
+    ];
     const activeMimirKeys = [
       chainHaltKey,
       chainSolvencyHaltKey,
@@ -875,6 +1125,15 @@ export function deriveNetworkStatus(
       signingPaused: signingPaused || Boolean(chainPrefixSigningKey || chainSuffixSigningKey),
       activeMimirKeys,
       lpDepositPauseKeys,
+      ...(inboundAddressEvidenceFields.length > 0 ? { inboundAddressEvidenceFields } : {}),
+      ...(inheritedMimirKeys.length > 0 ? { inheritedMimirKeys } : {}),
+      ...(lastBlockEvidence
+        ? {
+            lastObservedIn: lastBlockEvidence.lastObservedIn,
+            lastSignedOut: lastBlockEvidence.lastSignedOut,
+            lastThorchainHeight: lastBlockEvidence.thorchain,
+          }
+        : {}),
       ...(chainSourceWarnings.length > 0 ? { sourceWarnings: chainSourceWarnings } : {}),
       ...(securedAssetDepositChainKeys.length > 0
         ? { securedAssetDepositPaused: true, securedAssetDepositPauseKeys: securedAssetDepositChainKeys }
@@ -992,6 +1251,7 @@ export function deriveNetworkStatus(
   const invalidMimirKeys = collectInvalidMimirKeys(mimir, recognizedChainCodes);
   const chainSourceWarnings = uniqueKeys(chainStatuses.flatMap((chain) => chain.sourceWarnings ?? []));
   const sourceWarnings = [
+    ...(options.sourceWarnings ?? []),
     ...chainSourceWarnings,
     ...(invalidMimirKeys.length > 0
       ? [`${invalidMimirKeys.length} monitored Mimir key${invalidMimirKeys.length === 1 ? '' : 's'} could not be parsed.`]
@@ -1033,10 +1293,9 @@ export function deriveNetworkStatus(
   ).length;
   const isPaused = activeControlKeys.length > 0 || activeEvidenceKeys.length > 0 || pausedChainCount > 0;
   const hasSourceWarnings = sourceWarnings.length > 0;
-  const hasPartialInboundWarnings = chainSourceWarnings.length > 0;
 
   return {
-    state: isPaused ? 'paused' : hasPartialInboundWarnings ? 'degraded' : 'operational',
+    state: isPaused ? 'paused' : hasSourceWarnings ? 'degraded' : 'operational',
     summary: isPaused
       ? hasSourceWarnings
         ? 'Current-only live sources show one or more THORChain operations paused, with source warnings to review.'
@@ -1089,6 +1348,12 @@ export function deriveNetworkStatus(
     monitoredControls,
     thorNodeVersion,
     thorchainHeight,
+    thorchainSnapshotPinned: options.thorchainSnapshotPinned,
+    thorchainLastblockMinHeight: options.thorchainLastblockMinHeight,
+    thorchainLastblockMaxHeight: options.thorchainLastblockMaxHeight,
+    thorchainLastblockSpread: options.thorchainLastblockSpread,
+    thorchainBlockTime: options.thorchainBlockTime,
+    thorchainBlockAgeSeconds: options.thorchainBlockAgeSeconds,
     invalidMimirKeys,
     sourceWarnings,
   };
@@ -1114,25 +1379,55 @@ export class ThornodeAPI {
   static async getNetworkStatus(): Promise<LiveDataResult<NetworkStatus>> {
     const checkedAt = new Date().toISOString();
     const errors: string[] = [];
+    const warningSnapshots: Array<{
+      endpointIndex: number;
+      endpoint: ThornodeEndpoint;
+      status: NetworkStatus;
+    }> = [];
 
     for (let i = 0; i < THORNODE_ENDPOINTS.length; i += 1) {
       const endpointIndex = (activeEndpoint + i) % THORNODE_ENDPOINTS.length;
       const endpoint = THORNODE_ENDPOINTS[endpointIndex];
 
       try {
+        const latestBlock = await requestCosmosFromEndpoint<unknown>(endpoint, '/base/tendermint/v1beta1/blocks/latest');
+        const latestBlockInfo = getTendermintLatestBlockInfo(latestBlock);
+        if (latestBlockInfo === null) {
+          throw new Error('THORNode latest block response did not include a usable height and timestamp.');
+        }
+
+        const snapshotHeight = getConservativeSnapshotHeight(latestBlockInfo.height);
         const [mimir, inbound, version, lastBlock] = await Promise.all([
-          requestFromEndpoint<unknown>(endpoint, '/mimir'),
-          requestFromEndpoint<unknown>(endpoint, '/inbound_addresses'),
-          requestFromEndpoint<unknown>(endpoint, '/version'),
-          requestFromEndpoint<unknown>(endpoint, '/lastblock'),
+          requestFromEndpoint<unknown>(endpoint, '/mimir', snapshotHeight),
+          requestFromEndpoint<unknown>(endpoint, '/inbound_addresses', snapshotHeight),
+          requestFromEndpoint<unknown>(endpoint, '/version', snapshotHeight),
+          requestFromEndpoint<unknown>(endpoint, '/lastblock', snapshotHeight),
         ]);
-        const status = deriveValidatedNetworkStatusSnapshot(mimir, inbound, version, lastBlock);
-        activeEndpoint = endpointIndex;
-        return liveOk(status, endpoint, checkedAt);
+        const status = deriveValidatedNetworkStatusSnapshot(
+          mimir,
+          inbound,
+          version,
+          lastBlock,
+          latestBlock,
+          checkedAt,
+          { snapshotPinned: true, snapshotHeight }
+        );
+        if (status.sourceWarnings.length === 0) {
+          activeEndpoint = endpointIndex;
+          return liveOk(status, endpoint, checkedAt);
+        }
+
+        warningSnapshots.push({ endpointIndex, endpoint, status });
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Unknown THORNode status error';
         errors.push(`${endpoint.label}: ${message}`);
       }
+    }
+
+    const [bestWarningSnapshot] = warningSnapshots;
+    if (bestWarningSnapshot) {
+      activeEndpoint = bestWarningSnapshot.endpointIndex;
+      return liveOk(bestWarningSnapshot.status, bestWarningSnapshot.endpoint, checkedAt);
     }
 
     return liveDegraded<NetworkStatus>(

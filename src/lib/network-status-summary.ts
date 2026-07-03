@@ -56,7 +56,16 @@ export function getNetworkCurrentOnlyStateLabel({
   if (paused === undefined) {
     return 'Unknown';
   }
-  return paused ? 'Paused' : 'Open';
+  if (paused) {
+    return 'Paused';
+  }
+  if (networkStatus?.state === 'unknown') {
+    return 'Unknown';
+  }
+  if (networkStatus?.state === 'degraded' || (networkStatus?.sourceWarnings.length ?? 0) > 0) {
+    return 'Source warning';
+  }
+  return 'Open';
 }
 
 export function getSecuredAssetsSummaryPaused(networkStatus: NetworkStatus | undefined) {

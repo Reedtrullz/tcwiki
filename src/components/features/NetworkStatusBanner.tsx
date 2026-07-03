@@ -13,6 +13,7 @@ interface EvidenceRow {
   id: string;
   scope: string;
   impact: string;
+  source: string;
   key: string;
 }
 
@@ -22,6 +23,25 @@ function uniqueStrings(values: string[]) {
 
 function formatKeyCount(count: number) {
   return `${count} ${count === 1 ? 'key' : 'keys'}`;
+}
+
+function formatEvidenceCount(count: number) {
+  return `${count} evidence ${count === 1 ? 'item' : 'items'}`;
+}
+
+function formatBlockAge(seconds: number): string {
+  if (seconds < 0) {
+    return `${formatBlockAge(Math.abs(seconds))} in future`;
+  }
+  if (seconds < 60) {
+    return `${seconds} sec`;
+  }
+  if (seconds < 3600) {
+    const minutes = Math.round(seconds / 60);
+    return `${minutes} ${minutes === 1 ? 'min' : 'min'}`;
+  }
+  const hours = Math.round(seconds / 3600);
+  return `${hours} ${hours === 1 ? 'hour' : 'hours'}`;
 }
 
 function isExactMimirKey(key: string) {
@@ -110,49 +130,82 @@ function getEvidenceImpact(key: string) {
   return 'Monitored control flag';
 }
 
+function getInboundEvidenceImpact(field: string) {
+  switch (field) {
+    case 'halted':
+      return 'Inbound halted flag';
+    case 'global_trading_paused':
+      return 'Inbound global trading pause';
+    case 'chain_trading_paused':
+      return 'Inbound chain trading pause';
+    case 'chain_lp_actions_paused':
+      return 'Inbound LP action pause';
+    default:
+      return 'Inbound operation flag';
+  }
+}
+
 export function NetworkStatusBanner({ result, isLoading = false }: NetworkStatusBannerProps) {
   const status = result?.data;
   const isPaused = status?.state === 'paused';
   const isDegraded = result?.status === 'degraded' || status?.state === 'degraded';
-  const isUnavailable = !result && !isLoading;
+  const isUnknown = status?.state === 'unknown';
+  const isUnavailable = (!result || !status) && !isLoading;
   const hasInvalidMimirKeys = Boolean(status && status.invalidMimirKeys.length > 0);
   const hasSourceWarnings = Boolean(status && (hasInvalidMimirKeys || status.sourceWarnings.length > 0));
   const scheduledMimirKeys = status?.scheduledMimirKeys ?? [];
   const hasScheduledMimirKeys = scheduledMimirKeys.length > 0;
+  const scheduledControls = status?.monitoredControls.filter((control) => control.state === 'scheduled') ?? [];
+  const hasTrustWarning = isPaused || isDegraded || isUnknown || isUnavailable || hasSourceWarnings || hasScheduledMimirKeys;
   const activeControlKeys = status?.activeControlKeys ?? status?.activePauseKeys ?? [];
+  const sourceMetaResult: LiveDataResult<NetworkStatus> | undefined = result && status && hasSourceWarnings && result.status === 'ok'
+    ? { ...result, status: 'degraded' }
+    : result;
   const chainsWithEvidence = status?.chainStatuses
     .map((chain) => ({
       chain: chain.chain,
-      keys: uniqueStrings([
+      mimirKeys: uniqueStrings([
         ...chain.activeMimirKeys,
         ...chain.lpDepositPauseKeys,
         ...(chain.securedAssetDepositPauseKeys ?? []),
         ...(chain.securedAssetWithdrawPauseKeys ?? []),
         ...(chain.asymWithdrawalPauseKeys ?? []),
       ]),
+      inboundFields: chain.inboundAddressEvidenceFields ?? [],
     }))
-    .filter((chain) => chain.keys.length > 0) ?? [];
-  const activeEvidenceKeys = status?.activeEvidenceKeys ?? [...new Set(chainsWithEvidence.flatMap((chain) => chain.keys))];
-  const chainEvidenceKeySet = new Set(chainsWithEvidence.flatMap((chain) => chain.keys));
+    .filter((chain) => chain.mimirKeys.length > 0 || chain.inboundFields.length > 0) ?? [];
+  const activeEvidenceKeys = status?.activeEvidenceKeys ?? [...new Set(chainsWithEvidence.flatMap((chain) => chain.mimirKeys))];
+  const chainEvidenceKeySet = new Set(chainsWithEvidence.flatMap((chain) => chain.mimirKeys));
   const controlEvidenceRows: EvidenceRow[] = activeControlKeys
     .filter((key) => isExactMimirKey(key) && !chainEvidenceKeySet.has(key))
     .map((key) => ({
       id: `control:${key}`,
       scope: 'Network',
       impact: 'Monitored control flag',
+      source: 'Mimir',
       key,
     }));
-  const chainEvidenceRows: EvidenceRow[] = chainsWithEvidence.flatMap((chain) => (
-    chain.keys.map((key) => ({
+  const chainMimirEvidenceRows: EvidenceRow[] = chainsWithEvidence.flatMap((chain) => (
+    chain.mimirKeys.map((key) => ({
       id: `${chain.chain}:${key}`,
       scope: chain.chain,
       impact: getEvidenceImpact(key),
+      source: 'Mimir',
       key,
+    }))
+  ));
+  const inboundEvidenceRows: EvidenceRow[] = chainsWithEvidence.flatMap((chain) => (
+    chain.inboundFields.map((field) => ({
+      id: `${chain.chain}:inbound:${field}`,
+      scope: chain.chain,
+      impact: getInboundEvidenceImpact(field),
+      source: 'inbound_addresses',
+      key: `THORNode inbound_addresses.${field}`,
     }))
   ));
   const describedEvidenceKeys = new Set([
     ...controlEvidenceRows.map((row) => row.key),
-    ...chainEvidenceRows.map((row) => row.key),
+    ...chainMimirEvidenceRows.map((row) => row.key),
   ]);
   const scopedEvidenceRows: EvidenceRow[] = activeEvidenceKeys
     .filter((key) => !describedEvidenceKeys.has(key))
@@ -160,17 +213,22 @@ export function NetworkStatusBanner({ result, isLoading = false }: NetworkStatus
       id: `scoped:${key}`,
       scope: getEvidenceScope(key),
       impact: getEvidenceImpact(key),
+      source: 'Mimir',
       key,
     }));
-  const evidenceRows = [...controlEvidenceRows, ...chainEvidenceRows, ...scopedEvidenceRows];
+  const evidenceRows = [...controlEvidenceRows, ...chainMimirEvidenceRows, ...inboundEvidenceRows, ...scopedEvidenceRows];
   const evidenceCount = evidenceRows.length;
-  const Icon = isPaused || isDegraded || isUnavailable || hasSourceWarnings || hasScheduledMimirKeys ? AlertTriangle : CheckCircle2;
+  const Icon = hasTrustWarning ? AlertTriangle : CheckCircle2;
   const title = isLoading
     ? 'Checking live network status'
     : isUnavailable
       ? 'Network status unavailable'
+      : isUnknown
+      ? 'Network status unknown'
       : isDegraded
       ? 'Network status source degraded'
+      : isPaused && hasSourceWarnings
+        ? 'Live sources show paused operations with source warnings'
       : isPaused
         ? 'Live sources show paused operations'
       : hasSourceWarnings
@@ -183,7 +241,7 @@ export function NetworkStatusBanner({ result, isLoading = false }: NetworkStatus
 
   return (
     <Card
-      className={isPaused || isDegraded || isUnavailable || hasSourceWarnings || hasScheduledMimirKeys ? 'border-amber-500/30 bg-amber-500/5' : 'border-emerald-500/20'}
+      className={hasTrustWarning ? 'border-amber-500/30 bg-amber-500/5' : 'border-emerald-500/20'}
     >
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div className="flex gap-3">
@@ -194,7 +252,7 @@ export function NetworkStatusBanner({ result, isLoading = false }: NetworkStatus
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="text-sm font-semibold">{title}</h2>
               {status?.state && (
-                <Badge variant={isPaused || hasSourceWarnings || hasScheduledMimirKeys ? 'warning' : 'success'}>
+                <Badge variant={hasTrustWarning ? 'warning' : 'success'}>
                   {status.state}
                 </Badge>
               )}
@@ -225,9 +283,18 @@ export function NetworkStatusBanner({ result, isLoading = false }: NetworkStatus
           </div>
         </div>
         <div className="min-w-52">
-          <LiveSourceMeta result={result} />
+          <LiveSourceMeta result={sourceMetaResult} />
           {status?.thorNodeVersion && (
             <p className="mt-1 text-[11px] text-slate-400">THORNode {status.thorNodeVersion}</p>
+          )}
+          {status?.thorchainHeight && (
+            <p className="mt-1 text-[11px] text-slate-400">
+              THORChain height {status.thorchainHeight}
+              {status.thorchainSnapshotPinned === false ? ' / snapshot unpinned' : ''}
+              {status.thorchainBlockTime ? ` / block time ${new Date(status.thorchainBlockTime).toLocaleTimeString()}` : ''}
+              {status.thorchainBlockAgeSeconds !== undefined ? ` / Block age ${formatBlockAge(status.thorchainBlockAgeSeconds)}` : ''}
+              {status.thorchainLastblockSpread !== undefined && status.thorchainLastblockSpread > 0 ? ` / lastblock spread ${status.thorchainLastblockSpread} blocks` : ''}
+            </p>
           )}
         </div>
       </div>
@@ -238,6 +305,7 @@ export function NetworkStatusBanner({ result, isLoading = false }: NetworkStatus
             const unparseableKeys = chain.unparseableMimirKeys ?? [];
             const chainSourceWarnings = chain.sourceWarnings ?? [];
             const scheduledKeys = chain.scheduledMimirKeys ?? [];
+            const inheritedMimirKeys = chain.inheritedMimirKeys ?? [];
             const paused = chain.halted ||
               chain.tradingPaused ||
               chain.lpActionsPaused ||
@@ -256,6 +324,7 @@ export function NetworkStatusBanner({ result, isLoading = false }: NetworkStatus
               chain.securedAssetDepositPaused ? 'secured deposits' : null,
               chain.securedAssetWithdrawPaused ? 'secured withdrawals' : null,
               chain.asymWithdrawalPaused ? 'asym withdrawals' : null,
+              inheritedMimirKeys.length > 0 ? 'global control' : null,
               scheduledKeys.length > 0 ? 'scheduled' : null,
               unparseableKeys.length > 0 ? 'Mimir warning' : null,
               chainSourceWarnings.length > 0 ? 'source warning' : null,
@@ -267,7 +336,8 @@ export function NetworkStatusBanner({ result, isLoading = false }: NetworkStatus
               ...(chain.securedAssetDepositPauseKeys ?? []),
               ...(chain.securedAssetWithdrawPauseKeys ?? []),
               ...(chain.asymWithdrawalPauseKeys ?? []),
-            ]).length;
+              ...inheritedMimirKeys,
+            ]).length + (chain.inboundAddressEvidenceFields?.length ?? 0);
             const hasChainScheduled = scheduledKeys.length > 0;
             return (
               <div
@@ -284,8 +354,8 @@ export function NetworkStatusBanner({ result, isLoading = false }: NetworkStatus
                   {statusText}
                 </p>
                 {sourceKeyCount > 0 && (
-                  <p className="mt-1 text-[11px] text-slate-400" aria-label={`${chain.chain} active Mimir key count`}>
-                    Evidence: {formatKeyCount(sourceKeyCount)}
+                  <p className="mt-1 text-[11px] text-slate-400" aria-label={`${chain.chain} active source evidence count`}>
+                    Evidence: {formatEvidenceCount(sourceKeyCount)}
                   </p>
                 )}
                 {scheduledKeys.length > 0 && (
@@ -320,17 +390,19 @@ export function NetworkStatusBanner({ result, isLoading = false }: NetworkStatus
         <details className="mt-4 rounded-md border border-border bg-surface/50">
           <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2 text-xs font-semibold text-slate-300">
             <span>Operational evidence</span>
-            <span className="shrink-0 text-[11px] font-normal text-slate-400">{formatKeyCount(evidenceCount)}</span>
+            <span className="shrink-0 text-[11px] font-normal text-slate-400">{formatEvidenceCount(evidenceCount)}</span>
           </summary>
           <div className="border-t border-border px-3 py-3">
             <p className="text-[11px] text-slate-400">
-              Supporting active Mimir keys from the live THORNode source above. These keys explain the compact chain-card states.
+              Supporting active Mimir keys and inbound-address fields from the live THORNode source above. These source values explain the compact chain-card states.
             </p>
-            <div className="mt-3 space-y-2 sm:hidden" role="list" aria-label="Active Mimir key evidence for network operation state">
+            <div className="mt-3 space-y-2 sm:hidden" role="list" aria-label="Active source evidence for network operation state">
               {evidenceRows.map((row) => (
                 <div key={`mobile:${row.id}`} role="listitem" className="rounded-md border border-border bg-slate-950/30 p-2">
                   <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px]">
                     <span className="font-semibold text-slate-300">{row.scope}</span>
+                    <span className="text-slate-400">/</span>
+                    <span className="text-slate-400">{row.source}</span>
                     <span className="text-slate-400">/</span>
                     <span className="text-slate-400">{row.impact}</span>
                   </div>
@@ -342,18 +414,20 @@ export function NetworkStatusBanner({ result, isLoading = false }: NetworkStatus
             </div>
             <div className="mt-3 hidden overflow-x-auto sm:block">
               <table className="min-w-[640px] text-left text-[11px]">
-                <caption className="sr-only">Active Mimir key evidence for network operation state</caption>
+                <caption className="sr-only">Active source evidence for network operation state</caption>
                 <thead className="text-slate-400">
                   <tr>
                     <th scope="col" className="whitespace-nowrap pb-2 pr-4 font-medium">Scope</th>
+                    <th scope="col" className="whitespace-nowrap pb-2 pr-4 font-medium">Source</th>
                     <th scope="col" className="whitespace-nowrap pb-2 pr-4 font-medium">Impact</th>
-                    <th scope="col" className="pb-2 font-medium">Mimir key</th>
+                    <th scope="col" className="pb-2 font-medium">Evidence</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border text-slate-300">
                   {evidenceRows.map((row) => (
                     <tr key={row.id}>
                       <td className="whitespace-nowrap py-2 pr-4 font-medium">{row.scope}</td>
+                      <td className="whitespace-nowrap py-2 pr-4 text-slate-400">{row.source}</td>
                       <td className="whitespace-nowrap py-2 pr-4 text-slate-400">{row.impact}</td>
                       <td className="py-2">
                         <code className="break-all rounded border border-border bg-slate-950/50 px-1.5 py-1 text-[10px] text-amber-200">
@@ -386,6 +460,24 @@ export function NetworkStatusBanner({ result, isLoading = false }: NetworkStatus
                 </code>
               ))}
             </div>
+            {scheduledControls.length > 0 && (
+              <div className="mt-4">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-sky-100/80">
+                  Scheduled control details
+                </p>
+                <div className="mt-2 space-y-2">
+                  {scheduledControls.map((control) => (
+                    <div key={`scheduled:${control.key}`} className="rounded border border-sky-500/20 bg-slate-950/30 p-2 text-[11px]">
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <span className="font-semibold text-sky-100">{control.label}</span>
+                        <code className="break-all text-sky-100/80">{control.key}</code>
+                      </div>
+                      <p className="mt-1 text-sky-100/70">{control.description}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </details>
       )}

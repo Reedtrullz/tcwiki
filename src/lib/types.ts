@@ -87,12 +87,27 @@ export interface ReadinessResponse {
     };
     thornode: {
       status: LiveDataStatus;
+      checkedAt?: string;
+      source?: SourceMeta;
       sources?: SourceMeta[];
+      sourceCount: number;
       state?: NetworkStatusState;
       summary?: string;
       version?: string;
       thorchainHeight?: number;
+      thorchainSnapshotPinned?: boolean;
+      thorchainLastblockMinHeight?: number;
+      thorchainLastblockMaxHeight?: number;
+      thorchainLastblockSpread?: number;
+      thorchainBlockTime?: string;
+      thorchainBlockAgeSeconds?: number;
       heightLagBlocks?: number;
+      activeControlKeys: string[];
+      activeChainKeys: string[];
+      activeEvidenceKeys: string[];
+      scheduledMimirKeys: string[];
+      chainStatuses: ChainOperationalStatus[];
+      monitoredControls: OperationalControlStatus[];
       invalidMimirKeys: string[];
       sourceWarnings: string[];
       error?: string;
@@ -103,7 +118,9 @@ export interface ReadinessResponse {
 
 export interface ReadinessSourceCheck {
   status: LiveDataStatus;
+  checkedAt: string;
   source?: SourceMeta;
+  sources?: SourceMeta[];
   error?: string;
 }
 
@@ -355,7 +372,7 @@ export interface ThornodeInboundAddress {
   chain: string;
   pub_key?: string;
   address?: string;
-  router?: string;
+  router?: string | null;
   halted?: boolean;
   global_trading_paused?: boolean;
   chain_trading_paused?: boolean;
@@ -364,9 +381,13 @@ export interface ThornodeInboundAddress {
 }
 
 export interface ThornodeLastBlock {
-  chain?: string;
-  thorchain?: number | string;
+  chain: string;
+  thorchain: number | string;
+  last_observed_in: number | string;
+  last_signed_out: number | string;
 }
+
+export type InboundOperationField = 'halted' | 'global_trading_paused' | 'chain_trading_paused' | 'chain_lp_actions_paused';
 
 export interface ChainOperationalStatus {
   chain: string;
@@ -377,6 +398,11 @@ export interface ChainOperationalStatus {
   signingPaused: boolean;
   activeMimirKeys: string[];
   lpDepositPauseKeys: string[];
+  inboundAddressEvidenceFields?: InboundOperationField[];
+  inheritedMimirKeys?: string[];
+  lastObservedIn?: number;
+  lastSignedOut?: number;
+  lastThorchainHeight?: number;
   sourceWarnings?: string[];
   securedAssetDepositPaused?: boolean;
   securedAssetWithdrawPaused?: boolean;
@@ -449,6 +475,12 @@ export interface NetworkStatus {
   monitoredControls: OperationalControlStatus[];
   thorNodeVersion?: string;
   thorchainHeight?: number;
+  thorchainSnapshotPinned?: boolean;
+  thorchainLastblockMinHeight?: number;
+  thorchainLastblockMaxHeight?: number;
+  thorchainLastblockSpread?: number;
+  thorchainBlockTime?: string;
+  thorchainBlockAgeSeconds?: number;
   invalidMimirKeys: string[];
   sourceWarnings: string[];
 }

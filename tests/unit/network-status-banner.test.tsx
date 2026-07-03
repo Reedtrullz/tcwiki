@@ -119,20 +119,56 @@ describe('NetworkStatusBanner', () => {
     const html = renderToStaticMarkup(<NetworkStatusBanner result={result} />);
 
     expect(html).toContain('aria-label="BSC: trading"');
-    expect(html).toContain('aria-label="BSC active Mimir key count"');
+    expect(html).toContain('aria-label="BSC active source evidence count"');
     expect(html).toContain('Active monitored controls: 1 key. Supporting source keys are listed in operational evidence.');
     expect(html).toContain('Operational evidence');
-    expect(html).toContain('3 keys');
+    expect(html).toContain('3 evidence items');
     expect(html).toContain('Scope');
+    expect(html).toContain('Source');
     expect(html).toContain('Impact');
     expect(html).toContain('HALTBSCTRADING');
     expect(html).toContain('aria-label="SOL: halted"');
     expect(html).toContain('HALTSOLCHAIN');
     expect(html).toContain('aria-label="ETH: LP deposits"');
-    expect(html).toContain('aria-label="ETH active Mimir key count"');
-    expect(html).toContain('Evidence: 1 key');
+    expect(html).toContain('aria-label="ETH active source evidence count"');
+    expect(html).toContain('Evidence: 1 evidence item');
     expect(html).toContain('PAUSELPDEPOSIT-ETH-ETH');
     expect(html).not.toContain('PAUSELPDEPOSIT-*');
+  });
+
+  it('labels inherited global controls on per-chain cards', () => {
+    const result: LiveDataResult<NetworkStatus> = {
+      ...liveResult,
+      data: {
+        ...baseStatus,
+        state: 'paused',
+        summary: 'Current-only live sources show one or more THORChain operations paused.',
+        tradingPaused: true,
+        signingPaused: false,
+        activeControlKeys: ['HALTTRADING'],
+        activeChainKeys: [],
+        activeEvidenceKeys: [],
+        activePauseKeys: ['HALTTRADING'],
+        chainStatuses: [
+          {
+            chain: 'BTC',
+            halted: false,
+            tradingPaused: true,
+            lpActionsPaused: false,
+            lpDepositPaused: false,
+            signingPaused: false,
+            activeMimirKeys: [],
+            lpDepositPauseKeys: [],
+            inheritedMimirKeys: ['HALTTRADING'],
+          },
+        ],
+      },
+    };
+    const html = renderToStaticMarkup(<NetworkStatusBanner result={result} />);
+
+    expect(html).toContain('aria-label="BTC: trading / global control"');
+    expect(html).toContain('Evidence: 1 evidence item');
+    expect(html).toContain('HALTTRADING');
   });
 
   it('renders scoped secured and WASM evidence instead of only counting aggregate controls', () => {
@@ -166,7 +202,7 @@ describe('NetworkStatusBanner', () => {
     const html = renderToStaticMarkup(<NetworkStatusBanner result={result} />);
 
     expect(html).toContain('aria-label="ETH: secured deposits"');
-    expect(html).toContain('2 keys');
+    expect(html).toContain('2 evidence items');
     expect(html).toContain('HaltSecuredDeposit-ETH');
     expect(html).toContain('Secured deposit halt');
     expect(html).toContain('HaltWasmContract-thor1contract');
@@ -218,6 +254,7 @@ describe('NetworkStatusBanner', () => {
     expect(html).toContain('Scheduled monitored controls: 1 key. These are not counted as paused at THORChain height 100.');
     expect(html).toContain('Scheduled monitored Mimir keys');
     expect(html).toContain('HALTTRADING');
+    expect(html).toMatch(/Scheduled control details[\s\S]*Trading[\s\S]*HALTTRADING[\s\S]*Scheduled for THORChain height 200\./);
     expect(html).toContain('Trading: scheduled');
     expect(html).toContain('aria-label="BTC: scheduled"');
     expect(html).not.toContain('Live sources show paused operations');
@@ -303,7 +340,27 @@ describe('NetworkStatusBanner', () => {
     expect(html).toContain('Signing: unparseable');
     expect(html).not.toContain('aria-label="BTC: open"');
     expect(html).not.toContain('aria-label="BTC active Mimir key count"');
+    expect(html).not.toContain('aria-label="BTC active source evidence count"');
     expect(html).not.toContain('Signing: inactive');
+  });
+
+  it('renders paused source warnings in the primary headline and source badge', () => {
+    const warning = 'THORNode latest block timestamp is 21 seconds old; live operation state may be stale.';
+    const result: LiveDataResult<NetworkStatus> = {
+      ...liveResult,
+      data: {
+        ...baseStatus,
+        state: 'paused',
+        summary: 'Current-only live sources show one or more THORChain operations paused, with source warnings to review.',
+        sourceWarnings: [warning],
+      },
+    };
+    const html = renderToStaticMarkup(<NetworkStatusBanner result={result} />);
+
+    expect(html).toContain('Live sources show paused operations with source warnings');
+    expect(html).toContain('Degraded');
+    expect(html).toContain(warning);
+    expect(html).not.toContain('Current-only</span>');
   });
 
   it('renders broader source warnings without calling them unparseable controls', () => {
@@ -379,5 +436,128 @@ describe('NetworkStatusBanner', () => {
     expect(html).toContain('Warning: 1 issue');
     expect(html).toContain(warning);
     expect(html).not.toContain('aria-label="BTC: open"');
+  });
+
+  it('renders ok results without data as unavailable rather than healthy', () => {
+    const result: LiveDataResult<NetworkStatus> = {
+      status: 'ok',
+      checkedAt: '2026-06-19T00:00:00.000Z',
+      source: {
+        label: 'THORNode',
+        url: 'https://thornode.thorchain.network',
+      },
+    };
+    const html = renderToStaticMarkup(<NetworkStatusBanner result={result} />);
+
+    expect(html).toContain('Network status unavailable');
+    expect(html).toContain('Current-only THORNode status is unavailable.');
+    expect(html).not.toContain('Live sources show no global halt flags');
+  });
+
+  it('renders unknown state as a warning state', () => {
+    const result: LiveDataResult<NetworkStatus> = {
+      ...liveResult,
+      data: {
+        ...baseStatus,
+        state: 'unknown',
+        summary: 'THORNode status could not be classified.',
+        signingPaused: false,
+        activeChainKeys: [],
+        activeEvidenceKeys: [],
+        activePauseKeys: [],
+        chainStatuses: [],
+      },
+    };
+    const html = renderToStaticMarkup(<NetworkStatusBanner result={result} />);
+
+    expect(html).toContain('Network status unknown');
+    expect(html).toContain('unknown');
+    expect(html).not.toContain('Live sources show no global halt flags');
+  });
+
+  it('renders inbound-address pause booleans as first-class evidence', () => {
+    const result: LiveDataResult<NetworkStatus> = {
+      ...liveResult,
+      data: {
+        ...baseStatus,
+        signingPaused: false,
+        activeChainKeys: [],
+        activeEvidenceKeys: [],
+        activePauseKeys: [],
+        chainStatuses: [
+          {
+            chain: 'BTC',
+            halted: true,
+            tradingPaused: false,
+            lpActionsPaused: false,
+            lpDepositPaused: false,
+            signingPaused: false,
+            activeMimirKeys: [],
+            lpDepositPauseKeys: [],
+            inboundAddressEvidenceFields: ['halted'],
+          },
+        ],
+      },
+    };
+    const html = renderToStaticMarkup(<NetworkStatusBanner result={result} />);
+
+    expect(html).toContain('aria-label="BTC: halted"');
+    expect(html).toContain('Operational evidence');
+    expect(html).toContain('THORNode inbound_addresses.halted');
+    expect(html).toContain('Evidence: 1 evidence item');
+  });
+
+  it('renders THORNode block freshness beside source metadata', () => {
+    const staleWarning = 'THORNode latest block timestamp is 21 seconds old; live operation state may be stale.';
+    const result: LiveDataResult<NetworkStatus> = {
+      ...liveResult,
+      data: {
+        ...baseStatus,
+        state: 'degraded',
+        summary: 'Current-only live sources do not show active halt flags, but source warnings need review.',
+        signingPaused: false,
+        thorchainHeight: 100,
+        thorchainSnapshotPinned: true,
+        thorchainBlockTime: '2026-06-19T00:00:00.000Z',
+        thorchainBlockAgeSeconds: 21,
+        activeChainKeys: [],
+        activeEvidenceKeys: [],
+        activePauseKeys: [],
+        sourceWarnings: [staleWarning],
+        chainStatuses: [],
+      },
+    };
+    const html = renderToStaticMarkup(<NetworkStatusBanner result={result} />);
+
+    expect(html).toContain('THORChain height 100');
+    expect(html).toContain('Block age 21 sec');
+    expect(html).toContain(staleWarning);
+  });
+
+  it('renders future THORNode block timestamps as source warnings', () => {
+    const warning = 'THORNode latest block timestamp is 21 seconds in the future; live operation state may be stale.';
+    const result: LiveDataResult<NetworkStatus> = {
+      ...liveResult,
+      data: {
+        ...baseStatus,
+        state: 'degraded',
+        summary: 'Current-only live sources do not show active halt flags, but source warnings need review.',
+        signingPaused: false,
+        thorchainHeight: 100,
+        thorchainBlockTime: '2026-06-19T00:00:21.000Z',
+        thorchainBlockAgeSeconds: -21,
+        activeChainKeys: [],
+        activeEvidenceKeys: [],
+        activePauseKeys: [],
+        sourceWarnings: [warning],
+        chainStatuses: [],
+      },
+    };
+    const html = renderToStaticMarkup(<NetworkStatusBanner result={result} />);
+
+    expect(html).toContain('Network status source degraded');
+    expect(html).toContain('Block age 21 sec in future');
+    expect(html).toContain(warning);
+    expect(html).not.toContain('Live sources show no global halt flags');
   });
 });
