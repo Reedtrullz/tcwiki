@@ -5,49 +5,161 @@ export const MDX_SEARCH_DOCUMENTS: SearchDoc[] = [
   {
     "id": "mdx:bifrost",
     "slug": "/deep-dives/bifrost",
+    "href": "/deep-dives/bifrost",
+    "type": "deep-dive",
     "title": "Bifrost Bridge and Cross-Chain Observability",
+    "description": "Bifrost Bridge and Cross Chain Observability Bifrost is the component responsible for making THORChain aware of activity on external blockchains.",
+    "confidence": "curated",
+    "reviewedAt": "2026-06-18",
+    "nextReviewDue": "2026-07-18",
+    "sources": [
+      {
+        "label": "THORChain Docs",
+        "url": "https://docs.thorchain.org"
+      }
+    ],
     "content": "Bifrost Bridge and Cross Chain Observability Bifrost is the component responsible for making THORChain aware of activity on external blockchains. What Bifrost Does Bifrost is a network of observers (the active THORChain nodes) that continuously monitor supported chains for relevant events: Inbound transactions (users sending assets into vaults) Outbound transaction confirmations Chain reorganizations and finality Every active node runs Bifrost observers for the chains it supports. How Observation Works 1. Nodes independently scan the mempool and blocks of external chains. 2. They report observed transactions to the rest of the network via the THORChain state machine. 3. A transaction is only considered final once a supermajority (typically 2/3) of nodes have reported the same observation. This multi observer model reduces reliance on any single node's report, while final safety still depends on the active validator set, chain finality, and current protocol controls. Why It Matters Without reliable cross chain observability, THORChain could not process inbound deposits or confirm outbound withdrawals with source backed confidence. Bifrost is the subsystem that lets the protocol coordinate cross chain activity rather than only internal pool accounting. The design has been stress tested through multiple chain upgrades, hard forks, and high volume periods. Continuous improvements to observation reliability and finality detection remain a core focus of the protocol."
   },
   {
     "id": "mdx:churning",
     "slug": "/deep-dives/churning",
+    "href": "/deep-dives/churning",
+    "type": "deep-dive",
     "title": "Churning and Node Lifecycle",
+    "description": "Churning and Node Lifecycle Churning is the mechanism that keeps the THORChain validator set fresh, secure, and decentralized over time.",
+    "confidence": "curated",
+    "reviewedAt": "2026-06-18",
+    "nextReviewDue": "2026-07-18",
+    "sources": [
+      {
+        "label": "THORChain Docs",
+        "url": "https://docs.thorchain.org"
+      }
+    ],
     "content": "Churning and Node Lifecycle Churning is the mechanism that keeps the THORChain validator set fresh, secure, and decentralized over time. What is Churning? At configured churn intervals, active nodes can rotate out and standby nodes can rotate in. Official node docs describe the cadence as roughly 43,200 blocks, or about 2.5 days, but the interval is governed by protocol constants and Mimir overrides, so the exact value remains current only data. During a churn event: A churned out node moves back to standby; its bond is not automatically returned. A new Asgard vault is created with fresh TSS keys. All active nodes begin observing and signing with the new vault. Why Churning Matters Security through rotation : Regular key rotation limits the window for key compromise accumulation. Economic incentives : Standby nodes are constantly competing to bond more RUNE to earn the right to churn in. This creates strong pressure for honest behavior. Fault tolerance : If a node becomes unresponsive or malicious, churn and slash point mechanics can remove it from the active set, subject to current protocol state. Node Lifecycle 1. Whitelisted → A node address has sent an initial BOND deposit and can continue setup. 2. Ready → Bonded, synced, and passing preflight checks for churn eligibility. 3. Standby → Bonded and waiting for churn selection, usually competing by bond and current readiness. 4. Active → Currently in the validator set (highest rewards, highest responsibility). 5. Churned to standby / leaving → Removed from active set; unbonding or leaving depends on the node's current state and follow up memos. Slash Points and Forced Churn Nodes accumulate slash points for missing observations or failing to sign. High slash counts can force a node out of the active set even before its natural churn time. The combination of churning and economic penalties is intended to reduce long lived validator and vault risk, but exact behavior should be checked against current protocol constants and Mimir state."
   },
   {
     "id": "mdx:clp",
     "slug": "/deep-dives/clp",
+    "href": "/deep-dives/clp",
+    "type": "deep-dive",
     "title": "Continuous Liquidity Pools (CLP) Deep Dive",
+    "description": "Continuous Liquidity Pools (CLP) Deep Dive The Continuous Liquidity Pool is the core innovation that allows THORChain to offer native cross chain swaps without order books or wr...",
+    "confidence": "curated",
+    "reviewedAt": "2026-06-18",
+    "nextReviewDue": "2026-07-18",
+    "sources": [
+      {
+        "label": "THORChain Docs",
+        "url": "https://docs.thorchain.org"
+      },
+      {
+        "label": "THORChain Dev Docs",
+        "url": "https://dev.thorchain.org"
+      }
+    ],
     "content": "Continuous Liquidity Pools (CLP) Deep Dive The Continuous Liquidity Pool is the core innovation that allows THORChain to offer native cross chain swaps without order books or wrapped assets. How CLP Works Every pool consists of RUNE paired with an external asset. THORChain docs describe slippage as the input size relative to pool depth, then use that slippage to derive the liquidity fee and final output: Where x is the input amount, X is the input side pool depth, and Y is the output side pool depth. The slip ratio is not itself the fee amount; the fee is denominated in the output asset. Key Properties Quoteable through pool depth : CLP pricing can produce a quote across available pool depth, but execution still depends on current halt state, quote limits, outbound fees, recommended minimums, and refund rules. Progressive slippage : Larger trades pay proportionally more, protecting LPs from manipulation. Historical single sided products : Savers previously offered single asset exposure, but official archived docs now mark Savers and Lending as deprecated. If a swap limit is not met, the amount is below the recommended minimum, fees exceed the practical output, or a relevant chain/trading/signing control is halted, the transaction can be refunded or remain unavailable. Treat swap availability as live/current only, not as a static property of the CLP formula. Comparison to Traditional AMMs Unlike constant product AMMs (Uniswap v2 style), CLP's continuous nature and RUNE as universal settlement asset creates unified liquidity across supported chains. Current chain availability should be checked from live inbound address and pool status, not from a hard coded chain count."
   },
   {
     "id": "mdx:incentive-pendulum",
     "slug": "/deep-dives/incentive-pendulum",
+    "href": "/deep-dives/incentive-pendulum",
+    "type": "deep-dive",
     "title": "The Incentive Pendulum",
+    "description": "The Incentive Pendulum The Incentive Pendulum is THORChain's reward balancing mechanism.",
+    "confidence": "curated",
+    "reviewedAt": "2026-06-18",
+    "nextReviewDue": "2026-07-18",
+    "sources": [
+      {
+        "label": "THORChain Docs",
+        "url": "https://docs.thorchain.org"
+      }
+    ],
     "content": "The Incentive Pendulum The Incentive Pendulum is THORChain's reward balancing mechanism. It adjusts reward distribution between node operators and liquidity providers based on the network's bond and liquidity posture. The Core Problem THORChain needs two things to function: 1. Security — Enough bonded RUNE to secure the network via node operators. 2. Liquidity — Enough pooled RUNE to enable deep, efficient cross chain swaps. If either side gets too low, the system becomes vulnerable or unusable. How the Pendulum Works The protocol continuously measures the ratio of bonded RUNE vs. pooled RUNE. When bonded RUNE is low (relative to pooled RUNE): More block rewards flow to node operators. This incentivizes more bonding, increasing security. When pooled RUNE is low (relative to bonded RUNE): More rewards flow to liquidity providers. This attracts capital into pools, increasing liquidity and swap efficiency. This creates a self correcting feedback loop — the \"pendulum\" swings toward whichever side the network needs most at any given time. Why It Matters Without this mechanism, maintaining healthy bonding and liquidity ratios would require more manual intervention. The Incentive Pendulum is designed to make reward allocation adaptive as market conditions change. Practical Effects During bull markets with high liquidity demand, LPs receive a larger share of rewards. During periods of low bonding, node operators are strongly incentivized to bond more RUNE. Historical reward allocation has moved with network conditions, but current reward split and APY values should be read from live sources. The Incentive Pendulum is best treated as an incentive alignment mechanism rather than a guarantee of network health or returns."
   },
   {
     "id": "mdx:rune-settlement",
     "slug": "/deep-dives/rune-settlement",
+    "href": "/deep-dives/rune-settlement",
+    "type": "deep-dive",
     "title": "RUNE as the Universal Settlement Asset",
-    "content": "RUNE as the Universal Settlement Asset RUNE is not just a governance or security token — it is the backbone that makes THORChain’s cross chain AMM possible. The Settlement Layer Every swap between two external assets on THORChain must route through RUNE: This design has profound implications: Every liquidity pool is paired against RUNE (BTC/RUNE, ETH/RUNE, etc.). RUNE provides deep, shared liquidity across all pools. Price discovery and slippage calculations are unified through a single asset. Why This Architecture? Traditional multi asset AMMs require every pair to have direct liquidity (BTC/ETH, BTC/USDT, etc.). This fragments liquidity and creates poor prices for exotic pairs. By forcing all trades through RUNE, THORChain achieves: Unified liquidity depth — capital in any RUNE pool helps every other pool. Simple pricing — only one price per asset needs to be tracked (asset/RUNE). Economic security — RUNE bonds and liquidity are tightly coupled. Practical Effects Large trades in one pool can affect pricing in seemingly unrelated pools because they all share the RUNE side. RUNE acts as a \"universal gas token\" for the liquidity layer. The Incentive Pendulum directly modulates how much RUNE flows into bonding vs. pooling. RUNE’s role as settlement asset is one of the most under appreciated but fundamental aspects of THORChain’s design. It is what allows the protocol to scale to many chains without liquidity fragmentation."
+    "description": "RUNE as the Universal Settlement Asset RUNE is not just a governance or security token — it is the backbone that makes THORChain’s cross chain AMM possible.",
+    "confidence": "curated",
+    "reviewedAt": "2026-06-18",
+    "nextReviewDue": "2026-07-18",
+    "sources": [
+      {
+        "label": "THORChain Docs",
+        "url": "https://docs.thorchain.org"
+      }
+    ],
+    "content": "RUNE as the Universal Settlement Asset RUNE is not just a governance or security token — it is the backbone that makes THORChain’s cross chain AMM possible. The Settlement Layer Every swap between two external assets on THORChain must route through RUNE: This design has profound implications: Every liquidity pool is paired against RUNE (BTC/RUNE, ETH/RUNE, etc.). RUNE provides deep, shared liquidity across all pools. Price discovery and slippage calculations are unified through a single asset. Why This Architecture? Traditional multi asset AMMs require every pair to have direct liquidity (BTC/ETH, BTC/USDT, etc.). This fragments liquidity and creates poor prices for exotic pairs. By forcing all trades through RUNE, THORChain achieves: Unified liquidity depth — capital in any RUNE pool helps every other pool. Simple pricing — only one price per asset needs to be tracked (asset/RUNE). Economic security — RUNE bonds and liquidity are tightly coupled. Practical Effects Large trades in one pool can affect pricing in seemingly unrelated pools because they all share the RUNE side. RUNE acts as the common settlement and intermediate asset for the liquidity layer. The Incentive Pendulum directly modulates how much RUNE flows into bonding vs. pooling. RUNE’s role as settlement asset is one of the most under appreciated but fundamental aspects of THORChain’s design. It is what allows the protocol to scale to many chains without liquidity fragmentation."
   },
   {
     "id": "mdx:savers",
     "slug": "/deep-dives/savers",
+    "href": "/deep-dives/savers",
+    "type": "deep-dive",
     "title": "Savers and Lending (Historical)",
+    "description": "Savers and Lending (Historical) Savers and Lending were THORFi era features.",
+    "confidence": "historical",
+    "reviewedAt": "2026-06-18",
+    "nextReviewDue": "2026-07-18",
+    "sources": [
+      {
+        "label": "Archived Savers and Lending docs",
+        "url": "https://docs.thorchain.org/thornodes/archived"
+      },
+      {
+        "label": "THORChain Docs",
+        "url": "https://docs.thorchain.org"
+      }
+    ],
     "content": "Savers and Lending (Historical) Savers and Lending were THORFi era features. They are useful for understanding the protocol's history, but they should not be presented as current products or deposit instructions. Official archived THORChain docs state that Savers and Lending are deprecated and no longer available. Current TCY claiming, staking, and recovery state should be checked from live protocol sources and dated announcements. What Savers Were Savers offered single sided exposure through synthetic accounting. A user could deposit an external asset without pairing it with RUNE, and the protocol accounted for yield differently than a full liquidity provider position. That historical design was meant to lower the barrier to passive exposure, but it also introduced protocol liability and solvency questions that became central to the THORFi unwind. What Lending Was Lending allowed users to borrow against collateral through THORFi mechanics. Like Savers, it is now archived historical content, not a current borrowing path. When describing Lending, keep the distinction clear: Topic Historical Lending Current Wiki Wording Availability Deprecated Do not describe as available Risk Protocol liability and solvency risk Use dated, source backed phrasing User action Previously borrow/repay mechanics Do not provide current instructions TCY Aftermath TCY is the recovery token framing that followed the THORFi unwind. The wiki should explain TCY as recovery context, not as a guaranteed recovery outcome or investment recommendation. Use current only language for: TCY claiming state TCY staking state recovery votes or ADR status live Mimir pause flags any claim or redemption value Source Posture The stable rule for this page is conservative: Historical mechanics can be explained in past tense. Current availability must come from official docs or live THORNode state. Unknown live state must be labeled unavailable or needs review, not assumed active."
   },
   {
     "id": "mdx:slashing",
     "slug": "/deep-dives/slashing",
+    "href": "/deep-dives/slashing",
+    "type": "deep-dive",
     "title": "Slashing and Economic Security",
+    "description": "Slashing and Economic Security Slashing is the primary economic defense mechanism that aligns node operator incentives with the security of the network.",
+    "confidence": "curated",
+    "reviewedAt": "2026-06-18",
+    "nextReviewDue": "2026-07-18",
+    "sources": [
+      {
+        "label": "THORChain Docs",
+        "url": "https://docs.thorchain.org"
+      },
+      {
+        "label": "THORChain Dev Docs",
+        "url": "https://dev.thorchain.org"
+      }
+    ],
     "content": "Slashing and Economic Security Slashing is the primary economic defense mechanism that aligns node operator incentives with the security of the network. What is Slashing? THORChain uses two related penalty ideas that should not be collapsed together: Slash points reduce earned rewards for reliability failures such as missed observations, missed signing participation, or keygen failures. Bond slashing burns bonded RUNE for security critical behavior such as unauthorized outflows or theft. Bonded RUNE is the \"skin in the game\" that makes attacks economically irrational, but not every operator fault directly confiscates bond. Types of Slashing Events Reward slash points : Missed observations, missed signing participation, failed keygen, or other reliability failures that reduce rewards. Bond slashing : Unauthorized outbound transactions, theft, or other security critical vault behavior. Consensus faults : Double signing or equivocation can put bond at risk according to current protocol rules. Slash Rate Slash constants and minimum bond values can be overridden by live Mimir parameters. The wiki should describe the economic purpose of slashing, then point to THORNode constants and Mimir for current values rather than freezing a rate in prose. Churn and Unbonding Nodes that accumulate too many slash points can be forced out of the active set during churn. Unbonding and leaving are state dependent: active nodes must churn out first, standby nodes can unbond, and operators should verify node state before assuming bond is withdrawable. Why This Matters Without strong slashing, a rational actor could attempt to steal funds or disrupt the network if the expected value of the attack exceeded the bond at risk. Bond ranges, minimum bond, and slash multipliers are live/current only parameters and should be checked before being quoted. The system has been tested through multiple real world incidents and has continued to evolve its monitoring and response mechanisms."
   },
   {
     "id": "mdx:tss",
     "slug": "/deep-dives/tss",
+    "href": "/deep-dives/tss",
+    "type": "deep-dive",
     "title": "Threshold Signatures (TSS) in THORChain",
+    "description": "Threshold Signatures (TSS) in THORChain Threshold Signature Schemes are the cryptographic foundation that allows THORChain to custody assets across many chains without ever expo...",
+    "confidence": "curated",
+    "reviewedAt": "2026-06-18",
+    "nextReviewDue": "2026-07-18",
+    "sources": [
+      {
+        "label": "THORChain Docs",
+        "url": "https://docs.thorchain.org"
+      },
+      {
+        "label": "THORChain Exploit Report #1",
+        "url": "https://blog.thorchain.org/thorchain-exploit-report-1"
+      }
+    ],
     "content": "Threshold Signatures (TSS) in THORChain Threshold Signature Schemes are the cryptographic foundation that allows THORChain to custody assets across many chains without ever exposing a single private key. The Problem with Traditional Multisig Traditional multisignature schemes (like Bitcoin's 2 of 3) have significant limitations when used for cross chain protocols: Each chain has different multisig capabilities Keys must be generated per chain No unified security model across assets How TSS Solves This THORChain has used GG20 threshold signature schemes, with later cryptographic migration work discussed in official incident reporting. Details should stay tied to dated sources because the implementation and recovery path can change. Distributed key generation : No single node ever holds the full private key Threshold signing : A configurable threshold (typically 2/3) of nodes must cooperate to produce a valid signature Chain agnostic : The same TSS keys can be used to generate addresses on many different blockchains Security Properties No intended single point of failure : Correctly implemented threshold signing avoids one node holding a complete private key, but safety depends on the current cryptographic implementation and active incident status. Proactive security : Keys are regularly rotated during churn events. Accountability : Misbehaving nodes can be identified and penalized through reward slash points or bond slashing, depending on the fault. Real World Impact The May 15, 2026 official exploit report says a newly churned node operator exploited a GG20 TSS vulnerability and drained one vault before automated solvency detection and manual Mimir halts contained further activity. That report should be treated as dated incident evidence, not a timeless statement of current safety. TSS is what makes true native cross chain liquidity possible without bridges or wrapped tokens."
   }
 ];

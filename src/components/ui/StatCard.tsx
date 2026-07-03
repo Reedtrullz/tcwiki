@@ -18,7 +18,7 @@ export function StatCard({ icon, label, value, unit, className }: StatCardProps)
       </div>
       <p className="text-2xl font-bold tracking-tight">
         {value}
-        {unit && <span className="text-sm font-normal text-slate-500 ml-1">{unit}</span>}
+        {unit && <span className="text-sm font-normal text-slate-400 ml-1">{unit}</span>}
       </p>
     </Card>
   );

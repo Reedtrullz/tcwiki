@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
+import { connection } from "next/server";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import "./globals.css";
@@ -16,12 +17,20 @@ export const metadata: Metadata = {
     description: "Community-maintained encyclopedia of THORChain with current-only live network status and sourced protocol content.",
     type: "website",
     url: "https://wiki.thorchain.no",
+    images: [
+      {
+        url: "/opengraph-image",
+        width: 1200,
+        height: 630,
+        alt: "THORChain Wiki source-backed protocol encyclopedia",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "THORChain Wiki - Protocol Encyclopedia & Source-Backed Data",
     description: "Sourced protocol context for THORChain, RUNE, TCY, Midgard, THORNode, Mimir, and native cross-chain swaps.",
-    site: "@thorchain_org",
+    images: ["/twitter-image"],
   },
   robots: "index, follow",
   metadataBase: new URL("https://wiki.thorchain.no"),
@@ -30,34 +39,23 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  await connection();
+
   return (
     <html lang="en" className={`${inter.variable} ${mono.variable} dark`}>
       <head>
         <meta name="theme-color" content="#00D4AA" />
-        <link rel="alternate" hrefLang="en" href="https://wiki.thorchain.no" />
-        <link rel="alternate" hrefLang="x-default" href="https://wiki.thorchain.no" />
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "WebSite",
-              "name": "THORChain Wiki",
-              "description": "Community-maintained encyclopedia of THORChain with source-backed protocol context and current-only live network status.",
-              "url": "https://wiki.thorchain.no",
-              "potentialAction": {
-                "@type": "SearchAction",
-                "target": "https://wiki.thorchain.no/search?q={search_term_string}",
-                "query-input": "required name=search_term_string",
-              },
-            }),
-          }}
-        />
       </head>
       <body className="font-sans antialiased min-h-screen flex flex-col">
+        <a
+          href="#main"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:rounded-md focus:border focus:border-accent/40 focus:bg-surface-elevated focus:px-3 focus:py-2 focus:text-sm focus:text-slate-100"
+        >
+          Skip to content
+        </a>
         <Header />
-        <main className="flex-1">{children}</main>
+        <main id="main" className="flex-1" tabIndex={-1}>{children}</main>
         <Footer />
       </body>
     </html>

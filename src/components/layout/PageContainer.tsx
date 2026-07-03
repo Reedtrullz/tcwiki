@@ -14,7 +14,7 @@ export function PageContainer({ children, className, maxWidth = 'default' }: Pag
   };
 
   return (
-    <div className={cn(`pt-[52px] py-16 px-6 ${widths[maxWidth]} mx-auto`, className)}>
+    <div className={cn(`pt-[52px] pb-16 px-6 ${widths[maxWidth]} mx-auto`, className)}>
       {children}
     </div>
   );

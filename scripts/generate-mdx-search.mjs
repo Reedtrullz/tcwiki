@@ -1,11 +1,20 @@
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createJiti } from 'jiti';
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const contentDir = join(root, 'content/deep-dives');
 const outputPath = join(root, 'src/lib/search/mdx-documents.generated.ts');
 const checkOnly = process.argv.includes('--check');
+const jiti = createJiti(import.meta.url, {
+  alias: {
+    '@': join(root, 'src'),
+  },
+  moduleCache: false,
+});
+const { CONTENT_ENTRIES } = await jiti.import(join(root, 'src/lib/content/registry.ts'));
+const registryByHref = new Map(CONTENT_ENTRIES.map((entry) => [entry.href, entry]));
 
 function toTitle(source, slug) {
   const heading = source.match(/^#\s+(.+)$/m)?.[1]?.trim();
@@ -32,17 +41,39 @@ function toPlainText(source) {
     .trim();
 }
 
+function toDescription(content) {
+  const [sentence] = content.split(/(?<=[.!?])\s+/);
+  return sentence && sentence.length <= 180
+    ? sentence
+    : `${content.slice(0, 177).trim()}...`;
+}
+
+const mdxSource = {
+  label: 'THORChain Wiki deep-dive source',
+  url: 'https://github.com/Reedtrullz/tcwiki/tree/main/content/deep-dives',
+};
+
 const documents = readdirSync(contentDir)
   .filter((file) => file.endsWith('.mdx'))
   .sort()
   .map((file) => {
     const slug = file.replace(/\.mdx$/, '');
+    const slugPath = `/deep-dives/${slug}`;
     const source = readFileSync(join(contentDir, file), 'utf8');
+    const content = toPlainText(source);
+    const registryEntry = registryByHref.get(slugPath);
     return {
       id: `mdx:${slug}`,
-      slug: `/deep-dives/${slug}`,
+      slug: slugPath,
+      href: slugPath,
+      type: 'deep-dive',
       title: toTitle(source, slug),
-      content: toPlainText(source),
+      description: toDescription(content),
+      confidence: registryEntry?.confidence ?? 'curated',
+      reviewedAt: registryEntry?.reviewedAt ?? '2026-07-02',
+      nextReviewDue: registryEntry?.nextReviewDue ?? '2026-08-02',
+      sources: registryEntry?.sources ?? [mdxSource],
+      content,
     };
   });
 

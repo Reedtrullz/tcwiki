@@ -8,7 +8,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
+    "start": "node scripts/start-standalone.mjs",
+    "start:next": "next start",
     "start:standalone": "node scripts/start-standalone.mjs",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
@@ -17,8 +18,11 @@
     "test:e2e": "playwright test",
     "generate:search": "node scripts/generate-mdx-search.mjs",
     "check:content": "node scripts/generate-mdx-search.mjs --check && node scripts/check-curated-data.mjs",
+    "check:live-snapshot": "node scripts/check-live-chain-snapshot.mjs",
     "smoke:standalone": "node scripts/smoke-standalone.mjs",
-    "audit:prod": "npm audit --omit=dev --audit-level=moderate"
+    "audit:prod": "npm audit --omit=dev --audit-level=moderate",
+    "audit:all": "npm audit --audit-level=moderate",
+    "check:runtime-url": "node scripts/check-runtime-url.mjs"
   },
   "dependencies": {
     "@mdx-js/loader": "^3.1.1",
@@ -48,6 +52,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "^16.2.9",
+    "jiti": "^2.7.0",
     "tailwindcss": "^4.3.2",
     "typescript": "^6.0.3",
     "vitest": "^4.1.9"

@@ -1,16 +1,15 @@
 # syntax=docker/dockerfile:1.7
-FROM node:22.22.3-slim@sha256:e21fc383b50d5347dc7a9f1cae45b8f4e2f0d39f7ade28e4eef7d2934522b752 AS deps
+FROM node:22.22.3-alpine@sha256:e58326d0d441090181ac150dc2078d3e2cf6a0d42e809aebba3ef5880935ffdd AS base
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    ca-certificates \
- && rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache ca-certificates
+
+FROM base AS deps
 
 COPY package.json package-lock.json ./
 RUN npm ci --include=optional
 
-FROM node:22.22.3-slim@sha256:e21fc383b50d5347dc7a9f1cae45b8f4e2f0d39f7ade28e4eef7d2934522b752 AS builder
-WORKDIR /app
+FROM base AS builder
 
 ARG VERSION=unknown
 ARG COMMIT_SHA=unknown
@@ -23,8 +22,7 @@ COPY . .
 
 RUN npm run build
 
-FROM node:22.22.3-slim@sha256:e21fc383b50d5347dc7a9f1cae45b8f4e2f0d39f7ade28e4eef7d2934522b752 AS runner
-WORKDIR /app
+FROM base AS runner
 
 ARG VERSION=unknown
 ARG COMMIT_SHA=unknown

@@ -3,6 +3,7 @@
   gather_facts: false
   vars:
     container_name: "tcwiki"
+    candidate_container_name: "tcwiki-candidate"
     image_ref: "{{ lookup('env', 'IMAGE_REF') }}"
     app_version: "{{ lookup('env', 'APP_VERSION') }}"
 
@@ -71,9 +72,103 @@
             source: pull
             force_source: yes
 
+        - name: Mark live container as not yet replaced
+          set_fact:
+            deployment_replaced: false
+
+        - name: Remove stale candidate container
+          community.docker.docker_container:
+            name: "{{ candidate_container_name }}"
+            state: absent
+          failed_when: false
+
+        - name: Start candidate container
+          community.docker.docker_container:
+            name: "{{ candidate_container_name }}"
+            image: "{{ image_ref }}"
+            state: started
+            restart_policy: "no"
+            ports:
+              - "127.0.0.1:3004:3000"
+            log_driver: "json-file"
+            log_options:
+              max-size: "10m"
+              max-file: "1"
+            healthcheck:
+              test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:3000/api/health', r => process.exit(r.statusCode === 200 ? 0 : 1))\""]
+              interval: 30s
+              timeout: 10s
+              retries: 3
+              start_period: 40s
+            env:
+              NODE_ENV: production
+              PORT: "3000"
+              HOSTNAME: "0.0.0.0"
+              APP_VERSION: "{{ app_version }}"
+              VERSION: "{{ app_version }}"
+              COMMIT_SHA: "{{ app_version }}"
+              IMAGE_REF: "{{ image_ref }}"
+
+        - name: Wait for candidate health
+          uri:
+            url: "http://localhost:3004/api/health"
+            return_content: yes
+            timeout: 5
+          register: candidate_health_check
+          until: candidate_health_check is succeeded and candidate_health_check.json.status == "healthy"
+          retries: 10
+          delay: 5
+
+        - name: Verify candidate version
+          uri:
+            url: "http://localhost:3004/api/version"
+            return_content: yes
+            timeout: 5
+          register: candidate_version_check
+          until: >-
+            candidate_version_check is succeeded
+            and candidate_version_check.json.version == app_version
+            and candidate_version_check.json.commit == app_version
+            and candidate_version_check.json.image == image_ref
+          retries: 6
+          delay: 5
+
+        - name: Verify candidate readiness shape
+          uri:
+            url: "http://localhost:3004/api/ready"
+            return_content: yes
+            timeout: 10
+          register: candidate_ready_check
+          until: >-
+            candidate_ready_check is succeeded
+            and candidate_ready_check.status in [200, 503]
+            and candidate_ready_check.json.status in ["ready", "degraded"]
+            and candidate_ready_check.json.ready in [true, false]
+            and candidate_ready_check.json.version == app_version
+            and candidate_ready_check.json.commit == app_version
+            and candidate_ready_check.json.image == image_ref
+            and candidate_ready_check.json.sources.midgard is defined
+            and candidate_ready_check.json.sources.thornode is defined
+          retries: 6
+          delay: 10
+
+        - name: Report degraded candidate readiness without blocking deploy
+          debug:
+            msg: "Candidate readiness degraded; app/version/image proof passed. Reasons: {{ candidate_ready_check.json.reasons | default([]) }}"
+          when: candidate_ready_check.json.ready != true
+
         - name: Stop and remove existing container
           community.docker.docker_container:
             name: "{{ container_name }}"
+            state: absent
+
+        - name: Mark live container as replaced
+          set_fact:
+            deployment_replaced: true
+
+        - name: Stop and remove candidate before live start
+          community.docker.docker_container:
+            name: "{{ candidate_container_name }}"
             state: absent
 
         - name: Start new container
@@ -127,9 +222,40 @@
           assert:
             that:
               - version_check.json.image == image_ref
+              - version_check.json.commit == app_version
             fail_msg: "Version endpoint returned image {{ version_check.json.image | default('missing') }}, expected {{ image_ref }}."
 
+        - name: Verify deployed readiness
+          uri:
+            url: "http://localhost:3003/api/ready"
+            return_content: yes
+            timeout: 10
+          register: ready_check
+          until: >-
+            ready_check is succeeded
+            and ready_check.status in [200, 503]
+            and ready_check.json.status in ["ready", "degraded"]
+            and ready_check.json.ready in [true, false]
+            and ready_check.json.version == app_version
+            and ready_check.json.commit == app_version
+            and ready_check.json.image == image_ref
+            and ready_check.json.sources.midgard is defined
+            and ready_check.json.sources.thornode is defined
+          retries: 6
+          delay: 10
+
+        - name: Report degraded readiness without rolling back
+          debug:
+            msg: "Readiness degraded after deploy; app/version/image proof passed. Reasons: {{ ready_check.json.reasons | default([]) }}"
+          when: ready_check.json.ready != true
+
       rescue:
+        - name: Remove candidate container after failed deploy attempt
+          community.docker.docker_container:
+            name: "{{ candidate_container_name }}"
+            state: absent
+          failed_when: false
+
         - name: Roll back to previous image when available
           community.docker.docker_container:
             name: "{{ container_name }}"
@@ -156,7 +282,7 @@
               VERSION: "{{ previous_version }}"
               COMMIT_SHA: "{{ previous_commit_sha }}"
               IMAGE_REF: "{{ previous_image_ref }}"
-          when: previous_image != "none"
+          when: previous_image != "none" and deployment_replaced | default(false)
 
         - name: Verify rollback health when previous image exists
           uri:
@@ -167,7 +293,7 @@
           until: rollback_health is succeeded and rollback_health.json.status == "healthy"
           retries: 10
           delay: 5
-          when: previous_image != "none"
+          when: previous_image != "none" and deployment_replaced | default(false)
 
         - name: Verify rollback version when previous image exists
           uri:
@@ -182,13 +308,13 @@
             and rollback_version.json.image == previous_image_ref
           retries: 6
           delay: 5
-          when: previous_image != "none"
+          when: previous_image != "none" and deployment_replaced | default(false)
 
         - name: Inspect rollback container when previous image exists
           community.docker.docker_container_info:
             name: "{{ container_name }}"
           register: rollback_container_info
-          when: previous_image != "none"
+          when: previous_image != "none" and deployment_replaced | default(false)
 
         - name: Assert rollback image and runtime metadata when previous image exists
           assert:
@@ -199,7 +325,7 @@
               - "('COMMIT_SHA=' ~ previous_commit_sha) in rollback_container_info.container.Config.Env"
               - "('IMAGE_REF=' ~ previous_image_ref) in rollback_container_info.container.Config.Env"
             fail_msg: "Rollback container did not restore image/version/runtime metadata for {{ previous_image }}."
-          when: previous_image != "none"
+          when: previous_image != "none" and deployment_replaced | default(false)
 
         - name: Fail deployment after rollback attempt
           fail:

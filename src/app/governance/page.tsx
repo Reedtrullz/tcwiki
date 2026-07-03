@@ -9,8 +9,54 @@ import { SectionHeader } from '@/components/ui/SectionHeader';
 import { Card } from '@/components/ui/Card';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { FreshnessMeta } from '@/components/ui/FreshnessMeta';
+import { createRouteMetadata } from '@/lib/metadata';
+import { recordAnchor } from '@/lib/utils';
+
+export const metadata = createRouteMetadata({
+  title: 'THORChain Governance And History | THORChain Wiki',
+  description: 'Source-backed THORChain governance records, Mimir context, milestones, incident history, recovery tracker, and research.',
+  path: '/governance',
+});
+
+function incidentTrackerBadge(status: 'current' | 'needs-review') {
+  return status === 'needs-review'
+    ? { label: 'Needs current review', variant: 'danger' as const }
+    : { label: 'Explicit current tracker', variant: 'warning' as const };
+}
 
 export default function GovernancePage() {
+  const currentIncidentRecords = SECURITY_INCIDENT_RECORDS
+    .flatMap((record) => {
+      const trackerStatus = record.data.trackerStatus;
+      if (trackerStatus !== 'current' && trackerStatus !== 'needs-review') {
+        return [];
+      }
+      return [{
+        id: `incident:${record.data.id}`,
+        title: record.data.title,
+        description: record.data.description,
+        impact: record.data.impact,
+        badge: incidentTrackerBadge(trackerStatus),
+        freshness: record.freshness,
+        sources: record.sources,
+      }];
+    });
+  const currentGovernanceRecoveryRecords = GOVERNANCE_PROPOSAL_RECORDS
+    .filter((record) => (
+      record.data.type.toLowerCase().includes('recovery') &&
+      record.data.status.toLowerCase().includes('needs')
+    ))
+    .map((record) => ({
+      id: `governance:${record.data.id}`,
+      title: record.data.title,
+      description: record.data.description,
+      impact: record.data.status,
+      badge: { label: 'Needs current review', variant: 'danger' as const },
+      freshness: record.freshness,
+      sources: record.sources,
+    }));
+  const currentRecoveryRecords = [...currentIncidentRecords, ...currentGovernanceRecoveryRecords];
+
   return (
     <PageContainer>
       <h1 className="text-3xl font-bold tracking-tight mb-2">Governance & History</h1>
@@ -18,25 +64,47 @@ export default function GovernancePage() {
         ADRs, Mimir context, milestones, incidents, and research. Vote percentages are shown only when source-backed.
       </p>
 
+      <section id="current-recovery" className="scroll-mt-24 mb-12">
+        <SectionHeader>Current Incident & Recovery Tracker</SectionHeader>
+        <p className="mb-4 max-w-3xl text-sm text-slate-400">
+          Conservative tracker for records explicitly tagged as current or needing current recovery review. Historical unresolved records remain in the incident archive below unless they are re-verified for current tracking.
+        </p>
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          {currentRecoveryRecords.map((record) => (
+              <Card key={`current:${record.id}`} className="border-amber-500/20 bg-amber-500/5">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <h3 className="text-sm font-semibold">{record.title}</h3>
+                    <Badge variant={record.badge.variant}>{record.badge.label}</Badge>
+                  </div>
+                <p className="mt-2 text-xs leading-relaxed text-slate-400">{record.description}</p>
+                <p className="mt-2 text-xs text-amber-300">{record.impact}</p>
+                <div className="mt-3">
+                  <FreshnessMeta freshness={record.freshness} sources={record.sources} compact />
+                </div>
+              </Card>
+          ))}
+        </div>
+      </section>
+
       <SectionHeader>Governance Records</SectionHeader>
       <div className="space-y-2 mb-12">
         {GOVERNANCE_PROPOSAL_RECORDS.map((record) => {
           const proposal = record.data;
           return (
-            <Card key={proposal.id}>
+            <Card key={proposal.id} id={recordAnchor('governance', proposal.id)} className="scroll-mt-24">
               <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2 mb-1">
                     <span className="text-[11px] font-mono text-accent">{proposal.id}</span>
                     <h3 className="text-sm font-semibold">{proposal.title}</h3>
                   </div>
-                  <p className="text-xs text-slate-500">{proposal.description}</p>
+                  <p className="text-xs text-slate-400">{proposal.description}</p>
                 </div>
                 <Badge variant={proposal.status === 'Live' ? 'success' : proposal.status.includes('Needs') ? 'warning' : 'info'} className="shrink-0">
                   {proposal.status}
                 </Badge>
               </div>
-              <div className="mt-3 flex flex-wrap gap-3 text-[11px] text-slate-600">
+              <div className="mt-3 flex flex-wrap gap-3 text-[11px] text-slate-400">
                 <span>{proposal.type}</span>
                 <span>Created: {proposal.createdDate}</span>
                 <span>Review: {proposal.expiryDate}</span>
@@ -57,11 +125,15 @@ export default function GovernancePage() {
           <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">Milestones</h2>
           <div className="space-y-0">
             {PROTOCOL_MILESTONE_RECORDS.map((record) => (
-              <div key={`${record.data.date}-${record.data.title}`} className="flex gap-3 py-2.5 border-b border-border last:border-0">
-                <span className="text-[11px] text-slate-600 font-mono shrink-0 w-20">{record.data.date}</span>
+              <div
+                key={`${record.data.date}-${record.data.title}`}
+                id={recordAnchor('milestone', `${record.data.date}-${record.data.title}`)}
+                className="scroll-mt-24 flex gap-3 py-2.5 border-b border-border last:border-0"
+              >
+                <span className="text-[11px] text-slate-400 font-mono shrink-0 w-20">{record.data.date}</span>
                 <div>
                   <p className="text-sm font-medium">{record.data.title}</p>
-                  <p className="text-xs text-slate-500">{record.data.description}</p>
+                  <p className="text-xs text-slate-400">{record.data.description}</p>
                   <FreshnessMeta freshness={record.freshness} sources={record.sources} compact />
                 </div>
               </div>
@@ -75,12 +147,12 @@ export default function GovernancePage() {
             {SECURITY_INCIDENT_RECORDS.map((record) => {
               const incident = record.data;
               return (
-                <Card key={incident.id}>
+                <Card key={incident.id} id={recordAnchor('incident', incident.id)} className="scroll-mt-24">
                   <div className="flex items-center justify-between gap-3 mb-1">
                     <h3 className="text-sm font-semibold">{incident.title}</h3>
                     <Badge variant={incident.resolved ? 'success' : 'warning'}>{incident.resolved ? 'Resolved' : 'Open / needs review'}</Badge>
                   </div>
-                  <p className="text-xs text-slate-500 mb-1">
+                  <p className="text-xs text-slate-400 mb-1">
                     {incident.description} <span className="text-amber-300">{incident.impact}</span>
                   </p>
                   <div className="flex flex-wrap gap-1 mt-2 mb-3">
@@ -95,7 +167,7 @@ export default function GovernancePage() {
                         href={incident.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex text-[11px] text-slate-500 underline-offset-4 hover:text-slate-300 hover:underline"
+                        className="inline-flex text-[11px] text-slate-400 underline-offset-4 hover:text-slate-300 hover:underline"
                       >
                         Incident source
                       </a>
@@ -113,10 +185,10 @@ export default function GovernancePage() {
         {RESEARCH_REPORT_RECORDS.map((record) => {
           const report = record.data;
           return (
-            <Card key={report.id} hover>
-              <p className="text-[11px] text-slate-500 mb-1">{report.date} · {report.source} · {report.author}</p>
+            <Card key={report.id} id={recordAnchor('research', report.id)} hover className="scroll-mt-24">
+              <p className="text-[11px] text-slate-400 mb-1">{report.date} · {report.source} · {report.author}</p>
               <h3 className="text-sm font-semibold mb-2">{report.title}</h3>
-              <p className="text-xs text-slate-500 leading-relaxed">{report.summary}</p>
+              <p className="text-xs text-slate-400 leading-relaxed">{report.summary}</p>
               <div className="mt-3">
                 <FreshnessMeta freshness={record.freshness} sources={record.sources} compact />
               </div>
@@ -124,7 +196,7 @@ export default function GovernancePage() {
                 href={report.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-3 inline-flex text-[11px] text-slate-500 underline-offset-4 hover:text-slate-300 hover:underline"
+                className="mt-3 inline-flex text-[11px] text-slate-400 underline-offset-4 hover:text-slate-300 hover:underline"
               >
                 Research source
               </a>

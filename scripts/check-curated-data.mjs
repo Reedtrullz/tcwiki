@@ -1,29 +1,56 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createJiti } from 'jiti';
 import ts from 'typescript';
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
+const jiti = createJiti(import.meta.url, {
+  alias: {
+    '@': join(root, 'src'),
+  },
+  moduleCache: false,
+});
+const { SEARCH_DOCUMENTS: actualSearchDocuments } = await jiti.import(join(root, 'src/lib/search/registry.ts'));
+const { DEEP_DIVE_TOC: actualDeepDiveToc } = await jiti.import(join(root, 'src/lib/content/registry.ts'));
 const staticPath = join(root, 'src/lib/data/static.ts');
 const typesPath = join(root, 'src/lib/types.ts');
 const registryPath = join(root, 'src/lib/content/registry.ts');
+const glossaryPath = join(root, 'src/lib/content/glossary.ts');
+const searchRegistryPath = join(root, 'src/lib/search/registry.ts');
+const generatedSearchPath = join(root, 'src/lib/search/mdx-documents.generated.ts');
+const ecosystemFilterPath = join(root, 'src/components/features/EcosystemFilterList.tsx');
 const appDir = join(root, 'src/app');
 const deepDiveContentDir = join(root, 'content/deep-dives');
 const staticSource = readFileSync(staticPath, 'utf8');
 const typesSource = readFileSync(typesPath, 'utf8');
 const registrySource = readFileSync(registryPath, 'utf8');
+const glossarySource = readFileSync(glossaryPath, 'utf8');
+const searchRegistrySource = readFileSync(searchRegistryPath, 'utf8');
+const generatedSearchSource = readFileSync(generatedSearchPath, 'utf8');
 const staticFile = ts.createSourceFile(staticPath, staticSource, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
 const typesFile = ts.createSourceFile(typesPath, typesSource, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
 const registryFile = ts.createSourceFile(registryPath, registrySource, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+const glossaryFile = ts.createSourceFile(glossaryPath, glossarySource, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+const searchRegistryFile = ts.createSourceFile(searchRegistryPath, searchRegistrySource, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+const generatedSearchFile = ts.createSourceFile(generatedSearchPath, generatedSearchSource, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
 
 const failures = [];
 const contentCategories = new Set(['section', 'deep-dive', 'resource']);
 const expectedChains = ['BTC', 'ETH', 'BSC', 'AVAX', 'GAIA', 'DOGE', 'LTC', 'BCH', 'TRON', 'BASE', 'SOL', 'XRP'];
 const forbiddenChainCodes = new Set(['TRX', 'ARB', 'MATIC', 'OP']);
 const liveInboundUrl = 'https://thornode.thorchain.network/thorchain/inbound_addresses';
+const contentCheckToday = process.env.CONTENT_CHECK_TODAY ?? new Date().toISOString().slice(0, 10);
+const allowOverdueContent = process.env.ALLOW_OVERDUE_CONTENT === '1';
 
 function fail(path, message) {
   failures.push(`${path}: ${message}`);
+}
+
+function validateReviewDueDate(value, path) {
+  if (!allowOverdueContent && isIsoDate(value) && value < contentCheckToday) {
+    fail(path, `is overdue as of ${contentCheckToday}; refresh the content or set ALLOW_OVERDUE_CONTENT=1 with release evidence`);
+  }
 }
 
 function declarationName(declaration) {
@@ -49,6 +76,21 @@ function collectConstDeclarations(sourceFile) {
 const staticDeclarations = collectConstDeclarations(staticFile);
 const typeDeclarations = collectConstDeclarations(typesFile);
 const registryDeclarations = collectConstDeclarations(registryFile);
+const glossaryDeclarations = collectConstDeclarations(glossaryFile);
+const searchRegistryDeclarations = collectConstDeclarations(searchRegistryFile);
+const generatedSearchDeclarations = collectConstDeclarations(generatedSearchFile);
+
+function slugifyFragment(value) {
+  return value
+    .toLowerCase()
+    .replace(/&/g, ' and ')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+function recordAnchor(prefix, id) {
+  return slugifyFragment(`${prefix}-${id}`);
+}
 
 function evaluate(expression, scope, path) {
   if (ts.isStringLiteral(expression) || ts.isNoSubstitutionTemplateLiteral(expression)) {
@@ -91,8 +133,36 @@ function evaluate(expression, scope, path) {
     }
     return value;
   }
+  if (
+    ts.isCallExpression(expression) &&
+    ts.isPropertyAccessExpression(expression.expression) &&
+    expression.expression.name.text === 'join' &&
+    expression.arguments.length <= 1
+  ) {
+    const value = evaluate(expression.expression.expression, scope, `${path}.join`);
+    if (!Array.isArray(value)) {
+      throw new Error(`${path}: join target must be an array`);
+    }
+    const separator = expression.arguments[0] ? evaluate(expression.arguments[0], scope, `${path}.join.separator`) : ',';
+    if (typeof separator !== 'string') {
+      throw new Error(`${path}: join separator must be a string`);
+    }
+    return value.join(separator);
+  }
   if (ts.isAsExpression(expression) || ts.isSatisfiesExpression(expression)) {
     return evaluate(expression.expression, scope, path);
+  }
+  if (
+    ts.isCallExpression(expression) &&
+    ts.isIdentifier(expression.expression) &&
+    expression.expression.text === 'slugifyFragment' &&
+    expression.arguments.length === 1
+  ) {
+    const value = evaluate(expression.arguments[0], scope, `${path}.slugifyFragment`);
+    if (typeof value !== 'string') {
+      throw new Error(`${path}: slugifyFragment argument must be a string`);
+    }
+    return slugifyFragment(value);
   }
   throw new Error(`${path}: unsupported expression ${ts.SyntaxKind[expression.kind]}`);
 }
@@ -210,6 +280,39 @@ function readContentEntries(scope) {
   return initializer.elements.map((element, index) => evaluate(element, scope, `CONTENT_ENTRIES[${index}]`));
 }
 
+function readGlossaryTerms(scope) {
+  const initializer = glossaryDeclarations.get('GLOSSARY_TERMS');
+  if (!initializer || !ts.isArrayLiteralExpression(initializer)) {
+    throw new Error('GLOSSARY_TERMS must be an array literal');
+  }
+
+  return initializer.elements.map((element, index) => evaluate(element, scope, `GLOSSARY_TERMS[${index}]`));
+}
+
+function readConstArray(declarations, name) {
+  const initializer = declarations.get(name);
+  if (!initializer || !ts.isArrayLiteralExpression(initializer)) {
+    throw new Error(`${name} must be an array literal`);
+  }
+
+  return evaluate(initializer, {}, name);
+}
+
+function readOperationalSearchDocuments() {
+  return readConstArray(searchRegistryDeclarations, 'OPERATIONAL_HALT_SEARCH_DOCUMENTS');
+}
+
+function readGeneratedSearchDocuments() {
+  return readConstArray(generatedSearchDeclarations, 'MDX_SEARCH_DOCUMENTS');
+}
+
+function readActualSearchDocuments() {
+  if (!Array.isArray(actualSearchDocuments)) {
+    throw new Error('SEARCH_DOCUMENTS must be an exported array');
+  }
+  return actualSearchDocuments;
+}
+
 function isIsoDate(value) {
   return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value);
 }
@@ -280,6 +383,8 @@ function validateRecord(collectionName, record, index, allowedConfidences, stati
     fail(`${path}.freshness.nextReviewDue`, 'must be YYYY-MM-DD');
   } else if (record.freshness.nextReviewDue < record.freshness.checkedAt) {
     fail(`${path}.freshness.nextReviewDue`, 'must not be before checkedAt');
+  } else {
+    validateReviewDueDate(record.freshness.nextReviewDue, `${path}.freshness.nextReviewDue`);
   }
   if (!allowedConfidences.has(record.freshness.confidence)) {
     fail(`${path}.freshness.confidence`, `unsupported confidence ${record.freshness.confidence}`);
@@ -341,11 +446,65 @@ function validateEcosystemChains(records) {
   }
 }
 
+function validateSourceMapSections(records) {
+  for (const [index, record] of records.entries()) {
+    const path = `SOURCE_MAP_SECTION_RECORDS[${recordKey(record, index)}]`;
+    for (const field of ['id', 'title', 'use', 'caveat']) {
+      if (typeof record.data?.[field] !== 'string' || record.data[field].trim() === '') {
+        fail(`${path}.data.${field}`, 'must be a non-empty string');
+      }
+    }
+    if (!Array.isArray(record.data?.links) || record.data.links.length === 0) {
+      fail(`${path}.data.links`, 'must include at least one source link');
+      continue;
+    }
+
+    const sourceUrls = new Set(record.sources.map((source) => source.url));
+    const linkUrls = new Set();
+    record.data.links.forEach((link, linkIndex) => {
+      validateRegistrySource(link, `${path}.data.links[${linkIndex}]`, linkUrls);
+      if (isHttpsUrl(link.url) && !sourceUrls.has(link.url)) {
+        fail(`${path}.data.links[${linkIndex}].url`, 'must also appear in record.sources');
+      }
+    });
+  }
+}
+
+function validateSecurityIncidentTrackerStatus(records) {
+  const allowedTrackerStatuses = new Set(['current', 'needs-review', 'historical-open']);
+  for (const [index, record] of records.entries()) {
+    const path = `SECURITY_INCIDENT_RECORDS[${recordKey(record, index)}].data`;
+    const status = record.data?.trackerStatus;
+    if (status !== undefined && !allowedTrackerStatuses.has(status)) {
+      fail(`${path}.trackerStatus`, `unsupported tracker status ${status}`);
+    }
+    if (record.data?.resolved === false && status === undefined) {
+      fail(`${path}.trackerStatus`, 'unresolved incidents must declare current, needs-review, or historical-open');
+    }
+    if (record.data?.resolved === true && status !== undefined) {
+      fail(`${path}.trackerStatus`, 'resolved incidents must not declare current tracker status');
+    }
+  }
+}
+
+function splitInternalHref(href) {
+  if (typeof href !== 'string') {
+    return { path: href, anchor: undefined, hasExtraFragment: false };
+  }
+  const [path, anchor, ...extraFragments] = href.split('#');
+  return {
+    path,
+    anchor,
+    hasExtraFragment: extraFragments.length > 0,
+  };
+}
+
 function routePathForHref(href) {
-  if (href === '/') {
+  const { path } = splitInternalHref(href);
+  if (path === '/') {
     return join(appDir, 'page.tsx');
   }
-  return join(appDir, ...href.slice(1).split('/'), 'page.tsx');
+  return join(appDir, ...path.slice(1).split('/'), 'page.tsx');
 }
 
 function readDeepDiveSlugsFromMdx() {
@@ -371,6 +530,19 @@ function mdxPathForSlug(slug) {
 function mdxHeadingForSlug(slug) {
   const source = readFileSync(mdxPathForSlug(slug), 'utf8');
   return source.match(/^#\s+(.+)$/m)?.[1]?.trim();
+}
+
+function mdxAnchorsForSlug(slug) {
+  const source = readFileSync(mdxPathForSlug(slug), 'utf8');
+  const anchors = new Set();
+  for (const match of source.matchAll(/^#{2,3}\s+(.+)$/gm)) {
+    anchors.add(slugifyHeading(match[1]));
+  }
+  return anchors;
+}
+
+function slugifyHeading(value) {
+  return slugifyFragment(value.trim());
 }
 
 function normalizedTitleWords(value) {
@@ -400,16 +572,19 @@ function validateRegistrySource(source, path, sourceUrls) {
   sourceUrls.add(source.url);
 }
 
-function validateRegistryEntryShape(entry, index) {
+function validateRegistryEntryShape(entry, index, allowedConfidences) {
   const path = `CONTENT_ENTRIES[${entry?.id ?? index}]`;
   if (!entry || typeof entry !== 'object') {
     fail(path, 'entry must be an object');
     return;
   }
-  for (const field of ['id', 'title', 'href', 'description', 'body', 'reviewedAt']) {
+  for (const field of ['id', 'title', 'href', 'description', 'body', 'reviewedAt', 'nextReviewDue']) {
     if (typeof entry[field] !== 'string' || entry[field].trim() === '') {
       fail(`${path}.${field}`, 'must be a non-empty string');
     }
+  }
+  if (!allowedConfidences.has(entry.confidence)) {
+    fail(`${path}.confidence`, `unsupported confidence ${entry.confidence}`);
   }
   if (!contentCategories.has(entry.category)) {
     fail(`${path}.category`, `must be one of ${[...contentCategories].join(', ')}`);
@@ -425,6 +600,13 @@ function validateRegistryEntryShape(entry, index) {
   }
   if (!isIsoDate(entry.reviewedAt)) {
     fail(`${path}.reviewedAt`, 'must be YYYY-MM-DD');
+  }
+  if (!isIsoDate(entry.nextReviewDue)) {
+    fail(`${path}.nextReviewDue`, 'must be YYYY-MM-DD');
+  } else if (isIsoDate(entry.reviewedAt) && entry.nextReviewDue < entry.reviewedAt) {
+    fail(`${path}.nextReviewDue`, 'must not be before reviewedAt');
+  } else {
+    validateReviewDueDate(entry.nextReviewDue, `${path}.nextReviewDue`);
   }
   if (typeof entry.href === 'string') {
     if (!entry.href.startsWith('/')) {
@@ -480,9 +662,34 @@ function validateRegistryDeepDive(entry, deepDiveMdxSlugs, deepDiveRouteSlugs) {
   if (titleWords.length > 0 && missingTitleWords.length > Math.floor(titleWords.length / 2)) {
     fail(`${path}.title`, `does not appear to match MDX heading "${heading}"`);
   }
+
+  const toc = actualDeepDiveToc?.[entry.id] ?? [];
+  if (!Array.isArray(toc)) {
+    fail(`${path}.toc`, 'deep-dive table of contents must be an array');
+    return;
+  }
+  const mdxAnchors = mdxAnchorsForSlug(slug);
+  toc.forEach((item, itemIndex) => {
+    const tocPath = `DEEP_DIVE_TOC[${entry.id}][${itemIndex}]`;
+    if (!item || typeof item !== 'object') {
+      fail(tocPath, 'TOC item must be an object');
+      return;
+    }
+    if (typeof item.title !== 'string' || item.title.trim() === '') {
+      fail(`${tocPath}.title`, 'must be a non-empty string');
+    }
+    if (typeof item.href !== 'string' || !item.href.startsWith('#') || item.href.length < 2) {
+      fail(`${tocPath}.href`, 'must be a non-empty fragment link');
+      return;
+    }
+    const anchor = item.href.slice(1);
+    if (!mdxAnchors.has(anchor)) {
+      fail(`${tocPath}.href`, `unknown MDX heading anchor ${item.href} in ${relative(root, mdxPathForSlug(slug))}`);
+    }
+  });
 }
 
-function validateContentRegistry(entries) {
+function validateContentRegistry(entries, allowedConfidences) {
   const ids = new Map();
   const hrefs = new Map();
   const deepDiveMdxSlugs = new Set(readDeepDiveSlugsFromMdx());
@@ -490,7 +697,7 @@ function validateContentRegistry(entries) {
   const deepDiveRegistrySlugs = new Set();
 
   entries.forEach((entry, index) => {
-    validateRegistryEntryShape(entry, index);
+    validateRegistryEntryShape(entry, index, allowedConfidences);
     if (!entry || typeof entry !== 'object') {
       return;
     }
@@ -538,11 +745,390 @@ function validateContentRegistry(entries) {
   }
 }
 
+function validateGlossaryTerms(terms, allowedConfidences) {
+  const ids = new Map();
+  terms.forEach((term, index) => {
+    const path = `GLOSSARY_TERMS[${term?.id ?? index}]`;
+    if (!term || typeof term !== 'object') {
+      fail(path, 'term must be an object');
+      return;
+    }
+    for (const field of ['id', 'term', 'definition', 'category', 'reviewedAt', 'nextReviewDue']) {
+      if (typeof term[field] !== 'string' || term[field].trim() === '') {
+        fail(`${path}.${field}`, 'must be a non-empty string');
+      }
+    }
+    if (term.id !== slugifyFragment(term.term)) {
+      fail(`${path}.id`, 'must be slugified from term');
+    }
+    if (ids.has(term.id)) {
+      fail(`${path}.id`, `duplicates GLOSSARY_TERMS[${ids.get(term.id)}].id`);
+    }
+    ids.set(term.id, index);
+    if (!allowedConfidences.has(term.confidence)) {
+      fail(`${path}.confidence`, `unsupported confidence ${term.confidence}`);
+    }
+    if (!isIsoDate(term.reviewedAt)) {
+      fail(`${path}.reviewedAt`, 'must be YYYY-MM-DD');
+    }
+    if (!isIsoDate(term.nextReviewDue)) {
+      fail(`${path}.nextReviewDue`, 'must be YYYY-MM-DD');
+    } else if (isIsoDate(term.reviewedAt) && term.nextReviewDue < term.reviewedAt) {
+      fail(`${path}.nextReviewDue`, 'must not be before reviewedAt');
+    } else {
+      validateReviewDueDate(term.nextReviewDue, `${path}.nextReviewDue`);
+    }
+    if (!Array.isArray(term.sources) || term.sources.length === 0) {
+      fail(`${path}.sources`, 'must include at least one source');
+    }
+    if (!Array.isArray(term.relatedHrefs) || term.relatedHrefs.length === 0) {
+      fail(`${path}.relatedHrefs`, 'must include at least one related route');
+    }
+  });
+}
+
+function addRouteAnchor(anchorsByRoute, route, anchor) {
+  if (!anchorsByRoute.has(route)) {
+    anchorsByRoute.set(route, new Set());
+  }
+  anchorsByRoute.get(route).add(anchor);
+}
+
+function collectKnownRouteAnchors(collections, glossaryTerms) {
+  const anchorsByRoute = new Map();
+
+  for (const record of collections.SECURITY_INCIDENT_RECORDS) {
+    addRouteAnchor(anchorsByRoute, '/governance', recordAnchor('incident', record.data.id));
+  }
+  for (const record of collections.RESEARCH_REPORT_RECORDS) {
+    addRouteAnchor(anchorsByRoute, '/governance', recordAnchor('research', record.data.id));
+  }
+  for (const record of collections.GOVERNANCE_PROPOSAL_RECORDS) {
+    addRouteAnchor(anchorsByRoute, '/governance', recordAnchor('governance', record.data.id));
+  }
+  for (const record of collections.PROTOCOL_MILESTONE_RECORDS) {
+    addRouteAnchor(anchorsByRoute, '/governance', recordAnchor('milestone', `${record.data.date}-${record.data.title}`));
+  }
+  for (const record of collections.ECOSYSTEM_PROJECT_RECORDS) {
+    addRouteAnchor(anchorsByRoute, '/ecosystem', recordAnchor('ecosystem', record.data.id));
+  }
+  for (const record of collections.SOURCE_MAP_SECTION_RECORDS) {
+    addRouteAnchor(anchorsByRoute, '/docs', record.data.id);
+  }
+  for (const term of glossaryTerms) {
+    addRouteAnchor(anchorsByRoute, '/glossary', `term-${term.id}`);
+    addRouteAnchor(anchorsByRoute, '/glossary', term.category);
+  }
+
+  return anchorsByRoute;
+}
+
+const routeAnchorCache = new Map();
+
+function readStaticRouteAnchors(route) {
+  if (routeAnchorCache.has(route)) {
+    return routeAnchorCache.get(route);
+  }
+  const anchors = new Set();
+  const routePath = routePathForHref(route);
+  if (!existsSync(routePath)) {
+    routeAnchorCache.set(route, anchors);
+    return anchors;
+  }
+  const source = readFileSync(routePath, 'utf8');
+  const idPattern = /\bid\s*=\s*["']([A-Za-z0-9_-]+)["']/g;
+  for (const match of source.matchAll(idPattern)) {
+    anchors.add(match[1]);
+  }
+  routeAnchorCache.set(route, anchors);
+  return anchors;
+}
+
+function validateInternalHref(href, path, anchorsByRoute) {
+  if (typeof href !== 'string' || href.trim() === '') {
+    fail(path, 'must be a non-empty internal href');
+    return;
+  }
+  if (!href.startsWith('/') || href.startsWith('//')) {
+    fail(path, 'must start with a single /');
+    return;
+  }
+  if (href.includes('?')) {
+    fail(path, 'must not include query strings');
+  }
+
+  const { path: route, anchor, hasExtraFragment } = splitInternalHref(href);
+  if (!route || route.length === 0) {
+    fail(path, 'must include an internal route');
+    return;
+  }
+  if (route.length > 1 && route.endsWith('/')) {
+    fail(path, 'must not include a trailing slash');
+  }
+
+  const routePath = routePathForHref(route);
+  if (!existsSync(routePath)) {
+    fail(path, `missing route ${relative(root, routePath)}`);
+    return;
+  }
+
+  if (hasExtraFragment) {
+    fail(path, 'must not include multiple fragments');
+  }
+  if (anchor === undefined) {
+    return;
+  }
+  if (anchor.trim() === '') {
+    fail(path, 'must not include an empty anchor');
+    return;
+  }
+
+  const knownAnchors = anchorsByRoute.get(route);
+  const staticAnchors = readStaticRouteAnchors(route);
+  if (!knownAnchors?.has(anchor) && !staticAnchors.has(anchor)) {
+    fail(path, `unknown anchor #${anchor} for ${route}`);
+  }
+}
+
+function validateSearchDocumentMetadata(doc, path, allowedConfidences) {
+  if (!doc || typeof doc !== 'object') {
+    fail(path, 'search document must be an object');
+    return;
+  }
+  for (const field of ['id', 'slug', 'href', 'type', 'title', 'description', 'content']) {
+    if (typeof doc[field] !== 'string' || doc[field].trim() === '') {
+      fail(`${path}.${field}`, 'must be a non-empty string');
+    }
+  }
+  if (!allowedConfidences.has(doc.confidence)) {
+    fail(`${path}.confidence`, `unsupported confidence ${doc.confidence}`);
+  }
+  if (!isIsoDate(doc.reviewedAt)) {
+    fail(`${path}.reviewedAt`, 'must be YYYY-MM-DD');
+  }
+  if (!isIsoDate(doc.nextReviewDue)) {
+    fail(`${path}.nextReviewDue`, 'must be YYYY-MM-DD');
+  } else if (isIsoDate(doc.reviewedAt) && doc.nextReviewDue < doc.reviewedAt) {
+    fail(`${path}.nextReviewDue`, 'must not be before reviewedAt');
+  } else {
+    validateReviewDueDate(doc.nextReviewDue, `${path}.nextReviewDue`);
+  }
+  if (!Array.isArray(doc.sources) || doc.sources.length === 0) {
+    fail(`${path}.sources`, 'must include at least one source');
+    return;
+  }
+  const sourceUrls = new Set();
+  doc.sources.forEach((source, sourceIndex) => validateRegistrySource(source, `${path}.sources[${sourceIndex}]`, sourceUrls));
+}
+
+function buildExpectedAnchoredSearchDocuments(collections, glossaryTerms) {
+  return [
+    ...collections.SECURITY_INCIDENT_RECORDS.map((record) => {
+      const anchor = recordAnchor('incident', record.data.id);
+      return {
+        id: `incident:${record.data.id}`,
+        href: `/governance#${anchor}`,
+        type: 'incident',
+        anchor,
+      };
+    }),
+    ...collections.ECOSYSTEM_PROJECT_RECORDS.map((record) => {
+      const anchor = recordAnchor('ecosystem', record.data.id);
+      return {
+        id: `ecosystem:${record.data.id}`,
+        href: `/ecosystem#${anchor}`,
+        type: 'ecosystem',
+        anchor,
+      };
+    }),
+    ...collections.SOURCE_MAP_SECTION_RECORDS.map((record) => ({
+      id: `source-map:${record.data.id}`,
+      href: `/docs#${record.data.id}`,
+      type: 'source-map',
+      anchor: record.data.id,
+    })),
+    ...collections.RESEARCH_REPORT_RECORDS.map((record) => {
+      const anchor = recordAnchor('research', record.data.id);
+      return {
+        id: `research:${record.data.id}`,
+        href: `/governance#${anchor}`,
+        type: 'research',
+        anchor,
+      };
+    }),
+    ...collections.GOVERNANCE_PROPOSAL_RECORDS.map((record) => {
+      const anchor = recordAnchor('governance', record.data.id);
+      return {
+        id: `governance:${record.data.id}`,
+        href: `/governance#${anchor}`,
+        type: 'governance',
+        anchor,
+      };
+    }),
+    ...collections.PROTOCOL_MILESTONE_RECORDS.map((record) => {
+      const anchor = recordAnchor('milestone', `${record.data.date}-${record.data.title}`);
+      return {
+        id: `milestone:${record.data.date}:${record.data.title}`,
+        href: `/governance#${anchor}`,
+        type: 'milestone',
+        anchor,
+      };
+    }),
+    ...glossaryTerms.map((term) => {
+      const anchor = `term-${term.id}`;
+      return {
+        id: `glossary:${term.id}`,
+        href: `/glossary#${anchor}`,
+        type: 'glossary',
+        anchor,
+      };
+    }),
+  ];
+}
+
+function expectSearchDoc(docsById, id, path) {
+  const doc = docsById.get(id);
+  if (!doc) {
+    fail(path, 'missing from actual SEARCH_DOCUMENTS export');
+  }
+  return doc;
+}
+
+function validateExpectedSearchCoverage(searchDocuments, collections, contentEntries, glossaryTerms) {
+  const docsById = new Map();
+  searchDocuments.forEach((doc, index) => {
+    if (typeof doc?.id === 'string') {
+      docsById.set(doc.id, doc);
+    } else {
+      fail(`SEARCH_DOCUMENTS[${index}].id`, 'must be a string before coverage validation');
+    }
+  });
+
+  readOperationalSearchDocuments().forEach((expected) => {
+    const path = `SEARCH_DOCUMENTS[${expected.id}]`;
+    const doc = expectSearchDoc(docsById, expected.id, path);
+    if (!doc) {
+      return;
+    }
+    if (doc.href !== expected.href) {
+      fail(`${path}.href`, `must be ${expected.href}`);
+    }
+    if (doc.type !== expected.type) {
+      fail(`${path}.type`, `must be ${expected.type}`);
+    }
+  });
+
+  contentEntries.forEach((entry) => {
+    const path = `SEARCH_DOCUMENTS[${entry.id}]`;
+    const doc = expectSearchDoc(docsById, entry.id, path);
+    if (!doc) {
+      return;
+    }
+    if (doc.href !== entry.href) {
+      fail(`${path}.href`, `must be ${entry.href}`);
+    }
+    if (doc.type !== entry.category) {
+      fail(`${path}.type`, `must be ${entry.category}`);
+    }
+    if (doc.confidence !== entry.confidence) {
+      fail(`${path}.confidence`, `must be ${entry.confidence}`);
+    }
+    if (doc.reviewedAt !== entry.reviewedAt) {
+      fail(`${path}.reviewedAt`, `must be ${entry.reviewedAt}`);
+    }
+    if (doc.nextReviewDue !== entry.nextReviewDue) {
+      fail(`${path}.nextReviewDue`, `must be ${entry.nextReviewDue}`);
+    }
+  });
+
+  const contentEntrySlugs = new Set(contentEntries.map((entry) => entry.href));
+  readGeneratedSearchDocuments()
+    .filter((doc) => !contentEntrySlugs.has(doc.slug))
+    .forEach((expected) => {
+      const path = `SEARCH_DOCUMENTS[${expected.id}]`;
+      const doc = expectSearchDoc(docsById, expected.id, path);
+      if (!doc) {
+        return;
+      }
+      if (doc.href !== expected.href) {
+        fail(`${path}.href`, `must be ${expected.href}`);
+      }
+      if (doc.type !== expected.type) {
+        fail(`${path}.type`, `must be ${expected.type}`);
+      }
+    });
+
+  buildExpectedAnchoredSearchDocuments(collections, glossaryTerms).forEach((expected) => {
+    const path = `SEARCH_DOCUMENTS[${expected.id}]`;
+    const doc = expectSearchDoc(docsById, expected.id, path);
+    if (!doc) {
+      return;
+    }
+    if (doc.href !== expected.href) {
+      fail(`${path}.href`, `must be ${expected.href}`);
+    }
+    if (doc.anchor !== expected.anchor) {
+      fail(`${path}.anchor`, `must be ${expected.anchor}`);
+    }
+    if (doc.type !== expected.type) {
+      fail(`${path}.type`, `must be ${expected.type}`);
+    }
+  });
+}
+
+function validateSearchSurface(collections, contentEntries, glossaryTerms, allowedConfidences) {
+  const searchDocuments = readActualSearchDocuments();
+  const anchorsByRoute = collectKnownRouteAnchors(collections, glossaryTerms);
+
+  validateUnique('SEARCH_DOCUMENT_IDS', searchDocuments.map((doc) => ({ data: { id: doc.id } })));
+  searchDocuments.forEach((doc) => {
+    const path = `SEARCH_DOCUMENTS[${doc.id}]`;
+    validateSearchDocumentMetadata(doc, path, allowedConfidences);
+    validateInternalHref(doc.href, `${path}.href`, anchorsByRoute);
+  });
+  validateExpectedSearchCoverage(searchDocuments, collections, contentEntries, glossaryTerms);
+
+  glossaryTerms.forEach((term) => {
+    term.relatedHrefs?.forEach((href, index) => {
+      validateInternalHref(href, `GLOSSARY_TERMS[${term.id}].relatedHrefs[${index}]`, anchorsByRoute);
+    });
+  });
+
+  for (const field of ['href', 'type', 'confidence', 'reviewedAt', 'nextReviewDue', 'sources', 'recordAnchor']) {
+    if (!searchRegistrySource.includes(field)) {
+      fail('src/lib/search/registry.ts', `search registry must include ${field}`);
+    }
+  }
+
+  const governanceSource = readFileSync(routePathForHref('/governance'), 'utf8');
+  const ecosystemSource = readFileSync(ecosystemFilterPath, 'utf8');
+  const glossaryPageSource = readFileSync(routePathForHref('/glossary'), 'utf8');
+
+  for (const prefix of ['governance', 'incident', 'research', 'milestone']) {
+    if (!governanceSource.includes(`recordAnchor('${prefix}'`)) {
+      fail('src/app/governance/page.tsx', `missing ${prefix} record anchors for search results`);
+    }
+  }
+  if (!ecosystemSource.includes("recordAnchor('ecosystem'")) {
+    fail('src/components/features/EcosystemFilterList.tsx', 'missing ecosystem record anchors for search results');
+  }
+  if (!glossaryPageSource.includes('term-${term.id}')) {
+    fail('src/app/glossary/page.tsx', 'missing glossary term anchors for search results');
+  }
+
+  for (const field of ['"href"', '"type"', '"description"', '"confidence"', '"reviewedAt"', '"nextReviewDue"', '"sources"']) {
+    if (!generatedSearchSource.includes(field)) {
+      fail('src/lib/search/mdx-documents.generated.ts', `generated MDX search documents must include ${field}`);
+    }
+  }
+}
+
 const staticDataLastUpdated = getStringConst('STATIC_DATA_LAST_UPDATED');
 const nextReviewDue = getNextReviewDueDefault();
 const allowedConfidences = getDataConfidences();
 const scope = getSourceScope();
 const registryScope = getLiteralSourceScope(registryDeclarations);
+const glossaryScope = getLiteralSourceScope(glossaryDeclarations);
 
 const chainRecords = readRecordArray('CHAIN_RECORDS', scope, staticDataLastUpdated, nextReviewDue);
 scope.chainCodes = chainRecords.map((record) => record.data.chain);
@@ -554,6 +1140,8 @@ const collections = {
   SECURITY_INCIDENT_RECORDS: readRecordArray('SECURITY_INCIDENT_RECORDS', scope, staticDataLastUpdated, nextReviewDue),
   GOVERNANCE_PROPOSAL_RECORDS: readRecordArray('GOVERNANCE_PROPOSAL_RECORDS', scope, staticDataLastUpdated, nextReviewDue),
   PROTOCOL_MILESTONE_RECORDS: readRecordArray('PROTOCOL_MILESTONE_RECORDS', scope, staticDataLastUpdated, nextReviewDue),
+  TOKENOMICS_RECORDS: readRecordArray('TOKENOMICS_RECORDS', scope, staticDataLastUpdated, nextReviewDue),
+  SOURCE_MAP_SECTION_RECORDS: readRecordArray('SOURCE_MAP_SECTION_RECORDS', scope, staticDataLastUpdated, nextReviewDue),
 };
 
 if (!isIsoDate(staticDataLastUpdated)) {
@@ -567,7 +1155,14 @@ for (const [collectionName, records] of Object.entries(collections)) {
 
 validateChains(collections.CHAIN_RECORDS);
 validateEcosystemChains(collections.ECOSYSTEM_PROJECT_RECORDS);
-validateContentRegistry(readContentEntries(registryScope));
+validateSourceMapSections(collections.SOURCE_MAP_SECTION_RECORDS);
+validateSecurityIncidentTrackerStatus(collections.SECURITY_INCIDENT_RECORDS);
+const contentEntries = readContentEntries(registryScope);
+const glossaryTerms = readGlossaryTerms(glossaryScope);
+
+validateContentRegistry(contentEntries, allowedConfidences);
+validateGlossaryTerms(glossaryTerms, allowedConfidences);
+validateSearchSurface(collections, contentEntries, glossaryTerms, allowedConfidences);
 
 collections.RESEARCH_REPORT_RECORDS.forEach((record, index) => requireUrlInSources('RESEARCH_REPORT_RECORDS', record, index, 'url'));
 collections.SECURITY_INCIDENT_RECORDS.forEach((record, index) => requireUrlInSources('SECURITY_INCIDENT_RECORDS', record, index, 'url'));

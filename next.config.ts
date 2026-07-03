@@ -39,19 +39,6 @@ const nextConfig: NextConfig = {
             key: 'Permissions-Policy',
             value: 'camera=(), microphone=(), geolocation=(), payment=(), usb=()',
           },
-          {
-            key: 'Content-Security-Policy-Report-Only',
-            value: [
-              "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-              "style-src 'self' 'unsafe-inline'",
-              "img-src 'self' data: https:",
-              "font-src 'self'",
-              "connect-src 'self' https://gateway.liquify.com https://midgard.thorchain.network https://thornode.thorchain.network",
-              "frame-ancestors 'none'",
-              "report-uri /api/csp-report",
-            ].join('; '),
-          },
         ],
       },
     ];

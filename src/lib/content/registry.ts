@@ -1,18 +1,32 @@
-import { SourceMeta } from '@/lib/types';
+import { DataConfidence, SourceMeta } from '@/lib/types';
+import { slugifyFragment } from '@/lib/utils';
 
 export interface ContentEntry {
   id: string;
   title: string;
   href: string;
   category: 'section' | 'deep-dive' | 'resource';
+  confidence: DataConfidence;
   description: string;
   body: string;
   tags: string[];
   reviewedAt: string;
+  nextReviewDue: string;
   sources: SourceMeta[];
   nav?: boolean;
   footer?: boolean;
   featured?: boolean;
+}
+
+export interface JourneyLink {
+  label: string;
+  href: string;
+  description: string;
+}
+
+export interface DeepDiveTocItem {
+  title: string;
+  href: string;
 }
 
 const docsSource: SourceMeta = {
@@ -51,10 +65,12 @@ export const CONTENT_ENTRIES: ContentEntry[] = [
     title: 'Protocol',
     href: '/protocol',
     category: 'section',
+    confidence: 'curated',
     description: 'Architecture, swaps, TSS, Bifrost, Mimir, halts, app layer, and supported chains.',
     body: 'THORChain protocol architecture native cross-chain swaps Bifrost observers TSS vaults Mimir halts inbound addresses refunds streaming swaps StreamingSwapPause HaltMemoless RUNEPoolHaltDeposit app layer CosmWasm.',
     tags: ['architecture', 'swaps', 'mimir', 'halts'],
     reviewedAt: '2026-06-18',
+    nextReviewDue: '2026-07-18',
     sources: [docsSource, devDocsSource, networkHaltsSource, exploitReportSource],
     nav: true,
     footer: true,
@@ -65,10 +81,12 @@ export const CONTENT_ENTRIES: ContentEntry[] = [
     title: 'Network',
     href: '/network',
     category: 'section',
+    confidence: 'curated',
     description: 'Node lifecycle, churning, slashing, vault security, and live operational state.',
     body: 'Network security nodes churning slashing GG20 TSS DKLS signer halts Mimir operational parameters vault solvency current-only status official halt keys HALTTRADING HALTSIGNING HALTCHURNING HALTWASMGLOBAL StreamingSwapPause HaltMemoless RUNEPoolHaltDeposit memoless halt streaming swap pause RUNEPool deposit halt.',
     tags: ['nodes', 'security', 'slashing', 'churning'],
     reviewedAt: '2026-06-18',
+    nextReviewDue: '2026-07-18',
     sources: [docsSource, networkHaltsSource, exploitReportSource],
     nav: true,
     footer: true,
@@ -79,10 +97,12 @@ export const CONTENT_ENTRIES: ContentEntry[] = [
     title: 'Economics',
     href: '/economics',
     category: 'section',
+    confidence: 'curated',
     description: 'RUNE settlement, CLP pricing, fees, incentive pendulum, RUNEPool, POL, and trade assets.',
     body: 'RUNE settlement asset CLP slip ratio liquidity fee affiliate fee outbound fee incentive pendulum RUNEPool protocol owned liquidity trade assets secured assets liquidity units APY.',
     tags: ['rune', 'clp', 'fees', 'runepool'],
     reviewedAt: '2026-06-18',
+    nextReviewDue: '2026-07-18',
     sources: [docsSource, devDocsSource, tokenomicsSource],
     nav: true,
     footer: true,
@@ -93,10 +113,12 @@ export const CONTENT_ENTRIES: ContentEntry[] = [
     title: 'Ecosystem',
     href: '/ecosystem',
     category: 'section',
+    confidence: 'curated',
     description: 'Interfaces, wallets, explorers, developer tools, and chain support status.',
     body: 'THORChain ecosystem interfaces wallets explorers THORSwap AsgardEX RuneScan SwapKit XChainJS supported chains inbound addresses TRON SOL XRP.',
     tags: ['apps', 'interfaces', 'wallets', 'chains'],
     reviewedAt: '2026-06-18',
+    nextReviewDue: '2026-07-18',
     sources: [docsSource],
     nav: true,
     footer: true,
@@ -107,10 +129,12 @@ export const CONTENT_ENTRIES: ContentEntry[] = [
     title: 'Governance',
     href: '/governance',
     category: 'section',
+    confidence: 'curated',
     description: 'ADRs, operational Mimir, incidents, milestones, and sourced research.',
     body: 'Governance ADR Mimir halt trading halt signing pause LP incidents exploit THORFi unwind TCY recovery source-backed history.',
     tags: ['governance', 'incidents', 'mimir', 'adr'],
     reviewedAt: '2026-06-18',
+    nextReviewDue: '2026-07-18',
     sources: [docsSource, networkHaltsSource, exploitReportSource],
     nav: true,
     footer: true,
@@ -121,10 +145,12 @@ export const CONTENT_ENTRIES: ContentEntry[] = [
     title: 'Statistics',
     href: '/stats',
     category: 'section',
+    confidence: 'curated',
     description: 'Current-only Midgard metrics and THORNode operational status.',
     body: 'Network statistics live Midgard current-only source-backed pooled RUNE bonding APY active nodes reserve earnings history degraded data source did not respond.',
     tags: ['stats', 'midgard', 'thornode', 'live'],
     reviewedAt: '2026-06-18',
+    nextReviewDue: '2026-07-18',
     sources: [devDocsSource],
     nav: true,
     footer: true,
@@ -134,48 +160,72 @@ export const CONTENT_ENTRIES: ContentEntry[] = [
     title: 'RUNE',
     href: '/rune',
     category: 'section',
+    confidence: 'curated',
     description: 'Native settlement, bond, and liquidity asset for THORChain.',
     body: 'RUNE token settlement asset security bond liquidity pair tokenomics current supply framing reduced supply circulating supply reserve burns TCY recovery protocol owned liquidity.',
     tags: ['rune', 'tokenomics'],
     reviewedAt: '2026-06-18',
+    nextReviewDue: '2026-07-18',
     sources: [docsSource, tokenomicsSource],
     nav: true,
+    footer: true,
   },
   {
     id: 'tcy',
     title: 'TCY',
     href: '/tcy',
     category: 'section',
+    confidence: 'historical',
     description: 'Historical THORFi unwind, deprecated Savers/Lending, and TCY recovery framing.',
     body: 'TCY THORFi unwind Savers deprecated Lending deprecated archived January 2025 historical yield liabilities recovery.',
     tags: ['tcy', 'savers', 'lending', 'historical'],
     reviewedAt: '2026-06-18',
+    nextReviewDue: '2026-07-18',
     sources: [archivedSource, docsSource],
     nav: true,
+    footer: true,
   },
   {
     id: 'deep-dives',
     title: 'Deep Dives',
     href: '/deep-dives',
     category: 'section',
+    confidence: 'curated',
     description: 'Long-form explainers for core THORChain concepts.',
     body: 'Deep dives CLP Bifrost TSS churning slashing incentive pendulum RUNE settlement Savers historical halt Mimir swap lifecycle.',
     tags: ['deep-dives', 'education'],
     reviewedAt: '2026-06-18',
+    nextReviewDue: '2026-07-18',
     sources: [docsSource],
     nav: true,
     footer: true,
     featured: true,
   },
   {
+    id: 'glossary',
+    title: 'Glossary',
+    href: '/glossary',
+    category: 'resource',
+    confidence: 'curated',
+    description: 'Source-aware definitions for THORChain protocol, economics, operations, and historical terms.',
+    body: 'Glossary definitions Mimir Current-only CLP TSS Bifrost RUNEPool Savers TCY Asgard vault protocol economics operations history developer terminology.',
+    tags: ['glossary', 'terms', 'definitions'],
+    reviewedAt: '2026-07-02',
+    nextReviewDue: '2026-08-02',
+    sources: [docsSource, devDocsSource, networkHaltsSource],
+    footer: true,
+  },
+  {
     id: 'docs',
     title: 'Docs',
     href: '/docs',
     category: 'resource',
+    confidence: 'curated',
     description: 'Official documentation, developer resources, and live API references.',
-    body: 'Official THORChain docs developer docs Midgard API THORNode API network halts Mimir halt keys StreamingSwapPause HaltMemoless RUNEPoolHaltDeposit querying inbound addresses fees.',
-    tags: ['docs', 'resources'],
+    body: 'Official THORChain docs developer docs Midgard API THORNode API network halts Mimir halt keys StreamingSwapPause HaltMemoless RUNEPoolHaltDeposit RUNEPoolHaltWithdraw querying inbound addresses fees Liquify Midgard Gateway Liquify THORNode Gateway gateway failover source map RuneScan ViewBlock Messari GitHub.',
+    tags: ['docs', 'resources', 'midgard', 'thornode', 'liquify', 'gateway'],
     reviewedAt: '2026-06-18',
+    nextReviewDue: '2026-07-18',
     sources: [docsSource, devDocsSource, networkHaltsSource],
     nav: true,
     footer: true,
@@ -185,10 +235,12 @@ export const CONTENT_ENTRIES: ContentEntry[] = [
     title: 'Continuous Liquidity Pools (CLP)',
     href: '/deep-dives/clp',
     category: 'deep-dive',
+    confidence: 'curated',
     description: 'How THORChain slip-based pools enable native swaps without order books or wrapped assets.',
     body: 'Continuous Liquidity Pools CLP slip ratio x divided by X plus x liquidity fee output amount RUNE paired pools slippage liquidity providers native cross-chain swaps. Savers are historical and deprecated.',
     tags: ['clp', 'fees', 'swaps'],
     reviewedAt: '2026-06-18',
+    nextReviewDue: '2026-07-18',
     sources: [docsSource, devDocsSource],
     featured: true,
   },
@@ -197,10 +249,12 @@ export const CONTENT_ENTRIES: ContentEntry[] = [
     title: 'The Incentive Pendulum',
     href: '/deep-dives/incentive-pendulum',
     category: 'deep-dive',
+    confidence: 'curated',
     description: 'Automatic balancing between node bond security and pooled liquidity.',
     body: 'Incentive Pendulum bonded RUNE pooled RUNE rewards node operators liquidity providers security liquidity ratio self-correcting.',
     tags: ['economics', 'rewards'],
     reviewedAt: '2026-06-18',
+    nextReviewDue: '2026-07-18',
     sources: [docsSource],
     featured: true,
   },
@@ -209,10 +263,12 @@ export const CONTENT_ENTRIES: ContentEntry[] = [
     title: 'Threshold Signatures (TSS)',
     href: '/deep-dives/tss',
     category: 'deep-dive',
+    confidence: 'curated',
     description: 'How distributed signing protects cross-chain vault keys and why GG20/DKLS wording must be source-backed.',
     body: 'Threshold Signature Scheme TSS GG20 DKLS vault key shares signing ceremony exploit May 2026 solvency checker halt signing.',
     tags: ['tss', 'security', 'vaults'],
     reviewedAt: '2026-06-18',
+    nextReviewDue: '2026-07-18',
     sources: [docsSource, exploitReportSource],
     featured: true,
   },
@@ -221,10 +277,12 @@ export const CONTENT_ENTRIES: ContentEntry[] = [
     title: 'Churning and Node Lifecycle',
     href: '/deep-dives/churning',
     category: 'deep-dive',
+    confidence: 'curated',
     description: 'Validator rotation, node lifecycle, standby competition, and key rotation.',
     body: 'Churning node lifecycle active standby ready whitelisted churn interval vault rotation unbonding forced churn slash points.',
     tags: ['nodes', 'churning'],
     reviewedAt: '2026-06-18',
+    nextReviewDue: '2026-07-18',
     sources: [docsSource],
   },
   {
@@ -232,10 +290,12 @@ export const CONTENT_ENTRIES: ContentEntry[] = [
     title: 'Slashing and Economic Security',
     href: '/deep-dives/slashing',
     category: 'deep-dive',
+    confidence: 'curated',
     description: 'Bonded RUNE, slash exposure, and why current constants should be source checked.',
     body: 'Slashing economic security bonded RUNE slash points signing observation failures constants Mimir current-only.',
     tags: ['security', 'slashing'],
     reviewedAt: '2026-06-18',
+    nextReviewDue: '2026-07-18',
     sources: [docsSource, devDocsSource],
   },
   {
@@ -243,10 +303,12 @@ export const CONTENT_ENTRIES: ContentEntry[] = [
     title: 'Bifrost Bridge and Cross-Chain Observability',
     href: '/deep-dives/bifrost',
     category: 'deep-dive',
+    confidence: 'curated',
     description: 'How active nodes observe external chains and reach consensus on events.',
     body: 'Bifrost observers external chains inbound transactions outbound confirmations chain reorgs finality two thirds observation.',
     tags: ['bifrost', 'observation'],
     reviewedAt: '2026-06-18',
+    nextReviewDue: '2026-07-18',
     sources: [docsSource],
   },
   {
@@ -254,10 +316,12 @@ export const CONTENT_ENTRIES: ContentEntry[] = [
     title: 'RUNE as the Universal Settlement Asset',
     href: '/deep-dives/rune-settlement',
     category: 'deep-dive',
+    confidence: 'curated',
     description: 'Why every external-asset swap routes through RUNE liquidity.',
     body: 'RUNE settlement universal settlement asset BTC RUNE ETH pool pairs unified liquidity price discovery security bond liquidity pair.',
     tags: ['rune', 'settlement'],
     reviewedAt: '2026-06-18',
+    nextReviewDue: '2026-07-18',
     sources: [docsSource],
   },
   {
@@ -265,10 +329,12 @@ export const CONTENT_ENTRIES: ContentEntry[] = [
     title: 'Savers and Lending (Historical)',
     href: '/deep-dives/savers',
     category: 'deep-dive',
+    confidence: 'historical',
     description: 'Historical overview of deprecated Savers/Lending mechanics and TCY aftermath.',
     body: 'Savers deprecated Lending deprecated THORFi historical single-sided exposure synthetics liabilities TCY January 2025 archived docs.',
     tags: ['savers', 'lending', 'tcy', 'historical'],
     reviewedAt: '2026-06-18',
+    nextReviewDue: '2026-07-18',
     sources: [archivedSource, docsSource],
   },
 ];
@@ -284,3 +350,95 @@ export const FOOTER_NAV_ITEMS = CONTENT_ENTRIES
 export const FEATURED_ENTRIES = CONTENT_ENTRIES.filter((entry) => entry.featured);
 
 export const DEEP_DIVE_ENTRIES = CONTENT_ENTRIES.filter((entry) => entry.category === 'deep-dive');
+
+export function getContentEntry(id: string) {
+  const entry = CONTENT_ENTRIES.find((candidate) => candidate.id === id);
+  if (!entry) {
+    throw new Error(`Missing content registry entry for ${id}`);
+  }
+  return entry;
+}
+
+export const JOURNEY_LINKS: JourneyLink[] = [
+  {
+    label: 'Start here',
+    href: '/protocol',
+    description: 'Protocol architecture, swaps, vaults, Bifrost, Mimir, and supported-chain context.',
+  },
+  {
+    label: 'Live status',
+    href: '/stats',
+    description: 'Current-only Midgard and THORNode status with degraded-source handling.',
+  },
+  {
+    label: 'Build/query',
+    href: '/docs',
+    description: 'Source map for official docs, dev docs, Midgard, THORNode, and explorer references.',
+  },
+  {
+    label: 'RUNE and TCY',
+    href: '/rune',
+    description: 'Settlement, tokenomics, THORFi history, and recovery-token framing.',
+  },
+  {
+    label: 'Incidents',
+    href: '/governance#current-recovery',
+    description: 'Conservative incident and recovery tracker with source confidence labels.',
+  },
+];
+
+function tocItem(title: string): DeepDiveTocItem {
+  return {
+    title,
+    href: `#${slugifyFragment(title)}`,
+  };
+}
+
+export const DEEP_DIVE_TOC: Record<string, DeepDiveTocItem[]> = {
+  'deep-dive-bifrost': [
+    tocItem('What Bifrost Does'),
+    tocItem('How Observation Works'),
+    tocItem('Why It Matters'),
+  ],
+  'deep-dive-churning': [
+    tocItem('What is Churning?'),
+    tocItem('Why Churning Matters'),
+    tocItem('Node Lifecycle'),
+    tocItem('Slash Points and Forced Churn'),
+  ],
+  'deep-dive-clp': [
+    tocItem('How CLP Works'),
+    tocItem('Key Properties'),
+    tocItem('Comparison to Traditional AMMs'),
+  ],
+  'deep-dive-incentive-pendulum': [
+    tocItem('The Core Problem'),
+    tocItem('How the Pendulum Works'),
+    tocItem('Why It Matters'),
+    tocItem('Practical Effects'),
+  ],
+  'deep-dive-rune-settlement': [
+    tocItem('The Settlement Layer'),
+    tocItem('Why This Architecture?'),
+    tocItem('Practical Effects'),
+  ],
+  'deep-dive-savers': [
+    tocItem('What Savers Were'),
+    tocItem('What Lending Was'),
+    tocItem('TCY Aftermath'),
+    tocItem('Source Posture'),
+  ],
+  'deep-dive-slashing': [
+    tocItem('What is Slashing?'),
+    tocItem('Types of Slashing Events'),
+    tocItem('Slash Rate'),
+    tocItem('Churn and Unbonding'),
+    tocItem('Why This Matters'),
+  ],
+  'deep-dive-tss': [
+    tocItem('The Problem with Traditional Multisig'),
+    tocItem('How TSS Solves This'),
+    tocItem('Security Properties'),
+    tocItem('Real-World Impact'),
+  ],
+};

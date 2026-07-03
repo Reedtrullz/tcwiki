@@ -1,11 +1,35 @@
 import { test, expect } from '@playwright/test';
 
+function expectStrictCsp(headers: Record<string, string>) {
+  const csp = headers['content-security-policy'] ?? headers['content-security-policy-report-only'];
+
+  expect(csp).toBeTruthy();
+  expect(csp).toContain('/api/csp-report');
+  expect(csp).not.toContain('unsafe-eval');
+  expect(csp).not.toContain('unsafe-inline');
+  expect(csp).toContain("'nonce-");
+}
+
+function expectPermissionsPolicy(headers: Record<string, string>) {
+  const value = headers['permissions-policy'];
+
+  expect(value).toBeTruthy();
+  expect(value).toContain('camera=()');
+  expect(value).toContain('microphone=()');
+  expect(value).toContain('geolocation=()');
+  expect(value).toContain('payment=()');
+  expect(value).toContain('usb=()');
+}
+
 test.describe('THORChain Wiki Smoke Tests', () => {
   test('home page loads and shows key sections', async ({ page }) => {
     await page.goto('/');
     await expect(page.getByRole('heading', { name: /THORChain Wiki/i })).toBeVisible();
+    await expect(page.getByRole('link', { name: /Skip to content/i })).toHaveAttribute('href', '#main');
     await expect(page.getByText(/Community-maintained encyclopedia/i).first()).toBeVisible();
     await expect(page.getByText(/live sources|checking live network status|source degraded/i).first()).toBeVisible();
+    await expect(page.getByRole('status').first()).toBeVisible();
+    await expect(page.getByRole('link', { name: /THORChain Swap/i })).toHaveAttribute('href', '/ecosystem#ecosystem-thorchain-swap');
   });
 
   test('stats page loads with data or graceful error state', async ({ page }) => {
@@ -13,19 +37,21 @@ test.describe('THORChain Wiki Smoke Tests', () => {
     await expect(page.getByRole('heading', { name: /Network Statistics/i })).toBeVisible();
     await expect(page.getByRole('heading', { name: /Earnings History/i })).toBeVisible();
     await expect(page.getByText(/Showing .* Midgard daily earnings intervals|Earnings history unavailable/i).first()).toBeVisible();
-    await expect(page.getByText(/Current-only|Degraded|Loading live source/i).first()).toBeVisible();
+    await expect(page.getByText(/Current-only|Source warning|Source degraded|Degraded|Loading live source/i).first()).toBeVisible();
   });
 
   test('search page is functional', async ({ page }) => {
     await page.goto('/search');
     await expect(page.getByRole('heading', { name: /Search/i })).toBeVisible();
-    await page.getByLabel(/Search the wiki/i).fill('universal settlement asset');
-    await page.keyboard.press('Enter');
+    const searchForm = page.getByRole('search', { name: /Search wiki content/i });
+    await expect(searchForm).toBeVisible();
+    await searchForm.getByLabel(/Search the wiki/i).fill('universal settlement asset');
+    await searchForm.getByRole('button', { name: /Submit search page query/i }).click();
     await expect(page).toHaveURL(/\/search\?q=universal(\+|%20)settlement(\+|%20)asset/);
     await expect(page.getByText(/result/i).first()).toBeVisible();
     await expect(page.getByText(/RUNE as the Universal Settlement Asset/i).first()).toBeVisible();
 
-    await page.getByLabel(/Search the wiki/i).fill('traditional multisig');
+    await searchForm.getByLabel(/Search the wiki/i).fill('traditional multisig');
     await page.keyboard.press('Enter');
     await expect(page).toHaveURL(/\/search\?q=traditional(\+|%20)multisig/);
     await expect(page.getByText(/Threshold Signatures/i).first()).toBeVisible();
@@ -33,6 +59,31 @@ test.describe('THORChain Wiki Smoke Tests', () => {
     await page.goBack();
     await expect(page).toHaveURL(/\/search\?q=universal(\+|%20)settlement(\+|%20)asset/);
     await expect(page.getByText(/RUNE as the Universal Settlement Asset/i).first()).toBeVisible();
+    await expect(page.getByText(/Tip: Press|⌘K|Ctrl\+K/i)).toHaveCount(0);
+    await expect(page.getByText(/Relevance:/i)).toHaveCount(0);
+
+    await page.goto('/search?q=rune%3A');
+    await expect(page.getByRole('heading', { name: /Search/i })).toBeVisible();
+    await expect(page.getByText(/result/i).first()).toBeVisible();
+    await expect(page.getByText(/Application error|Unhandled Runtime Error/i)).toHaveCount(0);
+
+    await page.goto('/search?q=current-only%20snapshots');
+    await expect(page.locator('a[href="/docs#current-protocol-state"]').first()).toBeVisible();
+    await expect(page.getByText(/Review due/i).first()).toBeVisible();
+    await expect(page.getByText(/\+2 sources/i).first()).toBeVisible();
+  });
+
+  test('search results link to exact record anchors with trust labels', async ({ page }) => {
+    await page.goto('/search?q=GG20');
+    const incidentLink = page.locator('a[href="/governance#incident-gg20-vault-exploit-2026"]').first();
+    await expect(incidentLink).toBeVisible();
+    await expect(incidentLink).toHaveAttribute('href', '/governance#incident-gg20-vault-exploit-2026');
+    await expect(incidentLink.locator('span').filter({ hasText: /^incident$/ })).toBeVisible();
+    await expect(incidentLink.getByText('Official source', { exact: true })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'THORChain Exploit Report #1' }).first()).toBeVisible();
+    await page.goto('/governance#incident-gg20-vault-exploit-2026');
+    await expect(page).toHaveURL(/\/governance#incident-gg20-vault-exploit-2026$/);
+    await expect(page.locator('#incident-gg20-vault-exploit-2026')).toBeVisible();
   });
 
   test('ecosystem page avoids nested-anchor hydration errors', async ({ page }) => {
@@ -45,7 +96,11 @@ test.describe('THORChain Wiki Smoke Tests', () => {
 
     await page.goto('/ecosystem');
     await expect(page.getByRole('heading', { name: /Ecosystem/i })).toBeVisible();
+    await expect(page.getByText(/not an endorsement list/i)).toBeVisible();
     await expect(page.getByRole('link', { name: /Open project/i }).first()).toBeVisible();
+    await page.getByLabel('Category').selectOption('Developer Tools');
+    await expect(page.getByText(/SwapKit/i)).toBeVisible();
+    await expect(page.getByText(/Showing 2 of/i)).toBeVisible();
     expect(messages.join('\n')).not.toMatch(/cannot contain a nested|hydration/i);
   });
 
@@ -60,18 +115,39 @@ test.describe('THORChain Wiki Smoke Tests', () => {
   test('governance page shows incidents and milestones', async ({ page }) => {
     await page.goto('/governance');
     await expect(page.getByRole('heading', { name: /Governance & History/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Current Incident & Recovery Tracker/i })).toBeVisible();
+    await expect(page.locator('#current-recovery').getByRole('heading', { name: /ADR-028 Recovery Path/i })).toBeVisible();
     await expect(page.getByRole('heading', { name: /Security Incidents/i })).toBeVisible();
   });
 
   test('deep dives index and article pages load', async ({ page }) => {
     await page.goto('/deep-dives');
     await expect(page.getByRole('heading', { name: /Deep Dives/i })).toBeVisible();
-    await page.getByText(/Incentive Pendulum/i).click();
-    await expect(page.getByText(/self-correcting feedback loop/i)).toBeVisible();
+    const saversCard = page.getByRole('link', { name: /Savers and Lending \(Historical\)/i }).first();
+    await expect(saversCard.locator('span').filter({ hasText: /^Historical$/ })).toBeVisible();
+    await page.getByText(/Threshold Signatures \(TSS\)/i).click();
+    await expect(page.getByText(/traditional multisignature/i)).toBeVisible();
+    await expect(page.locator('nav[aria-label="Primary navigation"] a[href="/deep-dives"]')).toHaveAttribute('aria-current', 'page');
+    await expect(page.getByText('Curated', { exact: true }).first()).toBeVisible();
 
-    const sources = page.getByRole('list', { name: /Article sources/i });
-    await expect(sources).toBeVisible();
-    expect(await sources.innerText()).not.toContain('·');
+    await expect(page.getByText('THORChain Docs', { exact: true }).first()).toBeVisible();
+    await expect(page.getByText('+1 source', { exact: true }).first()).toBeVisible();
+    await expect(page.getByRole('navigation', { name: /Table of contents/i })).toBeVisible();
+    await expect(page.getByRole('main').getByRole('link', { name: 'Glossary' })).toBeVisible();
+    await expect(page.getByText(/Related Reading/i)).toBeVisible();
+  });
+
+  test('docs source map and glossary routes load', async ({ page }) => {
+    await page.goto('/docs');
+    await expect(page.getByRole('heading', { name: 'Documentation', exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Current Protocol State/i })).toBeVisible();
+    await expect(page.locator('#runtime-live-data-failover')).toBeVisible();
+    await expect(page.getByText(/current-only snapshots/i)).toBeVisible();
+
+    await page.goto('/glossary');
+    await expect(page.getByRole('heading', { name: /Glossary/i })).toBeVisible();
+    await expect(page.locator('#term-mimir')).toBeVisible();
+    await expect(page.getByText(/Operational parameter storage/i)).toBeVisible();
   });
 
   test('all deep-dive routes load', async ({ page }) => {
@@ -114,20 +190,137 @@ test.describe('THORChain Wiki Smoke Tests', () => {
     expect(json.version).toBeTruthy();
   });
 
+  test('readiness API endpoint responds with readiness metadata', async ({ request }) => {
+    const response = await request.get('/api/ready');
+    expect([200, 503]).toContain(response.status());
+    expect(response.headers()['cache-control']).toContain('no-store');
+    const json = await response.json();
+    expect(['ready', 'degraded']).toContain(json.status);
+    expect(json.version).toBeTruthy();
+    expect(json.sources.midgard).toBeTruthy();
+    expect(json.sources.thornode).toBeTruthy();
+  });
+
   test('security headers are present', async ({ request }) => {
     const response = await request.get('/');
     expect(response.headers()['x-powered-by']).toBeUndefined();
     expect(response.headers()['x-content-type-options']).toBe('nosniff');
     expect(response.headers()['x-frame-options']).toBe('DENY');
-    expect(response.headers()['content-security-policy-report-only']).toContain('/api/csp-report');
+    expect(response.headers()['referrer-policy']).toBe('strict-origin-when-cross-origin');
+    expectPermissionsPolicy(response.headers());
+    expectStrictCsp(response.headers());
+  });
+
+  test('normal page loads do not emit CSP reports', async ({ page }) => {
+    const reports: string[] = [];
+    await page.route('**/api/csp-report', async (route) => {
+      reports.push(route.request().postData() ?? '<empty report body>');
+      await route.fulfill({ status: 204, body: '' });
+    });
+
+    for (const path of ['/', '/search', '/stats', '/network', '/deep-dives/tss']) {
+      await page.goto(path);
+      await page.waitForLoadState('networkidle');
+      await page.waitForTimeout(250);
+    }
+
+    expect(reports).toEqual([]);
+  });
+
+  test('share image routes render', async ({ request }) => {
+    const openGraph = await request.get('/opengraph-image');
+    const twitter = await request.get('/twitter-image');
+
+    expect(openGraph.ok()).toBeTruthy();
+    expect(openGraph.headers()['content-type']).toContain('image/png');
+    expect(twitter.ok()).toBeTruthy();
+    expect(twitter.headers()['content-type']).toContain('image/png');
+  });
+
+  test('top-level and deep-dive routes expose route-specific metadata', async ({ page }) => {
+    const cases = [
+      {
+        path: '/',
+        title: 'THORChain Wiki | Source-Backed Protocol Encyclopedia',
+        description: 'Community-maintained THORChain protocol encyclopedia with curated context, source-backed history, and current-only Midgard and THORNode live status.',
+        canonical: 'https://wiki.thorchain.no',
+      },
+      {
+        path: '/network',
+        title: 'Network | THORChain Wiki',
+        description: 'Node lifecycle, churning, slashing, vault security, and live operational state.',
+        canonical: 'https://wiki.thorchain.no/network',
+      },
+      {
+        path: '/stats',
+        title: 'Statistics | THORChain Wiki',
+        description: 'Current-only Midgard metrics and THORNode operational status.',
+        canonical: 'https://wiki.thorchain.no/stats',
+      },
+      {
+        path: '/search',
+        title: 'Search | THORChain Wiki',
+        description: 'Search source-backed THORChain wiki sections, deep dives, glossary terms, incidents, ecosystem entries, governance records, and research.',
+        canonical: 'https://wiki.thorchain.no/search',
+      },
+      {
+        path: '/deep-dives/tss',
+        title: 'Threshold Signatures (TSS) | THORChain Wiki',
+        description: 'How distributed signing protects cross-chain vault keys and why GG20/DKLS wording must be source-backed.',
+        canonical: 'https://wiki.thorchain.no/deep-dives/tss',
+      },
+    ] as const;
+
+    for (const { path, title, description, canonical } of cases) {
+      await page.goto(path);
+      await expect(page).toHaveTitle(title);
+
+      const headMetadata = await page.locator('head').evaluate((head) => ({
+        alternates: Array.from(head.querySelectorAll('link[rel="alternate"]')).map((element) => ({
+          href: element.getAttribute('href'),
+          hrefLang: element.getAttribute('hreflang'),
+        })),
+        canonical: Array.from(head.querySelectorAll('link[rel="canonical"]')).map((element) => element.getAttribute('href')),
+        description: Array.from(head.querySelectorAll('meta[name="description"]')).map((element) => element.getAttribute('content')),
+        openGraphDescription: Array.from(head.querySelectorAll('meta[property="og:description"]')).map((element) => element.getAttribute('content')),
+        openGraphTitle: Array.from(head.querySelectorAll('meta[property="og:title"]')).map((element) => element.getAttribute('content')),
+        twitterDescription: Array.from(head.querySelectorAll('meta[name="twitter:description"]')).map((element) => element.getAttribute('content')),
+        twitterSite: Array.from(head.querySelectorAll('meta[name="twitter:site"]')).map((element) => element.getAttribute('content')),
+        twitterTitle: Array.from(head.querySelectorAll('meta[name="twitter:title"]')).map((element) => element.getAttribute('content')),
+      }));
+
+      expect(headMetadata).toEqual({
+        alternates: [],
+        canonical: [canonical],
+        description: [description],
+        openGraphDescription: [description],
+        openGraphTitle: [title],
+        twitterDescription: [description],
+        twitterSite: [],
+        twitterTitle: [title],
+      });
+    }
   });
 
   test('mobile navigation and search controls are accessible', async ({ page, isMobile }) => {
     test.skip(!isMobile, 'mobile-only smoke');
+    await page.setViewportSize({ width: 375, height: 320 });
     await page.goto('/');
     await page.getByRole('button', { name: /open navigation menu/i }).click();
     await expect(page.locator('#mobile-navigation').getByRole('link', { name: 'Deep Dives' })).toBeVisible();
+    await expect(page.locator('#mobile-navigation').getByRole('link', { name: 'Start here' })).toBeVisible();
+    await expect(page.locator('#mobile-navigation')).toHaveCSS('overflow-y', 'auto');
+    const navBox = await page.locator('#mobile-navigation').boundingBox();
+    expect(navBox?.height ?? 0).toBeLessThanOrEqual(268);
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#mobile-navigation')).toHaveCount(0);
+    await page.getByRole('button', { name: /open navigation menu/i }).click();
     await page.getByRole('button', { name: /open search/i }).click();
-    await expect(page.getByLabel(/Search the wiki/i)).toBeVisible();
+    await expect(page.locator('#mobile-navigation')).toHaveCount(0);
+    const siteSearch = page.getByRole('search', { name: /Site search/i });
+    await expect(siteSearch.getByLabel(/Search the wiki/i)).toBeVisible();
+    await expect(siteSearch.getByRole('button', { name: /Submit site search/i })).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.getByLabel(/Search the wiki/i)).toHaveCount(0);
   });
 });
