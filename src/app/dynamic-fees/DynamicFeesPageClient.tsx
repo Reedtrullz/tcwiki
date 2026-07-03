@@ -321,7 +321,7 @@ function PriorityMetric({
         </div>
       </div>
       <p className="text-xs font-medium text-slate-300">{detail}</p>
-      <p className="mt-2 text-xs leading-relaxed text-slate-400">Why this matters: {why}</p>
+      <p className="mt-2 text-xs leading-relaxed text-slate-400">Why: {why}</p>
     </div>
   );
 }
@@ -358,10 +358,10 @@ function LookFirstPanel({
         <div>
           <h2 className="text-lg font-semibold">Look Here First</h2>
           <p className="mt-1 max-w-3xl text-sm leading-relaxed text-slate-400">
-            Read these four signals before the raw rows. ADR-026 is trying to find a better fee floor per partner pair, so revenue, demand, controller movement, and evidence quality are the numbers that matter.
+            Start with these four signals. ADR-026 is testing whether partner-pair floors can improve revenue without losing useful flow.
           </p>
         </div>
-        <Badge variant={!status ? 'info' : warningCount > 0 ? 'warning' : 'success'}>
+        <Badge className="self-start" variant={!status ? 'info' : warningCount > 0 ? 'warning' : 'success'}>
           {!status
             ? 'Sources loading'
             : warningCount > 0
@@ -375,28 +375,28 @@ function LookFirstPanel({
           title="1. Revenue signal"
           value={formatUsdCompact(currentFeesUsd)}
           detail={`Current epoch fees_tor; sealed history total ${formatUsdCompact(sealedHistoryFeesUsd)}`}
-          why="fees_tor is the controller objective. If fees do not improve across sealed epochs, a lower floor has not proven better revenue."
+          why="fees_tor is the objective. Without sealed-epoch improvement, lower bps has not shown revenue lift."
         />
         <PriorityMetric
           icon={<TrendingUp className="h-4 w-4" />}
           title="2. Demand signal"
           value={formatUsdCompact(currentVolumeUsd)}
           detail="Current epoch volume_tor across tracked pairs"
-          why="revenue can move because volume changed or because bps changed. Volume is demand context, not proof that the lower floor won routing flow."
+          why="Volume is demand context, not proof that the lower floor won routing flow."
         />
         <PriorityMetric
           icon={<Target className="h-4 w-4" />}
           title="3. Controller movement"
           value={bpsRange(records)}
           detail={`${floorLabel} / ${ceilingLabel}`}
-          why="dynamic_bps shows whether the experiment is learning, stuck at the floor, or pressing into the ceiling."
+          why="dynamic_bps shows whether the experiment is learning, floor-pinned, or ceiling-pinned."
         />
         <PriorityMetric
           icon={warningCount > 0 ? <AlertTriangle className="h-4 w-4" /> : <BarChart3 className="h-4 w-4" />}
           title="4. Evidence quality"
           value={trustLabel}
           detail={`${pairHistoryCount.toLocaleString()} pairs with history endpoint coverage`}
-          why="sparse samples are useful operational evidence, but they are not enough to claim a durable trend."
+          why="Sparse samples are operational evidence, not enough to claim a durable trend."
         />
       </div>
     </Card>
@@ -448,10 +448,10 @@ function HistoricalResultsChart({ status }: { status?: DynamicL1FeeStatus }) {
           <Badge variant={rows.length >= 2 ? 'info' : 'warning'}>
             {rows.length >= 2 ? `${rows.length} epochs` : 'Insufficient samples for trend'}
           </Badge>
-          <Badge variant={sealedSamples > 0 ? 'success' : 'warning'}>
-            {sealedSamples > 0 ? 'Mitigates snapshot caveat' : 'Snapshot caveat unresolved'}
+          <Badge variant={sealedSamples > 0 ? 'info' : 'warning'}>
+            {sealedSamples > 0 ? 'Sealed samples available' : 'No sealed samples'}
           </Badge>
-          <Badge variant="warning">Not proof: durable lift</Badge>
+          <Badge variant="warning">Not causal proof</Badge>
         </div>
       </div>
 
@@ -595,11 +595,12 @@ function HistoricalResultsChart({ status }: { status?: DynamicL1FeeStatus }) {
           No sealed historical samples are available from the per-thorname history endpoint. Treat this as insufficient samples, not as zero revenue.
         </p>
       )}
+      <PairLearningDetails status={status} />
     </Card>
   );
 }
 
-function PairLearningCards({ status }: { status?: DynamicL1FeeStatus }) {
+function PairLearningDetails({ status }: { status?: DynamicL1FeeStatus }) {
   const floorBps = status?.mimir.floorBps.effectiveValue ?? status?.mimir.floorBps.value;
   const ceilingBps = status?.mimir.ceilingBps.effectiveValue ?? status?.mimir.ceilingBps.value;
   const pairs = (status?.histories ?? []).flatMap((thornameHistory) => thornameHistory.pairs)
@@ -609,27 +610,18 @@ function PairLearningCards({ status }: { status?: DynamicL1FeeStatus }) {
     ));
 
   if (pairs.length === 0) {
-    return (
-      <Card className="mb-10">
-        <h2 className="mb-2 text-lg font-semibold">Pair Learning State</h2>
-        <p className="text-sm text-slate-400">
-          No pair history is available yet. Current records below can still be useful, but the controller has too little sealed history for movement claims.
-        </p>
-      </Card>
-    );
+    return null;
   }
 
   return (
-    <div className="mb-10">
-      <div className="mb-4 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
-        <div>
-          <h2 className="text-lg font-semibold">Pair Learning State</h2>
-          <p className="mt-1 max-w-3xl text-sm leading-relaxed text-slate-400">
-            This is the fastest way to see which partner pairs have actual sealed samples and whether their dynamic floor is at an edge.
-          </p>
-        </div>
-      </div>
-      <div className="grid min-w-0 gap-3 md:grid-cols-2 xl:grid-cols-3">
+    <details className="mt-4 rounded-md border border-border bg-surface p-4">
+      <summary className="cursor-pointer text-sm font-semibold text-accent underline-offset-4 hover:underline">
+        Show pair-level history details
+      </summary>
+      <p className="mt-3 max-w-3xl text-sm leading-relaxed text-slate-400">
+        Pair-level samples are useful for debugging the controller, but the first read should stay on aggregate fees, volume, bps range, and source quality.
+      </p>
+      <div className="mt-4 grid min-w-0 gap-3 md:grid-cols-2 xl:grid-cols-3">
         {pairs.map((pair) => {
           const latest = pair.history.at(-1);
           const learningState = pair.history.length === 0
@@ -644,7 +636,7 @@ function PairLearningCards({ status }: { status?: DynamicL1FeeStatus }) {
               : 'Inside bounds';
 
           return (
-            <Card key={recordKey(pair.thorname, pair.pair)} className="min-w-0" padding="sm">
+            <div key={recordKey(pair.thorname, pair.pair)} className="min-w-0 rounded-md border border-border bg-surface-elevated p-3">
               <div className="mb-3 flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="font-mono text-xs text-accent">{pair.thorname}</p>
@@ -682,11 +674,11 @@ function PairLearningCards({ status }: { status?: DynamicL1FeeStatus }) {
                   <dd>{formatBps(latest?.bpsAtClose)}</dd>
                 </div>
               </dl>
-            </Card>
+            </div>
           );
         })}
       </div>
-    </div>
+    </details>
   );
 }
 
@@ -784,46 +776,7 @@ function BpsDistribution({ records }: { records: DynamicL1FeeRecord[] }) {
   );
 }
 
-function EvidenceResolutionCard({
-  title,
-  state,
-  variant,
-  caveat,
-  currentWork,
-  wouldImproveWith,
-}: {
-  title: string;
-  state: string;
-  variant: 'default' | 'success' | 'warning' | 'danger' | 'info';
-  caveat: string;
-  currentWork: string;
-  wouldImproveWith: string;
-}) {
-  return (
-    <Card className="min-w-0" padding="sm">
-      <div className="mb-3 flex items-start justify-between gap-3">
-        <h3 className="min-w-0 text-sm font-semibold">{title}</h3>
-        <Badge variant={variant}>{state}</Badge>
-      </div>
-      <dl className="space-y-3 text-xs leading-relaxed">
-        <div>
-          <dt className="font-semibold text-slate-300">What remains true</dt>
-          <dd className="mt-1 text-slate-400">{caveat}</dd>
-        </div>
-        <div>
-          <dt className="font-semibold text-slate-300">What this page can do</dt>
-          <dd className="mt-1 text-slate-400">{currentWork}</dd>
-        </div>
-        <div>
-          <dt className="font-semibold text-slate-300">What would improve proof</dt>
-          <dd className="mt-1 text-slate-400">{wouldImproveWith}</dd>
-        </div>
-      </dl>
-    </Card>
-  );
-}
-
-function EvidenceLadder({ status, sourceWarningCount }: { status?: DynamicL1FeeStatus; sourceWarningCount?: number }) {
+function InterpretationNotes({ status, sourceWarningCount }: { status?: DynamicL1FeeStatus; sourceWarningCount?: number }) {
   const sealedSamples = historySampleCount(status);
   const sealedEpochs = historyEpochRows(status).length;
   const pairCount = historyPairCount(status);
@@ -837,53 +790,99 @@ function EvidenceLadder({ status, sourceWarningCount }: { status?: DynamicL1FeeS
 
   return (
     <>
-      <SectionHeader>Evidence Boundary</SectionHeader>
-      <p className="mb-4 max-w-3xl text-sm leading-relaxed text-slate-400">
-        Can the caveats be improved? Some can be reduced with better evidence; others are protocol-scope boundaries. This ladder keeps the distinction visible so the dashboard gets more useful without turning current-only data into conclusions.
-      </p>
-      <div className="mb-12 grid min-w-0 gap-3 lg:grid-cols-2">
-        <EvidenceResolutionCard
-          title="L1-to-L1 scope"
-          state="Inherent"
-          variant="default"
-          caveat="ADR-026 v1 applies to eligible L1 swaps selected by whitelisted thornames and normalized pairs. Trade assets, secured assets, synths, and many arb flows remain outside this model."
-          currentWork="Keep the scope label visible and avoid aggregating excluded flow into the dynamic-fee outcome."
-          wouldImproveWith="A later ADR or endpoint that explicitly exposes dynamic-fee treatment for trade, secured, synth, or arb classes."
-        />
-        <EvidenceResolutionCard
-          title="Current-only THORNode values"
-          state={!status ? 'Unknown' : warningCount > 0 ? 'Partly mitigated' : 'Mitigated'}
-          variant={!status || warningCount > 0 ? 'warning' : 'success'}
-          caveat="Mimir, current accumulators, and dynamic floors can change every block or epoch."
-          currentWork={`Pin reads to one provider and height, show block freshness, and separate current accumulators from sealed history. Current snapshot: ${snapshotLabel}; warnings: ${status ? warningCount.toLocaleString() : 'Unavailable'}.`}
-          wouldImproveWith="Longer retained sealed history, indexed block-by-block Mimir changes, or a governance/event timeline that can be queried independently of the latest THORNode state."
-        />
-        <EvidenceResolutionCard
-          title="Affiliate attribution versus applied floor"
-          state="Partly mitigated"
-          variant="info"
-          caveat="A swap can credit eligible thornames for TOR revenue while the applied floor is chosen from the largest affiliate-bps thorname in the memo."
-          currentWork="Explain the selector rule and show records by thorname/pair instead of treating all credited fee revenue as proof that a partner caused the applied fee."
-          wouldImproveWith="Per-swap evidence exposing the memo thornames, affiliate bps splits, credited thornames, selected floor thorname, and applied dynamic bps."
-        />
-        <EvidenceResolutionCard
-          title="Discord and community sentiment"
-          state="Context only"
-          variant="default"
-          caveat="Discord can explain debate and operating concerns, but it is not canonical protocol evidence."
-          currentWork="Keep Discord in the Community Read section and source list with explicit context-only labeling."
-          wouldImproveWith="Official ADR text, merged THORNode code, release notes, Mimir state, and endpoint data that independently support the claim being made."
-        />
-        <EvidenceResolutionCard
-          title="Revenue lift and route competitiveness"
-          state="Needs proof"
-          variant={sealedSamples >= 6 && sealedEpochs >= 3 ? 'info' : 'warning'}
-          caveat="Current records and a few sealed samples do not prove revenue lift, partner attribution quality, or better quote/routing competitiveness."
-          currentWork={`Show operational history without claiming causality. Current sealed coverage: ${sampleLabel}.`}
-          wouldImproveWith="Before/after route-share baselines, quote-win rates, partner traffic attribution, comparable non-whitelisted control flow, and enough sealed epochs to separate fee changes from demand/liquidity changes."
-        />
-      </div>
+      <SectionHeader>Interpretation Notes</SectionHeader>
+      <Card>
+        <div className="mb-4 flex flex-wrap gap-2">
+          <Badge variant={!status || warningCount > 0 ? 'warning' : 'success'}>
+            {!status ? 'Live proof loading' : warningCount > 0 ? 'Source warnings present' : 'Snapshot pinned'}
+          </Badge>
+          <Badge variant={sealedSamples >= 6 && sealedEpochs >= 3 ? 'info' : 'warning'}>
+            {sealedSamples.toLocaleString()} sealed sample{sealedSamples === 1 ? '' : 's'}
+          </Badge>
+          <Badge variant="warning">Not causal proof</Badge>
+        </div>
+        <p className="mb-4 max-w-3xl text-sm leading-relaxed text-slate-400">
+          Keep these as guardrails for the live numbers. They are important, but they should not compete with the operational dashboard above.
+        </p>
+        <ul className="grid gap-2 text-sm leading-relaxed text-slate-400 md:grid-cols-2">
+          <li>L1-to-L1 scope: ADR-026 v1 applies to eligible L1 swaps selected by whitelisted thornames and normalized pairs; trade assets, secured assets, synths, and many arb flows remain outside this model.</li>
+          <li>Current THORNode values can change every block or epoch. This page pins reads to one provider and height; current snapshot: {snapshotLabel}; warnings: {status ? warningCount.toLocaleString() : 'Unavailable'}.</li>
+          <li>Affiliate attribution versus applied floor: eligible thornames can receive TOR credit while the applied floor comes from the largest affiliate-bps thorname.</li>
+          <li>Discord can explain debate and operating concerns, but it is not canonical protocol evidence.</li>
+          <li>Current records and sparse sealed history do not prove revenue lift, route competitiveness, or partner attribution quality.</li>
+        </ul>
+        <details className="mt-4 rounded-md border border-border bg-surface p-4">
+          <summary className="cursor-pointer text-sm font-semibold text-accent underline-offset-4 hover:underline">
+            Show what would improve proof
+          </summary>
+          <dl className="mt-4 grid gap-4 text-xs leading-relaxed text-slate-400 md:grid-cols-2">
+            <div>
+              <dt className="font-semibold text-slate-300">Scope expansion</dt>
+              <dd className="mt-1">A later ADR or endpoint that explicitly covers trade, secured, synth, or arb classes.</dd>
+            </div>
+            <div>
+              <dt className="font-semibold text-slate-300">Durable state history</dt>
+              <dd className="mt-1">Longer sealed history, indexed block-by-block Mimir changes, or a governance/event timeline independent of latest THORNode state.</dd>
+            </div>
+            <div>
+              <dt className="font-semibold text-slate-300">Attribution quality</dt>
+              <dd className="mt-1">Per-swap evidence exposing the memo thornames, affiliate bps splits, credited thornames, selected floor thorname, and applied dynamic bps.</dd>
+            </div>
+            <div>
+              <dt className="font-semibold text-slate-300">Revenue and routing lift</dt>
+              <dd className="mt-1">Before/after route-share baselines, quote-win rates, partner traffic attribution, comparable non-whitelisted control flow, and enough sealed epochs to separate fee changes from demand or liquidity changes. Current sealed coverage: {sampleLabel}.</dd>
+            </div>
+          </dl>
+        </details>
+      </Card>
     </>
+  );
+}
+
+function SourceStatusStrip({
+  result,
+  status,
+  isDegraded,
+  error,
+  sourceWarningCount,
+}: {
+  result?: LiveDataResult<DynamicL1FeeStatus>;
+  status?: DynamicL1FeeStatus;
+  isDegraded?: boolean;
+  error?: string;
+  sourceWarningCount?: number;
+}) {
+  return (
+    <div className="mb-8 rounded-md border border-border bg-surface-elevated px-4 py-3">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0">
+          <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-slate-400">Static context</p>
+          <FreshnessMeta freshness={staticFreshness} sources={staticSources} compact />
+        </div>
+        <div className="min-w-0 lg:text-right">
+          <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-slate-400">Live snapshot</p>
+          <LiveSourceMeta result={result} />
+          {(isDegraded || error) && (
+            <p className="mt-2 text-xs text-amber-300">
+              {error ?? 'Dynamic fee live data is degraded. Static documentation remains visible.'}
+            </p>
+          )}
+          {status && sourceWarningCount !== undefined && sourceWarningCount > 0 && (
+            <p className="mt-2 text-xs text-amber-300">
+              {sourceWarningCount} source warning{sourceWarningCount === 1 ? '' : 's'} in this snapshot. First warning: {status.sourceWarnings[0]}
+            </p>
+          )}
+          {status && (
+            <p className="mt-2 text-xs text-slate-400">
+              Height {status.sourceFreshness.thorchainHeight.toLocaleString()} / {formatBlockAge(status.sourceFreshness.thorchainBlockAgeSeconds)}
+            </p>
+          )}
+        </div>
+      </div>
+      <p className="mt-3 text-xs leading-relaxed text-slate-500">
+        ADR text is design context; THORNode values are current-only operational evidence.
+      </p>
+    </div>
   );
 }
 
@@ -940,37 +939,13 @@ export function DynamicFeesView({
         ceilingPinnedCount={ceilingPinnedCount}
       />
 
-      <EvidenceLadder status={status} sourceWarningCount={sourceWarningCount} />
-
-      <div className="mb-8 grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-        <Card>
-          <h2 className="mb-2 text-sm font-semibold">Source posture</h2>
-          <p className="mb-4 text-sm leading-relaxed text-slate-400">
-            The ADR text still carries a proposed-design posture while live THORNode endpoints can show enabled Mimirs and tracked records.
-            This page separates static design context from live current-only evidence.
-          </p>
-          <FreshnessMeta freshness={staticFreshness} sources={staticSources} />
-        </Card>
-        <Card>
-          <h2 className="mb-2 text-sm font-semibold">Live source</h2>
-          <LiveSourceMeta result={result} />
-          {(isDegraded || error) && (
-            <p className="mt-3 text-sm text-amber-300">
-              {error ?? 'Dynamic fee live data is degraded. Static documentation remains visible.'}
-            </p>
-          )}
-          {status && sourceWarningCount !== undefined && sourceWarningCount > 0 && (
-            <p className="mt-3 text-sm text-amber-300">
-              {sourceWarningCount} dynamic-fee source warning{sourceWarningCount === 1 ? '' : 's'} in this snapshot. First warning: {status?.sourceWarnings[0]}
-            </p>
-          )}
-          {status && (
-            <p className="mt-3 text-xs text-slate-400">
-              Snapshot height {status.sourceFreshness.thorchainHeight.toLocaleString()} / block time {new Date(status.sourceFreshness.thorchainBlockTime).toLocaleString()} / {formatBlockAge(status.sourceFreshness.thorchainBlockAgeSeconds)}
-            </p>
-          )}
-        </Card>
-      </div>
+      <SourceStatusStrip
+        result={result}
+        status={status}
+        isDegraded={isDegraded}
+        error={error}
+        sourceWarningCount={sourceWarningCount}
+      />
 
       <SectionHeader>Current Controls</SectionHeader>
       <p className="mb-4 max-w-3xl text-sm text-slate-400">
@@ -984,17 +959,21 @@ export function DynamicFeesView({
         <StatCard icon={<Scale className="h-4 w-4" />} label="Current epoch" value={status?.currentEpoch ?? 'Loading'} />
       </div>
 
-      <div className="mb-10 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-        <StatCard icon={<Gauge className="h-4 w-4" />} label="Dynamic floor" value={formatConfigInteger(status?.mimir.floorBps, 'bps')} />
-        <StatCard icon={<Gauge className="h-4 w-4" />} label="Dynamic ceiling" value={formatConfigInteger(status?.mimir.ceilingBps, 'bps')} />
-        <StatCard icon={<Activity className="h-4 w-4" />} label="Step" value={formatConfigInteger(status?.mimir.stepBps, 'bps')} />
-        <StatCard icon={<Scale className="h-4 w-4" />} label="Deadband" value={formatConfigDeadband(status?.mimir.deadbandBps)} />
-        <StatCard icon={<ListChecks className="h-4 w-4" />} label="Window" value={formatConfigInteger(status?.mimir.windowEpochs, 'epochs')} />
-        <StatCard icon={<RadioTower className="h-4 w-4" />} label="Epoch blocks" value={formatConfigInteger(status?.mimir.epochBlocks, 'blocks')} />
-      </div>
+      <details className="mb-10 rounded-md border border-border bg-surface-elevated p-4">
+        <summary className="cursor-pointer text-sm font-semibold text-accent underline-offset-4 hover:underline">
+          Show controller configuration
+        </summary>
+        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+          <StatCard icon={<Gauge className="h-4 w-4" />} label="Dynamic floor" value={formatConfigInteger(status?.mimir.floorBps, 'bps')} />
+          <StatCard icon={<Gauge className="h-4 w-4" />} label="Dynamic ceiling" value={formatConfigInteger(status?.mimir.ceilingBps, 'bps')} />
+          <StatCard icon={<Activity className="h-4 w-4" />} label="Step" value={formatConfigInteger(status?.mimir.stepBps, 'bps')} />
+          <StatCard icon={<Scale className="h-4 w-4" />} label="Deadband" value={formatConfigDeadband(status?.mimir.deadbandBps)} />
+          <StatCard icon={<ListChecks className="h-4 w-4" />} label="Window" value={formatConfigInteger(status?.mimir.windowEpochs, 'epochs')} />
+          <StatCard icon={<RadioTower className="h-4 w-4" />} label="Epoch blocks" value={formatConfigInteger(status?.mimir.epochBlocks, 'blocks')} />
+        </div>
+      </details>
 
       <HistoricalResultsChart status={status} />
-      <PairLearningCards status={status} />
 
       <SectionHeader>Tracked Records</SectionHeader>
       <p className="mb-4 max-w-3xl text-sm text-slate-400">
@@ -1177,19 +1156,7 @@ export function DynamicFeesView({
         </Card>
       </div>
 
-      <SectionHeader>Remaining Non-Claims</SectionHeader>
-      <Card>
-        <p className="mb-4 text-sm leading-relaxed text-slate-400">
-          The evidence ladder reduces ambiguity, but it does not erase these boundaries.
-        </p>
-        <ul className="grid gap-2 text-sm leading-relaxed text-slate-400 md:grid-cols-2">
-          <li>L1-to-L1 scope is an ADR-026 v1 boundary unless a later protocol change expands it.</li>
-          <li>Current THORNode values remain current-only even when the page pins a snapshot height and shows sealed endpoint history.</li>
-          <li>Affiliate credit and applied fee-floor selection remain different concepts.</li>
-          <li>Discord sentiment remains contextual, never canonical protocol proof.</li>
-          <li>Current records and sparse sealed history do not prove revenue lift, route competitiveness, or partner attribution quality.</li>
-        </ul>
-      </Card>
+      <InterpretationNotes status={status} sourceWarningCount={sourceWarningCount} />
     </PageContainer>
   );
 }

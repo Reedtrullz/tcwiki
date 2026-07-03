@@ -101,9 +101,9 @@ describe('DynamicFeesView', () => {
     expect(html).toContain('Revenue signal');
     expect(html).toContain('Volume is demand context, not proof that the lower floor won routing flow.');
     expect(html).toContain('Historical Results');
-    expect(html).toContain('Pair Learning State');
-    expect(html).toContain('Evidence Boundary');
-    expect(html).toContain('Can the caveats be improved?');
+    expect(html).toContain('Show pair-level history details');
+    expect(html).toContain('Interpretation Notes');
+    expect(html).toContain('Keep these as guardrails for the live numbers.');
     expect(html).toContain('L1-to-L1 scope');
     expect(html).toContain('Affiliate attribution versus applied floor');
     expect(html).toContain('ADR-026 dynamic L1 min fee per thorname');
@@ -120,9 +120,11 @@ describe('DynamicFeesView', () => {
     expect(html).toContain('volume_tor');
     expect(html).toContain('Insufficient samples for trend');
     expect(html).toContain('Context only');
-    expect(html).toContain('Needs proof');
-    expect(html).toContain('Remaining Non-Claims');
+    expect(html).toContain('Not causal proof');
+    expect(html).toContain('Show controller configuration');
     expect(html).toContain('Current records and sparse sealed history do not prove revenue lift');
+    expect(html).not.toContain('Evidence Boundary');
+    expect(html).not.toContain('Remaining Non-Claims');
   });
 
   it('renders missing TOR data as insufficient samples instead of zero', () => {
@@ -137,7 +139,7 @@ describe('DynamicFeesView', () => {
 
     expect(html).toContain('ADR-026 v1 applies to eligible L1 swaps');
     expect(html).toContain('Discord can explain debate and operating concerns, but it is not canonical protocol evidence.');
-    expect(html).toContain('Current records and a few sealed samples do not prove revenue lift');
+    expect(html).toContain('Current records and sparse sealed history do not prove revenue lift');
     expect(html).toContain('Per-swap evidence exposing the memo thornames');
     expect(html).not.toContain('Discord proves');
     expect(html).not.toContain('proves revenue lift');
@@ -199,8 +201,8 @@ describe('DynamicFeesView', () => {
     expect(html).toContain('Degraded');
     expect(html).toContain('THORNode dynamic fee sources did not provide a usable snapshot');
     expect(html).toContain('Sources loading');
-    expect(html).toContain('Unknown');
-    expect(html).toContain('Snapshot caveat unresolved');
+    expect(html).toContain('Live proof loading');
+    expect(html).toContain('No sealed samples');
     expect(html).not.toContain('Sources clean');
     expect(html).toContain('How the Experiment Works');
     expect(html).toContain('No sealed dynamic-fee records are available');
