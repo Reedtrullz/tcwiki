@@ -138,6 +138,7 @@
             url: "http://localhost:3004/api/ready"
             return_content: yes
             timeout: 10
+            status_code: [200, 503]
           register: candidate_ready_check
           until: >-
             candidate_ready_check is succeeded
@@ -230,6 +231,7 @@
             url: "http://localhost:3003/api/ready"
             return_content: yes
             timeout: 10
+            status_code: [200, 503]
           register: ready_check
           until: >-
             ready_check is succeeded
