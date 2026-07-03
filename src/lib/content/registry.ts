@@ -39,6 +39,33 @@ const devDocsSource: SourceMeta = {
   url: 'https://dev.thorchain.org',
 };
 
+const adr026DynamicFeesSource: SourceMeta = {
+  label: 'ADR-026 dynamic L1 fee model',
+  url: 'https://gitlab.com/thorchain/thornode/-/raw/develop/docs/architecture/adr-026-dynamic-l1-min-fee-per-thorname.md',
+};
+
+const feesSource: SourceMeta = {
+  label: 'THORChain fees developer docs',
+  url: 'https://dev.thorchain.org/concepts/fees.html',
+};
+
+const thornameGuideSource: SourceMeta = {
+  label: 'THORName affiliate guide',
+  url: 'https://dev.thorchain.org/affiliate-guide/thorname-guide.html',
+};
+
+const dynamicL1FeesSource: SourceMeta = {
+  label: 'THORNode dynamic_l1_fees',
+  url: 'https://thornode.thorchain.network/thorchain/dynamic_l1_fees',
+  notes: 'Current-only sealed dynamic L1 fee records.',
+};
+
+const dynamicL1FeesCurrentSource: SourceMeta = {
+  label: 'THORNode dynamic_l1_fees_current',
+  url: 'https://thornode.thorchain.network/thorchain/dynamic_l1_fees_current',
+  notes: 'Current-only in-progress epoch accumulators.',
+};
+
 const tokenomicsSource: SourceMeta = {
   label: 'RUNE and TCY tokenomics',
   url: 'https://docs.thorchain.org/tokenomics-rune-tcy',
@@ -104,6 +131,22 @@ export const CONTENT_ENTRIES: ContentEntry[] = [
     reviewedAt: '2026-06-18',
     nextReviewDue: '2026-07-18',
     sources: [docsSource, devDocsSource, tokenomicsSource],
+    nav: true,
+    footer: true,
+    featured: true,
+  },
+  {
+    id: 'dynamic-fees',
+    title: 'Dynamic Fees',
+    href: '/dynamic-fees',
+    category: 'section',
+    confidence: 'curated',
+    description: 'ADR-026 dynamic L1 minimum fee experiment, live whitelisted thorname records, and current-only THORNode tracker.',
+    body: 'ADR-026 dynamic L1 fee dynamic fee model L1DynamicFeeEnabled L1SlipMinBPS DYNAMICFEE-WHITELIST dynamic_l1_fees dynamic_l1_fees_current thorname pair fees_tor volume_tor Symbiosis ShapeShift ss whitelist monitor active affiliate_bps current-only THORNode sealed records epoch accumulators revenue gradient TOR.',
+    tags: ['fees', 'adr', 'mimir', 'thornode', 'thorname'],
+    reviewedAt: '2026-07-03',
+    nextReviewDue: '2026-07-17',
+    sources: [adr026DynamicFeesSource, feesSource, thornameGuideSource, dynamicL1FeesSource, dynamicL1FeesCurrentSource],
     nav: true,
     footer: true,
     featured: true,

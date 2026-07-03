@@ -40,6 +40,32 @@ test.describe('THORChain Wiki Smoke Tests', () => {
     await expect(page.getByText(/Current-only|Source warning|Source degraded|Degraded|Loading live source/i).first()).toBeVisible();
   });
 
+  test('dynamic fees page loads with live tracker or graceful degraded state', async ({ page, isMobile }) => {
+    if (isMobile) {
+      await page.setViewportSize({ width: 390, height: 760 });
+    }
+    const messages: string[] = [];
+    page.on('console', (message) => {
+      if (message.type() === 'error') {
+        messages.push(message.text());
+      }
+    });
+
+    await page.goto('/dynamic-fees');
+    await expect(page.getByRole('heading', { name: /Dynamic L1 Fees/i })).toBeVisible();
+    await expect(page.getByText(/ADR-026 replaces one global L1 minimum slip floor/i)).toBeVisible();
+    await expect(page.getByText(/Current-only/i).first()).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Tracked Records' })).toBeVisible();
+    await expect(page.getByText(/Show exact Mimir keys and endpoint fields/i)).toBeVisible();
+    await expect(page.getByText(/How the Experiment Works/i)).toBeVisible();
+    await expect(page.getByText(/No sealed dynamic-fee records are available|THOR\.RUNE|Source did not respond|dynamic fee sources/i).first()).toBeVisible();
+
+    const bodyWidth = await page.locator('body').evaluate((body) => body.scrollWidth);
+    const viewportWidth = page.viewportSize()?.width ?? bodyWidth;
+    expect(bodyWidth).toBeLessThanOrEqual(viewportWidth + 2);
+    expect(messages.join('\n')).not.toMatch(/Application error|Unhandled Runtime Error|hydration/i);
+  });
+
   test('search page is functional', async ({ page }) => {
     await page.goto('/search');
     await expect(page.getByRole('heading', { name: /Search/i })).toBeVisible();
@@ -52,7 +78,7 @@ test.describe('THORChain Wiki Smoke Tests', () => {
     await expect(page.getByText(/RUNE as the Universal Settlement Asset/i).first()).toBeVisible();
 
     await searchForm.getByLabel(/Search the wiki/i).fill('traditional multisig');
-    await page.keyboard.press('Enter');
+    await searchForm.getByRole('button', { name: /Submit search page query/i }).click();
     await expect(page).toHaveURL(/\/search\?q=traditional(\+|%20)multisig/);
     await expect(page.getByText(/Threshold Signatures/i).first()).toBeVisible();
 
@@ -71,6 +97,10 @@ test.describe('THORChain Wiki Smoke Tests', () => {
     await expect(page.locator('a[href="/docs#current-protocol-state"]').first()).toBeVisible();
     await expect(page.getByText(/Review due/i).first()).toBeVisible();
     await expect(page.getByText(/\+2 sources/i).first()).toBeVisible();
+
+    await page.goto('/search?q=dynamic%20L1%20fee');
+    await expect(page.locator('main a[href="/dynamic-fees"]').first()).toBeVisible();
+    await expect(page.getByText(/ADR-026 dynamic L1 fee/i).first()).toBeVisible();
   });
 
   test('search results link to exact record anchors with trust labels', async ({ page }) => {
@@ -142,7 +172,7 @@ test.describe('THORChain Wiki Smoke Tests', () => {
     await expect(page.getByRole('heading', { name: 'Documentation', exact: true })).toBeVisible();
     await expect(page.getByRole('heading', { name: /Current Protocol State/i })).toBeVisible();
     await expect(page.locator('#runtime-live-data-failover')).toBeVisible();
-    await expect(page.getByText(/current-only snapshots/i)).toBeVisible();
+    await expect(page.locator('#current-protocol-state').getByText(/current-only snapshots/i)).toBeVisible();
 
     await page.goto('/glossary');
     await expect(page.getByRole('heading', { name: /Glossary/i })).toBeVisible();
@@ -218,7 +248,7 @@ test.describe('THORChain Wiki Smoke Tests', () => {
       await route.fulfill({ status: 204, body: '' });
     });
 
-    for (const path of ['/', '/search', '/stats', '/network', '/deep-dives/tss']) {
+    for (const path of ['/', '/search', '/stats', '/network', '/dynamic-fees', '/deep-dives/tss']) {
       await page.goto(path);
       await page.waitForLoadState('networkidle');
       await page.waitForTimeout(250);
@@ -256,6 +286,12 @@ test.describe('THORChain Wiki Smoke Tests', () => {
         title: 'Statistics | THORChain Wiki',
         description: 'Current-only Midgard metrics and THORNode operational status.',
         canonical: 'https://wiki.thorchain.no/stats',
+      },
+      {
+        path: '/dynamic-fees',
+        title: 'Dynamic L1 Fees | THORChain Wiki',
+        description: 'Current-only tracker and source-backed explainer for THORChain ADR-026 dynamic L1 minimum fee floors by thorname and pair.',
+        canonical: 'https://wiki.thorchain.no/dynamic-fees',
       },
       {
         path: '/search',

@@ -3,7 +3,7 @@
 import useSWR from 'swr';
 import MidgardAPI from '@/lib/api/midgard';
 import ThornodeAPI from '@/lib/api/thornode';
-import { HistoryItem, LiveDataResult, MidgardHealth, NetworkStats, NetworkStatus, Pool } from '@/lib/types';
+import { DynamicL1FeeStatus, HistoryItem, LiveDataResult, MidgardHealth, NetworkStats, NetworkStatus, Pool } from '@/lib/types';
 import { liveDegraded } from '@/lib/trust';
 
 const SWR_OPTIONS = {
@@ -67,6 +67,15 @@ export function useNetworkStatus() {
   const { data, error, isLoading } = useSWR<LiveDataResult<NetworkStatus>>(
     'thornode:network-status',
     () => ThornodeAPI.getNetworkStatus(),
+    SWR_OPTIONS
+  );
+  return unwrapLiveResult(data, error, isLoading);
+}
+
+export function useDynamicL1FeeStatus() {
+  const { data, error, isLoading } = useSWR<LiveDataResult<DynamicL1FeeStatus>>(
+    'thornode:dynamic-l1-fee-status',
+    () => ThornodeAPI.getDynamicL1FeeStatus(),
     SWR_OPTIONS
   );
   return unwrapLiveResult(data, error, isLoading);

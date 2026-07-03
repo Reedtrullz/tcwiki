@@ -387,6 +387,75 @@ export interface ThornodeLastBlock {
   last_signed_out: number | string;
 }
 
+export type DynamicL1FeeMimirState = 'active' | 'inactive' | 'absent' | 'unparseable';
+
+export type DynamicL1FeeWhitelistState = 'active' | 'monitor' | 'inactive' | 'unparseable';
+
+export interface DynamicL1FeeMimirFlag {
+  key: string;
+  value: number | null;
+  defaultValue?: number;
+  effectiveValue?: number | null;
+  state: DynamicL1FeeMimirState;
+}
+
+export interface DynamicL1FeeWhitelistedPartner {
+  key: string;
+  thorname: string;
+  value: number | null;
+  whitelisted: boolean | null;
+  state: DynamicL1FeeWhitelistState;
+}
+
+export interface DynamicL1FeeMimirStatus {
+  enabled: DynamicL1FeeMimirFlag;
+  slipMinBps: DynamicL1FeeMimirFlag;
+  epochBlocks: DynamicL1FeeMimirFlag;
+  floorBps: DynamicL1FeeMimirFlag;
+  ceilingBps: DynamicL1FeeMimirFlag;
+  stepBps: DynamicL1FeeMimirFlag;
+  deadbandBps: DynamicL1FeeMimirFlag;
+  windowEpochs: DynamicL1FeeMimirFlag;
+  whitelistedPartners: DynamicL1FeeWhitelistedPartner[];
+  invalidKeys: string[];
+}
+
+export interface DynamicL1FeeRecord {
+  thorname: string;
+  pair: string;
+  dynamicBps: number;
+  whitelistValue: number | null;
+  whitelistState: DynamicL1FeeWhitelistState;
+  whitelisted: boolean | null;
+  lastActiveEpoch: number;
+  latestFeesTorBaseUnits: string | null;
+}
+
+export interface DynamicL1FeeCurrentAccumulator {
+  thorname: string;
+  pair: string;
+  epoch: number;
+  volumeTorBaseUnits: string | null;
+  feesTorBaseUnits: string | null;
+}
+
+export interface DynamicL1FeeSourceFreshness {
+  thorchainHeight: number;
+  thorchainBlockTime: string;
+  thorchainBlockAgeSeconds?: number;
+  snapshotPinned: boolean;
+}
+
+export interface DynamicL1FeeStatus {
+  mimir: DynamicL1FeeMimirStatus;
+  records: DynamicL1FeeRecord[];
+  currentEpoch: number;
+  currentEntries: DynamicL1FeeCurrentAccumulator[];
+  sourceFreshness: DynamicL1FeeSourceFreshness;
+  sourceWarnings: string[];
+  caveats: Array<'current-only' | 'adr-experiment' | 'not-historical-fee-proof'>;
+}
+
 export type InboundOperationField = 'halted' | 'global_trading_paused' | 'chain_trading_paused' | 'chain_lp_actions_paused';
 
 export interface ChainOperationalStatus {

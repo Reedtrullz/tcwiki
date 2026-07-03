@@ -216,6 +216,16 @@ describe('SEARCH_DOCUMENTS', () => {
     expect(docsMatching('HaltWasmDeployer').some((doc) => doc.type === 'mimir')).toBe(true);
   });
 
+  it('indexes ADR-026 dynamic fee tracker terms', () => {
+    expect(docsMatching('ADR-026').some((doc) => doc.slug === '/dynamic-fees')).toBe(true);
+    expect(docsMatching('dynamic L1 fee').some((doc) => doc.slug === '/dynamic-fees')).toBe(true);
+    expect(docsMatching('DYNAMICFEE-WHITELIST').some((doc) => doc.slug === '/dynamic-fees')).toBe(true);
+    expect(docsMatching('fees_tor').some((doc) => doc.slug === '/dynamic-fees')).toBe(true);
+    expect(docsMatching('ShapeShift').some((doc) => doc.slug === '/dynamic-fees')).toBe(true);
+    expect(docsMatching('ADR-026 Dynamic L1 Fees').some((doc) => doc.id === 'governance:adr-026-dynamic-l1-fees')).toBe(true);
+    expect(docsMatching('dynamic_l1_fees_current').some((doc) => doc.id === 'source-map:dynamic-fee-experiment')).toBe(true);
+  });
+
   it('keeps top-level navigation sections reachable from the footer', () => {
     const footerHrefs = new Set(FOOTER_NAV_ITEMS.map((item) => item.href));
     const topLevelNavSections = CONTENT_ENTRIES.filter((entry) => entry.nav && entry.category === 'section');

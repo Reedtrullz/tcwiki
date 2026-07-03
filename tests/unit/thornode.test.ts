@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import ThornodeAPI, { deriveNetworkStatus, resetThornodeEndpointForTests } from '@/lib/api/thornode';
-import type { ThornodeInboundAddress } from '@/lib/types';
+import ThornodeAPI, { deriveDynamicL1FeeStatus, deriveNetworkStatus, resetThornodeEndpointForTests } from '@/lib/api/thornode';
+import type { DynamicL1FeeSourceFreshness, ThornodeInboundAddress } from '@/lib/types';
 
 const makeResponse = (ok: boolean, data: unknown, status = 200, statusText = 'OK') => ({
   ok,
@@ -14,6 +14,13 @@ interface SnapshotFixture {
   inbound: unknown;
   version: unknown;
   lastBlock: unknown;
+  latestBlock: unknown;
+}
+
+interface DynamicFeeFixture {
+  mimir: unknown;
+  dynamicFees: unknown;
+  currentDynamicFees: unknown;
   latestBlock: unknown;
 }
 
@@ -64,6 +71,72 @@ function stubNetworkStatusSnapshots(liquify: SnapshotFixture, publicThornode: Sn
     return makeResponse(false, {}, 404, 'Not Found');
   }));
 }
+
+function dynamicFeeFixture(overrides: Partial<DynamicFeeFixture> = {}): DynamicFeeFixture {
+  return {
+    mimir: {
+      L1DYNAMICFEEENABLED: 1,
+      L1SLIPMINBPS: 10,
+      'DYNAMICFEE-WHITELIST-SS': 1,
+    },
+    dynamicFees: {
+      entries: [
+        {
+          thorname: 'ss',
+          pair: 'THOR.RUNE|THOR.TCY',
+          dynamic_bps: '1',
+          whitelist_state: '1',
+          last_active_epoch: '0',
+          latest_fees_tor: '',
+        },
+      ],
+    },
+    currentDynamicFees: {
+      epoch: '1864',
+      entries: [
+        {
+          thorname: 'ss',
+          pair: 'THOR.RUNE|THOR.TCY',
+          volume_tor: '185642164687',
+          fees_tor: '123938141',
+          epoch: '1864',
+        },
+      ],
+    },
+    latestBlock: { block: { header: { height: '101', time: new Date().toISOString() } } },
+    ...overrides,
+  };
+}
+
+function stubDynamicFeeSnapshots(liquify: DynamicFeeFixture, publicThornode: DynamicFeeFixture) {
+  vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+    const url = String(input);
+    const pathname = new URL(url).pathname;
+    const snapshot = url.includes('gateway.liquify.com') ? liquify : publicThornode;
+
+    if (pathname.endsWith('/mimir')) {
+      return makeResponse(true, snapshot.mimir);
+    }
+    if (pathname.endsWith('/dynamic_l1_fees')) {
+      return makeResponse(true, snapshot.dynamicFees);
+    }
+    if (pathname.endsWith('/dynamic_l1_fees_current')) {
+      return makeResponse(true, snapshot.currentDynamicFees);
+    }
+    if (pathname.endsWith('/base/tendermint/v1beta1/blocks/latest')) {
+      return makeResponse(true, snapshot.latestBlock);
+    }
+
+    return makeResponse(false, {}, 404, 'Not Found');
+  }));
+}
+
+const dynamicFreshness: DynamicL1FeeSourceFreshness = {
+  thorchainHeight: 100,
+  thorchainBlockTime: '2026-07-03T00:00:00.000Z',
+  thorchainBlockAgeSeconds: 6,
+  snapshotPinned: true,
+};
 
 describe('deriveNetworkStatus', () => {
   beforeEach(() => {
@@ -1344,6 +1417,270 @@ describe('deriveNetworkStatus', () => {
     expect(result.error).toContain('THORNode status sources did not provide a usable snapshot');
     expect(result.error).toContain('THORNode inbound_addresses response was not a valid chain list.');
     expect(result.error).toContain('THORNode lastblock response did not include usable required chain, thorchain, last_observed_in, and last_signed_out fields.');
+    expect(result.sources?.map((source) => source.label)).toEqual(['Liquify THORNode', 'THORChain THORNode']);
+  });
+
+  it('normalizes live-shaped dynamic L1 fee status without treating empty TOR fields as zero', () => {
+    const status = deriveDynamicL1FeeStatus(
+      {
+        L1DYNAMICFEEENABLED: 1,
+        L1SLIPMINBPS: 10,
+        'DYNAMICFEE-WHITELIST-SS': 1,
+      },
+      dynamicFeeFixture().dynamicFees,
+      dynamicFeeFixture().currentDynamicFees,
+      dynamicFreshness
+    );
+
+    expect(status.mimir.enabled.state).toBe('active');
+    expect(status.mimir.slipMinBps.value).toBe(10);
+    expect(status.mimir.floorBps).toMatchObject({ value: null, defaultValue: 1, effectiveValue: 1, state: 'absent' });
+    expect(status.mimir.ceilingBps).toMatchObject({ value: null, defaultValue: 20, effectiveValue: 20, state: 'absent' });
+    expect(status.mimir.stepBps).toMatchObject({ value: null, defaultValue: 1, effectiveValue: 1, state: 'absent' });
+    expect(status.mimir.deadbandBps).toMatchObject({ value: null, defaultValue: 1000, effectiveValue: 1000, state: 'absent' });
+    expect(status.mimir.windowEpochs).toMatchObject({ value: null, defaultValue: 3, effectiveValue: 3, state: 'absent' });
+    expect(status.mimir.epochBlocks).toMatchObject({ value: null, defaultValue: 14400, effectiveValue: 14400, state: 'absent' });
+    expect(status.mimir.whitelistedPartners).toEqual([
+      {
+        key: 'DYNAMICFEE-WHITELIST-SS',
+        thorname: 'ss',
+        value: 1,
+        whitelisted: true,
+        state: 'active',
+      },
+    ]);
+    expect(status.records).toHaveLength(1);
+    expect(status.records[0]?.latestFeesTorBaseUnits).toBeNull();
+    expect(status.currentEntries[0]).toMatchObject({
+      thorname: 'ss',
+      pair: 'THOR.RUNE|THOR.TCY',
+      volumeTorBaseUnits: '185642164687',
+      feesTorBaseUnits: '123938141',
+    });
+    expect(status.sourceWarnings).toEqual([]);
+  });
+
+  it('keeps malformed dynamic fee Mimirs visible as source warnings', () => {
+    const status = deriveDynamicL1FeeStatus(
+      {
+        L1DYNAMICFEEENABLED: 'enabled',
+        L1SLIPMINBPS: 10,
+        'DYNAMICFEE-WHITELIST-SYMBIOSIS': 'yes',
+      },
+      dynamicFeeFixture().dynamicFees,
+      dynamicFeeFixture().currentDynamicFees,
+      dynamicFreshness
+    );
+
+    expect(status.mimir.enabled.state).toBe('unparseable');
+    expect(status.mimir.whitelistedPartners[0]).toMatchObject({
+      key: 'DYNAMICFEE-WHITELIST-SYMBIOSIS',
+      thorname: 'symbiosis',
+      value: null,
+      whitelisted: null,
+      state: 'unparseable',
+    });
+    expect(status.mimir.invalidKeys).toEqual(['DYNAMICFEE-WHITELIST-SYMBIOSIS', 'L1DYNAMICFEEENABLED']);
+    expect(status.sourceWarnings).toEqual([
+      'DYNAMICFEE-WHITELIST-SYMBIOSIS has an unsupported or unparseable dynamic fee whitelist state.',
+      'L1DYNAMICFEEENABLED is unparseable; dynamic fee enablement is unknown.',
+      'Sealed dynamic fee record ss THOR.RUNE|THOR.TCY has no matching DYNAMICFEE-WHITELIST Mimir key.',
+    ]);
+  });
+
+  it('does not treat unsupported dynamic fee enablement values as enabled', () => {
+    const status = deriveDynamicL1FeeStatus(
+      {
+        L1DynamicFeeEnabled: 2,
+        L1SlipMinBPS: 10,
+        L1DynamicFeeWindowEpochs: 99,
+        'DYNAMICFEE-WHITELIST-SS': 1,
+      },
+      dynamicFeeFixture().dynamicFees,
+      dynamicFeeFixture().currentDynamicFees,
+      dynamicFreshness
+    );
+
+    expect(status.mimir.enabled).toMatchObject({
+      key: 'L1DynamicFeeEnabled',
+      value: 2,
+      defaultValue: 0,
+      effectiveValue: null,
+      state: 'unparseable',
+    });
+    expect(status.mimir.windowEpochs).toMatchObject({
+      value: 99,
+      defaultValue: 3,
+      effectiveValue: 30,
+      state: 'active',
+    });
+    expect(status.mimir.invalidKeys).toEqual(['L1DynamicFeeEnabled']);
+    expect(status.sourceWarnings).toEqual([
+      'L1DynamicFeeEnabled has unsupported dynamic fee enablement value 2; expected 0 or 1.',
+      'L1DynamicFeeWindowEpochs value 99 is outside ADR-026 clamp bounds; displaying effective value 30.',
+    ]);
+  });
+
+  it('warns when sealed dynamic fee records disagree with whitelist Mimirs or configured bounds', () => {
+    const fixture = dynamicFeeFixture({
+      dynamicFees: {
+        entries: [
+          {
+            thorname: 'ss',
+            pair: 'THOR.RUNE|THOR.TCY',
+            dynamic_bps: '0',
+            whitelist_state: '2',
+            last_active_epoch: '1864',
+            latest_fees_tor: '1',
+          },
+          {
+            thorname: 'ghost',
+            pair: 'BTC.BTC|THOR.RUNE',
+            dynamic_bps: '21',
+            whitelist_state: '0',
+            last_active_epoch: '1864',
+            latest_fees_tor: '1',
+          },
+        ],
+      },
+      currentDynamicFees: { epoch: '1864', entries: [] },
+    });
+
+    const status = deriveDynamicL1FeeStatus(
+      fixture.mimir as Record<string, unknown>,
+      fixture.dynamicFees,
+      fixture.currentDynamicFees,
+      dynamicFreshness
+    );
+
+    expect(status.sourceWarnings).toEqual(expect.arrayContaining([
+      'Sealed dynamic fee record ghost BTC.BTC|THOR.RUNE dynamic_bps 21 is above effective ceiling 20.',
+      'Sealed dynamic fee record ghost BTC.BTC|THOR.RUNE has no matching DYNAMICFEE-WHITELIST Mimir key.',
+      'Sealed dynamic fee record ghost BTC.BTC|THOR.RUNE is inactive even though ADR-026 records should be pruned when whitelist state is 0 or absent.',
+      'Sealed dynamic fee record ss THOR.RUNE|THOR.TCY dynamic_bps 0 is below effective floor 1.',
+      'Sealed dynamic fee record ss THOR.RUNE|THOR.TCY whitelist_state 2 disagrees with DYNAMICFEE-WHITELIST-SS=1.',
+    ]));
+  });
+
+  it('rejects duplicate sealed dynamic fee records', () => {
+    const fixture = dynamicFeeFixture();
+
+    expect(() => deriveDynamicL1FeeStatus(
+      fixture.mimir as Record<string, unknown>,
+      {
+        entries: [
+          ...(fixture.dynamicFees as { entries: unknown[] }).entries,
+          ...(fixture.dynamicFees as { entries: unknown[] }).entries,
+        ],
+      },
+      fixture.currentDynamicFees,
+      dynamicFreshness
+    )).toThrow(/duplicate record/);
+  });
+
+  it('warns when a current accumulator has no sealed dynamic fee record', () => {
+    const fixture = dynamicFeeFixture({
+      currentDynamicFees: {
+        epoch: '1864',
+        entries: [
+          {
+            thorname: 'symbiosis',
+            pair: 'BTC.BTC|THOR.RUNE',
+            volume_tor: '10',
+            fees_tor: '1',
+            epoch: '1863',
+          },
+        ],
+      },
+    });
+
+    const status = deriveDynamicL1FeeStatus(
+      fixture.mimir as Record<string, unknown>,
+      fixture.dynamicFees,
+      fixture.currentDynamicFees,
+      dynamicFreshness
+    );
+
+    expect(status.sourceWarnings).toEqual([
+      'Current dynamic fee entry symbiosis BTC.BTC|THOR.RUNE epoch mismatch: 1863 vs current epoch 1864.',
+      'Current dynamic fee entry symbiosis BTC.BTC|THOR.RUNE exists without a sealed dynamic_l1_fees record.',
+    ]);
+  });
+
+  it('fetches dynamic fee snapshots from one pinned THORNode provider', async () => {
+    stubDynamicFeeSnapshots(
+      dynamicFeeFixture(),
+      dynamicFeeFixture({
+        dynamicFees: {
+          entries: [
+            {
+              thorname: 'symbiosis',
+              pair: 'BTC.BTC|THOR.RUNE',
+              dynamic_bps: '3',
+              whitelist_state: '1',
+              last_active_epoch: '1864',
+              latest_fees_tor: '41257745',
+            },
+          ],
+        },
+        currentDynamicFees: { epoch: '1864', entries: [] },
+      })
+    );
+
+    const result = await ThornodeAPI.getDynamicL1FeeStatus();
+    const fetchMock = vi.mocked(fetch);
+    const urls = fetchMock.mock.calls.map(([input]) => String(input));
+
+    expect(result.status).toBe('ok');
+    expect(result.source?.label).toBe('Liquify THORNode');
+    expect(result.data?.records.map((record) => record.thorname)).toEqual(['ss']);
+    expect(urls.filter((url) => url.includes('dynamic_l1_fees')).every((url) => url.includes('gateway.liquify.com'))).toBe(true);
+    expect(urls).toContain('https://gateway.liquify.com/chain/thorchain_api/thorchain/mimir?height=100');
+    expect(urls).toContain('https://gateway.liquify.com/chain/thorchain_api/thorchain/dynamic_l1_fees?height=100');
+    expect(urls).toContain('https://gateway.liquify.com/chain/thorchain_api/thorchain/dynamic_l1_fees_current?height=100');
+  });
+
+  it('surfaces stale dynamic fee snapshot block timestamps as source warnings', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-03T00:01:00.000Z'));
+    const staleFixture = dynamicFeeFixture({
+      latestBlock: { block: { header: { height: '101', time: '2026-07-03T00:00:00.000Z' } } },
+    });
+    stubDynamicFeeSnapshots(staleFixture, staleFixture);
+
+    const result = await ThornodeAPI.getDynamicL1FeeStatus();
+
+    expect(result.status).toBe('ok');
+    expect(result.data?.sourceWarnings).toContain('THORNode latest block timestamp is 1 minute old; dynamic fee state is stale.');
+  });
+
+  it('surfaces future dynamic fee snapshot block timestamps as source warnings', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-03T00:00:00.000Z'));
+    const futureFixture = dynamicFeeFixture({
+      latestBlock: { block: { header: { height: '101', time: '2026-07-03T00:01:00.000Z' } } },
+    });
+    stubDynamicFeeSnapshots(futureFixture, futureFixture);
+
+    const result = await ThornodeAPI.getDynamicL1FeeStatus();
+
+    expect(result.status).toBe('ok');
+    expect(result.data?.sourceWarnings).toContain('THORNode latest block timestamp is 1 minute in the future; dynamic fee state is stale.');
+  });
+
+  it('degrades dynamic fee status when every THORNode provider is unusable', async () => {
+    stubDynamicFeeSnapshots(
+      dynamicFeeFixture({ dynamicFees: { entries: [{ thorname: 'ss' }] } }),
+      dynamicFeeFixture({ currentDynamicFees: { epoch: 'nope', entries: [] } })
+    );
+
+    const result = await ThornodeAPI.getDynamicL1FeeStatus();
+
+    expect(result.status).toBe('degraded');
+    expect(result.data).toBeUndefined();
+    expect(result.error).toContain('THORNode dynamic fee sources did not provide a usable snapshot');
+    expect(result.error).toContain('did not include a usable thorname and pair');
+    expect(result.error).toContain('Invalid dynamic_l1_fees_current epoch');
     expect(result.sources?.map((source) => source.label)).toEqual(['Liquify THORNode', 'THORChain THORNode']);
   });
 });

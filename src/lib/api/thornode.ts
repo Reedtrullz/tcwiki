@@ -1,5 +1,13 @@
 import {
   ChainOperationalStatus,
+  DynamicL1FeeCurrentAccumulator,
+  DynamicL1FeeMimirFlag,
+  DynamicL1FeeMimirStatus,
+  DynamicL1FeeRecord,
+  DynamicL1FeeSourceFreshness,
+  DynamicL1FeeStatus,
+  DynamicL1FeeWhitelistedPartner,
+  DynamicL1FeeWhitelistState,
   InboundOperationField,
   LiveDataResult,
   NetworkStatus,
@@ -105,6 +113,8 @@ const UNKNOWN_OPERATION_REVIEW_MIMIR_PREFIXES = [
   'MIMIRRECALLFUND',
   'MIMIRUPGRADECONTRACT',
 ] as const;
+const DYNAMIC_L1_FEE_WHITELIST_PREFIX = 'DYNAMICFEE-WHITELIST-';
+const TOR_BASE_UNIT_PATTERN = /^\d+$/;
 
 type MimirActivationMode = 'positive' | 'at-or-after-height' | 'after-height' | 'until-height';
 
@@ -372,6 +382,362 @@ function getWarningSnapshotScore(status: NetworkStatus) {
     }
     return score + 25;
   }, 0);
+}
+
+function getDynamicFeeWarningSnapshotScore(status: DynamicL1FeeStatus) {
+  return status.sourceWarnings.reduce((score, warning) => {
+    if (warning.includes('latest block timestamp')) {
+      return score + 100;
+    }
+    if (warning.includes('unparseable') || warning.includes('Invalid')) {
+      return score + 60;
+    }
+    if (warning.includes('mismatch') || warning.includes('without a sealed')) {
+      return score + 20;
+    }
+    return score + 10;
+  }, 0);
+}
+
+function getDynamicFeeBlockAgeWarnings(blockAgeSeconds: number | undefined) {
+  if (blockAgeSeconds === undefined) {
+    return [];
+  }
+
+  if (blockAgeSeconds < -THORNODE_BLOCK_FUTURE_DEGRADED_SECONDS) {
+    return [`THORNode latest block timestamp is ${formatAgeSeconds(blockAgeSeconds)} in the future; dynamic fee state is stale.`];
+  }
+  if (blockAgeSeconds < -THORNODE_BLOCK_FUTURE_WARNING_SECONDS) {
+    return [`THORNode latest block timestamp is ${formatAgeSeconds(blockAgeSeconds)} in the future; dynamic fee state may be stale.`];
+  }
+  if (blockAgeSeconds > THORNODE_BLOCK_STALE_DEGRADED_SECONDS) {
+    return [`THORNode latest block timestamp is ${formatAgeSeconds(blockAgeSeconds)} old; dynamic fee state is stale.`];
+  }
+  if (blockAgeSeconds > THORNODE_BLOCK_STALE_WARNING_SECONDS) {
+    return [`THORNode latest block timestamp is ${formatAgeSeconds(blockAgeSeconds)} old; dynamic fee state may be stale.`];
+  }
+
+  return [];
+}
+
+function toNonNegativeInteger(value: unknown, field: string): number {
+  const numeric = toMimirNumber(value);
+  if (numeric === null || numeric < 0) {
+    throw new Error(`Invalid ${field}; expected a non-negative safe integer.`);
+  }
+  return numeric;
+}
+
+function toTorBaseUnits(value: unknown, field: string): string | null {
+  if (value === '') {
+    return null;
+  }
+  if (typeof value === 'string' && TOR_BASE_UNIT_PATTERN.test(value)) {
+    return value;
+  }
+  throw new Error(`Invalid ${field}; expected a TOR base-unit integer string or empty string.`);
+}
+
+function dynamicMimirFlag(mimir: Record<string, unknown>, key: string): DynamicL1FeeMimirFlag {
+  const state = getMimirNumericState(mimir, key);
+  if (state.state === 'absent') {
+    return { key, value: null, state: 'absent' };
+  }
+  if (state.state === 'unparseable') {
+    return { key: state.key, value: null, state: 'unparseable' };
+  }
+  return {
+    key: state.key,
+    value: state.value,
+    state: state.value > 0 ? 'active' : 'inactive',
+  };
+}
+
+function dynamicEnabledFlag(
+  mimir: Record<string, unknown>,
+  sourceWarnings: string[],
+  invalidKeys: string[]
+): DynamicL1FeeMimirFlag {
+  const key = 'L1DynamicFeeEnabled';
+  const state = getMimirNumericState(mimir, key);
+  if (state.state === 'absent') {
+    return { key, value: null, defaultValue: 0, effectiveValue: 0, state: 'absent' };
+  }
+  if (state.state === 'unparseable') {
+    invalidKeys.push(state.key);
+    sourceWarnings.push(`${state.key} is unparseable; dynamic fee enablement is unknown.`);
+    return { key: state.key, value: null, defaultValue: 0, effectiveValue: null, state: 'unparseable' };
+  }
+  if (state.value !== 0 && state.value !== 1) {
+    invalidKeys.push(state.key);
+    sourceWarnings.push(`${state.key} has unsupported dynamic fee enablement value ${state.value}; expected 0 or 1.`);
+    return { key: state.key, value: state.value, defaultValue: 0, effectiveValue: null, state: 'unparseable' };
+  }
+
+  return {
+    key: state.key,
+    value: state.value,
+    defaultValue: 0,
+    effectiveValue: state.value,
+    state: state.value === 1 ? 'active' : 'inactive',
+  };
+}
+
+function dynamicConfigFlag(
+  mimir: Record<string, unknown>,
+  key: string,
+  defaultValue: number,
+  sourceWarnings: string[],
+  invalidKeys: string[],
+  options: { min?: number; max?: number } = {}
+): DynamicL1FeeMimirFlag {
+  const state = getMimirNumericState(mimir, key);
+  if (state.state === 'absent') {
+    return { key, value: null, defaultValue, effectiveValue: defaultValue, state: 'absent' };
+  }
+  if (state.state === 'unparseable' || state.value < 0) {
+    const invalidKey = state.state === 'unparseable' ? state.key : key;
+    invalidKeys.push(invalidKey);
+    sourceWarnings.push(`${invalidKey} is unparseable or negative; using no trusted dynamic fee config value.`);
+    return { key: invalidKey, value: null, defaultValue, effectiveValue: null, state: 'unparseable' };
+  }
+
+  const min = options.min;
+  const max = options.max;
+  const effectiveValue = Math.min(
+    max ?? state.value,
+    Math.max(min ?? state.value, state.value)
+  );
+  if (effectiveValue !== state.value) {
+    sourceWarnings.push(`${state.key} value ${state.value} is outside ADR-026 clamp bounds; displaying effective value ${effectiveValue}.`);
+  }
+
+  return {
+    key: state.key,
+    value: state.value,
+    defaultValue,
+    effectiveValue,
+    state: state.value > 0 ? 'active' : 'inactive',
+  };
+}
+
+function dynamicWhitelistState(value: number | null): DynamicL1FeeWhitelistState {
+  if (value === null) {
+    return 'unparseable';
+  }
+  if (value === 1) {
+    return 'active';
+  }
+  if (value === 2) {
+    return 'monitor';
+  }
+  if (value === 0) {
+    return 'inactive';
+  }
+  return 'unparseable';
+}
+
+function dynamicWhitelisted(value: number | null): boolean | null {
+  const state = dynamicWhitelistState(value);
+  return state === 'active' || state === 'monitor'
+    ? true
+    : state === 'inactive'
+      ? false
+      : null;
+}
+
+function getDynamicL1FeeMimirStatus(mimir: Record<string, unknown>, sourceWarnings: string[]): DynamicL1FeeMimirStatus {
+  const invalidKeys: string[] = [];
+  const enabled = dynamicEnabledFlag(mimir, sourceWarnings, invalidKeys);
+  const slipMinBps = dynamicMimirFlag(mimir, 'L1SlipMinBPS');
+  const epochBlocks = dynamicConfigFlag(mimir, 'L1DynamicFeeEpochBlocks', 14400, sourceWarnings, invalidKeys);
+  const floorBps = dynamicConfigFlag(mimir, 'L1DynamicFeeFloorBPS', 1, sourceWarnings, invalidKeys);
+  const ceilingBps = dynamicConfigFlag(mimir, 'L1DynamicFeeCeilingBPS', 20, sourceWarnings, invalidKeys);
+  const stepBps = dynamicConfigFlag(mimir, 'L1DynamicFeeStepBPS', 1, sourceWarnings, invalidKeys);
+  const deadbandBps = dynamicConfigFlag(mimir, 'L1DynamicFeeDeadbandBPS', 1000, sourceWarnings, invalidKeys);
+  const windowEpochs = dynamicConfigFlag(mimir, 'L1DynamicFeeWindowEpochs', 3, sourceWarnings, invalidKeys, { min: 1, max: 30 });
+
+  if (slipMinBps.state === 'unparseable') {
+    invalidKeys.push(slipMinBps.key);
+    sourceWarnings.push(`${slipMinBps.key} is unparseable; base L1 minimum bps is unknown.`);
+  }
+
+  const whitelistedPartners: DynamicL1FeeWhitelistedPartner[] = Object.entries(mimir)
+    .filter(([key]) => key.toUpperCase().startsWith(DYNAMIC_L1_FEE_WHITELIST_PREFIX))
+    .map(([key, rawValue]) => {
+      const value = toMimirNumber(rawValue);
+      const state = dynamicWhitelistState(value);
+      const thorname = key.slice(DYNAMIC_L1_FEE_WHITELIST_PREFIX.length).toLowerCase();
+      if (state === 'unparseable') {
+        invalidKeys.push(key);
+        sourceWarnings.push(`${key} has an unsupported or unparseable dynamic fee whitelist state.`);
+      }
+      return {
+        key,
+        thorname,
+        value,
+        whitelisted: dynamicWhitelisted(value),
+        state,
+      };
+    })
+    .sort((left, right) => left.thorname.localeCompare(right.thorname));
+
+  return {
+    enabled,
+    slipMinBps,
+    epochBlocks,
+    floorBps,
+    ceilingBps,
+    stepBps,
+    deadbandBps,
+    windowEpochs,
+    whitelistedPartners,
+    invalidKeys: [...new Set(invalidKeys)].sort((left, right) => left.localeCompare(right)),
+  };
+}
+
+function recordKey(thorname: string, pair: string) {
+  return `${thorname.toLowerCase()}|${pair}`;
+}
+
+function parseDynamicL1FeeRecords(value: unknown): DynamicL1FeeRecord[] {
+  if (!isPlainRecord(value) || !Array.isArray(value.entries)) {
+    throw new Error('THORNode dynamic_l1_fees response did not include an entries array.');
+  }
+
+  const seen = new Set<string>();
+  return value.entries.map((entry, index) => {
+    if (!isPlainRecord(entry)) {
+      throw new Error(`THORNode dynamic_l1_fees entry ${index} was not a plain object.`);
+    }
+    const thorname = typeof entry.thorname === 'string' ? entry.thorname.trim().toLowerCase() : '';
+    const pair = typeof entry.pair === 'string' ? entry.pair.trim() : '';
+    if (!thorname || !pair) {
+      throw new Error(`THORNode dynamic_l1_fees entry ${index} did not include a usable thorname and pair.`);
+    }
+    const key = recordKey(thorname, pair);
+    if (seen.has(key)) {
+      throw new Error(`THORNode dynamic_l1_fees response included a duplicate record for ${thorname} ${pair}.`);
+    }
+    seen.add(key);
+
+    const dynamicBps = toNonNegativeInteger(entry.dynamic_bps, `dynamic_l1_fees entry ${key} dynamic_bps`);
+    if (dynamicBps > 10000) {
+      throw new Error(`THORNode dynamic_l1_fees entry ${key} dynamic_bps exceeded 10000.`);
+    }
+    const whitelistValue = toNonNegativeInteger(entry.whitelist_state, `dynamic_l1_fees entry ${key} whitelist_state`);
+    const whitelistState = dynamicWhitelistState(whitelistValue);
+    if (whitelistState === 'unparseable') {
+      throw new Error(`THORNode dynamic_l1_fees entry ${key} had unsupported whitelist_state ${whitelistValue}.`);
+    }
+
+    return {
+      thorname,
+      pair,
+      dynamicBps,
+      whitelistValue,
+      whitelistState,
+      whitelisted: dynamicWhitelisted(whitelistValue),
+      lastActiveEpoch: toNonNegativeInteger(entry.last_active_epoch, `dynamic_l1_fees entry ${key} last_active_epoch`),
+      latestFeesTorBaseUnits: toTorBaseUnits(entry.latest_fees_tor, `dynamic_l1_fees entry ${key} latest_fees_tor`),
+    };
+  }).sort((left, right) => (
+    left.thorname.localeCompare(right.thorname) ||
+    left.pair.localeCompare(right.pair)
+  ));
+}
+
+function parseDynamicL1FeeCurrent(value: unknown): {
+  currentEpoch: number;
+  currentEntries: DynamicL1FeeCurrentAccumulator[];
+} {
+  if (!isPlainRecord(value) || !Array.isArray(value.entries)) {
+    throw new Error('THORNode dynamic_l1_fees_current response did not include an entries array.');
+  }
+
+  const currentEpoch = toNonNegativeInteger(value.epoch, 'dynamic_l1_fees_current epoch');
+  const seen = new Set<string>();
+  const currentEntries = value.entries.map((entry, index) => {
+    if (!isPlainRecord(entry)) {
+      throw new Error(`THORNode dynamic_l1_fees_current entry ${index} was not a plain object.`);
+    }
+    const thorname = typeof entry.thorname === 'string' ? entry.thorname.trim().toLowerCase() : '';
+    const pair = typeof entry.pair === 'string' ? entry.pair.trim() : '';
+    if (!thorname || !pair) {
+      throw new Error(`THORNode dynamic_l1_fees_current entry ${index} did not include a usable thorname and pair.`);
+    }
+    const key = recordKey(thorname, pair);
+    if (seen.has(key)) {
+      throw new Error(`THORNode dynamic_l1_fees_current response included a duplicate record for ${thorname} ${pair}.`);
+    }
+    seen.add(key);
+
+    return {
+      thorname,
+      pair,
+      epoch: toNonNegativeInteger(entry.epoch, `dynamic_l1_fees_current entry ${key} epoch`),
+      volumeTorBaseUnits: toTorBaseUnits(entry.volume_tor, `dynamic_l1_fees_current entry ${key} volume_tor`),
+      feesTorBaseUnits: toTorBaseUnits(entry.fees_tor, `dynamic_l1_fees_current entry ${key} fees_tor`),
+    };
+  }).sort((left, right) => (
+    left.thorname.localeCompare(right.thorname) ||
+    left.pair.localeCompare(right.pair)
+  ));
+
+  return { currentEpoch, currentEntries };
+}
+
+export function deriveDynamicL1FeeStatus(
+  mimir: Record<string, unknown>,
+  recordsResponse: unknown,
+  currentResponse: unknown,
+  sourceFreshness: DynamicL1FeeSourceFreshness
+): DynamicL1FeeStatus {
+  const sourceWarnings: string[] = [];
+  const records = parseDynamicL1FeeRecords(recordsResponse);
+  const { currentEpoch, currentEntries } = parseDynamicL1FeeCurrent(currentResponse);
+  const recordKeys = new Set(records.map((record) => recordKey(record.thorname, record.pair)));
+  const mimirStatus = getDynamicL1FeeMimirStatus(mimir, sourceWarnings);
+  const whitelistedByThorname = new Map(mimirStatus.whitelistedPartners.map((partner) => [partner.thorname, partner]));
+  const floorBps = mimirStatus.floorBps.effectiveValue;
+  const ceilingBps = mimirStatus.ceilingBps.effectiveValue;
+
+  for (const record of records) {
+    const partner = whitelistedByThorname.get(record.thorname);
+    if (!partner) {
+      sourceWarnings.push(`Sealed dynamic fee record ${record.thorname} ${record.pair} has no matching DYNAMICFEE-WHITELIST Mimir key.`);
+    } else if (partner.state !== 'unparseable' && partner.state !== record.whitelistState) {
+      sourceWarnings.push(`Sealed dynamic fee record ${record.thorname} ${record.pair} whitelist_state ${record.whitelistValue} disagrees with ${partner.key}=${partner.value}.`);
+    }
+    if (record.whitelistState === 'inactive') {
+      sourceWarnings.push(`Sealed dynamic fee record ${record.thorname} ${record.pair} is inactive even though ADR-026 records should be pruned when whitelist state is 0 or absent.`);
+    }
+    if (typeof floorBps === 'number' && record.dynamicBps < floorBps) {
+      sourceWarnings.push(`Sealed dynamic fee record ${record.thorname} ${record.pair} dynamic_bps ${record.dynamicBps} is below effective floor ${floorBps}.`);
+    }
+    if (typeof ceilingBps === 'number' && record.dynamicBps > ceilingBps) {
+      sourceWarnings.push(`Sealed dynamic fee record ${record.thorname} ${record.pair} dynamic_bps ${record.dynamicBps} is above effective ceiling ${ceilingBps}.`);
+    }
+  }
+
+  for (const entry of currentEntries) {
+    if (entry.epoch !== currentEpoch) {
+      sourceWarnings.push(`Current dynamic fee entry ${entry.thorname} ${entry.pair} epoch mismatch: ${entry.epoch} vs current epoch ${currentEpoch}.`);
+    }
+    if (!recordKeys.has(recordKey(entry.thorname, entry.pair))) {
+      sourceWarnings.push(`Current dynamic fee entry ${entry.thorname} ${entry.pair} exists without a sealed dynamic_l1_fees record.`);
+    }
+  }
+
+  return {
+    mimir: mimirStatus,
+    records,
+    currentEpoch,
+    currentEntries,
+    sourceFreshness,
+    sourceWarnings: [...new Set(sourceWarnings)].sort((left, right) => left.localeCompare(right)),
+    caveats: ['current-only', 'adr-experiment', 'not-historical-fee-proof'],
+  };
 }
 
 function deriveValidatedNetworkStatusSnapshot(
@@ -1455,6 +1821,90 @@ export class ThornodeAPI {
 
     return liveDegraded<NetworkStatus>(
       `THORNode status sources did not provide a usable snapshot (${errors.join('; ')})`,
+      THORNODE_ENDPOINTS,
+      checkedAt
+    );
+  }
+
+  static async getDynamicL1FeeStatus(): Promise<LiveDataResult<DynamicL1FeeStatus>> {
+    const checkedAt = new Date().toISOString();
+    const errors: string[] = [];
+    const warningSnapshots: Array<{
+      endpointIndex: number;
+      endpoint: ThornodeEndpoint;
+      status: DynamicL1FeeStatus;
+    }> = [];
+
+    for (let i = 0; i < THORNODE_ENDPOINTS.length; i += 1) {
+      const endpointIndex = (activeEndpoint + i) % THORNODE_ENDPOINTS.length;
+      const endpoint = THORNODE_ENDPOINTS[endpointIndex];
+
+      try {
+        const latestBlock = await requestCosmosFromEndpoint<unknown>(endpoint, '/base/tendermint/v1beta1/blocks/latest');
+        const latestBlockInfo = getTendermintLatestBlockInfo(latestBlock);
+        if (latestBlockInfo === null) {
+          throw new Error('THORNode latest block response did not include a usable height and timestamp.');
+        }
+
+        const snapshotHeight = getConservativeSnapshotHeight(latestBlockInfo.height);
+        const checkedAtMs = Date.parse(checkedAt);
+        const blockTimeMs = Date.parse(latestBlockInfo.time);
+        const blockAgeSeconds = Number.isNaN(checkedAtMs) || Number.isNaN(blockTimeMs)
+          ? undefined
+          : Math.round((checkedAtMs - blockTimeMs) / 1000);
+        const [mimir, dynamicFees, currentDynamicFees] = await Promise.all([
+          requestFromEndpoint<unknown>(endpoint, '/mimir', snapshotHeight),
+          requestFromEndpoint<unknown>(endpoint, '/dynamic_l1_fees', snapshotHeight),
+          requestFromEndpoint<unknown>(endpoint, '/dynamic_l1_fees_current', snapshotHeight),
+        ]);
+        if (!isPlainRecord(mimir)) {
+          throw new Error('THORNode Mimir response was not a plain object.');
+        }
+        const status = deriveDynamicL1FeeStatus(
+          mimir,
+          dynamicFees,
+          currentDynamicFees,
+          {
+            thorchainHeight: snapshotHeight,
+            thorchainBlockTime: latestBlockInfo.time,
+            thorchainBlockAgeSeconds: blockAgeSeconds,
+            snapshotPinned: true,
+          }
+        );
+        const sourceWarnings = [
+          ...status.sourceWarnings,
+          ...getDynamicFeeBlockAgeWarnings(blockAgeSeconds),
+        ];
+        const statusWithFreshnessWarnings = {
+          ...status,
+          sourceWarnings: [...new Set(sourceWarnings)].sort((left, right) => left.localeCompare(right)),
+        };
+
+        if (statusWithFreshnessWarnings.sourceWarnings.length === 0) {
+          activeEndpoint = endpointIndex;
+          return liveOk(statusWithFreshnessWarnings, endpoint, checkedAt);
+        }
+
+        warningSnapshots.push({ endpointIndex, endpoint, status: statusWithFreshnessWarnings });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unknown THORNode dynamic fee status error';
+        errors.push(`${endpoint.label}: ${message}`);
+      }
+    }
+
+    const [bestWarningSnapshot] = [...warningSnapshots]
+      .sort((left, right) => (
+        getDynamicFeeWarningSnapshotScore(left.status) - getDynamicFeeWarningSnapshotScore(right.status) ||
+        left.status.sourceWarnings.length - right.status.sourceWarnings.length ||
+        left.endpointIndex - right.endpointIndex
+      ));
+    if (bestWarningSnapshot) {
+      activeEndpoint = bestWarningSnapshot.endpointIndex;
+      return liveOk(bestWarningSnapshot.status, bestWarningSnapshot.endpoint, checkedAt);
+    }
+
+    return liveDegraded<DynamicL1FeeStatus>(
+      `THORNode dynamic fee sources did not provide a usable snapshot (${errors.join('; ')})`,
       THORNODE_ENDPOINTS,
       checkedAt
     );

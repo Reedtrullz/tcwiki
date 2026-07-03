@@ -126,6 +126,29 @@ const feesSource: SourceMeta = {
   url: 'https://dev.thorchain.org/concepts/fees.html',
 };
 
+const adr026DynamicFeesSource: SourceMeta = {
+  label: 'ADR-026 dynamic L1 fee model',
+  url: 'https://gitlab.com/thorchain/thornode/-/raw/develop/docs/architecture/adr-026-dynamic-l1-min-fee-per-thorname.md',
+  notes: 'Architecture decision text currently labeled proposed; compare with live THORNode state before making current claims.',
+};
+
+const thornameGuideSource: SourceMeta = {
+  label: 'THORName affiliate guide',
+  url: 'https://dev.thorchain.org/affiliate-guide/thorname-guide.html',
+};
+
+const dynamicL1FeesSource: SourceMeta = {
+  label: 'THORNode dynamic_l1_fees',
+  url: 'https://thornode.thorchain.network/thorchain/dynamic_l1_fees',
+  notes: 'Current-only sealed dynamic L1 fee records.',
+};
+
+const dynamicL1FeesCurrentSource: SourceMeta = {
+  label: 'THORNode dynamic_l1_fees_current',
+  url: 'https://thornode.thorchain.network/thorchain/dynamic_l1_fees_current',
+  notes: 'Current-only in-progress epoch accumulators.',
+};
+
 const assetNotationSource: SourceMeta = {
   label: 'Asset Notation',
   url: 'https://dev.thorchain.org/concepts/asset-notation.html',
@@ -318,6 +341,13 @@ export const SOURCE_MAP_SECTION_RECORDS: SourcedRecord<SourceMapSection>[] = [
     caveat: 'Developer docs explain intended interfaces; still check live endpoints for current halts, fees, and chain availability.',
     links: [developerDocs, queryingThorchainSource, feesSource, assetNotationSource],
   }, [developerDocs, queryingThorchainSource, feesSource, assetNotationSource], 'official'),
+  record({
+    id: 'dynamic-fee-experiment',
+    title: 'Dynamic Fee Experiment',
+    use: 'Use these for ADR-026 design context, live dynamic L1 fee Mimirs, sealed records, and current-epoch accumulators.',
+    caveat: 'ADR text is design/governance context. THORNode endpoints are current-only snapshots and do not prove durable revenue lift.',
+    links: [adr026DynamicFeesSource, thornodeMimirSource, dynamicL1FeesSource, dynamicL1FeesCurrentSource, thornameGuideSource, feesSource],
+  }, [adr026DynamicFeesSource, thornodeMimirSource, dynamicL1FeesSource, dynamicL1FeesCurrentSource, thornameGuideSource, feesSource], 'curated'),
   record({
     id: 'official-protocol-documentation',
     title: 'Official Protocol Documentation',
@@ -588,6 +618,17 @@ export const GOVERNANCE_PROPOSAL_RECORDS: SourcedRecord<GovernanceProposal>[] = 
     expiryDate: 'Live parameter',
     sourceUrl: 'https://dev.thorchain.org/concepts/network-halts.html',
   }, [networkHaltsSource, liveInboundSource], 'official'),
+  record({
+    id: 'adr-026-dynamic-l1-fees',
+    title: 'ADR-026 Dynamic L1 Fees',
+    description: 'Dynamic per-thorname and per-pair L1 minimum fee experiment. Official ADR text is proposed-design context while live THORNode snapshots may show enabled Mimirs and dynamic-fee records.',
+    type: 'ADR / Operational Experiment',
+    status: 'Proposed ADR / live Mimir evidence',
+    votingPeriod: 'Current-only Mimir and source review',
+    createdDate: '2026-04-15',
+    expiryDate: 'Review due 2026-07-17',
+    sourceUrl: 'https://gitlab.com/thorchain/thornode/-/raw/develop/docs/architecture/adr-026-dynamic-l1-min-fee-per-thorname.md',
+  }, [adr026DynamicFeesSource, thornodeMimirSource, dynamicL1FeesSource, dynamicL1FeesCurrentSource], 'curated'),
 ];
 
 export const GOVERNANCE_PROPOSALS: GovernanceProposal[] = GOVERNANCE_PROPOSAL_RECORDS.map(unwrapRecord);
