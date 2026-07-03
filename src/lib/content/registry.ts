@@ -142,7 +142,7 @@ export const CONTENT_ENTRIES: ContentEntry[] = [
     category: 'section',
     confidence: 'curated',
     description: 'ADR-026 dynamic L1 minimum fee experiment, live whitelisted thorname records, and current-only THORNode tracker.',
-    body: 'ADR-026 dynamic L1 fee dynamic fee model L1DynamicFeeEnabled L1SlipMinBPS DYNAMICFEE-WHITELIST dynamic_l1_fees dynamic_l1_fees_current thorname pair fees_tor volume_tor Symbiosis ShapeShift ss whitelist monitor active affiliate_bps current-only THORNode sealed records epoch accumulators revenue gradient TOR.',
+    body: 'ADR-026 dynamic L1 fee dynamic fee model L1DynamicFeeEnabled L1SlipMinBPS DYNAMICFEE-WHITELIST dynamic_l1_fees dynamic_l1_fees_current thorname pair fees_tor volume_tor Symbiosis ShapeShift ss whitelist monitor active affiliate_bps current-only THORNode sealed records epoch accumulators revenue gradient TOR L1-to-L1 scope revenue lift route competitiveness partner attribution evidence boundary non-claims.',
     tags: ['fees', 'adr', 'mimir', 'thornode', 'thorname'],
     reviewedAt: '2026-07-03',
     nextReviewDue: '2026-07-17',

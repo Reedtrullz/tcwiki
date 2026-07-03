@@ -46,6 +46,31 @@ const status: DynamicL1FeeStatus = {
       feesTorBaseUnits: '123938141',
     },
   ],
+  histories: [
+    {
+      thorname: 'ss',
+      whitelistValue: 1,
+      whitelistState: 'active',
+      pairs: [
+        {
+          thorname: 'ss',
+          pair: 'THOR.RUNE|THOR.TCY',
+          dynamicBps: 1,
+          whitelistValue: 1,
+          whitelistState: 'active',
+          lastActiveEpoch: 1864,
+          history: [
+            {
+              epoch: 1864,
+              volumeTorBaseUnits: '185642164687',
+              feesTorBaseUnits: '123938141',
+              bpsAtClose: 1,
+            },
+          ],
+        },
+      ],
+    },
+  ],
   sourceFreshness: {
     thorchainHeight: 26849569,
     thorchainBlockTime: '2026-07-03T12:00:00.000Z',
@@ -72,6 +97,15 @@ describe('DynamicFeesView', () => {
 
     expect(html).toContain('Dynamic L1 Fees');
     expect(html).toContain('Current-only');
+    expect(html).toContain('Look Here First');
+    expect(html).toContain('Revenue signal');
+    expect(html).toContain('Volume is demand context, not proof that the lower floor won routing flow.');
+    expect(html).toContain('Historical Results');
+    expect(html).toContain('Pair Learning State');
+    expect(html).toContain('Evidence Boundary');
+    expect(html).toContain('Can the caveats be improved?');
+    expect(html).toContain('L1-to-L1 scope');
+    expect(html).toContain('Affiliate attribution versus applied floor');
     expect(html).toContain('ADR-026 dynamic L1 min fee per thorname');
     expect(html).toContain('THORNode');
     expect(html).toContain('L1DynamicFeeEnabled');
@@ -82,6 +116,13 @@ describe('DynamicFeesView', () => {
     expect(html).toContain('1 bps');
     expect(html).toContain('$1.24');
     expect(html).toContain('$1,856.42');
+    expect(html).toContain('fees_tor');
+    expect(html).toContain('volume_tor');
+    expect(html).toContain('Insufficient samples for trend');
+    expect(html).toContain('Context only');
+    expect(html).toContain('Needs proof');
+    expect(html).toContain('Remaining Non-Claims');
+    expect(html).toContain('Current records and sparse sealed history do not prove revenue lift');
   });
 
   it('renders missing TOR data as insufficient samples instead of zero', () => {
@@ -89,6 +130,18 @@ describe('DynamicFeesView', () => {
 
     expect(html).toContain('Insufficient samples');
     expect(html).not.toContain('$0.00');
+  });
+
+  it('keeps caveat-resolution copy from overclaiming protocol or community evidence', () => {
+    const html = renderToStaticMarkup(<DynamicFeesView result={liveResult} status={status} />);
+
+    expect(html).toContain('ADR-026 v1 applies to eligible L1 swaps');
+    expect(html).toContain('Discord can explain debate and operating concerns, but it is not canonical protocol evidence.');
+    expect(html).toContain('Current records and a few sealed samples do not prove revenue lift');
+    expect(html).toContain('Per-swap evidence exposing the memo thornames');
+    expect(html).not.toContain('Discord proves');
+    expect(html).not.toContain('proves revenue lift');
+    expect(html).not.toContain('proves route competitiveness');
   });
 
   it('surfaces source warnings in the evidence disclosure', () => {
@@ -145,6 +198,10 @@ describe('DynamicFeesView', () => {
 
     expect(html).toContain('Degraded');
     expect(html).toContain('THORNode dynamic fee sources did not provide a usable snapshot');
+    expect(html).toContain('Sources loading');
+    expect(html).toContain('Unknown');
+    expect(html).toContain('Snapshot caveat unresolved');
+    expect(html).not.toContain('Sources clean');
     expect(html).toContain('How the Experiment Works');
     expect(html).toContain('No sealed dynamic-fee records are available');
   });

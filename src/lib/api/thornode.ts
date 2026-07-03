@@ -1,11 +1,14 @@
 import {
   ChainOperationalStatus,
   DynamicL1FeeCurrentAccumulator,
+  DynamicL1FeeHistoryEntry,
   DynamicL1FeeMimirFlag,
   DynamicL1FeeMimirStatus,
+  DynamicL1FeePairHistory,
   DynamicL1FeeRecord,
   DynamicL1FeeSourceFreshness,
   DynamicL1FeeStatus,
+  DynamicL1FeeThornameHistory,
   DynamicL1FeeWhitelistedPartner,
   DynamicL1FeeWhitelistState,
   InboundOperationField,
@@ -687,18 +690,171 @@ function parseDynamicL1FeeCurrent(value: unknown): {
   return { currentEpoch, currentEntries };
 }
 
+function parseDynamicL1FeeThornameHistory(
+  value: unknown,
+  expectedThorname: string
+): { history: DynamicL1FeeThornameHistory; sourceWarnings: string[] } {
+  if (!isPlainRecord(value) || !Array.isArray(value.pairs)) {
+    throw new Error(`THORNode dynamic_l1_fees/${expectedThorname} response did not include a pairs array.`);
+  }
+
+  const sourceWarnings: string[] = [];
+  const thorname = typeof value.thorname === 'string' ? value.thorname.trim().toLowerCase() : '';
+  const expected = expectedThorname.trim().toLowerCase();
+  if (!thorname) {
+    throw new Error(`THORNode dynamic_l1_fees/${expectedThorname} response did not include a usable thorname.`);
+  }
+  if (thorname !== expected) {
+    sourceWarnings.push(`Dynamic fee history request for ${expected} returned thorname ${thorname}.`);
+  }
+
+  const whitelistValue = toNonNegativeInteger(
+    value.whitelist_state,
+    `dynamic_l1_fees/${expectedThorname} whitelist_state`
+  );
+  const whitelistState = dynamicWhitelistState(whitelistValue);
+  if (whitelistState === 'unparseable') {
+    throw new Error(`THORNode dynamic_l1_fees/${expectedThorname} had unsupported whitelist_state ${whitelistValue}.`);
+  }
+
+  const seenPairs = new Set<string>();
+  const pairs: DynamicL1FeePairHistory[] = value.pairs.map((pairValue, pairIndex) => {
+    if (!isPlainRecord(pairValue) || !Array.isArray(pairValue.history)) {
+      throw new Error(`THORNode dynamic_l1_fees/${expectedThorname} pair ${pairIndex} did not include a history array.`);
+    }
+
+    const pair = typeof pairValue.pair === 'string' ? pairValue.pair.trim() : '';
+    if (!pair) {
+      throw new Error(`THORNode dynamic_l1_fees/${expectedThorname} pair ${pairIndex} did not include a usable pair.`);
+    }
+    const pairKey = recordKey(thorname, pair);
+    if (seenPairs.has(pairKey)) {
+      throw new Error(`THORNode dynamic_l1_fees/${expectedThorname} response included a duplicate history pair for ${thorname} ${pair}.`);
+    }
+    seenPairs.add(pairKey);
+
+    const dynamicBps = toNonNegativeInteger(
+      pairValue.dynamic_bps,
+      `dynamic_l1_fees/${expectedThorname} pair ${pair} dynamic_bps`
+    );
+    if (dynamicBps > 10000) {
+      throw new Error(`THORNode dynamic_l1_fees/${expectedThorname} pair ${pair} dynamic_bps exceeded 10000.`);
+    }
+
+    const seenEpochs = new Set<number>();
+    const history: DynamicL1FeeHistoryEntry[] = pairValue.history.map((entry, entryIndex) => {
+      if (!isPlainRecord(entry)) {
+        throw new Error(`THORNode dynamic_l1_fees/${expectedThorname} pair ${pair} history entry ${entryIndex} was not a plain object.`);
+      }
+
+      const epoch = toNonNegativeInteger(
+        entry.epoch,
+        `dynamic_l1_fees/${expectedThorname} pair ${pair} history entry ${entryIndex} epoch`
+      );
+      if (seenEpochs.has(epoch)) {
+        throw new Error(`THORNode dynamic_l1_fees/${expectedThorname} pair ${pair} included duplicate history epoch ${epoch}.`);
+      }
+      seenEpochs.add(epoch);
+
+      const bpsAtClose = toNonNegativeInteger(
+        entry.bps_at_close,
+        `dynamic_l1_fees/${expectedThorname} pair ${pair} history entry ${entryIndex} bps_at_close`
+      );
+      if (bpsAtClose > 10000) {
+        throw new Error(`THORNode dynamic_l1_fees/${expectedThorname} pair ${pair} history entry ${entryIndex} bps_at_close exceeded 10000.`);
+      }
+
+      return {
+        epoch,
+        volumeTorBaseUnits: toTorBaseUnits(
+          entry.volume_tor,
+          `dynamic_l1_fees/${expectedThorname} pair ${pair} history entry ${entryIndex} volume_tor`
+        ),
+        feesTorBaseUnits: toTorBaseUnits(
+          entry.fees_tor,
+          `dynamic_l1_fees/${expectedThorname} pair ${pair} history entry ${entryIndex} fees_tor`
+        ),
+        bpsAtClose,
+      };
+    }).sort((left, right) => left.epoch - right.epoch);
+
+    return {
+      thorname,
+      pair,
+      dynamicBps,
+      whitelistValue,
+      whitelistState,
+      lastActiveEpoch: toNonNegativeInteger(
+        pairValue.last_active_epoch,
+        `dynamic_l1_fees/${expectedThorname} pair ${pair} last_active_epoch`
+      ),
+      history,
+    };
+  }).sort((left, right) => left.pair.localeCompare(right.pair));
+
+  return {
+    history: {
+      thorname,
+      whitelistValue,
+      whitelistState,
+      pairs,
+    },
+    sourceWarnings,
+  };
+}
+
+async function requestDynamicL1FeeHistories(
+  endpoint: ThornodeEndpoint,
+  snapshotHeight: number,
+  status: DynamicL1FeeStatus
+): Promise<{ histories: DynamicL1FeeThornameHistory[]; sourceWarnings: string[] }> {
+  const thornames = [...new Set([
+    ...status.mimir.whitelistedPartners
+      .filter((partner) => partner.whitelisted === true)
+      .map((partner) => partner.thorname),
+    ...status.records.map((record) => record.thorname),
+  ])].sort((left, right) => left.localeCompare(right));
+
+  const histories: DynamicL1FeeThornameHistory[] = [];
+  const sourceWarnings: string[] = [];
+
+  await Promise.all(thornames.map(async (thorname) => {
+    try {
+      const response = await requestFromEndpoint<unknown>(
+        endpoint,
+        `/dynamic_l1_fees/${encodeURIComponent(thorname)}`,
+        snapshotHeight
+      );
+      const parsed = parseDynamicL1FeeThornameHistory(response, thorname);
+      histories.push(parsed.history);
+      sourceWarnings.push(...parsed.sourceWarnings);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown dynamic fee history error';
+      sourceWarnings.push(`Dynamic fee history for ${thorname} was unavailable: ${message}`);
+    }
+  }));
+
+  return {
+    histories: histories.sort((left, right) => left.thorname.localeCompare(right.thorname)),
+    sourceWarnings,
+  };
+}
+
 export function deriveDynamicL1FeeStatus(
   mimir: Record<string, unknown>,
   recordsResponse: unknown,
   currentResponse: unknown,
-  sourceFreshness: DynamicL1FeeSourceFreshness
+  sourceFreshness: DynamicL1FeeSourceFreshness,
+  histories: DynamicL1FeeThornameHistory[] = [],
+  historyWarnings: string[] = []
 ): DynamicL1FeeStatus {
-  const sourceWarnings: string[] = [];
+  const sourceWarnings: string[] = [...historyWarnings];
   const records = parseDynamicL1FeeRecords(recordsResponse);
   const { currentEpoch, currentEntries } = parseDynamicL1FeeCurrent(currentResponse);
   const recordKeys = new Set(records.map((record) => recordKey(record.thorname, record.pair)));
   const mimirStatus = getDynamicL1FeeMimirStatus(mimir, sourceWarnings);
   const whitelistedByThorname = new Map(mimirStatus.whitelistedPartners.map((partner) => [partner.thorname, partner]));
+  const recordsByKey = new Map(records.map((record) => [recordKey(record.thorname, record.pair), record]));
   const floorBps = mimirStatus.floorBps.effectiveValue;
   const ceilingBps = mimirStatus.ceilingBps.effectiveValue;
 
@@ -720,6 +876,29 @@ export function deriveDynamicL1FeeStatus(
     }
   }
 
+  const seenHistoryKeys = new Set<string>();
+  for (const thornameHistory of histories) {
+    const partner = whitelistedByThorname.get(thornameHistory.thorname);
+    if (partner && partner.state !== 'unparseable' && partner.state !== thornameHistory.whitelistState) {
+      sourceWarnings.push(`Dynamic fee history ${thornameHistory.thorname} whitelist_state ${thornameHistory.whitelistValue} disagrees with ${partner.key}=${partner.value}.`);
+    }
+
+    for (const pairHistory of thornameHistory.pairs) {
+      const key = recordKey(pairHistory.thorname, pairHistory.pair);
+      if (seenHistoryKeys.has(key)) {
+        sourceWarnings.push(`Dynamic fee history included a duplicate pair for ${pairHistory.thorname} ${pairHistory.pair}.`);
+      }
+      seenHistoryKeys.add(key);
+
+      const record = recordsByKey.get(key);
+      if (!record) {
+        sourceWarnings.push(`Dynamic fee history pair ${pairHistory.thorname} ${pairHistory.pair} exists without a sealed dynamic_l1_fees record.`);
+      } else if (record.dynamicBps !== pairHistory.dynamicBps) {
+        sourceWarnings.push(`Dynamic fee history pair ${pairHistory.thorname} ${pairHistory.pair} dynamic_bps ${pairHistory.dynamicBps} disagrees with sealed record ${record.dynamicBps}.`);
+      }
+    }
+  }
+
   for (const entry of currentEntries) {
     if (entry.epoch !== currentEpoch) {
       sourceWarnings.push(`Current dynamic fee entry ${entry.thorname} ${entry.pair} epoch mismatch: ${entry.epoch} vs current epoch ${currentEpoch}.`);
@@ -734,6 +913,7 @@ export function deriveDynamicL1FeeStatus(
     records,
     currentEpoch,
     currentEntries,
+    histories,
     sourceFreshness,
     sourceWarnings: [...new Set(sourceWarnings)].sort((left, right) => left.localeCompare(right)),
     caveats: ['current-only', 'adr-experiment', 'not-historical-fee-proof'],
@@ -1860,16 +2040,26 @@ export class ThornodeAPI {
         if (!isPlainRecord(mimir)) {
           throw new Error('THORNode Mimir response was not a plain object.');
         }
+        const sourceFreshness: DynamicL1FeeSourceFreshness = {
+          thorchainHeight: snapshotHeight,
+          thorchainBlockTime: latestBlockInfo.time,
+          thorchainBlockAgeSeconds: blockAgeSeconds,
+          snapshotPinned: true,
+        };
+        const baseStatus = deriveDynamicL1FeeStatus(
+          mimir,
+          dynamicFees,
+          currentDynamicFees,
+          sourceFreshness
+        );
+        const historyResult = await requestDynamicL1FeeHistories(endpoint, snapshotHeight, baseStatus);
         const status = deriveDynamicL1FeeStatus(
           mimir,
           dynamicFees,
           currentDynamicFees,
-          {
-            thorchainHeight: snapshotHeight,
-            thorchainBlockTime: latestBlockInfo.time,
-            thorchainBlockAgeSeconds: blockAgeSeconds,
-            snapshotPinned: true,
-          }
+          sourceFreshness,
+          historyResult.histories,
+          historyResult.sourceWarnings
         );
         const sourceWarnings = [
           ...status.sourceWarnings,

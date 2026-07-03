@@ -345,7 +345,7 @@ export const SOURCE_MAP_SECTION_RECORDS: SourcedRecord<SourceMapSection>[] = [
     id: 'dynamic-fee-experiment',
     title: 'Dynamic Fee Experiment',
     use: 'Use these for ADR-026 design context, live dynamic L1 fee Mimirs, sealed records, and current-epoch accumulators.',
-    caveat: 'ADR text is design/governance context. THORNode endpoints are current-only snapshots and do not prove durable revenue lift.',
+    caveat: 'ADR text is design/governance context. THORNode endpoints are current-only snapshots and do not prove durable revenue lift, route competitiveness, or partner attribution quality.',
     links: [adr026DynamicFeesSource, thornodeMimirSource, dynamicL1FeesSource, dynamicL1FeesCurrentSource, thornameGuideSource, feesSource],
   }, [adr026DynamicFeesSource, thornodeMimirSource, dynamicL1FeesSource, dynamicL1FeesCurrentSource, thornameGuideSource, feesSource], 'curated'),
   record({

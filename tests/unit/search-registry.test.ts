@@ -222,8 +222,13 @@ describe('SEARCH_DOCUMENTS', () => {
     expect(docsMatching('DYNAMICFEE-WHITELIST').some((doc) => doc.slug === '/dynamic-fees')).toBe(true);
     expect(docsMatching('fees_tor').some((doc) => doc.slug === '/dynamic-fees')).toBe(true);
     expect(docsMatching('ShapeShift').some((doc) => doc.slug === '/dynamic-fees')).toBe(true);
+    expect(docsMatching('revenue lift').some((doc) => doc.slug === '/dynamic-fees')).toBe(true);
+    expect(docsMatching('route competitiveness').some((doc) => doc.slug === '/dynamic-fees')).toBe(true);
+    expect(docsMatching('L1-to-L1 scope').some((doc) => doc.slug === '/dynamic-fees')).toBe(true);
     expect(docsMatching('ADR-026 Dynamic L1 Fees').some((doc) => doc.id === 'governance:adr-026-dynamic-l1-fees')).toBe(true);
     expect(docsMatching('dynamic_l1_fees_current').some((doc) => doc.id === 'source-map:dynamic-fee-experiment')).toBe(true);
+    expect(docsMatching('do not prove durable revenue lift').some((doc) => doc.id === 'source-map:dynamic-fee-experiment')).toBe(true);
+    expect(docsMatching('not canonical protocol proof').some((doc) => doc.id === 'source-map:community-channels')).toBe(true);
   });
 
   it('keeps top-level navigation sections reachable from the footer', () => {

@@ -1,6 +1,18 @@
 'use client';
 
-import { Activity, Gauge, ListChecks, RadioTower, Scale } from 'lucide-react';
+import type { ReactNode } from 'react';
+import {
+  Activity,
+  AlertTriangle,
+  BarChart3,
+  Gauge,
+  ListChecks,
+  RadioTower,
+  Scale,
+  Target,
+  TrendingUp,
+  WalletCards,
+} from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import { FreshnessMeta } from '@/components/ui/FreshnessMeta';
@@ -112,6 +124,138 @@ function formatTorUsd(baseUnits: string | null | undefined) {
   return `$${wholeText}.${fractional.toString().padStart(2, '0')}`;
 }
 
+function torBaseUnitsToUsdNumber(baseUnits: string | null | undefined) {
+  if (!baseUnits) {
+    return null;
+  }
+
+  const units = BigInt(baseUnits);
+  const cents = (units + CENT_SCALE / BigInt(2)) / CENT_SCALE;
+  if (cents > MAX_SAFE_INTEGER_BIGINT) {
+    return null;
+  }
+
+  return Number(cents) / 100;
+}
+
+function formatUsdCompact(value: number | null | undefined) {
+  if (value === null || value === undefined) {
+    return 'Insufficient samples';
+  }
+
+  const absolute = Math.abs(value);
+  if (absolute >= 1_000_000_000) {
+    return `$${(value / 1_000_000_000).toFixed(1)}B`;
+  }
+  if (absolute >= 1_000_000) {
+    return `$${(value / 1_000_000).toFixed(1)}M`;
+  }
+  if (absolute >= 1_000) {
+    return `$${(value / 1_000).toFixed(1)}K`;
+  }
+
+  return `$${value.toLocaleString('en-US', {
+    minimumFractionDigits: value < 10 ? 2 : 0,
+    maximumFractionDigits: value < 100 ? 2 : 0,
+  })}`;
+}
+
+function sumTorUsd(values: Array<string | null | undefined>) {
+  let total = 0;
+  let hasValue = false;
+
+  for (const value of values) {
+    const usd = torBaseUnitsToUsdNumber(value);
+    if (usd !== null) {
+      total += usd;
+      hasValue = true;
+    }
+  }
+
+  return hasValue ? total : null;
+}
+
+type HistoryEpochRow = {
+  epoch: number;
+  feesUsd: number | null;
+  volumeUsd: number | null;
+  averageBps: number | null;
+  samples: number;
+};
+
+function historySampleCount(status: DynamicL1FeeStatus | undefined) {
+  return (status?.histories ?? []).reduce(
+    (total, thornameHistory) => total + thornameHistory.pairs.reduce(
+      (pairTotal, pair) => pairTotal + pair.history.length,
+      0
+    ),
+    0
+  );
+}
+
+function historyPairCount(status: DynamicL1FeeStatus | undefined) {
+  return (status?.histories ?? []).reduce((total, item) => total + item.pairs.length, 0);
+}
+
+function historyEpochRows(status: DynamicL1FeeStatus | undefined): HistoryEpochRow[] {
+  const byEpoch = new Map<number, {
+    feesUsd: number;
+    hasFees: boolean;
+    volumeUsd: number;
+    hasVolume: boolean;
+    bpsTotal: number;
+    samples: number;
+  }>();
+
+  for (const thornameHistory of status?.histories ?? []) {
+    for (const pairHistory of thornameHistory.pairs) {
+      for (const entry of pairHistory.history) {
+        const row = byEpoch.get(entry.epoch) ?? {
+          feesUsd: 0,
+          hasFees: false,
+          volumeUsd: 0,
+          hasVolume: false,
+          bpsTotal: 0,
+          samples: 0,
+        };
+        const feesUsd = torBaseUnitsToUsdNumber(entry.feesTorBaseUnits);
+        const volumeUsd = torBaseUnitsToUsdNumber(entry.volumeTorBaseUnits);
+        if (feesUsd !== null) {
+          row.feesUsd += feesUsd;
+          row.hasFees = true;
+        }
+        if (volumeUsd !== null) {
+          row.volumeUsd += volumeUsd;
+          row.hasVolume = true;
+        }
+        row.bpsTotal += entry.bpsAtClose;
+        row.samples += 1;
+        byEpoch.set(entry.epoch, row);
+      }
+    }
+  }
+
+  return [...byEpoch.entries()]
+    .map(([epoch, row]) => ({
+      epoch,
+      feesUsd: row.hasFees ? row.feesUsd : null,
+      volumeUsd: row.hasVolume ? row.volumeUsd : null,
+      averageBps: row.samples > 0 ? row.bpsTotal / row.samples : null,
+      samples: row.samples,
+    }))
+    .sort((left, right) => left.epoch - right.epoch);
+}
+
+function bpsRange(records: DynamicL1FeeRecord[]) {
+  if (records.length === 0) {
+    return 'Unavailable';
+  }
+  const values = records.map((record) => record.dynamicBps);
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  return min === max ? formatBps(min) : `${min}-${max} bps`;
+}
+
 function whitelistBadge(state: DynamicL1FeeWhitelistState) {
   switch (state) {
     case 'active':
@@ -152,6 +296,400 @@ function currentWithoutSealedRecords(status: DynamicL1FeeStatus | undefined) {
   return (status?.currentEntries ?? []).filter((entry) => !sealedKeys.has(recordKey(entry.thorname, entry.pair)));
 }
 
+function PriorityMetric({
+  icon,
+  title,
+  value,
+  detail,
+  why,
+}: {
+  icon: ReactNode;
+  title: string;
+  value: string;
+  detail: string;
+  why: string;
+}) {
+  return (
+    <div className="rounded-md border border-border bg-surface p-4">
+      <div className="mb-3 flex items-start gap-3">
+        <div className="rounded-md border border-border bg-surface-elevated p-2 text-accent" aria-hidden="true">
+          {icon}
+        </div>
+        <div className="min-w-0">
+          <p className="text-xs uppercase tracking-wider text-slate-400">{title}</p>
+          <p className="mt-1 text-2xl font-semibold tracking-tight text-white">{value}</p>
+        </div>
+      </div>
+      <p className="text-xs font-medium text-slate-300">{detail}</p>
+      <p className="mt-2 text-xs leading-relaxed text-slate-400">Why this matters: {why}</p>
+    </div>
+  );
+}
+
+function LookFirstPanel({
+  status,
+  sourceWarningCount,
+  floorPinnedCount,
+  ceilingPinnedCount,
+}: {
+  status?: DynamicL1FeeStatus;
+  sourceWarningCount?: number;
+  floorPinnedCount?: number;
+  ceilingPinnedCount?: number;
+}) {
+  const currentFeesUsd = sumTorUsd((status?.currentEntries ?? []).map((entry) => entry.feesTorBaseUnits));
+  const currentVolumeUsd = sumTorUsd((status?.currentEntries ?? []).map((entry) => entry.volumeTorBaseUnits));
+  const sealedHistoryFeesUsd = sumTorUsd((status?.histories ?? []).flatMap((thornameHistory) => (
+    thornameHistory.pairs.flatMap((pair) => pair.history.map((entry) => entry.feesTorBaseUnits))
+  )));
+  const sealedSamples = historySampleCount(status);
+  const pairHistoryCount = historyPairCount(status);
+  const records = status?.records ?? [];
+  const floorLabel = floorPinnedCount === undefined ? 'floor unknown' : `${floorPinnedCount} at floor`;
+  const ceilingLabel = ceilingPinnedCount === undefined ? 'ceiling unknown' : `${ceilingPinnedCount} at ceiling`;
+  const warningCount = sourceWarningCount ?? 0;
+  const trustLabel = status
+    ? `${sealedSamples.toLocaleString()} sealed samples / ${warningCount.toLocaleString()} warnings`
+    : 'Loading source trust';
+
+  return (
+    <Card className="mb-8">
+      <div className="mb-5 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+        <div>
+          <h2 className="text-lg font-semibold">Look Here First</h2>
+          <p className="mt-1 max-w-3xl text-sm leading-relaxed text-slate-400">
+            Read these four signals before the raw rows. ADR-026 is trying to find a better fee floor per partner pair, so revenue, demand, controller movement, and evidence quality are the numbers that matter.
+          </p>
+        </div>
+        <Badge variant={!status ? 'info' : warningCount > 0 ? 'warning' : 'success'}>
+          {!status
+            ? 'Sources loading'
+            : warningCount > 0
+              ? `${warningCount} source warning${warningCount === 1 ? '' : 's'}`
+              : 'Sources clean'}
+        </Badge>
+      </div>
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <PriorityMetric
+          icon={<WalletCards className="h-4 w-4" />}
+          title="1. Revenue signal"
+          value={formatUsdCompact(currentFeesUsd)}
+          detail={`Current epoch fees_tor; sealed history total ${formatUsdCompact(sealedHistoryFeesUsd)}`}
+          why="fees_tor is the controller objective. If fees do not improve across sealed epochs, a lower floor has not proven better revenue."
+        />
+        <PriorityMetric
+          icon={<TrendingUp className="h-4 w-4" />}
+          title="2. Demand signal"
+          value={formatUsdCompact(currentVolumeUsd)}
+          detail="Current epoch volume_tor across tracked pairs"
+          why="revenue can move because volume changed or because bps changed. Volume is demand context, not proof that the lower floor won routing flow."
+        />
+        <PriorityMetric
+          icon={<Target className="h-4 w-4" />}
+          title="3. Controller movement"
+          value={bpsRange(records)}
+          detail={`${floorLabel} / ${ceilingLabel}`}
+          why="dynamic_bps shows whether the experiment is learning, stuck at the floor, or pressing into the ceiling."
+        />
+        <PriorityMetric
+          icon={warningCount > 0 ? <AlertTriangle className="h-4 w-4" /> : <BarChart3 className="h-4 w-4" />}
+          title="4. Evidence quality"
+          value={trustLabel}
+          detail={`${pairHistoryCount.toLocaleString()} pairs with history endpoint coverage`}
+          why="sparse samples are useful operational evidence, but they are not enough to claim a durable trend."
+        />
+      </div>
+    </Card>
+  );
+}
+
+function HistoricalResultsChart({ status }: { status?: DynamicL1FeeStatus }) {
+  const rows = historyEpochRows(status);
+  const chartRows = rows.slice(-16);
+  const sealedSamples = historySampleCount(status);
+  const pairCount = historyPairCount(status);
+  const maxFees = Math.max(1, ...chartRows.map((row) => row.feesUsd ?? 0));
+  const maxBps = Math.max(
+    1,
+    status?.mimir.ceilingBps.effectiveValue ?? 0,
+    ...chartRows.map((row) => row.averageBps ?? 0)
+  );
+  const left = 52;
+  const right = 692;
+  const top = 32;
+  const baseline = 190;
+  const chartHeight = baseline - top;
+  const xForIndex = (index: number) => (
+    chartRows.length === 1
+      ? (left + right) / 2
+      : left + (index / (chartRows.length - 1)) * (right - left)
+  );
+  const linePoints = chartRows
+    .map((row, index) => {
+      if (row.averageBps === null) {
+        return null;
+      }
+      const x = xForIndex(index);
+      const y = baseline - (row.averageBps / maxBps) * chartHeight;
+      return { x, y, row };
+    })
+    .filter((point): point is { x: number; y: number; row: HistoryEpochRow } => point !== null);
+
+  return (
+    <Card className="mb-10">
+      <div className="mb-5 flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <h2 className="text-lg font-semibold">Historical Results</h2>
+          <p className="mt-1 max-w-3xl text-sm leading-relaxed text-slate-400">
+            Sealed epoch history from <code className="break-all">/dynamic_l1_fees/&lbrace;thorname&rbrace;</code>. Showing {sealedSamples.toLocaleString()} sample{sealedSamples === 1 ? '' : 's'} across {pairCount.toLocaleString()} pair{pairCount === 1 ? '' : 's'}; this is operational history, not proof of durable revenue lift.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Badge variant={rows.length >= 2 ? 'info' : 'warning'}>
+            {rows.length >= 2 ? `${rows.length} epochs` : 'Insufficient samples for trend'}
+          </Badge>
+          <Badge variant={sealedSamples > 0 ? 'success' : 'warning'}>
+            {sealedSamples > 0 ? 'Mitigates snapshot caveat' : 'Snapshot caveat unresolved'}
+          </Badge>
+          <Badge variant="warning">Not proof: durable lift</Badge>
+        </div>
+      </div>
+
+      {chartRows.length > 0 ? (
+        <>
+          {rows.length < 2 && (
+            <p className="mb-3 text-sm text-amber-300">
+              Insufficient samples for trend; showing available sealed sample only.
+            </p>
+          )}
+          <div className="rounded-md border border-border bg-surface p-3">
+            <svg
+              className="h-64 w-full"
+              viewBox="0 0 720 230"
+              role="img"
+              aria-label="Sealed dynamic fee history chart showing fees in TOR dollars and average bps at close by epoch"
+            >
+              <line x1={left} x2={right} y1={baseline} y2={baseline} stroke="rgb(51 65 85)" />
+              <line x1={left} x2={left} y1={top} y2={baseline} stroke="rgb(51 65 85)" />
+              {[0.25, 0.5, 0.75].map((tick) => {
+                const y = baseline - tick * chartHeight;
+                return (
+                  <line
+                    key={tick}
+                    x1={left}
+                    x2={right}
+                    y1={y}
+                    y2={y}
+                    stroke="rgb(30 41 59)"
+                    strokeDasharray="4 6"
+                  />
+                );
+              })}
+              <text x="14" y="24" fill="rgb(148 163 184)" fontSize="11">fees_tor</text>
+              <text x="646" y="24" fill="rgb(125 211 252)" fontSize="11">avg bps</text>
+              {chartRows.map((row, index) => {
+                const x = xForIndex(index);
+                const barWidth = Math.max(10, Math.min(34, 420 / Math.max(chartRows.length, 1)));
+                const barHeight = ((row.feesUsd ?? 0) / maxFees) * chartHeight;
+                const y = baseline - barHeight;
+                return (
+                  <g key={row.epoch}>
+                    <rect
+                      x={x - barWidth / 2}
+                      y={y}
+                      width={barWidth}
+                      height={Math.max(2, barHeight)}
+                      rx="3"
+                      fill="rgb(52 211 153)"
+                      opacity="0.75"
+                    >
+                      <title>{`Epoch ${row.epoch}: ${formatUsdCompact(row.feesUsd)} fees_tor, ${formatUsdCompact(row.volumeUsd)} volume_tor, ${row.averageBps?.toFixed(1) ?? 'Unavailable'} bps`}</title>
+                    </rect>
+                    {(chartRows.length <= 8 || index % 2 === 0 || index === chartRows.length - 1) && (
+                      <text
+                        x={x}
+                        y="212"
+                        textAnchor="middle"
+                        fill="rgb(148 163 184)"
+                        fontSize="10"
+                      >
+                        {row.epoch}
+                      </text>
+                    )}
+                  </g>
+                );
+              })}
+              {linePoints.length > 1 && (
+                <polyline
+                  points={linePoints.map((point) => `${point.x},${point.y}`).join(' ')}
+                  fill="none"
+                  stroke="rgb(56 189 248)"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              )}
+              {linePoints.map((point) => (
+                <circle key={point.row.epoch} cx={point.x} cy={point.y} r="4" fill="rgb(56 189 248)">
+                  <title>{`Epoch ${point.row.epoch}: ${point.row.averageBps?.toFixed(1) ?? 'Unavailable'} average bps at close`}</title>
+                </circle>
+              ))}
+            </svg>
+            <div className="mt-2 flex flex-wrap gap-x-5 gap-y-2 text-xs text-slate-400">
+              <span><span className="mr-1 inline-block h-2 w-4 rounded-sm bg-emerald-400 align-middle" />fees_tor by sealed epoch</span>
+              <span><span className="mr-1 inline-block h-2 w-4 rounded-sm bg-sky-400 align-middle" />average bps_at_close</span>
+            </div>
+          </div>
+          <div className="mt-4 grid gap-2 sm:hidden">
+            {rows.slice(-8).map((row) => (
+              <div key={row.epoch} className="rounded-md border border-border bg-surface p-3 text-xs">
+                <div className="mb-2 flex items-center justify-between gap-3">
+                  <span className="font-mono text-accent">Epoch {row.epoch.toLocaleString()}</span>
+                  <Badge variant="info">{row.samples.toLocaleString()} sample{row.samples === 1 ? '' : 's'}</Badge>
+                </div>
+                <dl className="grid grid-cols-2 gap-2">
+                  <div>
+                    <dt className="text-slate-400">Sealed fees_tor</dt>
+                    <dd>{formatUsdCompact(row.feesUsd)}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-slate-400">Sealed volume_tor</dt>
+                    <dd>{formatUsdCompact(row.volumeUsd)}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-slate-400">Avg bps close</dt>
+                    <dd>{row.averageBps === null ? 'Unavailable' : `${row.averageBps.toFixed(1)} bps`}</dd>
+                  </div>
+                </dl>
+              </div>
+            ))}
+          </div>
+          <div className="mt-4 hidden overflow-x-auto rounded-md border border-border sm:block">
+            <table className="w-full min-w-[560px] text-left text-xs">
+              <caption className="sr-only">Sealed dynamic fee history by epoch</caption>
+              <thead className="bg-surface text-[11px] uppercase tracking-wider text-slate-400">
+                <tr>
+                  <th scope="col" className="px-3 py-2">Epoch</th>
+                  <th scope="col" className="px-3 py-2">Sealed fees_tor</th>
+                  <th scope="col" className="px-3 py-2">Sealed volume_tor</th>
+                  <th scope="col" className="px-3 py-2">Avg bps close</th>
+                  <th scope="col" className="px-3 py-2">Pair samples</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.slice(-8).map((row) => (
+                  <tr key={row.epoch} className="border-t border-border">
+                    <td className="px-3 py-2 font-mono text-accent">{row.epoch.toLocaleString()}</td>
+                    <td className="px-3 py-2">{formatUsdCompact(row.feesUsd)}</td>
+                    <td className="px-3 py-2">{formatUsdCompact(row.volumeUsd)}</td>
+                    <td className="px-3 py-2">{row.averageBps === null ? 'Unavailable' : `${row.averageBps.toFixed(1)} bps`}</td>
+                    <td className="px-3 py-2">{row.samples.toLocaleString()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      ) : (
+        <p className="rounded-md border border-border bg-surface p-4 text-sm text-slate-400">
+          No sealed historical samples are available from the per-thorname history endpoint. Treat this as insufficient samples, not as zero revenue.
+        </p>
+      )}
+    </Card>
+  );
+}
+
+function PairLearningCards({ status }: { status?: DynamicL1FeeStatus }) {
+  const floorBps = status?.mimir.floorBps.effectiveValue ?? status?.mimir.floorBps.value;
+  const ceilingBps = status?.mimir.ceilingBps.effectiveValue ?? status?.mimir.ceilingBps.value;
+  const pairs = (status?.histories ?? []).flatMap((thornameHistory) => thornameHistory.pairs)
+    .sort((left, right) => (
+      left.thorname.localeCompare(right.thorname) ||
+      left.pair.localeCompare(right.pair)
+    ));
+
+  if (pairs.length === 0) {
+    return (
+      <Card className="mb-10">
+        <h2 className="mb-2 text-lg font-semibold">Pair Learning State</h2>
+        <p className="text-sm text-slate-400">
+          No pair history is available yet. Current records below can still be useful, but the controller has too little sealed history for movement claims.
+        </p>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="mb-10">
+      <div className="mb-4 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+        <div>
+          <h2 className="text-lg font-semibold">Pair Learning State</h2>
+          <p className="mt-1 max-w-3xl text-sm leading-relaxed text-slate-400">
+            This is the fastest way to see which partner pairs have actual sealed samples and whether their dynamic floor is at an edge.
+          </p>
+        </div>
+      </div>
+      <div className="grid min-w-0 gap-3 md:grid-cols-2 xl:grid-cols-3">
+        {pairs.map((pair) => {
+          const latest = pair.history.at(-1);
+          const learningState = pair.history.length === 0
+            ? { label: 'No sealed history', variant: 'warning' as const }
+            : pair.history.length === 1
+              ? { label: 'Bootstrap', variant: 'info' as const }
+              : { label: 'Learning', variant: 'success' as const };
+          const edgeState = typeof floorBps === 'number' && pair.dynamicBps === floorBps
+            ? 'At floor'
+            : typeof ceilingBps === 'number' && pair.dynamicBps === ceilingBps
+              ? 'At ceiling'
+              : 'Inside bounds';
+
+          return (
+            <Card key={recordKey(pair.thorname, pair.pair)} className="min-w-0" padding="sm">
+              <div className="mb-3 flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="font-mono text-xs text-accent">{pair.thorname}</p>
+                  <p className="mt-1 break-words text-xs text-slate-300">{pair.pair}</p>
+                </div>
+                <Badge variant={learningState.variant}>{learningState.label}</Badge>
+              </div>
+              <dl className="grid grid-cols-2 gap-2 text-xs">
+                <div>
+                  <dt className="text-slate-400">Dynamic bps</dt>
+                  <dd className="font-semibold">{formatBps(pair.dynamicBps)}</dd>
+                </div>
+                <div>
+                  <dt className="text-slate-400">Bounds state</dt>
+                  <dd>{edgeState}</dd>
+                </div>
+                <div>
+                  <dt className="text-slate-400">Samples</dt>
+                  <dd>{pair.history.length.toLocaleString()}</dd>
+                </div>
+                <div>
+                  <dt className="text-slate-400">Latest epoch</dt>
+                  <dd>{formatEpoch(latest?.epoch ?? null)}</dd>
+                </div>
+                <div>
+                  <dt className="text-slate-400">Latest fees_tor</dt>
+                  <dd>{formatUsdCompact(torBaseUnitsToUsdNumber(latest?.feesTorBaseUnits))}</dd>
+                </div>
+                <div>
+                  <dt className="text-slate-400">Latest volume_tor</dt>
+                  <dd>{formatUsdCompact(torBaseUnitsToUsdNumber(latest?.volumeTorBaseUnits))}</dd>
+                </div>
+                <div>
+                  <dt className="text-slate-400">Bps at close</dt>
+                  <dd>{formatBps(latest?.bpsAtClose)}</dd>
+                </div>
+              </dl>
+            </Card>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function DynamicFeeRow({
   record,
   current,
@@ -185,7 +723,7 @@ function DynamicFeeMobileCard({
   const badge = whitelistBadge(record.whitelistState);
 
   return (
-    <Card padding="sm">
+    <Card className="min-w-0" padding="sm">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="font-mono text-xs text-accent">{record.thorname}</p>
@@ -227,10 +765,10 @@ function BpsDistribution({ records }: { records: DynamicL1FeeRecord[] }) {
   const maxBps = Math.max(...records.map((record) => record.dynamicBps), 1);
 
   return (
-    <div className="space-y-3">
+    <div className="min-w-0 space-y-3">
       {records.map((record) => (
-        <div key={recordKey(record.thorname, record.pair)}>
-          <div className="mb-1 flex items-center justify-between gap-3 text-xs">
+        <div key={recordKey(record.thorname, record.pair)} className="min-w-0">
+          <div className="mb-1 flex min-w-0 items-center justify-between gap-3 text-xs">
             <span className="min-w-0 truncate text-slate-300">{record.thorname} / {record.pair}</span>
             <span className="shrink-0 font-semibold text-accent">{formatBps(record.dynamicBps)}</span>
           </div>
@@ -243,6 +781,109 @@ function BpsDistribution({ records }: { records: DynamicL1FeeRecord[] }) {
         </div>
       ))}
     </div>
+  );
+}
+
+function EvidenceResolutionCard({
+  title,
+  state,
+  variant,
+  caveat,
+  currentWork,
+  wouldImproveWith,
+}: {
+  title: string;
+  state: string;
+  variant: 'default' | 'success' | 'warning' | 'danger' | 'info';
+  caveat: string;
+  currentWork: string;
+  wouldImproveWith: string;
+}) {
+  return (
+    <Card className="min-w-0" padding="sm">
+      <div className="mb-3 flex items-start justify-between gap-3">
+        <h3 className="min-w-0 text-sm font-semibold">{title}</h3>
+        <Badge variant={variant}>{state}</Badge>
+      </div>
+      <dl className="space-y-3 text-xs leading-relaxed">
+        <div>
+          <dt className="font-semibold text-slate-300">What remains true</dt>
+          <dd className="mt-1 text-slate-400">{caveat}</dd>
+        </div>
+        <div>
+          <dt className="font-semibold text-slate-300">What this page can do</dt>
+          <dd className="mt-1 text-slate-400">{currentWork}</dd>
+        </div>
+        <div>
+          <dt className="font-semibold text-slate-300">What would improve proof</dt>
+          <dd className="mt-1 text-slate-400">{wouldImproveWith}</dd>
+        </div>
+      </dl>
+    </Card>
+  );
+}
+
+function EvidenceLadder({ status, sourceWarningCount }: { status?: DynamicL1FeeStatus; sourceWarningCount?: number }) {
+  const sealedSamples = historySampleCount(status);
+  const sealedEpochs = historyEpochRows(status).length;
+  const pairCount = historyPairCount(status);
+  const warningCount = sourceWarningCount ?? 0;
+  const snapshotLabel = status
+    ? `${status.sourceFreshness.thorchainHeight.toLocaleString()} at ${formatBlockAge(status.sourceFreshness.thorchainBlockAgeSeconds)}`
+    : 'Loading snapshot';
+  const sampleLabel = status
+    ? `${sealedSamples.toLocaleString()} samples across ${sealedEpochs.toLocaleString()} epochs and ${pairCount.toLocaleString()} pairs`
+    : 'Loading sealed samples';
+
+  return (
+    <>
+      <SectionHeader>Evidence Boundary</SectionHeader>
+      <p className="mb-4 max-w-3xl text-sm leading-relaxed text-slate-400">
+        Can the caveats be improved? Some can be reduced with better evidence; others are protocol-scope boundaries. This ladder keeps the distinction visible so the dashboard gets more useful without turning current-only data into conclusions.
+      </p>
+      <div className="mb-12 grid min-w-0 gap-3 lg:grid-cols-2">
+        <EvidenceResolutionCard
+          title="L1-to-L1 scope"
+          state="Inherent"
+          variant="default"
+          caveat="ADR-026 v1 applies to eligible L1 swaps selected by whitelisted thornames and normalized pairs. Trade assets, secured assets, synths, and many arb flows remain outside this model."
+          currentWork="Keep the scope label visible and avoid aggregating excluded flow into the dynamic-fee outcome."
+          wouldImproveWith="A later ADR or endpoint that explicitly exposes dynamic-fee treatment for trade, secured, synth, or arb classes."
+        />
+        <EvidenceResolutionCard
+          title="Current-only THORNode values"
+          state={!status ? 'Unknown' : warningCount > 0 ? 'Partly mitigated' : 'Mitigated'}
+          variant={!status || warningCount > 0 ? 'warning' : 'success'}
+          caveat="Mimir, current accumulators, and dynamic floors can change every block or epoch."
+          currentWork={`Pin reads to one provider and height, show block freshness, and separate current accumulators from sealed history. Current snapshot: ${snapshotLabel}; warnings: ${status ? warningCount.toLocaleString() : 'Unavailable'}.`}
+          wouldImproveWith="Longer retained sealed history, indexed block-by-block Mimir changes, or a governance/event timeline that can be queried independently of the latest THORNode state."
+        />
+        <EvidenceResolutionCard
+          title="Affiliate attribution versus applied floor"
+          state="Partly mitigated"
+          variant="info"
+          caveat="A swap can credit eligible thornames for TOR revenue while the applied floor is chosen from the largest affiliate-bps thorname in the memo."
+          currentWork="Explain the selector rule and show records by thorname/pair instead of treating all credited fee revenue as proof that a partner caused the applied fee."
+          wouldImproveWith="Per-swap evidence exposing the memo thornames, affiliate bps splits, credited thornames, selected floor thorname, and applied dynamic bps."
+        />
+        <EvidenceResolutionCard
+          title="Discord and community sentiment"
+          state="Context only"
+          variant="default"
+          caveat="Discord can explain debate and operating concerns, but it is not canonical protocol evidence."
+          currentWork="Keep Discord in the Community Read section and source list with explicit context-only labeling."
+          wouldImproveWith="Official ADR text, merged THORNode code, release notes, Mimir state, and endpoint data that independently support the claim being made."
+        />
+        <EvidenceResolutionCard
+          title="Revenue lift and route competitiveness"
+          state="Needs proof"
+          variant={sealedSamples >= 6 && sealedEpochs >= 3 ? 'info' : 'warning'}
+          caveat="Current records and a few sealed samples do not prove revenue lift, partner attribution quality, or better quote/routing competitiveness."
+          currentWork={`Show operational history without claiming causality. Current sealed coverage: ${sampleLabel}.`}
+          wouldImproveWith="Before/after route-share baselines, quote-win rates, partner traffic attribution, comparable non-whitelisted control flow, and enough sealed epochs to separate fee changes from demand/liquidity changes."
+        />
+      </div>
+    </>
   );
 }
 
@@ -274,7 +915,7 @@ export function DynamicFeesView({
   const ceilingPinnedCount = typeof ceilingBps === 'number'
     ? (status?.records ?? []).filter((record) => record.dynamicBps === ceilingBps).length
     : undefined;
-  const sourceWarningCount = status?.sourceWarnings.length ?? 0;
+  const sourceWarningCount = status?.sourceWarnings.length;
 
   return (
     <PageContainer>
@@ -283,7 +924,7 @@ export function DynamicFeesView({
           <Badge variant={enabled.variant}>{enabled.value}</Badge>
           <Badge variant="warning">Current-only</Badge>
           <Badge variant="info">ADR-026</Badge>
-          {sourceWarningCount > 0 && <Badge variant="warning">Source warnings {sourceWarningCount}</Badge>}
+          {sourceWarningCount !== undefined && sourceWarningCount > 0 && <Badge variant="warning">Source warnings {sourceWarningCount}</Badge>}
         </div>
         <h1 className="text-3xl font-bold tracking-tight mb-2">Dynamic L1 Fees</h1>
         <p className="max-w-3xl text-slate-400">
@@ -291,6 +932,15 @@ export function DynamicFeesView({
           Live values below are THORNode snapshots, not durable governance history.
         </p>
       </div>
+
+      <LookFirstPanel
+        status={status}
+        sourceWarningCount={sourceWarningCount}
+        floorPinnedCount={floorPinnedCount}
+        ceilingPinnedCount={ceilingPinnedCount}
+      />
+
+      <EvidenceLadder status={status} sourceWarningCount={sourceWarningCount} />
 
       <div className="mb-8 grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
         <Card>
@@ -309,7 +959,7 @@ export function DynamicFeesView({
               {error ?? 'Dynamic fee live data is degraded. Static documentation remains visible.'}
             </p>
           )}
-          {sourceWarningCount > 0 && (
+          {status && sourceWarningCount !== undefined && sourceWarningCount > 0 && (
             <p className="mt-3 text-sm text-amber-300">
               {sourceWarningCount} dynamic-fee source warning{sourceWarningCount === 1 ? '' : 's'} in this snapshot. First warning: {status?.sourceWarnings[0]}
             </p>
@@ -322,6 +972,10 @@ export function DynamicFeesView({
         </Card>
       </div>
 
+      <SectionHeader>Current Controls</SectionHeader>
+      <p className="mb-4 max-w-3xl text-sm text-slate-400">
+        These are the control-surface values behind the tracker. The fallback floor is still the base L1 minimum; dynamic floors only apply to active whitelisted thorname and pair records.
+      </p>
       <div className="mb-10 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <StatCard icon={<RadioTower className="h-4 w-4" />} label="Controller" value={enabled.value} />
         <StatCard icon={<Gauge className="h-4 w-4" />} label="Fallback L1 floor" value={formatBps(status?.mimir.slipMinBps.value)} />
@@ -339,9 +993,12 @@ export function DynamicFeesView({
         <StatCard icon={<RadioTower className="h-4 w-4" />} label="Epoch blocks" value={formatConfigInteger(status?.mimir.epochBlocks, 'blocks')} />
       </div>
 
+      <HistoricalResultsChart status={status} />
+      <PairLearningCards status={status} />
+
       <SectionHeader>Tracked Records</SectionHeader>
       <p className="mb-4 max-w-3xl text-sm text-slate-400">
-        Sealed records show the maintained dynamic floor for each tracked thorname and pair. Active whitelist records may apply that floor at swap time; monitor records are computed but still use the base L1 floor.
+        Raw sealed records show the maintained dynamic floor for each tracked thorname and pair. Active whitelist records may apply that floor at swap time; monitor records are computed but still use the base L1 floor.
       </p>
       {isLoading && !status ? (
         <Card className="mb-10">
@@ -408,8 +1065,8 @@ export function DynamicFeesView({
         </Card>
       )}
 
-      <div className="mb-12 grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
-        <Card>
+      <div className="mb-12 grid min-w-0 gap-4 lg:grid-cols-[0.9fr_1.1fr]">
+        <Card className="min-w-0">
           <h2 className="mb-4 text-sm font-semibold">Dynamic bps distribution</h2>
           {status && status.records.length > 0 && (
             <p className="mb-3 text-xs text-slate-400">
@@ -418,13 +1075,13 @@ export function DynamicFeesView({
           )}
           <BpsDistribution records={status?.records ?? []} />
         </Card>
-        <Card>
+        <Card className="min-w-0">
           <h2 className="mb-3 text-sm font-semibold">Operational evidence</h2>
-          <details className="group">
-            <summary className="cursor-pointer text-sm text-accent underline-offset-4 hover:underline">
+          <details className="group min-w-0 max-w-full overflow-hidden">
+            <summary className="cursor-pointer break-words text-sm text-accent underline-offset-4 hover:underline">
               Show exact Mimir keys and endpoint fields
             </summary>
-            <div className="mt-4 space-y-4 text-xs text-slate-400">
+            <div className="mt-4 min-w-0 max-w-full space-y-4 overflow-hidden break-words text-xs text-slate-400">
               <div>
                 <p className="mb-1 font-semibold text-slate-300">Mimir keys</p>
                 <ul className="space-y-1">
@@ -445,8 +1102,9 @@ export function DynamicFeesView({
                 <p className="mb-1 font-semibold text-slate-300">Endpoint fields</p>
                 <p><code>/dynamic_l1_fees</code>: thorname, pair, dynamic_bps, whitelist_state, last_active_epoch, latest_fees_tor.</p>
                 <p><code>/dynamic_l1_fees_current</code>: epoch, thorname, pair, volume_tor, fees_tor.</p>
+                <p><code>/dynamic_l1_fees/&lbrace;thorname&rbrace;</code>: thorname, whitelist_state, pair, dynamic_bps, last_active_epoch, history.epoch, history.volume_tor, history.fees_tor, history.bps_at_close.</p>
               </div>
-              {sourceWarningCount > 0 && (
+              {status && sourceWarningCount !== undefined && sourceWarningCount > 0 && (
                 <div>
                   <p className="mb-1 font-semibold text-amber-300">Source warnings</p>
                   <ul className="space-y-1 text-amber-300">
@@ -497,7 +1155,10 @@ export function DynamicFeesView({
       <SectionHeader>Community Read</SectionHeader>
       <div className="mb-12 grid gap-3 lg:grid-cols-3">
         <Card>
-          <h3 className="mb-2 text-sm font-semibold text-green-400">Why supporters like it</h3>
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <h3 className="text-sm font-semibold text-green-400">Why supporters like it</h3>
+            <Badge variant="default">Context only</Badge>
+          </div>
           <p className="text-sm leading-relaxed text-slate-400">
             A single fee floor is too blunt. Dynamic floors can compete for price-sensitive aggregator flow while preserving revenue where THORChain demand is stickier.
           </p>
@@ -516,14 +1177,17 @@ export function DynamicFeesView({
         </Card>
       </div>
 
-      <SectionHeader>Caveats and Non-Claims</SectionHeader>
+      <SectionHeader>Remaining Non-Claims</SectionHeader>
       <Card>
+        <p className="mb-4 text-sm leading-relaxed text-slate-400">
+          The evidence ladder reduces ambiguity, but it does not erase these boundaries.
+        </p>
         <ul className="grid gap-2 text-sm leading-relaxed text-slate-400 md:grid-cols-2">
-          <li>Applies to L1-to-L1 scope; trade assets, secured assets, synths, and many arb flows are outside this first model.</li>
-          <li>Dashboard values are current-only THORNode evidence and can change every block or epoch.</li>
-          <li>Multi-affiliate attribution and floor selection differ: eligible thornames can receive TOR credit, but the applied floor comes from the largest affiliate-bps thorname.</li>
-          <li>Discord sentiment is curated context, not canonical protocol proof.</li>
-          <li>Current fee records do not by themselves prove revenue lift, route competitiveness, or partner attribution quality.</li>
+          <li>L1-to-L1 scope is an ADR-026 v1 boundary unless a later protocol change expands it.</li>
+          <li>Current THORNode values remain current-only even when the page pins a snapshot height and shows sealed endpoint history.</li>
+          <li>Affiliate credit and applied fee-floor selection remain different concepts.</li>
+          <li>Discord sentiment remains contextual, never canonical protocol proof.</li>
+          <li>Current records and sparse sealed history do not prove revenue lift, route competitiveness, or partner attribution quality.</li>
         </ul>
       </Card>
     </PageContainer>

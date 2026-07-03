@@ -55,6 +55,9 @@ test.describe('THORChain Wiki Smoke Tests', () => {
     await expect(page.getByRole('heading', { name: /Dynamic L1 Fees/i })).toBeVisible();
     await expect(page.getByText(/ADR-026 replaces one global L1 minimum slip floor/i)).toBeVisible();
     await expect(page.getByText(/Current-only/i).first()).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Look Here First/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Historical Results/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Evidence Boundary/i })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Tracked Records' })).toBeVisible();
     await expect(page.getByText(/Show exact Mimir keys and endpoint fields/i)).toBeVisible();
     await expect(page.getByText(/How the Experiment Works/i)).toBeVisible();

@@ -439,6 +439,30 @@ export interface DynamicL1FeeCurrentAccumulator {
   feesTorBaseUnits: string | null;
 }
 
+export interface DynamicL1FeeHistoryEntry {
+  epoch: number;
+  volumeTorBaseUnits: string | null;
+  feesTorBaseUnits: string | null;
+  bpsAtClose: number;
+}
+
+export interface DynamicL1FeePairHistory {
+  thorname: string;
+  pair: string;
+  dynamicBps: number;
+  whitelistValue: number | null;
+  whitelistState: DynamicL1FeeWhitelistState;
+  lastActiveEpoch: number;
+  history: DynamicL1FeeHistoryEntry[];
+}
+
+export interface DynamicL1FeeThornameHistory {
+  thorname: string;
+  whitelistValue: number | null;
+  whitelistState: DynamicL1FeeWhitelistState;
+  pairs: DynamicL1FeePairHistory[];
+}
+
 export interface DynamicL1FeeSourceFreshness {
   thorchainHeight: number;
   thorchainBlockTime: string;
@@ -451,6 +475,7 @@ export interface DynamicL1FeeStatus {
   records: DynamicL1FeeRecord[];
   currentEpoch: number;
   currentEntries: DynamicL1FeeCurrentAccumulator[];
+  histories: DynamicL1FeeThornameHistory[];
   sourceFreshness: DynamicL1FeeSourceFreshness;
   sourceWarnings: string[];
   caveats: Array<'current-only' | 'adr-experiment' | 'not-historical-fee-proof'>;
