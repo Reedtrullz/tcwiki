@@ -1127,6 +1127,51 @@ describe('deriveNetworkStatus', () => {
     expect(result.data?.sourceWarnings).toEqual([]);
   });
 
+  it('prefers the least degraded provider when every snapshot has source warnings', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-03T12:00:00.000Z'));
+    const unknownOperationMimir = {
+      BURNSYNTHS: 1,
+    };
+    stubNetworkStatusSnapshots(
+      snapshotFixture({
+        mimir: unknownOperationMimir,
+        latestBlock: {
+          block: {
+            header: {
+              height: '100',
+              time: '2026-07-03T11:59:00.000Z',
+            },
+          },
+        },
+        lastBlock: [{ chain: 'BTC', thorchain: 99, last_observed_in: 1000, last_signed_out: 98 }],
+      }),
+      snapshotFixture({
+        mimir: unknownOperationMimir,
+        version: { current: 'less-degraded-provider' },
+        latestBlock: {
+          block: {
+            header: {
+              height: '100',
+              time: '2026-07-03T11:59:55.000Z',
+            },
+          },
+        },
+        lastBlock: [{ chain: 'BTC', thorchain: 99, last_observed_in: 1000, last_signed_out: 98 }],
+      })
+    );
+
+    const result = await ThornodeAPI.getNetworkStatus();
+
+    expect(result.status).toBe('ok');
+    expect(result.source?.label).toBe('THORChain THORNode');
+    expect(result.data?.thorNodeVersion).toBe('less-degraded-provider');
+    expect(result.data?.sourceWarnings).toEqual([
+      'Unknown operation-like Mimir key need review: BURNSYNTHS.',
+    ]);
+    expect(result.data?.thorchainBlockAgeSeconds).toBe(5);
+  });
+
   it('surfaces stale THORNode block timestamps as source warnings when every provider is stale', async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-07-03T12:00:00.000Z'));

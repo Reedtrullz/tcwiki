@@ -356,6 +356,24 @@ function formatAgeSeconds(seconds: number) {
   return `${minutes} minute${minutes === 1 ? '' : 's'}`;
 }
 
+function getWarningSnapshotScore(status: NetworkStatus) {
+  return status.sourceWarnings.reduce((score, warning) => {
+    if (warning.includes('latest block timestamp') || warning.includes('snapshot was not pinned')) {
+      return score + 100;
+    }
+    if (warning.includes('lastblock THORChain heights diverge')) {
+      return score + 80;
+    }
+    if (warning.includes('did not include') || warning.includes('missing')) {
+      return score + 60;
+    }
+    if (warning.includes('Unknown operation-like Mimir key')) {
+      return score + 10;
+    }
+    return score + 25;
+  }, 0);
+}
+
 function deriveValidatedNetworkStatusSnapshot(
   mimir: unknown,
   inbound: unknown,
@@ -1424,7 +1442,12 @@ export class ThornodeAPI {
       }
     }
 
-    const [bestWarningSnapshot] = warningSnapshots;
+    const [bestWarningSnapshot] = [...warningSnapshots]
+      .sort((left, right) => (
+        getWarningSnapshotScore(left.status) - getWarningSnapshotScore(right.status) ||
+        left.status.sourceWarnings.length - right.status.sourceWarnings.length ||
+        left.endpointIndex - right.endpointIndex
+      ));
     if (bestWarningSnapshot) {
       activeEndpoint = bestWarningSnapshot.endpointIndex;
       return liveOk(bestWarningSnapshot.status, bestWarningSnapshot.endpoint, checkedAt);
