@@ -14,6 +14,7 @@ import {
   InboundOperationField,
   LiveDataResult,
   NetworkStatus,
+  NetworkStatusSourceWarning,
   OperationalControlStatus,
   SourceMeta,
   ThornodeInboundAddress,
@@ -369,7 +370,147 @@ function formatAgeSeconds(seconds: number) {
   return `${minutes} minute${minutes === 1 ? '' : 's'}`;
 }
 
+function classifyNetworkSourceWarning(message: string, scopes?: string[]): NetworkStatusSourceWarning {
+  if (message.includes('latest block timestamp')) {
+    return {
+      severity: message.includes(' is stale.') ? 'critical' : 'warning',
+      category: 'freshness',
+      message,
+      action: 'Treat this status as degraded until THORNode returns a fresh latest-block timestamp.',
+      ...(scopes?.length ? { scopes } : {}),
+    };
+  }
+
+  if (message.includes('snapshot was not pinned')) {
+    return {
+      severity: 'warning',
+      category: 'pinning',
+      message,
+      action: 'Prefer a same-height THORNode snapshot before treating missing halt flags as complete.',
+      ...(scopes?.length ? { scopes } : {}),
+    };
+  }
+
+  if (message.includes('lastblock THORChain heights diverge') || message.includes('latest block height differs')) {
+    return {
+      severity: 'warning',
+      category: 'height-divergence',
+      message,
+      action: 'Review provider block-height consistency before using this as a clean operational snapshot.',
+      ...(scopes?.length ? { scopes } : {}),
+    };
+  }
+
+  if (message.includes('omitted') || message.includes('did not include') || message.includes('missing')) {
+    return {
+      severity: 'warning',
+      category: 'source-shape',
+      message,
+      action: 'Treat the affected live fields as partial until the source response shape is complete.',
+      ...(scopes?.length ? { scopes } : {}),
+    };
+  }
+
+  if (message.includes('could not be parsed')) {
+    return {
+      severity: 'warning',
+      category: 'mimir-parse',
+      message,
+      action: 'Review the exact Mimir values before counting those controls as inactive.',
+      ...(scopes?.length ? { scopes } : {}),
+    };
+  }
+
+  if (message.includes('Unknown chain-scoped Mimir key')) {
+    return {
+      severity: 'review',
+      category: 'unknown-chain',
+      message,
+      action: 'Classify the chain-scoped key family before treating it as non-pausing.',
+      ...(scopes?.length ? { scopes } : {}),
+    };
+  }
+
+  if (message.includes('Unknown operation-like Mimir key')) {
+    return {
+      severity: 'review',
+      category: 'unknown-operation',
+      message,
+      action: 'Review the operation-like key family before interpreting it as non-pausing.',
+      ...(scopes?.length ? { scopes } : {}),
+    };
+  }
+
+  return {
+    severity: 'warning',
+    category: 'other',
+    message,
+    action: 'Review this source warning before treating the live status as clean.',
+    ...(scopes?.length ? { scopes } : {}),
+  };
+}
+
+function warningDetail({
+  severity,
+  category,
+  message,
+  action,
+  keys,
+  scopes,
+}: NetworkStatusSourceWarning): NetworkStatusSourceWarning {
+  return {
+    severity,
+    category,
+    message,
+    action,
+    ...(keys?.length ? { keys } : {}),
+    ...(scopes?.length ? { scopes } : {}),
+  };
+}
+
+function uniqueSourceWarningDetails(details: NetworkStatusSourceWarning[]) {
+  const seen = new Set<string>();
+  return details.filter((detail) => {
+    const signature = [
+      detail.severity,
+      detail.category,
+      detail.message,
+      detail.action,
+      detail.keys?.join(',') ?? '',
+      detail.scopes?.join(',') ?? '',
+    ].join('|');
+    if (seen.has(signature)) {
+      return false;
+    }
+    seen.add(signature);
+    return true;
+  });
+}
+
+function getWarningDetailSnapshotScore(detail: NetworkStatusSourceWarning) {
+  switch (detail.category) {
+    case 'freshness':
+    case 'pinning':
+      return detail.severity === 'critical' ? 120 : 100;
+    case 'height-divergence':
+      return 80;
+    case 'source-shape':
+    case 'mimir-parse':
+      return 60;
+    case 'unknown-chain':
+      return 25;
+    case 'unknown-operation':
+      return 10;
+    case 'other':
+      return 25;
+  }
+}
+
 function getWarningSnapshotScore(status: NetworkStatus) {
+  if (status.sourceWarningDetails?.length) {
+    return status.sourceWarningDetails.reduce((score, detail) => score + getWarningDetailSnapshotScore(detail), 0);
+  }
+
   return status.sourceWarnings.reduce((score, warning) => {
     if (warning.includes('latest block timestamp') || warning.includes('snapshot was not pinned')) {
       return score + 100;
@@ -1814,19 +1955,62 @@ export function deriveNetworkStatus(
     .map((control) => control.key);
   const invalidMimirKeys = collectInvalidMimirKeys(mimir, recognizedChainCodes);
   const chainSourceWarnings = uniqueKeys(chainStatuses.flatMap((chain) => chain.sourceWarnings ?? []));
+  const chainSourceWarningDetails = chainStatuses.flatMap((chain) => (
+    (chain.sourceWarnings ?? []).map((warning) => classifyNetworkSourceWarning(warning, [chain.chain]))
+  ));
+  const invalidMimirWarning = invalidMimirKeys.length > 0
+    ? `${invalidMimirKeys.length} monitored Mimir key${invalidMimirKeys.length === 1 ? '' : 's'} could not be parsed.`
+    : null;
+  const unknownChainWarning = unknownChainScopedMimirKeys.length > 0
+    ? `Unknown chain-scoped Mimir key${unknownChainScopedMimirKeys.length === 1 ? '' : 's'} ignored: ${unknownChainScopedMimirKeys.join(', ')}.`
+    : null;
+  const unknownOperationWarning = unknownOperationMimirKeys.length > 0
+    ? `Unknown operation-like Mimir key${unknownOperationMimirKeys.length === 1 ? '' : 's'} need review: ${unknownOperationMimirKeys.join(', ')}.`
+    : null;
   const sourceWarnings = [
     ...(options.sourceWarnings ?? []),
     ...chainSourceWarnings,
-    ...(invalidMimirKeys.length > 0
-      ? [`${invalidMimirKeys.length} monitored Mimir key${invalidMimirKeys.length === 1 ? '' : 's'} could not be parsed.`]
-      : []),
-    ...(unknownChainScopedMimirKeys.length > 0
-      ? [`Unknown chain-scoped Mimir key${unknownChainScopedMimirKeys.length === 1 ? '' : 's'} ignored: ${unknownChainScopedMimirKeys.join(', ')}.`]
-      : []),
-    ...(unknownOperationMimirKeys.length > 0
-      ? [`Unknown operation-like Mimir key${unknownOperationMimirKeys.length === 1 ? '' : 's'} need review: ${unknownOperationMimirKeys.join(', ')}.`]
-      : []),
+    ...(invalidMimirWarning ? [invalidMimirWarning] : []),
+    ...(unknownChainWarning ? [unknownChainWarning] : []),
+    ...(unknownOperationWarning ? [unknownOperationWarning] : []),
   ];
+  const sourceWarningDetails = uniqueSourceWarningDetails([
+    ...(options.sourceWarnings ?? []).map((warning) => classifyNetworkSourceWarning(warning)),
+    ...chainSourceWarningDetails,
+    ...(invalidMimirWarning
+      ? [
+          warningDetail({
+            severity: 'warning',
+            category: 'mimir-parse',
+            message: invalidMimirWarning,
+            action: 'Review the exact Mimir values before counting those controls as inactive.',
+            keys: invalidMimirKeys,
+          }),
+        ]
+      : []),
+    ...(unknownChainWarning
+      ? [
+          warningDetail({
+            severity: 'review',
+            category: 'unknown-chain',
+            message: unknownChainWarning,
+            action: 'Classify the chain-scoped key family before treating it as non-pausing.',
+            keys: unknownChainScopedMimirKeys,
+          }),
+        ]
+      : []),
+    ...(unknownOperationWarning
+      ? [
+          warningDetail({
+            severity: 'review',
+            category: 'unknown-operation',
+            message: unknownOperationWarning,
+            action: 'Review the operation-like key family before interpreting it as non-pausing.',
+            keys: unknownOperationMimirKeys,
+          }),
+        ]
+      : []),
+  ]);
   const activeChainKeys = uniqueKeys(chainStatuses.flatMap((chain) => chain.activeMimirKeys));
   const allScheduledMimirKeys = uniqueKeys(
     scheduledMimirKeys,
@@ -1920,6 +2104,7 @@ export function deriveNetworkStatus(
     thorchainBlockAgeSeconds: options.thorchainBlockAgeSeconds,
     invalidMimirKeys,
     sourceWarnings,
+    sourceWarningDetails,
   };
 }
 

@@ -996,6 +996,15 @@ describe('deriveNetworkStatus', () => {
     expect(status.sourceWarnings).toEqual([
       'Unknown operation-like Mimir keys need review: NewFeatureEnabled, OtherFeatureDisabled.',
     ]);
+    expect(status.sourceWarningDetails).toEqual([
+      {
+        severity: 'review',
+        category: 'unknown-operation',
+        message: 'Unknown operation-like Mimir keys need review: NewFeatureEnabled, OtherFeatureDisabled.',
+        action: 'Review the operation-like key family before interpreting it as non-pausing.',
+        keys: ['NewFeatureEnabled', 'OtherFeatureDisabled'],
+      },
+    ]);
   });
 
   it('warns on explicit high-impact operational Mimir families that are not yet modeled', () => {
@@ -1021,6 +1030,22 @@ describe('deriveNetworkStatus', () => {
     expect(status.sourceWarnings).toEqual([
       'Unknown operation-like Mimir keys need review: BURNSYNTHS, COMPROMISEDVAULT-thor1vault, ENABLESWITCH-BTC, EVMDISABLECONTRACTWHITELIST, FUNDMIGRATIONINTERVAL, MimirRecallFundFoo, MimirUpgradeContractBar, RAGNAROK-BTC, SCHEDULEDMIGRATION, STOPSOLVENCYCHECK.',
     ]);
+    expect(status.sourceWarningDetails?.[0]).toMatchObject({
+      severity: 'review',
+      category: 'unknown-operation',
+      keys: [
+        'BURNSYNTHS',
+        'COMPROMISEDVAULT-thor1vault',
+        'ENABLESWITCH-BTC',
+        'EVMDISABLECONTRACTWHITELIST',
+        'FUNDMIGRATIONINTERVAL',
+        'MimirRecallFundFoo',
+        'MimirUpgradeContractBar',
+        'RAGNAROK-BTC',
+        'SCHEDULEDMIGRATION',
+        'STOPSOLVENCYCHECK',
+      ],
+    });
   });
 
   it('adds inbound-address evidence fields for chain pause booleans', () => {

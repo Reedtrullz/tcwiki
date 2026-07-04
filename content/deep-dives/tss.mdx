@@ -26,6 +26,10 @@ THORChain has used **GG20** threshold signature schemes, with later cryptographi
 
 ## Real-World Impact
 
-The May 15, 2026 official exploit report says a newly churned node operator exploited a GG20 TSS vulnerability and drained one vault before automated solvency detection and manual Mimir halts contained further activity. That report should be treated as dated incident evidence, not a timeless statement of current safety.
+The May 15, 2026 official exploit reports say one vault was drained through a cryptographic attack against THORChain's GG20/TSS signing path. Report #2 adds important root-cause detail: the attacker joined as a validator, planted malformed Paillier key material during setup, then deliberately failed the MTA signing round 864 times over roughly two and a half days. Those failures looked like ordinary node flakiness in isolation, but they leaked enough key-share fragments for the attacker to reproduce the vault key and sign alone.
+
+The same report says this was not a smart-contract, bridge, oracle, multisig-operator, or Solana/EdDSA exposure. It was specific to the GG20/ECDSA path and its Paillier cryptography assumptions. It also explains why solvency checks did not halt the loss in time: by the time funds moved, the upstream key compromise had already happened and the outbound transaction looked like a valid signature.
+
+Post-incident changes should be described in dated terms. THORChain's v3.19.0 upgrade post identifies restart recovery work such as TSS patches, compromised-vault exclusion, temporary Keyverify checks, and pause-safety rules. The later official exploit report says validators upgraded to v3.19.1, that THORChain plans to move away from GG20 toward alternatives such as DKLS and/or Schnorr-style approaches, and that validator-level key-sign failure monitoring is being strengthened. Proposals such as minimum validator age, gradual exposure for new validators, dual-scheme vault architecture, and bug-bounty redesign should be presented as under consideration unless a later source verifies implementation.
 
 TSS is what makes true native cross-chain liquidity possible without bridges or wrapped tokens.

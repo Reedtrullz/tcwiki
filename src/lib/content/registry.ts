@@ -81,6 +81,27 @@ const exploitReportSource: SourceMeta = {
   url: 'https://blog.thorchain.org/thorchain-exploit-report-1',
 };
 
+const exploitReport2Source: SourceMeta = {
+  label: 'THORChain Exploit Report #2',
+  url: 'https://blog.thorchain.org/thorchain-exploit-report-2',
+  retrievedAt: '2026-07-04',
+  notes: 'Official root-cause report for the May 2026 GG20/TSS vault exploit.',
+};
+
+const protocolUpgradeV319Source: SourceMeta = {
+  label: 'Protocol Upgrade v3.19.0',
+  url: 'https://blog.thorchain.org/protocol-upgrade-v3-19-0',
+  retrievedAt: '2026-07-04',
+  notes: 'Official release summary for the post-exploit restart and recovery/security patch set.',
+};
+
+const asgardTssChurnSource: SourceMeta = {
+  label: 'Under the Hood: Asgard Vaults, TSS and Node Churns',
+  url: 'https://blog.thorchain.org/under-the-hood-asgard-vaults-tss-and-node-churns',
+  retrievedAt: '2026-07-04',
+  notes: 'Historical educational explainer for Asgard vault, TSS, and churn mechanics.',
+};
+
 const archivedSource: SourceMeta = {
   label: 'Archived Savers and Lending docs',
   url: 'https://docs.thorchain.org/thornodes/archived',
@@ -110,11 +131,11 @@ export const CONTENT_ENTRIES: ContentEntry[] = [
     category: 'section',
     confidence: 'curated',
     description: 'Node lifecycle, churning, slashing, vault security, and live operational state.',
-    body: 'Network security nodes churning slashing GG20 TSS DKLS signer halts Mimir operational parameters vault solvency current-only status official halt keys HALTTRADING HALTSIGNING HALTCHURNING HALTWASMGLOBAL StreamingSwapPause HaltMemoless RUNEPoolHaltDeposit memoless halt streaming swap pause RUNEPool deposit halt.',
+    body: 'Network security nodes churning slashing GG20 TSS DKLS Schnorr signer key-sign failures MTA Paillier vault solvency KeyVerify compromised vault exclusion current-only status official halt keys HALTTRADING HALTSIGNING HALTCHURNING HALTWASMGLOBAL StreamingSwapPause HaltMemoless RUNEPoolHaltDeposit memoless halt streaming swap pause RUNEPool deposit halt.',
     tags: ['nodes', 'security', 'slashing', 'churning'],
-    reviewedAt: '2026-06-18',
-    nextReviewDue: '2026-07-18',
-    sources: [docsSource, networkHaltsSource, exploitReportSource],
+    reviewedAt: '2026-07-04',
+    nextReviewDue: '2026-08-04',
+    sources: [docsSource, networkHaltsSource, exploitReport2Source, protocolUpgradeV319Source, exploitReportSource],
     nav: true,
     footer: true,
     featured: true,
@@ -174,11 +195,11 @@ export const CONTENT_ENTRIES: ContentEntry[] = [
     category: 'section',
     confidence: 'curated',
     description: 'ADRs, operational Mimir, incidents, milestones, and sourced research.',
-    body: 'Governance ADR Mimir halt trading halt signing pause LP incidents exploit THORFi unwind TCY recovery source-backed history.',
+    body: 'Governance ADR Mimir halt trading halt signing pause LP incidents exploit GG20 Paillier MTA key-sign failures THORFi unwind TCY recovery source-backed history.',
     tags: ['governance', 'incidents', 'mimir', 'adr'],
-    reviewedAt: '2026-06-18',
-    nextReviewDue: '2026-07-18',
-    sources: [docsSource, networkHaltsSource, exploitReportSource],
+    reviewedAt: '2026-07-04',
+    nextReviewDue: '2026-08-04',
+    sources: [docsSource, networkHaltsSource, exploitReport2Source, protocolUpgradeV319Source, exploitReportSource],
     nav: true,
     footer: true,
     featured: true,
@@ -307,12 +328,12 @@ export const CONTENT_ENTRIES: ContentEntry[] = [
     href: '/deep-dives/tss',
     category: 'deep-dive',
     confidence: 'curated',
-    description: 'How distributed signing protects cross-chain vault keys and why GG20/DKLS wording must be source-backed.',
-    body: 'Threshold Signature Scheme TSS GG20 DKLS vault key shares signing ceremony exploit May 2026 solvency checker halt signing.',
+    description: 'How distributed signing protects cross-chain vault keys and why GG20, DKLS, Paillier, and key-sign failure wording must be source-backed.',
+    body: 'Threshold Signature Scheme TSS Asgard vault node churn GG20 DKLS Schnorr Paillier multi-prime modulus MTA round key-sign failures vault key shares signing ceremony exploit May 2026 solvency checker halt signing KeyVerify compromised vault exclusion pause safety Solana EdDSA not exposed v3.19.0 v3.19.1.',
     tags: ['tss', 'security', 'vaults'],
-    reviewedAt: '2026-06-18',
-    nextReviewDue: '2026-07-18',
-    sources: [docsSource, exploitReportSource],
+    reviewedAt: '2026-07-04',
+    nextReviewDue: '2026-08-04',
+    sources: [docsSource, asgardTssChurnSource, exploitReport2Source, protocolUpgradeV319Source, exploitReportSource],
     featured: true,
   },
   {

@@ -512,6 +512,27 @@ export type NetworkStatusState = 'operational' | 'paused' | 'degraded' | 'unknow
 
 export type OperationalControlState = 'active' | 'inactive' | 'disabled' | 'scheduled' | 'not-monitored' | 'unparseable';
 
+export type NetworkStatusWarningSeverity = 'critical' | 'warning' | 'review';
+
+export type NetworkStatusWarningCategory =
+  | 'freshness'
+  | 'pinning'
+  | 'height-divergence'
+  | 'source-shape'
+  | 'mimir-parse'
+  | 'unknown-chain'
+  | 'unknown-operation'
+  | 'other';
+
+export interface NetworkStatusSourceWarning {
+  severity: NetworkStatusWarningSeverity;
+  category: NetworkStatusWarningCategory;
+  message: string;
+  action: string;
+  keys?: string[];
+  scopes?: string[];
+}
+
 export interface OperationalControlStatus {
   key: string;
   label: string;
@@ -577,4 +598,5 @@ export interface NetworkStatus {
   thorchainBlockAgeSeconds?: number;
   invalidMimirKeys: string[];
   sourceWarnings: string[];
+  sourceWarningDetails?: NetworkStatusSourceWarning[];
 }
