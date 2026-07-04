@@ -12,7 +12,14 @@ const jiti = createJiti(import.meta.url, {
   moduleCache: false,
 });
 const { SEARCH_DOCUMENTS: actualSearchDocuments } = await jiti.import(join(root, 'src/lib/search/registry.ts'));
-const { DEEP_DIVE_TOC: actualDeepDiveToc } = await jiti.import(join(root, 'src/lib/content/registry.ts'));
+const {
+  DEEP_DIVE_READER_PATHS: actualDeepDiveReaderPaths,
+  DEEP_DIVE_TOC: actualDeepDiveToc,
+  HOME_DECISION_LINKS: actualHomeDecisionLinks,
+  JOURNEY_LINKS: actualJourneyLinks,
+  SOURCE_CHOICE_DECISIONS: actualSourceChoiceDecisions,
+  TASK_INTENT_GUIDES: actualTaskIntentGuides,
+} = await jiti.import(join(root, 'src/lib/content/registry.ts'));
 const staticPath = join(root, 'src/lib/data/static.ts');
 const typesPath = join(root, 'src/lib/types.ts');
 const registryPath = join(root, 'src/lib/content/registry.ts');
@@ -42,6 +49,18 @@ const forbiddenChainCodes = new Set(['TRX', 'ARB', 'MATIC', 'OP']);
 const liveInboundUrl = 'https://thornode.thorchain.network/thorchain/inbound_addresses';
 const contentCheckToday = process.env.CONTENT_CHECK_TODAY ?? new Date().toISOString().slice(0, 10);
 const allowOverdueContent = process.env.ALLOW_OVERDUE_CONTENT === '1';
+const routeSourcePostureEntryIds = new Set([
+  'protocol',
+  'economics',
+  'rune',
+  'tcy',
+  'ecosystem',
+  'governance',
+  'docs',
+  'deep-dives',
+  'glossary',
+  'stats',
+]);
 
 function fail(path, message) {
   failures.push(`${path}: ${message}`);
@@ -252,21 +271,46 @@ function readRecordArray(name, scope, staticDataLastUpdated, nextReviewDue) {
     if (!ts.isCallExpression(element) || !ts.isIdentifier(element.expression) || element.expression.text !== 'record') {
       throw new Error(`${name}[${index}] must be a record(...) call`);
     }
-    const [dataExpression, sourcesExpression, confidenceExpression] = element.arguments;
+    const [dataExpression, sourcesExpression, confidenceExpression, freshnessOptionsExpression] = element.arguments;
     if (!dataExpression || !sourcesExpression) {
       throw new Error(`${name}[${index}] must include data and sources`);
     }
     const data = evaluate(dataExpression, scope, `${name}[${index}].data`);
     const sources = evaluate(sourcesExpression, scope, `${name}[${index}].sources`);
     const confidence = confidenceExpression ? evaluate(confidenceExpression, scope, `${name}[${index}].confidence`) : 'curated';
+    const freshnessOptions = freshnessOptionsExpression
+      ? evaluate(freshnessOptionsExpression, scope, `${name}[${index}].freshnessOptions`)
+      : {};
+    if (!freshnessOptions || typeof freshnessOptions !== 'object' || Array.isArray(freshnessOptions)) {
+      throw new Error(`${name}[${index}].freshnessOptions must be an object literal`);
+    }
+    const allowedFreshnessOptions = new Set(['checkedAt', 'nextReviewDue', 'reviewedBy']);
+    for (const [optionName, optionValue] of Object.entries(freshnessOptions)) {
+      if (!allowedFreshnessOptions.has(optionName)) {
+        throw new Error(`${name}[${index}].freshnessOptions.${optionName} is not supported`);
+      }
+      if (typeof optionValue !== 'string') {
+        throw new Error(`${name}[${index}].freshnessOptions.${optionName} must be a string`);
+      }
+    }
+    const checkedAt = typeof freshnessOptions.checkedAt === 'string'
+      ? freshnessOptions.checkedAt
+      : staticDataLastUpdated;
+    const recordNextReviewDue = typeof freshnessOptions.nextReviewDue === 'string'
+      ? freshnessOptions.nextReviewDue
+      : nextReviewDue;
+    const freshness = {
+      checkedAt,
+      confidence,
+      nextReviewDue: recordNextReviewDue,
+    };
+    if (typeof freshnessOptions.reviewedBy === 'string') {
+      freshness.reviewedBy = freshnessOptions.reviewedBy;
+    }
     return {
       data,
       sources,
-      freshness: {
-        checkedAt: staticDataLastUpdated,
-        confidence,
-        nextReviewDue,
-      },
+      freshness,
     };
   });
 }
@@ -339,6 +383,18 @@ function validateUnique(collectionName, records) {
   });
 }
 
+function validateNonEmptyStringArray(value, path) {
+  if (!Array.isArray(value) || value.length === 0) {
+    fail(path, 'must include at least one non-empty string');
+    return;
+  }
+  value.forEach((item, index) => {
+    if (typeof item !== 'string' || item.trim() === '') {
+      fail(`${path}[${index}]`, 'must be a non-empty string');
+    }
+  });
+}
+
 function validateRecord(collectionName, record, index, allowedConfidences, staticDataLastUpdated) {
   const key = recordKey(record, index);
   const path = `${collectionName}[${key}]`;
@@ -373,11 +429,12 @@ function validateRecord(collectionName, record, index, allowedConfidences, stati
     fail(`${path}.freshness`, 'missing freshness metadata');
     return;
   }
-  if (record.freshness.checkedAt !== staticDataLastUpdated) {
-    fail(`${path}.freshness.checkedAt`, `must equal STATIC_DATA_LAST_UPDATED (${staticDataLastUpdated})`);
-  }
   if (!isIsoDate(record.freshness.checkedAt)) {
     fail(`${path}.freshness.checkedAt`, 'must be YYYY-MM-DD');
+  } else if (record.freshness.checkedAt < staticDataLastUpdated) {
+    fail(`${path}.freshness.checkedAt`, `must not be before STATIC_DATA_LAST_UPDATED (${staticDataLastUpdated})`);
+  } else if (record.freshness.checkedAt > contentCheckToday) {
+    fail(`${path}.freshness.checkedAt`, `must not be in the future relative to ${contentCheckToday}`);
   }
   if (!isIsoDate(record.freshness.nextReviewDue)) {
     fail(`${path}.freshness.nextReviewDue`, 'must be YYYY-MM-DD');
@@ -388,6 +445,12 @@ function validateRecord(collectionName, record, index, allowedConfidences, stati
   }
   if (!allowedConfidences.has(record.freshness.confidence)) {
     fail(`${path}.freshness.confidence`, `unsupported confidence ${record.freshness.confidence}`);
+  }
+  if (
+    Object.prototype.hasOwnProperty.call(record.freshness, 'reviewedBy') &&
+    (typeof record.freshness.reviewedBy !== 'string' || record.freshness.reviewedBy.trim() === '')
+  ) {
+    fail(`${path}.freshness.reviewedBy`, 'must be a non-empty string when present');
   }
 }
 
@@ -435,6 +498,8 @@ function validateEcosystemChains(records) {
       fail(`${path}.data.chains`, 'must include at least one chain');
       continue;
     }
+    validateNonEmptyStringArray(record.data.useFor, `${path}.data.useFor`);
+    validateNonEmptyStringArray(record.data.verifyBeforeUse, `${path}.data.verifyBeforeUse`);
     for (const chain of record.data.chains) {
       if (forbiddenChainCodes.has(chain)) {
         fail(`${path}.data.chains`, `uses stale chain code ${chain}`);
@@ -449,10 +514,13 @@ function validateEcosystemChains(records) {
 function validateSourceMapSections(records) {
   for (const [index, record] of records.entries()) {
     const path = `SOURCE_MAP_SECTION_RECORDS[${recordKey(record, index)}]`;
-    for (const field of ['id', 'title', 'use', 'caveat']) {
+    for (const field of ['id', 'title', 'decision', 'use', 'caveat']) {
       if (typeof record.data?.[field] !== 'string' || record.data[field].trim() === '') {
         fail(`${path}.data.${field}`, 'must be a non-empty string');
       }
+    }
+    for (const field of ['claimExamples', 'nonClaims']) {
+      validateNonEmptyStringArray(record.data?.[field], `${path}.data.${field}`);
     }
     if (!Array.isArray(record.data?.links) || record.data.links.length === 0) {
       fail(`${path}.data.links`, 'must include at least one source link');
@@ -745,6 +813,336 @@ function validateContentRegistry(entries, allowedConfidences) {
   }
 }
 
+function validateRouteSourcePostureUsage(entries) {
+  const entriesById = new Map(
+    entries
+      .filter((entry) => entry && typeof entry === 'object' && typeof entry.id === 'string')
+      .map((entry) => [entry.id, entry])
+  );
+
+  for (const id of routeSourcePostureEntryIds) {
+    const entry = entriesById.get(id);
+    if (!entry) {
+      fail(`CONTENT_ENTRIES[${id}]`, 'missing entry required by route source posture checks');
+      continue;
+    }
+    if (typeof entry.href !== 'string') {
+      continue;
+    }
+
+    const routePath = routePathForHref(entry.href);
+    if (!existsSync(routePath)) {
+      continue;
+    }
+
+    const relativeRoutePath = relative(root, routePath);
+    const routeSource = readFileSync(routePath, 'utf8');
+    if (!routeSource.includes('RouteSourcePosture')) {
+      fail(relativeRoutePath, `must render RouteSourcePosture for CONTENT_ENTRIES[${id}]`);
+    }
+    if (!new RegExp(`getContentEntry\\(\\s*['"]${id}['"]\\s*\\)`).test(routeSource)) {
+      fail(relativeRoutePath, `must load registry metadata with getContentEntry('${id}')`);
+    }
+    if (!/entry=\{\s*entry\s*\}/.test(routeSource)) {
+      fail(relativeRoutePath, 'must pass registry metadata to RouteSourcePosture as entry={entry}');
+    }
+  }
+}
+
+function validateJourneyLinks(links, collections, glossaryTerms, deepDiveReaderPaths) {
+  if (!Array.isArray(links) || links.length === 0) {
+    fail('JOURNEY_LINKS', 'must include at least one journey link');
+    return;
+  }
+
+  const hrefs = new Map();
+  const knownAnchorsByRoute = collectKnownRouteAnchors(collections, glossaryTerms, deepDiveReaderPaths);
+  links.forEach((link, index) => {
+    const path = `JOURNEY_LINKS[${link?.label ?? index}]`;
+    if (!link || typeof link !== 'object') {
+      fail(path, 'journey link must be an object');
+      return;
+    }
+    for (const field of ['label', 'href', 'description']) {
+      if (typeof link[field] !== 'string' || link[field].trim() === '') {
+        fail(`${path}.${field}`, 'must be a non-empty string');
+      }
+    }
+    if (typeof link.href !== 'string') {
+      return;
+    }
+    if (!link.href.startsWith('/')) {
+      fail(`${path}.href`, 'must start with /');
+      return;
+    }
+    if (link.href.includes('?')) {
+      fail(`${path}.href`, 'must not include query strings');
+    }
+    if (hrefs.has(link.href)) {
+      fail(`${path}.href`, `duplicates JOURNEY_LINKS[${hrefs.get(link.href)}].href`);
+    }
+    hrefs.set(link.href, index);
+
+    const { path: route, anchor, hasExtraFragment } = splitInternalHref(link.href);
+    if (hasExtraFragment) {
+      fail(`${path}.href`, 'must not include multiple fragments');
+    }
+    const routePath = routePathForHref(route);
+    if (!existsSync(routePath)) {
+      fail(`${path}.href`, `missing route ${relative(root, routePath)}`);
+    }
+    if (anchor && !(knownAnchorsByRoute.get(route)?.has(anchor) || readStaticRouteAnchors(route).has(anchor))) {
+      fail(`${path}.href`, `unknown route anchor ${link.href}`);
+    }
+  });
+}
+
+function validateHomeDecisionLinks(links, collections, glossaryTerms, deepDiveReaderPaths) {
+  if (!Array.isArray(links) || links.length === 0) {
+    fail('HOME_DECISION_LINKS', 'must include at least one home decision link');
+    return;
+  }
+
+  const ids = new Map();
+  const hrefs = new Map();
+  const knownAnchorsByRoute = collectKnownRouteAnchors(collections, glossaryTerms, deepDiveReaderPaths);
+  links.forEach((link, index) => {
+    const path = `HOME_DECISION_LINKS[${link?.id ?? index}]`;
+    if (!link || typeof link !== 'object') {
+      fail(path, 'home decision link must be an object');
+      return;
+    }
+    for (const field of ['id', 'question', 'label', 'href', 'badge', 'description']) {
+      if (typeof link[field] !== 'string' || link[field].trim() === '') {
+        fail(`${path}.${field}`, 'must be a non-empty string');
+      }
+    }
+    if (typeof link.id === 'string') {
+      if (ids.has(link.id)) {
+        fail(`${path}.id`, `duplicates HOME_DECISION_LINKS[${ids.get(link.id)}].id`);
+      }
+      ids.set(link.id, index);
+      if (link.id !== slugifyFragment(link.id)) {
+        fail(`${path}.id`, 'must be a stable slug fragment');
+      }
+    }
+    if (typeof link.href === 'string') {
+      if (hrefs.has(link.href)) {
+        fail(`${path}.href`, `duplicates HOME_DECISION_LINKS[${hrefs.get(link.href)}].href`);
+      }
+      hrefs.set(link.href, index);
+      validateInternalHref(link.href, `${path}.href`, knownAnchorsByRoute);
+    }
+  });
+}
+
+function validateSourceChoiceDecisions(decisions, collections, glossaryTerms, deepDiveReaderPaths) {
+  if (!Array.isArray(decisions) || decisions.length === 0) {
+    fail('SOURCE_CHOICE_DECISIONS', 'must include at least one source-choice decision');
+    return;
+  }
+
+  const ids = new Map();
+  const knownAnchorsByRoute = collectKnownRouteAnchors(collections, glossaryTerms, deepDiveReaderPaths);
+  decisions.forEach((decision, index) => {
+    const path = `SOURCE_CHOICE_DECISIONS[${decision?.id ?? index}]`;
+    if (!decision || typeof decision !== 'object') {
+      fail(path, 'decision must be an object');
+      return;
+    }
+    for (const field of ['id', 'claim', 'why', 'avoidClaiming']) {
+      if (typeof decision[field] !== 'string' || decision[field].trim() === '') {
+        fail(`${path}.${field}`, 'must be a non-empty string');
+      }
+    }
+    if (typeof decision.id === 'string') {
+      if (ids.has(decision.id)) {
+        fail(`${path}.id`, `duplicates SOURCE_CHOICE_DECISIONS[${ids.get(decision.id)}].id`);
+      }
+      ids.set(decision.id, index);
+      if (decision.id !== slugifyFragment(decision.id)) {
+        fail(`${path}.id`, 'must be a stable slug fragment');
+      }
+    }
+    if (!decision.startWith || typeof decision.startWith !== 'object') {
+      fail(`${path}.startWith`, 'must be an object');
+    } else {
+      for (const field of ['label', 'href']) {
+        if (typeof decision.startWith[field] !== 'string' || decision.startWith[field].trim() === '') {
+          fail(`${path}.startWith.${field}`, 'must be a non-empty string');
+        }
+      }
+      validateInternalHref(decision.startWith.href, `${path}.startWith.href`, knownAnchorsByRoute);
+    }
+    if (!Array.isArray(decision.nextChecks) || decision.nextChecks.length === 0) {
+      fail(`${path}.nextChecks`, 'must include at least one next check');
+    } else {
+      const hrefs = new Map();
+      decision.nextChecks.forEach((check, checkIndex) => {
+        const checkPath = `${path}.nextChecks[${check?.label ?? checkIndex}]`;
+        if (!check || typeof check !== 'object') {
+          fail(checkPath, 'next check must be an object');
+          return;
+        }
+        for (const field of ['label', 'href', 'description']) {
+          if (typeof check[field] !== 'string' || check[field].trim() === '') {
+            fail(`${checkPath}.${field}`, 'must be a non-empty string');
+          }
+        }
+        if (typeof check.href === 'string') {
+          if (hrefs.has(check.href)) {
+            fail(`${checkPath}.href`, `duplicates ${path}.nextChecks[${hrefs.get(check.href)}].href`);
+          }
+          hrefs.set(check.href, checkIndex);
+          validateInternalHref(check.href, `${checkPath}.href`, knownAnchorsByRoute);
+        }
+      });
+    }
+  });
+}
+
+function validateTaskIntentGuides(guides, allowedConfidences, collections, glossaryTerms, deepDiveReaderPaths) {
+  if (!Array.isArray(guides) || guides.length === 0) {
+    fail('TASK_INTENT_GUIDES', 'must include at least one task guide');
+    return;
+  }
+
+  const ids = new Map();
+  const knownAnchorsByRoute = collectKnownRouteAnchors(collections, glossaryTerms, deepDiveReaderPaths);
+  guides.forEach((guide, index) => {
+    const path = `TASK_INTENT_GUIDES[${guide?.id ?? index}]`;
+    if (!guide || typeof guide !== 'object') {
+      fail(path, 'guide must be an object');
+      return;
+    }
+    for (const field of ['id', 'label', 'question', 'href', 'description', 'reviewedAt', 'nextReviewDue']) {
+      if (typeof guide[field] !== 'string' || guide[field].trim() === '') {
+        fail(`${path}.${field}`, 'must be a non-empty string');
+      }
+    }
+    if (typeof guide.id === 'string') {
+      if (ids.has(guide.id)) {
+        fail(`${path}.id`, `duplicates TASK_INTENT_GUIDES[${ids.get(guide.id)}].id`);
+      }
+      ids.set(guide.id, index);
+    }
+    if (!allowedConfidences.has(guide.confidence)) {
+      fail(`${path}.confidence`, `unsupported confidence ${guide.confidence}`);
+    }
+    if (typeof guide.href === 'string') {
+      validateInternalHref(guide.href, `${path}.href`, knownAnchorsByRoute);
+    }
+    if (!Array.isArray(guide.searchTerms) || guide.searchTerms.length === 0 || guide.searchTerms.some((term) => typeof term !== 'string' || term.trim() === '')) {
+      fail(`${path}.searchTerms`, 'must include at least one non-empty term');
+    }
+    if (!Array.isArray(guide.sources) || guide.sources.length === 0) {
+      fail(`${path}.sources`, 'must include at least one source');
+    } else {
+      const sourceUrls = new Set();
+      guide.sources.forEach((source, sourceIndex) => validateRegistrySource(source, `${path}.sources[${sourceIndex}]`, sourceUrls));
+    }
+    if (!isIsoDate(guide.reviewedAt)) {
+      fail(`${path}.reviewedAt`, 'must be YYYY-MM-DD');
+    }
+    if (!isIsoDate(guide.nextReviewDue)) {
+      fail(`${path}.nextReviewDue`, 'must be YYYY-MM-DD');
+    } else if (isIsoDate(guide.reviewedAt) && guide.nextReviewDue < guide.reviewedAt) {
+      fail(`${path}.nextReviewDue`, 'must not be before reviewedAt');
+    } else {
+      validateReviewDueDate(guide.nextReviewDue, `${path}.nextReviewDue`);
+    }
+  });
+}
+
+function validateDeepDiveReaderPaths(paths, contentEntries, allowedConfidences) {
+  if (!Array.isArray(paths) || paths.length === 0) {
+    fail('DEEP_DIVE_READER_PATHS', 'must include at least one reader path');
+    return;
+  }
+
+  const deepDiveIds = new Set(contentEntries.filter((entry) => entry.category === 'deep-dive').map((entry) => entry.id));
+  const ids = new Map();
+  paths.forEach((readerPath, index) => {
+    const path = `DEEP_DIVE_READER_PATHS[${readerPath?.id ?? index}]`;
+    if (!readerPath || typeof readerPath !== 'object') {
+      fail(path, 'reader path must be an object');
+      return;
+    }
+    for (const field of ['id', 'title', 'audience', 'description', 'reviewedAt', 'nextReviewDue']) {
+      if (typeof readerPath[field] !== 'string' || readerPath[field].trim() === '') {
+        fail(`${path}.${field}`, 'must be a non-empty string');
+      }
+    }
+    if (typeof readerPath.id === 'string') {
+      if (ids.has(readerPath.id)) {
+        fail(`${path}.id`, `duplicates DEEP_DIVE_READER_PATHS[${ids.get(readerPath.id)}].id`);
+      }
+      ids.set(readerPath.id, index);
+      if (readerPath.id !== slugifyFragment(readerPath.id)) {
+        fail(`${path}.id`, 'must be a stable slug fragment');
+      }
+    }
+    if (!allowedConfidences.has(readerPath.confidence)) {
+      fail(`${path}.confidence`, `unsupported confidence ${readerPath.confidence}`);
+    }
+    if (!Array.isArray(readerPath.entryIds) || readerPath.entryIds.length === 0) {
+      fail(`${path}.entryIds`, 'must include at least one deep-dive entry id');
+    } else {
+      readerPath.entryIds.forEach((entryId, entryIndex) => {
+        if (!deepDiveIds.has(entryId)) {
+          fail(`${path}.entryIds[${entryIndex}]`, `unknown deep-dive entry ${entryId}`);
+        }
+      });
+    }
+    if (!Array.isArray(readerPath.verifyBeforeClaiming) || readerPath.verifyBeforeClaiming.length === 0) {
+      fail(`${path}.verifyBeforeClaiming`, 'must include at least one verification boundary');
+    }
+    if (!Array.isArray(readerPath.followUpLinks) || readerPath.followUpLinks.length === 0) {
+      fail(`${path}.followUpLinks`, 'must include at least one follow-up link');
+    } else {
+      readerPath.followUpLinks.forEach((link, linkIndex) => {
+        const linkPath = `${path}.followUpLinks[${linkIndex}]`;
+        for (const field of ['label', 'href', 'description']) {
+          if (typeof link?.[field] !== 'string' || link[field].trim() === '') {
+            fail(`${linkPath}.${field}`, 'must be a non-empty string');
+          }
+        }
+        if (typeof link?.href === 'string') {
+          if (!link.href.startsWith('/')) {
+            fail(`${linkPath}.href`, 'must start with /');
+          }
+          if (link.href.includes('?')) {
+            fail(`${linkPath}.href`, 'must not include query strings');
+          }
+          const routePath = routePathForHref(link.href);
+          if (!existsSync(routePath)) {
+            fail(`${linkPath}.href`, `missing route ${relative(root, routePath)}`);
+          }
+        }
+      });
+    }
+    if (!Array.isArray(readerPath.searchTerms) || readerPath.searchTerms.length === 0 || readerPath.searchTerms.some((term) => typeof term !== 'string' || term.trim() === '')) {
+      fail(`${path}.searchTerms`, 'must include at least one non-empty term');
+    }
+    if (!Array.isArray(readerPath.sources) || readerPath.sources.length === 0) {
+      fail(`${path}.sources`, 'must include at least one source');
+    } else {
+      const sourceUrls = new Set();
+      readerPath.sources.forEach((source, sourceIndex) => validateRegistrySource(source, `${path}.sources[${sourceIndex}]`, sourceUrls));
+    }
+    if (!isIsoDate(readerPath.reviewedAt)) {
+      fail(`${path}.reviewedAt`, 'must be YYYY-MM-DD');
+    }
+    if (!isIsoDate(readerPath.nextReviewDue)) {
+      fail(`${path}.nextReviewDue`, 'must be YYYY-MM-DD');
+    } else if (isIsoDate(readerPath.reviewedAt) && readerPath.nextReviewDue < readerPath.reviewedAt) {
+      fail(`${path}.nextReviewDue`, 'must not be before reviewedAt');
+    } else {
+      validateReviewDueDate(readerPath.nextReviewDue, `${path}.nextReviewDue`);
+    }
+  });
+}
+
 function validateGlossaryTerms(terms, allowedConfidences) {
   const ids = new Map();
   terms.forEach((term, index) => {
@@ -794,7 +1192,7 @@ function addRouteAnchor(anchorsByRoute, route, anchor) {
   anchorsByRoute.get(route).add(anchor);
 }
 
-function collectKnownRouteAnchors(collections, glossaryTerms) {
+function collectKnownRouteAnchors(collections, glossaryTerms, deepDiveReaderPaths) {
   const anchorsByRoute = new Map();
 
   for (const record of collections.SECURITY_INCIDENT_RECORDS) {
@@ -819,6 +1217,9 @@ function collectKnownRouteAnchors(collections, glossaryTerms) {
     addRouteAnchor(anchorsByRoute, '/glossary', `term-${term.id}`);
     addRouteAnchor(anchorsByRoute, '/glossary', term.category);
   }
+  for (const readerPath of deepDiveReaderPaths) {
+    addRouteAnchor(anchorsByRoute, '/deep-dives', `deep-dive-path-${readerPath.id}`);
+  }
 
   return anchorsByRoute;
 }
@@ -835,10 +1236,20 @@ function readStaticRouteAnchors(route) {
     routeAnchorCache.set(route, anchors);
     return anchors;
   }
-  const source = readFileSync(routePath, 'utf8');
+  const routeDir = dirname(routePath);
+  const sourcePaths = [
+    routePath,
+    ...readdirSync(routeDir)
+      .filter((entry) => entry.endsWith('.tsx'))
+      .map((entry) => join(routeDir, entry))
+      .filter((entryPath) => entryPath !== routePath),
+  ];
   const idPattern = /\bid\s*=\s*["']([A-Za-z0-9_-]+)["']/g;
-  for (const match of source.matchAll(idPattern)) {
-    anchors.add(match[1]);
+  for (const sourcePath of sourcePaths) {
+    const source = readFileSync(sourcePath, 'utf8');
+    for (const match of source.matchAll(idPattern)) {
+      anchors.add(match[1]);
+    }
   }
   routeAnchorCache.set(route, anchors);
   return anchors;
@@ -921,7 +1332,7 @@ function validateSearchDocumentMetadata(doc, path, allowedConfidences) {
   doc.sources.forEach((source, sourceIndex) => validateRegistrySource(source, `${path}.sources[${sourceIndex}]`, sourceUrls));
 }
 
-function buildExpectedAnchoredSearchDocuments(collections, glossaryTerms) {
+function buildExpectedAnchoredSearchDocuments(collections, glossaryTerms, deepDiveReaderPaths) {
   return [
     ...collections.SECURITY_INCIDENT_RECORDS.map((record) => {
       const anchor = recordAnchor('incident', record.data.id);
@@ -930,6 +1341,9 @@ function buildExpectedAnchoredSearchDocuments(collections, glossaryTerms) {
         href: `/governance#${anchor}`,
         type: 'incident',
         anchor,
+        confidence: record.freshness.confidence,
+        reviewedAt: record.freshness.checkedAt,
+        nextReviewDue: record.freshness.nextReviewDue,
       };
     }),
     ...collections.ECOSYSTEM_PROJECT_RECORDS.map((record) => {
@@ -939,6 +1353,9 @@ function buildExpectedAnchoredSearchDocuments(collections, glossaryTerms) {
         href: `/ecosystem#${anchor}`,
         type: 'ecosystem',
         anchor,
+        confidence: record.freshness.confidence,
+        reviewedAt: record.freshness.checkedAt,
+        nextReviewDue: record.freshness.nextReviewDue,
       };
     }),
     ...collections.SOURCE_MAP_SECTION_RECORDS.map((record) => ({
@@ -946,6 +1363,9 @@ function buildExpectedAnchoredSearchDocuments(collections, glossaryTerms) {
       href: `/docs#${record.data.id}`,
       type: 'source-map',
       anchor: record.data.id,
+      confidence: record.freshness.confidence,
+      reviewedAt: record.freshness.checkedAt,
+      nextReviewDue: record.freshness.nextReviewDue,
     })),
     ...collections.RESEARCH_REPORT_RECORDS.map((record) => {
       const anchor = recordAnchor('research', record.data.id);
@@ -954,6 +1374,9 @@ function buildExpectedAnchoredSearchDocuments(collections, glossaryTerms) {
         href: `/governance#${anchor}`,
         type: 'research',
         anchor,
+        confidence: record.freshness.confidence,
+        reviewedAt: record.freshness.checkedAt,
+        nextReviewDue: record.freshness.nextReviewDue,
       };
     }),
     ...collections.GOVERNANCE_PROPOSAL_RECORDS.map((record) => {
@@ -963,6 +1386,9 @@ function buildExpectedAnchoredSearchDocuments(collections, glossaryTerms) {
         href: `/governance#${anchor}`,
         type: 'governance',
         anchor,
+        confidence: record.freshness.confidence,
+        reviewedAt: record.freshness.checkedAt,
+        nextReviewDue: record.freshness.nextReviewDue,
       };
     }),
     ...collections.PROTOCOL_MILESTONE_RECORDS.map((record) => {
@@ -972,6 +1398,9 @@ function buildExpectedAnchoredSearchDocuments(collections, glossaryTerms) {
         href: `/governance#${anchor}`,
         type: 'milestone',
         anchor,
+        confidence: record.freshness.confidence,
+        reviewedAt: record.freshness.checkedAt,
+        nextReviewDue: record.freshness.nextReviewDue,
       };
     }),
     ...glossaryTerms.map((term) => {
@@ -981,6 +1410,21 @@ function buildExpectedAnchoredSearchDocuments(collections, glossaryTerms) {
         href: `/glossary#${anchor}`,
         type: 'glossary',
         anchor,
+        confidence: term.confidence,
+        reviewedAt: term.reviewedAt,
+        nextReviewDue: term.nextReviewDue,
+      };
+    }),
+    ...deepDiveReaderPaths.map((readerPath) => {
+      const anchor = `deep-dive-path-${readerPath.id}`;
+      return {
+        id: `deep-dive-path:${readerPath.id}`,
+        href: `/deep-dives#${anchor}`,
+        type: 'deep-dive-path',
+        anchor,
+        confidence: readerPath.confidence,
+        reviewedAt: readerPath.reviewedAt,
+        nextReviewDue: readerPath.nextReviewDue,
       };
     }),
   ];
@@ -994,7 +1438,7 @@ function expectSearchDoc(docsById, id, path) {
   return doc;
 }
 
-function validateExpectedSearchCoverage(searchDocuments, collections, contentEntries, glossaryTerms) {
+function validateExpectedSearchCoverage(searchDocuments, collections, contentEntries, taskGuides, glossaryTerms, deepDiveReaderPaths) {
   const docsById = new Map();
   searchDocuments.forEach((doc, index) => {
     if (typeof doc?.id === 'string') {
@@ -1041,6 +1485,68 @@ function validateExpectedSearchCoverage(searchDocuments, collections, contentEnt
     }
   });
 
+  taskGuides.forEach((guide) => {
+    const id = `task:${guide.id}`;
+    const path = `SEARCH_DOCUMENTS[${id}]`;
+    const doc = expectSearchDoc(docsById, id, path);
+    if (!doc) {
+      return;
+    }
+    if (doc.href !== guide.href) {
+      fail(`${path}.href`, `must be ${guide.href}`);
+    }
+    const { path: guideSlug, anchor: guideAnchor } = splitInternalHref(guide.href);
+    if (doc.slug !== guideSlug) {
+      fail(`${path}.slug`, `must be ${guideSlug}`);
+    }
+    if (doc.anchor !== guideAnchor) {
+      fail(`${path}.anchor`, `must be ${guideAnchor}`);
+    }
+    if (doc.type !== 'task') {
+      fail(`${path}.type`, 'must be task');
+    }
+    if (doc.confidence !== guide.confidence) {
+      fail(`${path}.confidence`, `must be ${guide.confidence}`);
+    }
+    if (doc.reviewedAt !== guide.reviewedAt) {
+      fail(`${path}.reviewedAt`, `must be ${guide.reviewedAt}`);
+    }
+    if (doc.nextReviewDue !== guide.nextReviewDue) {
+      fail(`${path}.nextReviewDue`, `must be ${guide.nextReviewDue}`);
+    }
+  });
+
+  deepDiveReaderPaths.forEach((readerPath) => {
+    const id = `deep-dive-path:${readerPath.id}`;
+    const path = `SEARCH_DOCUMENTS[${id}]`;
+    const doc = expectSearchDoc(docsById, id, path);
+    if (!doc) {
+      return;
+    }
+    const expectedHref = `/deep-dives#deep-dive-path-${readerPath.id}`;
+    if (doc.href !== expectedHref) {
+      fail(`${path}.href`, `must be ${expectedHref}`);
+    }
+    if (doc.slug !== '/deep-dives') {
+      fail(`${path}.slug`, 'must be /deep-dives');
+    }
+    if (doc.anchor !== `deep-dive-path-${readerPath.id}`) {
+      fail(`${path}.anchor`, `must be deep-dive-path-${readerPath.id}`);
+    }
+    if (doc.type !== 'deep-dive-path') {
+      fail(`${path}.type`, 'must be deep-dive-path');
+    }
+    if (doc.confidence !== readerPath.confidence) {
+      fail(`${path}.confidence`, `must be ${readerPath.confidence}`);
+    }
+    if (doc.reviewedAt !== readerPath.reviewedAt) {
+      fail(`${path}.reviewedAt`, `must be ${readerPath.reviewedAt}`);
+    }
+    if (doc.nextReviewDue !== readerPath.nextReviewDue) {
+      fail(`${path}.nextReviewDue`, `must be ${readerPath.nextReviewDue}`);
+    }
+  });
+
   const contentEntrySlugs = new Set(contentEntries.map((entry) => entry.href));
   readGeneratedSearchDocuments()
     .filter((doc) => !contentEntrySlugs.has(doc.slug))
@@ -1058,7 +1564,7 @@ function validateExpectedSearchCoverage(searchDocuments, collections, contentEnt
       }
     });
 
-  buildExpectedAnchoredSearchDocuments(collections, glossaryTerms).forEach((expected) => {
+  buildExpectedAnchoredSearchDocuments(collections, glossaryTerms, deepDiveReaderPaths).forEach((expected) => {
     const path = `SEARCH_DOCUMENTS[${expected.id}]`;
     const doc = expectSearchDoc(docsById, expected.id, path);
     if (!doc) {
@@ -1073,12 +1579,21 @@ function validateExpectedSearchCoverage(searchDocuments, collections, contentEnt
     if (doc.type !== expected.type) {
       fail(`${path}.type`, `must be ${expected.type}`);
     }
+    if (expected.confidence && doc.confidence !== expected.confidence) {
+      fail(`${path}.confidence`, `must be ${expected.confidence}`);
+    }
+    if (expected.reviewedAt && doc.reviewedAt !== expected.reviewedAt) {
+      fail(`${path}.reviewedAt`, `must be ${expected.reviewedAt}`);
+    }
+    if (expected.nextReviewDue && doc.nextReviewDue !== expected.nextReviewDue) {
+      fail(`${path}.nextReviewDue`, `must be ${expected.nextReviewDue}`);
+    }
   });
 }
 
-function validateSearchSurface(collections, contentEntries, glossaryTerms, allowedConfidences) {
+function validateSearchSurface(collections, contentEntries, taskGuides, glossaryTerms, deepDiveReaderPaths, allowedConfidences) {
   const searchDocuments = readActualSearchDocuments();
-  const anchorsByRoute = collectKnownRouteAnchors(collections, glossaryTerms);
+  const anchorsByRoute = collectKnownRouteAnchors(collections, glossaryTerms, deepDiveReaderPaths);
 
   validateUnique('SEARCH_DOCUMENT_IDS', searchDocuments.map((doc) => ({ data: { id: doc.id } })));
   searchDocuments.forEach((doc) => {
@@ -1086,7 +1601,7 @@ function validateSearchSurface(collections, contentEntries, glossaryTerms, allow
     validateSearchDocumentMetadata(doc, path, allowedConfidences);
     validateInternalHref(doc.href, `${path}.href`, anchorsByRoute);
   });
-  validateExpectedSearchCoverage(searchDocuments, collections, contentEntries, glossaryTerms);
+  validateExpectedSearchCoverage(searchDocuments, collections, contentEntries, taskGuides, glossaryTerms, deepDiveReaderPaths);
 
   glossaryTerms.forEach((term) => {
     term.relatedHrefs?.forEach((href, index) => {
@@ -1161,8 +1676,14 @@ const contentEntries = readContentEntries(registryScope);
 const glossaryTerms = readGlossaryTerms(glossaryScope);
 
 validateContentRegistry(contentEntries, allowedConfidences);
+validateRouteSourcePostureUsage(contentEntries);
+validateJourneyLinks(actualJourneyLinks, collections, glossaryTerms, actualDeepDiveReaderPaths);
+validateHomeDecisionLinks(actualHomeDecisionLinks, collections, glossaryTerms, actualDeepDiveReaderPaths);
+validateSourceChoiceDecisions(actualSourceChoiceDecisions, collections, glossaryTerms, actualDeepDiveReaderPaths);
+validateTaskIntentGuides(actualTaskIntentGuides, allowedConfidences, collections, glossaryTerms, actualDeepDiveReaderPaths);
+validateDeepDiveReaderPaths(actualDeepDiveReaderPaths, contentEntries, allowedConfidences);
 validateGlossaryTerms(glossaryTerms, allowedConfidences);
-validateSearchSurface(collections, contentEntries, glossaryTerms, allowedConfidences);
+validateSearchSurface(collections, contentEntries, actualTaskIntentGuides, glossaryTerms, actualDeepDiveReaderPaths, allowedConfidences);
 
 collections.RESEARCH_REPORT_RECORDS.forEach((record, index) => requireUrlInSources('RESEARCH_REPORT_RECORDS', record, index, 'url'));
 collections.SECURITY_INCIDENT_RECORDS.forEach((record, index) => requireUrlInSources('SECURITY_INCIDENT_RECORDS', record, index, 'url'));

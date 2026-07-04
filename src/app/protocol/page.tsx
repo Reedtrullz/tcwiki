@@ -4,6 +4,9 @@ import { SectionHeader } from '@/components/ui/SectionHeader';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { Badge } from '@/components/ui/Badge';
 import { FreshnessMeta } from '@/components/ui/FreshnessMeta';
+import { RouteSourcePosture } from '@/components/features/RouteSourcePosture';
+import { RelatedChecks, type RelatedCheck } from '@/components/features/RelatedChecks';
+import { getContentEntry } from '@/lib/content/registry';
 import { createRouteMetadata } from '@/lib/metadata';
 
 export const metadata = createRouteMetadata({
@@ -12,13 +15,61 @@ export const metadata = createRouteMetadata({
   path: '/protocol',
 });
 
+const entry = getContentEntry('protocol');
+
+const protocolRelatedChecks: RelatedCheck[] = [
+  {
+    label: 'New to THORChain',
+    href: '/deep-dives#deep-dive-path-new-to-thorchain',
+    badge: 'path',
+    description: 'Read settlement, pools, Bifrost, and TSS in the recommended order.',
+  },
+  {
+    label: 'Network diagnostics',
+    href: '/network#network-diagnostics',
+    badge: 'live state',
+    description: 'Check current halts, signing, LP controls, and source warnings.',
+  },
+  {
+    label: 'Current source map',
+    href: '/docs#current-protocol-state',
+    badge: 'proof',
+    description: 'Use THORNode/Midgard evidence for current operational claims.',
+  },
+  {
+    label: 'Build/query path',
+    href: '/search?q=Midgard%20API&filter=task',
+    badge: 'task',
+    description: 'Find API and endpoint guidance for developer or data-query work.',
+  },
+];
+
 export default function ProtocolPage() {
   return (
     <PageContainer>
       <h1 className="text-3xl font-bold tracking-tight mb-2">Protocol Overview</h1>
-      <p className="text-slate-400 max-w-3xl mb-12">
+      <p className="text-slate-400 max-w-3xl mb-6">
         THORChain is a decentralized cross-chain liquidity protocol for native asset swaps without wrapped assets or centralized custody.
       </p>
+      <RouteSourcePosture
+        entry={entry}
+        className="mb-6"
+        useFor={[
+          'Architecture concepts, swap lifecycle, Bifrost, TSS, Mimir, and supported-chain context.',
+          'Dated educational framing for how THORChain components fit together.',
+        ]}
+        verifyBeforeClaiming={[
+          'Current halt, signing, inbound-address, gas-rate, or Mimir state.',
+          'Exact live constants, minimum bond, slash settings, or current chain availability.',
+        ]}
+      />
+      <RelatedChecks
+        checks={protocolRelatedChecks}
+        className="mb-12"
+        title="Continue From Here"
+        description="Move from the protocol overview into the right deeper read or live-source check before making an availability, implementation, or developer claim."
+        badgeLabel="claim path"
+      />
 
       <SectionHeader>Architecture</SectionHeader>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-12">

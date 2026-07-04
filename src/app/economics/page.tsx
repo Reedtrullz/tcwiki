@@ -3,7 +3,10 @@ import { SectionHeader } from '@/components/ui/SectionHeader';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { Badge } from '@/components/ui/Badge';
 import { FreshnessMeta } from '@/components/ui/FreshnessMeta';
+import { RouteSourcePosture } from '@/components/features/RouteSourcePosture';
+import { RelatedChecks, type RelatedCheck } from '@/components/features/RelatedChecks';
 import { TOKENOMICS_RECORDS } from '@/lib/data/static';
+import { getContentEntry } from '@/lib/content/registry';
 import { createRouteMetadata } from '@/lib/metadata';
 import { getTokenomicsToneBadgeVariant, getTokenomicsToneLabel } from '@/lib/trust';
 
@@ -13,15 +16,62 @@ export const metadata = createRouteMetadata({
   path: '/economics',
 });
 
+const entry = getContentEntry('economics');
 const supplyRecord = TOKENOMICS_RECORDS.find((record) => record.data.id === 'rune-supply-framing') ?? TOKENOMICS_RECORDS[0];
+
+const economicsRelatedChecks: RelatedCheck[] = [
+  {
+    label: 'Swap Economics',
+    href: '/deep-dives#deep-dive-path-swap-economics',
+    badge: 'path',
+    description: 'Read settlement, CLP mechanics, incentives, and slashing together.',
+  },
+  {
+    label: 'Stats decision panel',
+    href: '/stats#stats-look-here-first',
+    badge: 'live state',
+    description: 'Check current liquidity, reward, source-health, and earnings coverage.',
+  },
+  {
+    label: 'Dynamic fee tracker',
+    href: '/dynamic-fees#dynamic-fees-live',
+    badge: 'ADR-026',
+    description: 'Separate partner-pair dynamic fee evidence from ordinary fee mechanics.',
+  },
+  {
+    label: 'CLP deep dive',
+    href: '/deep-dives/clp',
+    badge: 'deep dive',
+    description: 'Use the long-form article for slip-pricing and liquidity-fee mechanics.',
+  },
+];
 
 export default function EconomicsPage() {
   return (
     <PageContainer>
       <h1 className="text-3xl font-bold tracking-tight mb-2">Economics & Tokenomics</h1>
-      <p className="text-slate-400 max-w-3xl mb-12">
+      <p className="text-slate-400 max-w-3xl mb-6">
         RUNE settlement, CLP pricing, fees, incentive design, RUNEPool/POL, trade assets, and current-only protocol parameters.
       </p>
+      <RouteSourcePosture
+        entry={entry}
+        className="mb-6"
+        useFor={[
+          'Economic mechanisms, fee categories, RUNE settlement, CLP pricing, and incentive-design explanations.',
+          'Dated tokenomics framing and links into source-backed supply context.',
+        ]}
+        verifyBeforeClaiming={[
+          'Current APY, pool depth, protocol-owned liquidity balances, or RUNEPool state.',
+          'Exact current fee settings, Mimir overrides, outbound fees, or live route competitiveness.',
+        ]}
+      />
+      <RelatedChecks
+        checks={economicsRelatedChecks}
+        className="mb-12"
+        title="Continue From Here"
+        description="Use the economics page for mechanisms, then jump to the live dashboard or deeper path before quoting current liquidity, rewards, or fee conclusions."
+        badgeLabel="claim path"
+      />
 
       <SectionHeader>RUNE Token</SectionHeader>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-12">

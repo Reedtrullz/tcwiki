@@ -2,7 +2,10 @@ import { PageContainer } from '@/components/layout/PageContainer';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { FreshnessMeta } from '@/components/ui/FreshnessMeta';
+import { RouteSourcePosture } from '@/components/features/RouteSourcePosture';
+import { RelatedChecks, type RelatedCheck } from '@/components/features/RelatedChecks';
 import { TOKENOMICS_RECORDS } from '@/lib/data/static';
+import { getContentEntry } from '@/lib/content/registry';
 import { createRouteMetadata } from '@/lib/metadata';
 
 export const metadata = createRouteMetadata({
@@ -11,16 +14,63 @@ export const metadata = createRouteMetadata({
   path: '/tcy',
 });
 
+const entry = getContentEntry('tcy');
 const tcyRecord = TOKENOMICS_RECORDS.find((record) => record.data.id === 'tcy-recovery-context') ?? TOKENOMICS_RECORDS[0];
+
+const tcyRelatedChecks: RelatedCheck[] = [
+  {
+    label: 'Historical Recovery',
+    href: '/deep-dives#deep-dive-path-historical-recovery',
+    badge: 'path',
+    description: 'Read deprecated THORFi, security mechanics, and recovery context together.',
+  },
+  {
+    label: 'Recovery tracker',
+    href: '/governance#current-recovery',
+    badge: 'review',
+    description: 'Check records explicitly tagged as current or needing current recovery review.',
+  },
+  {
+    label: 'Historical source map',
+    href: '/docs#historical-features-and-recovery',
+    badge: 'proof',
+    description: 'Separate archived feature context from present-day product availability.',
+  },
+  {
+    label: 'TCY recovery search',
+    href: '/search?q=TCY%20recovery&filter=task',
+    badge: 'task',
+    description: 'Find the recovery task route and related source-backed records.',
+  },
+];
 
 export default function TCYPage() {
   return (
     <PageContainer>
       <h1 className="text-3xl font-bold tracking-tight mb-2">TCY, Savers, and THORFi History</h1>
-      <p className="text-slate-400 max-w-3xl mb-8">
+      <p className="text-slate-400 max-w-3xl mb-6">
         Savers and Lending are historical THORFi features. Official archived docs say they are deprecated
         and no longer available; TCY is the recovery-token framing that followed the unwind.
       </p>
+      <RouteSourcePosture
+        entry={entry}
+        className="mb-6"
+        useFor={[
+          'Historical THORFi, Savers, Lending, unwind, and TCY recovery-token context.',
+          'Deprecated-product warnings and source-backed recovery framing.',
+        ]}
+        verifyBeforeClaiming={[
+          'Current TCY claiming, staking, pause state, redemption value, or recovery outcome.',
+          'Any current product availability or deposit/borrowing instruction.',
+        ]}
+      />
+      <RelatedChecks
+        checks={tcyRelatedChecks}
+        className="mb-8"
+        title="Continue From Here"
+        description="Use this historical page with the recovery tracker and source map before making any current TCY, Savers, Lending, or recovery-status claim."
+        badgeLabel="claim path"
+      />
 
       <div className="mb-12 rounded-lg border border-amber-500/20 bg-amber-500/5 p-5">
         <div className="flex flex-wrap items-center gap-2 mb-2">

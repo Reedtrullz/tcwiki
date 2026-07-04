@@ -71,18 +71,21 @@ export interface ReadinessResponse {
   version: string;
   commit: string;
   image: string;
+  warnings: string[];
   sources: {
     midgard: {
       status: LiveDataStatus;
       source?: SourceMeta;
       health?: MidgardHealth;
       heightLagBlocks?: number;
+      healthWarnings: string[];
       visibleData: {
         network: ReadinessSourceCheck;
         pools: ReadinessSourceCheck;
         earnings: ReadinessSourceCheck;
       };
       sourceWarnings: string[];
+      sourceWarningDetails: NetworkStatusSourceWarning[];
       error?: string;
     };
     thornode: {
@@ -110,6 +113,28 @@ export interface ReadinessResponse {
       monitoredControls: OperationalControlStatus[];
       invalidMimirKeys: string[];
       sourceWarnings: string[];
+      sourceWarningDetails: NetworkStatusSourceWarning[];
+      dynamicFees: {
+        status: LiveDataStatus;
+        checkedAt?: string;
+        source?: SourceMeta;
+        sources?: SourceMeta[];
+        error?: string;
+        enabledState?: DynamicL1FeeMimirState;
+        enabledValue?: number | null;
+        currentEpoch?: number;
+        trackedRecordCount?: number;
+        currentEntryCount?: number;
+        whitelistedThornameCount?: number;
+        historyThornameCount?: number;
+        historySampleCount?: number;
+        thorchainHeight?: number;
+        snapshotPinned?: boolean;
+        thorchainBlockTime?: string;
+        thorchainBlockAgeSeconds?: number;
+        sourceWarnings: string[];
+        sourceWarningDetails: NetworkStatusSourceWarning[];
+      };
       error?: string;
     };
   };
@@ -258,8 +283,11 @@ export interface TokenomicsSnapshot {
 export interface SourceMapSection {
   id: string;
   title: string;
+  decision: string;
   use: string;
   caveat: string;
+  claimExamples: string[];
+  nonClaims: string[];
   links: SourceMeta[];
 }
 
@@ -354,6 +382,8 @@ export interface EcosystemProject {
   logo?: string;
   status: string;
   chains: string[];
+  useFor: string[];
+  verifyBeforeUse: string[];
 }
 
 export interface DocPage {
@@ -478,6 +508,7 @@ export interface DynamicL1FeeStatus {
   histories: DynamicL1FeeThornameHistory[];
   sourceFreshness: DynamicL1FeeSourceFreshness;
   sourceWarnings: string[];
+  sourceWarningDetails: NetworkStatusSourceWarning[];
   caveats: Array<'current-only' | 'adr-experiment' | 'not-historical-fee-proof'>;
 }
 

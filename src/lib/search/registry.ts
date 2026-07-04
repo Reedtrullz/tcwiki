@@ -6,7 +6,7 @@ import {
   SECURITY_INCIDENT_RECORDS,
   SOURCE_MAP_SECTION_RECORDS,
 } from '@/lib/data/static';
-import { CONTENT_ENTRIES } from '@/lib/content/registry';
+import { CONTENT_ENTRIES, DEEP_DIVE_READER_PATHS, SOURCE_CHOICE_DECISIONS, TASK_INTENT_GUIDES } from '@/lib/content/registry';
 import { GLOSSARY_TERMS } from '@/lib/content/glossary';
 import { MDX_SEARCH_DOCUMENTS } from '@/lib/search/mdx-documents.generated';
 import type { DataConfidence, SourceMeta, SourcedRecord } from '@/lib/types';
@@ -23,7 +23,9 @@ export type SearchDocType =
   | 'milestone'
   | 'mimir'
   | 'glossary'
-  | 'source-map';
+  | 'source-map'
+  | 'task'
+  | 'deep-dive-path';
 
 export interface SearchDoc {
   id: string;
@@ -78,6 +80,11 @@ function withAnchor(slug: string, anchor?: string) {
   return anchor ? `${slug}#${anchor}` : slug;
 }
 
+function splitInternalHref(href: string) {
+  const [path, anchor] = href.split('#');
+  return { path, anchor };
+}
+
 function searchMeta<T>(record: SourcedRecord<T>) {
   return {
     confidence: record.freshness.confidence,
@@ -108,6 +115,71 @@ export const SEARCH_DOCUMENTS: SearchDoc[] = [
       entry.sources.map((source) => source.label).join(' '),
     ].join(' '),
   })),
+  ...TASK_INTENT_GUIDES.map((guide) => {
+    const { path, anchor } = splitInternalHref(guide.href);
+    const sourceChoiceContent = guide.id === 'source-choice'
+      ? SOURCE_CHOICE_DECISIONS.map((decision) => [
+        decision.claim,
+        decision.startWith.label,
+        decision.why,
+        decision.nextChecks.map((check) => `${check.label} ${check.description}`).join(' '),
+        decision.avoidClaiming,
+      ].join(' ')).join(' ')
+      : '';
+
+    return {
+      id: `task:${guide.id}`,
+      slug: path,
+      href: guide.href,
+      anchor,
+      type: 'task' as const,
+      title: guide.label,
+      confidence: guide.confidence,
+      reviewedAt: guide.reviewedAt,
+      nextReviewDue: guide.nextReviewDue,
+      sources: guide.sources,
+      description: guide.description,
+      content: [
+        guide.label,
+        guide.question,
+        guide.description,
+        guide.searchTerms.join(' '),
+        sourceChoiceContent,
+        guide.sources.map((source) => source.label).join(' '),
+      ].join(' '),
+    };
+  }),
+  ...DEEP_DIVE_READER_PATHS.map((path) => {
+    const anchor = `deep-dive-path-${path.id}`;
+    const entries = path.entryIds.flatMap((entryId) => {
+      const entry = CONTENT_ENTRIES.find((candidate) => candidate.id === entryId);
+      return entry ? [entry] : [];
+    });
+
+    return {
+      id: `deep-dive-path:${path.id}`,
+      slug: '/deep-dives',
+      href: withAnchor('/deep-dives', anchor),
+      anchor,
+      type: 'deep-dive-path' as const,
+      title: path.title,
+      confidence: path.confidence,
+      reviewedAt: path.reviewedAt,
+      nextReviewDue: path.nextReviewDue,
+      sources: path.sources,
+      description: path.description,
+      content: [
+        path.title,
+        path.audience,
+        path.description,
+        entries.map((entry) => `${entry.title} ${entry.description} ${entry.tags.join(' ')}`).join(' '),
+        path.verifyBeforeClaiming.join(' '),
+        path.followUpLinks.map((link) => `${link.label} ${link.description}`).join(' '),
+        path.searchTerms.join(' '),
+        path.sources.map((source) => source.label).join(' '),
+      ].join(' '),
+    };
+  }),
   ...MDX_SEARCH_DOCUMENTS.filter((doc) => !contentEntrySlugs.has(doc.slug)).map((doc) => ({
     ...doc,
     href: doc.slug,
@@ -124,8 +196,11 @@ export const SEARCH_DOCUMENTS: SearchDoc[] = [
     ...searchMeta(record),
     content: [
       record.data.title,
+      record.data.decision,
       record.data.use,
       record.data.caveat,
+      record.data.claimExamples.join(' '),
+      record.data.nonClaims.join(' '),
       record.data.links.map((source) => `${source.label} ${source.notes ?? ''}`).join(' '),
       record.sources.map((source) => source.label).join(' '),
     ].join(' '),
@@ -165,7 +240,15 @@ export const SEARCH_DOCUMENTS: SearchDoc[] = [
       title: record.data.name,
       description: record.data.description,
       ...searchMeta(record),
-      content: `${record.data.description} Category: ${record.data.category}. Status: ${record.data.status}. Chains: ${record.data.chains.join(', ')}. ${record.sources.map((source) => source.label).join(' ')}`,
+      content: [
+        record.data.description,
+        `Use for: ${record.data.useFor.join(' ')}`,
+        `Check before use: ${record.data.verifyBeforeUse.join(' ')}`,
+        `Category: ${record.data.category}.`,
+        `Status: ${record.data.status}.`,
+        `Chains: ${record.data.chains.join(', ')}.`,
+        record.sources.map((source) => source.label).join(' '),
+      ].join(' '),
     };
   }),
   ...RESEARCH_REPORT_RECORDS.map((record) => {

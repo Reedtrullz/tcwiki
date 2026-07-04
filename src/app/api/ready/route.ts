@@ -1,6 +1,15 @@
 import MidgardAPI from '@/lib/api/midgard';
 import ThornodeAPI from '@/lib/api/thornode';
-import type { LiveDataResult, MidgardHealth, ReadinessResponse, ReadinessSourceCheck } from '@/lib/types';
+import type {
+  DynamicL1FeeStatus,
+  LiveDataResult,
+  MidgardHealth,
+  NetworkStatusSourceWarning,
+  NetworkStatusWarningCategory,
+  NetworkStatusWarningSeverity,
+  ReadinessResponse,
+  ReadinessSourceCheck,
+} from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -58,6 +67,135 @@ function degradedReason(label: string, result: LiveDataResult<unknown>) {
   return result.error ?? `${label} did not provide usable data.`;
 }
 
+function sourceWarningDetail({
+  severity,
+  category,
+  message,
+  action,
+  keys,
+  scopes,
+}: NetworkStatusSourceWarning): NetworkStatusSourceWarning {
+  return {
+    severity,
+    category,
+    message,
+    action,
+    ...(keys?.length ? { keys } : {}),
+    ...(scopes?.length ? { scopes } : {}),
+  };
+}
+
+function uniqueSourceWarningDetails(details: NetworkStatusSourceWarning[]) {
+  const seen = new Set<string>();
+  return details.filter((detail) => {
+    const signature = [
+      detail.severity,
+      detail.category,
+      detail.message,
+      detail.action,
+      detail.keys?.join(',') ?? '',
+      detail.scopes?.join(',') ?? '',
+    ].join('|');
+    if (seen.has(signature)) {
+      return false;
+    }
+    seen.add(signature);
+    return true;
+  });
+}
+
+function uniqueStrings(values: string[]) {
+  return [...new Set(values.map((value) => value.trim()).filter(Boolean))];
+}
+
+function classifyReadinessWarning(
+  message: string,
+  fallback: {
+    action: string;
+    category?: NetworkStatusWarningCategory;
+    severity?: NetworkStatusWarningSeverity;
+  }
+): NetworkStatusSourceWarning {
+  if (message.includes('latest block timestamp')) {
+    return sourceWarningDetail({
+      severity: message.includes(' is stale.') ? 'critical' : 'warning',
+      category: 'freshness',
+      message,
+      action: fallback.action,
+    });
+  }
+
+  if (message.includes('snapshot was not pinned')) {
+    return sourceWarningDetail({
+      severity: 'warning',
+      category: 'pinning',
+      message,
+      action: fallback.action,
+    });
+  }
+
+  if (message.includes('height') || message.includes('blocks behind') || message.includes('lastblock')) {
+    return sourceWarningDetail({
+      severity: 'warning',
+      category: 'height-divergence',
+      message,
+      action: fallback.action,
+    });
+  }
+
+  if (message.includes(' source ') && message.includes(' differs from ')) {
+    return sourceWarningDetail({
+      severity: 'warning',
+      category: 'source-shape',
+      message,
+      action: fallback.action,
+    });
+  }
+
+  if (message.includes('did not include') || message.includes('omitted') || message.includes('missing')) {
+    return sourceWarningDetail({
+      severity: 'warning',
+      category: 'source-shape',
+      message,
+      action: fallback.action,
+    });
+  }
+
+  if (message.includes('could not be parsed')) {
+    return sourceWarningDetail({
+      severity: 'warning',
+      category: 'mimir-parse',
+      message,
+      action: fallback.action,
+    });
+  }
+
+  if (message.includes('Unknown chain-scoped Mimir key')) {
+    return sourceWarningDetail({
+      severity: 'review',
+      category: 'unknown-chain',
+      message,
+      action: fallback.action,
+    });
+  }
+
+  if (message.includes('Unknown operation-like Mimir key')) {
+    return sourceWarningDetail({
+      severity: 'review',
+      category: 'unknown-operation',
+      message,
+      action: fallback.action,
+    });
+  }
+
+  return sourceWarningDetail({
+    severity: fallback.severity ?? 'warning',
+    category: fallback.category ?? 'other',
+    message,
+    action: fallback.action,
+  });
+}
+
 function thornodeStateReady(state: string | undefined) {
   return state === 'operational' || state === 'paused';
 }
@@ -90,14 +228,45 @@ function getMidgardSourceWarnings(
   ];
 }
 
+function getMidgardSourceWarningDetails(warnings: string[]) {
+  return uniqueSourceWarningDetails(warnings.map((warning) => classifyReadinessWarning(warning, {
+    action: 'Treat Midgard readiness as degraded until the health and visible data sources are complete and consistent.',
+  })));
+}
+
+function getMidgardHealthWarnings(health: LiveDataResult<MidgardHealth>) {
+  return health.status === 'ok' && health.data?.severity === 'warning'
+    ? uniqueStrings(health.data.reasons)
+    : [];
+}
+
+function getComputedThornodeWarningDetails(warnings: string[]) {
+  return uniqueSourceWarningDetails(warnings.map((warning) => classifyReadinessWarning(warning, {
+    action: 'Treat THORNode readiness as degraded until the live operation snapshot is complete and height-consistent.',
+  })));
+}
+
+function getDynamicFeeWarningDetails(warnings: string[]) {
+  return uniqueSourceWarningDetails(warnings.map((warning) => classifyReadinessWarning(warning, {
+    action: 'Treat dynamic-fee readiness as degraded until THORNode returns a complete, pinned, warning-free dynamic-fee snapshot.',
+  })));
+}
+
+function dynamicFeeHistorySampleCount(status: DynamicL1FeeStatus | undefined) {
+  return status?.histories.reduce((total, thorname) => (
+    total + thorname.pairs.reduce((pairTotal, pair) => pairTotal + pair.history.length, 0)
+  ), 0);
+}
+
 export async function GET() {
   const checkedAt = new Date().toISOString();
-  const [midgard, midgardNetwork, midgardPools, midgardEarnings, thornode] = await Promise.all([
+  const [midgard, midgardNetwork, midgardPools, midgardEarnings, thornode, dynamicFees] = await Promise.all([
     safeLiveCheck('Midgard health', checkedAt, () => MidgardAPI.getHealth()),
     safeLiveCheck('Midgard network data', checkedAt, () => MidgardAPI.getNetworkData()),
     safeLiveCheck('Midgard pools data', checkedAt, () => MidgardAPI.getPools('available')),
     safeLiveCheck('Midgard earnings history', checkedAt, () => MidgardAPI.getHistory('day', 1)),
     safeLiveCheck('THORNode network status', checkedAt, () => ThornodeAPI.getNetworkStatus()),
+    safeLiveCheck('THORNode dynamic fee status', checkedAt, () => ThornodeAPI.getDynamicL1FeeStatus()),
   ]);
   const reasons: string[] = [];
   const computedThornodeWarnings: string[] = [];
@@ -119,6 +288,17 @@ export async function GET() {
   if (thornode.status === 'ok' && thornode.data !== undefined && thornode.data.chainStatuses.length === 0) {
     computedThornodeWarnings.push('THORNode inbound_addresses did not include any chain operation evidence.');
   }
+  if (
+    thornode.status === 'ok' &&
+    thornode.data !== undefined &&
+    thornode.source &&
+    dynamicFees.status === 'ok' &&
+    dynamicFees.data !== undefined &&
+    dynamicFees.source &&
+    !sameSourceGroup(thornode.source.url, dynamicFees.source.url)
+  ) {
+    computedThornodeWarnings.push(`THORNode network status source ${thornode.source.label} differs from dynamic fee source ${dynamicFees.source.label}.`);
+  }
   const midgardSourceWarnings = [
     ...(midgardHeightLagBlocks !== undefined && midgardHeightLagBlocks > 20
       ? [`Midgard latest height is ${midgardHeightLagBlocks} blocks behind THORNode lastblock.`]
@@ -129,7 +309,26 @@ export async function GET() {
       ['earnings history', midgardEarnings],
     ]),
   ];
-  const thornodeSourceWarnings = [...(thornode.data?.sourceWarnings ?? []), ...computedThornodeWarnings];
+  const computedThornodeWarningDetails = getComputedThornodeWarningDetails(computedThornodeWarnings);
+  const thornodeClientWarningDetails = thornode.data?.sourceWarningDetails?.length
+    ? thornode.data.sourceWarningDetails
+    : (thornode.data?.sourceWarnings ?? []).map((warning) => classifyReadinessWarning(warning, {
+        action: 'Review this THORNode source warning before treating the live status as clean.',
+      }));
+  const thornodeSourceWarningDetails = uniqueSourceWarningDetails([
+    ...thornodeClientWarningDetails,
+    ...computedThornodeWarningDetails,
+  ]);
+  const thornodeSourceWarnings = uniqueStrings([
+    ...(thornode.data?.sourceWarnings ?? []),
+    ...thornodeSourceWarningDetails.map((detail) => detail.message),
+  ]);
+  const dynamicFeeSourceWarnings = uniqueStrings(dynamicFees.data?.sourceWarnings ?? []);
+  const dynamicFeeSourceWarningDetails = dynamicFees.data?.sourceWarningDetails?.length
+    ? dynamicFees.data.sourceWarningDetails
+    : getDynamicFeeWarningDetails(dynamicFeeSourceWarnings);
+  const midgardSourceWarningDetails = getMidgardSourceWarningDetails(midgardSourceWarnings);
+  const midgardHealthWarnings = getMidgardHealthWarnings(midgard);
   const midgardHealthReady = midgard.status === 'ok' &&
     midgard.data !== undefined &&
     midgard.data.severity !== 'degraded' &&
@@ -141,6 +340,9 @@ export async function GET() {
     thornode.data !== undefined &&
     thornodeHasUsableState &&
     thornodeSourceWarnings.length === 0;
+  const dynamicFeesReady = dynamicFees.status === 'ok' &&
+    dynamicFees.data !== undefined &&
+    dynamicFeeSourceWarnings.length === 0;
 
   if (!midgardHealthReady) {
     reasons.push(midgard.error ?? midgard.data?.reasons.join(' ') ?? 'Midgard readiness degraded.');
@@ -166,26 +368,35 @@ export async function GET() {
   if (thornodeSourceWarnings.length) {
     reasons.push(...thornodeSourceWarnings);
   }
+  if (dynamicFees.status !== 'ok' || dynamicFees.data === undefined) {
+    reasons.push(degradedReason('THORNode dynamic fee status', dynamicFees));
+  }
+  if (dynamicFeeSourceWarnings.length) {
+    reasons.push(...dynamicFeeSourceWarnings);
+  }
 
-  const ready = midgardReady && visibleMidgardReady && thornodeReady;
+  const ready = midgardReady && visibleMidgardReady && thornodeReady && dynamicFeesReady;
   const metadata = runtimeMetadata();
   const body: ReadinessResponse = {
     status: ready ? 'ready' : 'degraded',
     ready,
     checkedAt,
     ...metadata,
+    warnings: midgardHealthWarnings,
     sources: {
       midgard: {
         status: midgard.status,
         source: midgard.source,
         health: midgard.data,
         heightLagBlocks: midgardHeightLagBlocks,
+        healthWarnings: midgardHealthWarnings,
         visibleData: {
           network: sourceCheck(midgardNetwork),
           pools: sourceCheckWithError(midgardPools, poolsError),
           earnings: sourceCheckWithError(midgardEarnings, earningsError),
         },
         sourceWarnings: midgardSourceWarnings,
+        sourceWarningDetails: midgardSourceWarningDetails,
         error: midgard.error,
       },
       thornode: {
@@ -213,6 +424,28 @@ export async function GET() {
         monitoredControls: thornode.data?.monitoredControls ?? [],
         invalidMimirKeys: thornode.data?.invalidMimirKeys ?? [],
         sourceWarnings: thornodeSourceWarnings,
+        sourceWarningDetails: thornodeSourceWarningDetails,
+        dynamicFees: {
+          status: dynamicFees.status,
+          checkedAt: dynamicFees.checkedAt,
+          source: dynamicFees.source,
+          sources: dynamicFees.sources,
+          error: dynamicFees.error,
+          enabledState: dynamicFees.data?.mimir.enabled.state,
+          enabledValue: dynamicFees.data?.mimir.enabled.effectiveValue,
+          currentEpoch: dynamicFees.data?.currentEpoch,
+          trackedRecordCount: dynamicFees.data?.records.length,
+          currentEntryCount: dynamicFees.data?.currentEntries.length,
+          whitelistedThornameCount: dynamicFees.data?.mimir.whitelistedPartners.filter((partner) => partner.whitelisted === true).length,
+          historyThornameCount: dynamicFees.data?.histories.length,
+          historySampleCount: dynamicFeeHistorySampleCount(dynamicFees.data),
+          thorchainHeight: dynamicFees.data?.sourceFreshness.thorchainHeight,
+          snapshotPinned: dynamicFees.data?.sourceFreshness.snapshotPinned,
+          thorchainBlockTime: dynamicFees.data?.sourceFreshness.thorchainBlockTime,
+          thorchainBlockAgeSeconds: dynamicFees.data?.sourceFreshness.thorchainBlockAgeSeconds,
+          sourceWarnings: dynamicFeeSourceWarnings,
+          sourceWarningDetails: dynamicFeeSourceWarningDetails,
+        },
         error: thornode.error,
       },
     },

@@ -7,6 +7,34 @@ import { useMidgardHealth, useNetworkData, useNetworkStatus } from '@/lib/hooks/
 import { NetworkStatusBanner } from '@/components/features/NetworkStatusBanner';
 import { LiveSourceMeta } from '@/components/ui/LiveSourceMeta';
 import { getNetworkCurrentOnlyStateLabel, getSecuredAssetsSummaryPaused } from '@/lib/network-status-summary';
+import { RelatedChecks, type RelatedCheck } from '@/components/features/RelatedChecks';
+
+const networkRelatedChecks: RelatedCheck[] = [
+  {
+    label: 'Source map',
+    href: '/docs#current-protocol-state',
+    badge: 'proof boundary',
+    description: 'Separate current THORNode operational evidence from docs, historical reports, and community context.',
+  },
+  {
+    label: 'Live-source failover',
+    href: '/docs#runtime-live-data-failover',
+    badge: 'source health',
+    description: 'Review how provider warnings, stale snapshots, and degraded source labels should be interpreted.',
+  },
+  {
+    label: 'Stats dashboard',
+    href: '/stats#stats-look-here-first',
+    badge: 'metrics',
+    description: 'Compare operational availability with Midgard headline metrics and earnings coverage.',
+  },
+  {
+    label: 'Pause search',
+    href: '/search?q=Mimir%20halt&filter=task',
+    badge: 'search',
+    description: 'Jump to task results for halt keys, pause reasons, and user-facing availability checks.',
+  },
+];
 
 export default function NetworkPage() {
   const { data: networkData, result: networkResult } = useNetworkData();
@@ -44,9 +72,11 @@ export default function NetworkPage() {
         Mimir-controlled operations, solvency checks, and economic penalties.
       </p>
 
-      <div className="mb-12">
+      <div id="network-diagnostics" className="scroll-mt-24 mb-12">
         <NetworkStatusBanner result={statusResult} isLoading={statusLoading} variant="diagnostic" />
       </div>
+
+      <RelatedChecks checks={networkRelatedChecks} className="mb-12" />
 
       <SectionHeader>Node Types</SectionHeader>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-12">

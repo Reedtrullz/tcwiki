@@ -3,7 +3,8 @@ import type { ReactNode } from 'react';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { Badge } from '@/components/ui/Badge';
 import { FreshnessMeta } from '@/components/ui/FreshnessMeta';
-import { DEEP_DIVE_ENTRIES, DEEP_DIVE_TOC, getContentEntry } from '@/lib/content/registry';
+import { DEEP_DIVE_ENTRIES, DEEP_DIVE_READER_PATHS, DEEP_DIVE_TOC, getContentEntry } from '@/lib/content/registry';
+import { getConfidenceLabel, getConfidenceTone } from '@/lib/trust';
 
 interface DeepDiveShellProps {
   entryId: string;
@@ -21,6 +22,7 @@ export function DeepDiveShell({ entryId, editPath, children }: DeepDiveShellProp
   const currentIndex = DEEP_DIVE_ENTRIES.findIndex((candidate) => candidate.id === entryId);
   const previous = currentIndex > 0 ? DEEP_DIVE_ENTRIES[currentIndex - 1] : undefined;
   const next = currentIndex >= 0 && currentIndex < DEEP_DIVE_ENTRIES.length - 1 ? DEEP_DIVE_ENTRIES[currentIndex + 1] : undefined;
+  const readerPaths = DEEP_DIVE_READER_PATHS.filter((path) => path.entryIds.includes(entryId));
   const related = DEEP_DIVE_ENTRIES
     .filter((candidate) => candidate.id !== entryId)
     .map((candidate) => ({
@@ -91,6 +93,71 @@ export function DeepDiveShell({ entryId, editPath, children }: DeepDiveShellProp
             </span>
           ))}
         </div>
+
+        {readerPaths.length > 0 && (
+          <section aria-labelledby="article-reader-paths" className="mt-6 rounded-lg border border-border bg-surface-elevated/60 p-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <h2 id="article-reader-paths" className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                  Reader Paths For This Article
+                </h2>
+                <p className="mt-1 max-w-2xl text-sm leading-relaxed text-slate-400">
+                  Use these paths to connect this explainer with the current-state checks needed before making live protocol claims.
+                </p>
+              </div>
+              <Link href="/deep-dives#deep-dive-reader-paths" className="text-xs font-semibold text-accent underline-offset-4 hover:underline">
+                View all paths
+              </Link>
+            </div>
+
+            <div className="mt-4 grid gap-3">
+              {readerPaths.map((path) => (
+                <div key={path.id} className="rounded-md border border-border bg-surface p-3">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <Link
+                        href={`/deep-dives#deep-dive-path-${path.id}`}
+                        className="font-semibold text-slate-200 underline-offset-4 hover:text-accent hover:underline"
+                      >
+                        {path.title}
+                      </Link>
+                      <p className="mt-1 text-xs leading-relaxed text-slate-400">{path.audience}</p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge variant={getConfidenceTone(path.confidence)}>{getConfidenceLabel(path.confidence)}</Badge>
+                      <span className="text-[11px] text-slate-500">Reviewed {path.reviewedAt}</span>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(220px,0.85fr)]">
+                    <div>
+                      <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Verify Before Claiming</p>
+                      <ul className="space-y-1 text-xs leading-relaxed text-slate-400">
+                        {path.verifyBeforeClaiming.map((claim) => (
+                          <li key={claim}>{claim}</li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div>
+                      <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Then Check</p>
+                      <div className="flex flex-wrap gap-2">
+                        {path.followUpLinks.map((followUp) => (
+                          <Link
+                            key={followUp.href}
+                            href={followUp.href}
+                            className="rounded border border-border px-2 py-1 text-xs text-slate-400 hover:border-accent/30 hover:text-slate-100"
+                          >
+                            {followUp.label}
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {(previous || next) && (
           <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">

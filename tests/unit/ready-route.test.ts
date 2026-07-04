@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import MidgardAPI from '@/lib/api/midgard';
 import ThornodeAPI from '@/lib/api/thornode';
 import { GET } from '@/app/api/ready/route';
-import type { HistoryItem, LiveDataResult, MidgardHealth, NetworkStats, NetworkStatus, Pool, SourceHealthSeverity } from '@/lib/types';
+import type { DynamicL1FeeStatus, HistoryItem, LiveDataResult, MidgardHealth, NetworkStats, NetworkStatus, Pool, SourceHealthSeverity } from '@/lib/types';
 
 vi.mock('@/lib/api/midgard', () => ({
   default: {
@@ -16,6 +16,7 @@ vi.mock('@/lib/api/midgard', () => ({
 vi.mock('@/lib/api/thornode', () => ({
   default: {
     getNetworkStatus: vi.fn(),
+    getDynamicL1FeeStatus: vi.fn(),
   },
 }));
 
@@ -87,6 +88,42 @@ function thornodeStatus(overrides: Partial<NetworkStatus> = {}): LiveDataResult<
   };
 }
 
+function dynamicFeeStatus(overrides: Partial<DynamicL1FeeStatus> = {}): LiveDataResult<DynamicL1FeeStatus> {
+  return {
+    status: 'ok',
+    checkedAt: '2026-07-02T00:00:00.000Z',
+    source: { label: 'THORNode', url: 'https://thornode.thorchain.network/thorchain' },
+    data: {
+      mimir: {
+        enabled: { key: 'L1DynamicFeeEnabled', value: 0, defaultValue: 0, effectiveValue: 0, state: 'inactive' },
+        slipMinBps: { key: 'L1SlipMinBPS', value: 5, state: 'active' },
+        epochBlocks: { key: 'L1DynamicFeeEpochBlocks', value: 14400, defaultValue: 14400, effectiveValue: 14400, state: 'active' },
+        floorBps: { key: 'L1DynamicFeeFloorBPS', value: 1, defaultValue: 1, effectiveValue: 1, state: 'active' },
+        ceilingBps: { key: 'L1DynamicFeeCeilingBPS', value: 20, defaultValue: 20, effectiveValue: 20, state: 'active' },
+        stepBps: { key: 'L1DynamicFeeStepBPS', value: 1, defaultValue: 1, effectiveValue: 1, state: 'active' },
+        deadbandBps: { key: 'L1DynamicFeeDeadbandBPS', value: 1000, defaultValue: 1000, effectiveValue: 1000, state: 'active' },
+        windowEpochs: { key: 'L1DynamicFeeWindowEpochs', value: 3, defaultValue: 3, effectiveValue: 3, state: 'active' },
+        whitelistedPartners: [],
+        invalidKeys: [],
+      },
+      records: [],
+      currentEpoch: 1,
+      currentEntries: [],
+      histories: [],
+      sourceFreshness: {
+        thorchainHeight: 100,
+        thorchainBlockTime: '2026-07-02T00:00:00.000Z',
+        thorchainBlockAgeSeconds: 1,
+        snapshotPinned: true,
+      },
+      sourceWarnings: [],
+      sourceWarningDetails: [],
+      caveats: ['current-only', 'adr-experiment', 'not-historical-fee-proof'],
+      ...overrides,
+    },
+  };
+}
+
 function networkData(): LiveDataResult<NetworkStats> {
   return {
     status: 'ok',
@@ -146,11 +183,13 @@ describe('/api/ready', () => {
     vi.mocked(MidgardAPI.getPools).mockReset();
     vi.mocked(MidgardAPI.getHistory).mockReset();
     vi.mocked(ThornodeAPI.getNetworkStatus).mockReset();
+    vi.mocked(ThornodeAPI.getDynamicL1FeeStatus).mockReset();
     vi.mocked(MidgardAPI.getHealth).mockResolvedValue(midgardHealth('ok'));
     vi.mocked(MidgardAPI.getNetworkData).mockResolvedValue(networkData());
     vi.mocked(MidgardAPI.getPools).mockResolvedValue(poolsData());
     vi.mocked(MidgardAPI.getHistory).mockResolvedValue(earningsData());
     vi.mocked(ThornodeAPI.getNetworkStatus).mockResolvedValue(thornodeStatus());
+    vi.mocked(ThornodeAPI.getDynamicL1FeeStatus).mockResolvedValue(dynamicFeeStatus());
   });
 
   it('returns ready when Midgard and THORNode are both usable', async () => {
@@ -161,13 +200,31 @@ describe('/api/ready', () => {
     expect(response.headers.get('cache-control')).toBe('no-store');
     expect(body.status).toBe('ready');
     expect(body.ready).toBe(true);
+    expect(body.warnings).toEqual([]);
     expect(body.sources.midgard.visibleData.network.status).toBe('ok');
     expect(body.sources.midgard.visibleData.pools.status).toBe('ok');
     expect(body.sources.midgard.visibleData.earnings.status).toBe('ok');
+    expect(body.sources.midgard.healthWarnings).toEqual([]);
     expect(body.sources.midgard.sourceWarnings).toEqual([]);
+    expect(body.sources.midgard.sourceWarningDetails).toEqual([]);
     expect(body.sources.thornode.sourceCount).toBe(1);
     expect(body.sources.thornode.checkedAt).toBe('2026-07-02T00:00:00.000Z');
     expect(body.sources.thornode.chainStatuses).toHaveLength(1);
+    expect(body.sources.thornode.sourceWarnings).toEqual([]);
+    expect(body.sources.thornode.sourceWarningDetails).toEqual([]);
+    expect(body.sources.thornode.dynamicFees.status).toBe('ok');
+    expect(body.sources.thornode.dynamicFees.enabledState).toBe('inactive');
+    expect(body.sources.thornode.dynamicFees.enabledValue).toBe(0);
+    expect(body.sources.thornode.dynamicFees.currentEpoch).toBe(1);
+    expect(body.sources.thornode.dynamicFees.trackedRecordCount).toBe(0);
+    expect(body.sources.thornode.dynamicFees.currentEntryCount).toBe(0);
+    expect(body.sources.thornode.dynamicFees.whitelistedThornameCount).toBe(0);
+    expect(body.sources.thornode.dynamicFees.historyThornameCount).toBe(0);
+    expect(body.sources.thornode.dynamicFees.historySampleCount).toBe(0);
+    expect(body.sources.thornode.dynamicFees.thorchainHeight).toBe(100);
+    expect(body.sources.thornode.dynamicFees.snapshotPinned).toBe(true);
+    expect(body.sources.thornode.dynamicFees.sourceWarnings).toEqual([]);
+    expect(body.sources.thornode.dynamicFees.sourceWarningDetails).toEqual([]);
   });
 
   it('returns degraded when a source is unavailable', async () => {
@@ -271,6 +328,20 @@ describe('/api/ready', () => {
       'Midgard health did not include database status.',
       'Midgard health did not include sync status.',
     ]);
+    expect(body.sources.midgard.sourceWarningDetails).toEqual([
+      {
+        severity: 'warning',
+        category: 'source-shape',
+        message: 'Midgard health did not include database status.',
+        action: 'Treat Midgard readiness as degraded until the health and visible data sources are complete and consistent.',
+      },
+      {
+        severity: 'warning',
+        category: 'source-shape',
+        message: 'Midgard health did not include sync status.',
+        action: 'Treat Midgard readiness as degraded until the health and visible data sources are complete and consistent.',
+      },
+    ]);
     expect(body.reasons).toEqual([
       'Midgard health did not include database status.',
       'Midgard health did not include sync status.',
@@ -285,6 +356,15 @@ describe('/api/ready', () => {
       activeEvidenceKeys: ['HALTTRADING'],
       scheduledMimirKeys: ['HALTSIGNING'],
       sourceWarnings: ['1 monitored Mimir key could not be parsed.'],
+      sourceWarningDetails: [
+        {
+          severity: 'warning',
+          category: 'mimir-parse',
+          message: '1 monitored Mimir key could not be parsed.',
+          action: 'Review the exact Mimir values before counting those controls as inactive.',
+          keys: ['HALTTRADING'],
+        },
+      ],
     }));
 
     const response = await GET();
@@ -298,7 +378,66 @@ describe('/api/ready', () => {
     expect(body.sources.thornode.activeEvidenceKeys).toEqual(['HALTTRADING']);
     expect(body.sources.thornode.scheduledMimirKeys).toEqual(['HALTSIGNING']);
     expect(body.sources.thornode.sourceWarnings).toEqual(['1 monitored Mimir key could not be parsed.']);
+    expect(body.sources.thornode.sourceWarningDetails).toEqual([
+      {
+        severity: 'warning',
+        category: 'mimir-parse',
+        message: '1 monitored Mimir key could not be parsed.',
+        action: 'Review the exact Mimir values before counting those controls as inactive.',
+        keys: ['HALTTRADING'],
+      },
+    ]);
     expect(body.reasons).toEqual(['1 monitored Mimir key could not be parsed.']);
+  });
+
+  it('returns degraded when dynamic fee status is unavailable', async () => {
+    vi.mocked(ThornodeAPI.getDynamicL1FeeStatus).mockResolvedValue({
+      status: 'degraded',
+      checkedAt: '2026-07-02T00:00:00.000Z',
+      sources: [
+        { label: 'Liquify THORNode', url: 'https://gateway.liquify.com/chain/thorchain_api/thorchain' },
+        { label: 'THORChain THORNode', url: 'https://thornode.thorchain.network/thorchain' },
+      ],
+      error: 'THORNode dynamic fee sources did not provide a usable snapshot',
+    });
+
+    const response = await GET();
+    const body = await response.json();
+
+    expect(response.status).toBe(503);
+    expect(body.status).toBe('degraded');
+    expect(body.ready).toBe(false);
+    expect(body.sources.thornode.dynamicFees.status).toBe('degraded');
+    expect(body.sources.thornode.dynamicFees.currentEpoch).toBeUndefined();
+    expect(body.sources.thornode.dynamicFees.trackedRecordCount).toBeUndefined();
+    expect(body.sources.thornode.dynamicFees.sourceWarnings).toEqual([]);
+    expect(body.sources.thornode.dynamicFees.sourceWarningDetails).toEqual([]);
+    expect(body.reasons).toEqual(['THORNode dynamic fee sources did not provide a usable snapshot']);
+  });
+
+  it('returns degraded when dynamic fee source warnings are present', async () => {
+    const warning = 'THORNode latest block timestamp is 1 minute old; dynamic fee state is stale.';
+    vi.mocked(ThornodeAPI.getDynamicL1FeeStatus).mockResolvedValue(dynamicFeeStatus({
+      sourceWarnings: [warning],
+    }));
+
+    const response = await GET();
+    const body = await response.json();
+
+    expect(response.status).toBe(503);
+    expect(body.status).toBe('degraded');
+    expect(body.ready).toBe(false);
+    expect(body.sources.thornode.dynamicFees.status).toBe('ok');
+    expect(body.sources.thornode.dynamicFees.sourceWarnings).toEqual([warning]);
+    expect(body.sources.thornode.dynamicFees.sourceWarningDetails).toEqual([
+      {
+        severity: 'critical',
+        category: 'freshness',
+        message: warning,
+        action: 'Treat dynamic-fee readiness as degraded until THORNode returns a complete, pinned, warning-free dynamic-fee snapshot.',
+      },
+    ]);
+    expect(body.reasons).toEqual([warning]);
   });
 
   it('keeps paused THORNode state ready while exposing active evidence', async () => {
@@ -412,6 +551,14 @@ describe('/api/ready', () => {
       sourceWarnings: [warning],
     });
     expect(body.sources.thornode.sourceWarnings).toEqual([warning]);
+    expect(body.sources.thornode.sourceWarningDetails).toEqual([
+      {
+        severity: 'warning',
+        category: 'freshness',
+        message: warning,
+        action: 'Review this THORNode source warning before treating the live status as clean.',
+      },
+    ]);
     expect(body.reasons).toEqual(['THORNode network status is degraded.', warning]);
   });
 
@@ -429,6 +576,14 @@ describe('/api/ready', () => {
     expect(body.sources.thornode.sourceWarnings).toEqual([
       'THORNode inbound_addresses did not include any chain operation evidence.',
     ]);
+    expect(body.sources.thornode.sourceWarningDetails).toEqual([
+      {
+        severity: 'warning',
+        category: 'source-shape',
+        message: 'THORNode inbound_addresses did not include any chain operation evidence.',
+        action: 'Treat THORNode readiness as degraded until the live operation snapshot is complete and height-consistent.',
+      },
+    ]);
     expect(body.reasons).toEqual([
       'THORNode inbound_addresses did not include any chain operation evidence.',
     ]);
@@ -443,6 +598,10 @@ describe('/api/ready', () => {
     expect(response.status).toBe(200);
     expect(body.status).toBe('ready');
     expect(body.ready).toBe(true);
+    expect(body.warnings).toEqual(['Midgard lag is 4 blocks.']);
+    expect(body.sources.midgard.healthWarnings).toEqual(['Midgard lag is 4 blocks.']);
+    expect(body.sources.midgard.sourceWarnings).toEqual([]);
+    expect(body.sources.midgard.sourceWarningDetails).toEqual([]);
     expect(body.reasons).toEqual([]);
   });
 
@@ -478,6 +637,14 @@ describe('/api/ready', () => {
     expect(body.sources.thornode.heightLagBlocks).toBe(50);
     expect(body.sources.midgard.heightLagBlocks).toBe(0);
     expect(body.sources.thornode.sourceWarnings).toEqual(['THORNode lastblock is 50 blocks behind Midgard latest height.']);
+    expect(body.sources.thornode.sourceWarningDetails).toEqual([
+      {
+        severity: 'warning',
+        category: 'height-divergence',
+        message: 'THORNode lastblock is 50 blocks behind Midgard latest height.',
+        action: 'Treat THORNode readiness as degraded until the live operation snapshot is complete and height-consistent.',
+      },
+    ]);
     expect(body.reasons).toEqual(['THORNode lastblock is 50 blocks behind Midgard latest height.']);
   });
 
@@ -501,6 +668,14 @@ describe('/api/ready', () => {
     expect(body.sources.midgard.heightLagBlocks).toBe(50);
     expect(body.sources.thornode.heightLagBlocks).toBe(0);
     expect(body.sources.midgard.sourceWarnings).toEqual(['Midgard latest height is 50 blocks behind THORNode lastblock.']);
+    expect(body.sources.midgard.sourceWarningDetails).toEqual([
+      {
+        severity: 'warning',
+        category: 'height-divergence',
+        message: 'Midgard latest height is 50 blocks behind THORNode lastblock.',
+        action: 'Treat Midgard readiness as degraded until the health and visible data sources are complete and consistent.',
+      },
+    ]);
     expect(body.reasons).toEqual(['Midgard latest height is 50 blocks behind THORNode lastblock.']);
   });
 
@@ -519,6 +694,33 @@ describe('/api/ready', () => {
     ]);
     expect(body.reasons).toEqual([
       'Midgard health source Midgard differs from network data source Liquify Midgard.',
+    ]);
+  });
+
+  it('returns degraded when THORNode network status and dynamic fees use different providers', async () => {
+    vi.mocked(ThornodeAPI.getDynamicL1FeeStatus).mockResolvedValue({
+      ...dynamicFeeStatus(),
+      source: { label: 'Liquify THORNode', url: 'https://gateway.liquify.com/chain/thorchain_api/thorchain' },
+    });
+
+    const response = await GET();
+    const body = await response.json();
+
+    expect(response.status).toBe(503);
+    expect(body.sources.thornode.sourceWarnings).toEqual([
+      'THORNode network status source THORNode differs from dynamic fee source Liquify THORNode.',
+    ]);
+    expect(body.sources.thornode.sourceWarningDetails).toEqual([
+      {
+        severity: 'warning',
+        category: 'source-shape',
+        message: 'THORNode network status source THORNode differs from dynamic fee source Liquify THORNode.',
+        action: 'Treat THORNode readiness as degraded until the live operation snapshot is complete and height-consistent.',
+      },
+    ]);
+    expect(body.sources.thornode.dynamicFees.sourceWarnings).toEqual([]);
+    expect(body.reasons).toEqual([
+      'THORNode network status source THORNode differs from dynamic fee source Liquify THORNode.',
     ]);
   });
 });

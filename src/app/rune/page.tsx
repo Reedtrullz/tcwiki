@@ -2,7 +2,10 @@ import { PageContainer } from '@/components/layout/PageContainer';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { FreshnessMeta } from '@/components/ui/FreshnessMeta';
+import { RouteSourcePosture } from '@/components/features/RouteSourcePosture';
+import { RelatedChecks, type RelatedCheck } from '@/components/features/RelatedChecks';
 import { TOKENOMICS_RECORDS } from '@/lib/data/static';
+import { getContentEntry } from '@/lib/content/registry';
 import { createRouteMetadata } from '@/lib/metadata';
 import { getTokenomicsToneBadgeVariant, getTokenomicsToneLabel } from '@/lib/trust';
 
@@ -12,15 +15,62 @@ export const metadata = createRouteMetadata({
   path: '/rune',
 });
 
+const entry = getContentEntry('rune');
 const supplyRecord = TOKENOMICS_RECORDS.find((record) => record.data.id === 'rune-supply-framing') ?? TOKENOMICS_RECORDS[0];
+
+const runeRelatedChecks: RelatedCheck[] = [
+  {
+    label: 'RUNE settlement deep dive',
+    href: '/deep-dives/rune-settlement',
+    badge: 'deep dive',
+    description: 'Read the long-form settlement-asset explanation before using RUNE as a protocol model.',
+  },
+  {
+    label: 'Swap Economics',
+    href: '/deep-dives#deep-dive-path-swap-economics',
+    badge: 'path',
+    description: 'Connect RUNE settlement to CLP pricing, incentives, and security costs.',
+  },
+  {
+    label: 'Stats decision panel',
+    href: '/stats#stats-look-here-first',
+    badge: 'live state',
+    description: 'Check current pooled RUNE, reserve, node, and earnings-source health.',
+  },
+  {
+    label: 'Official source map',
+    href: '/docs#official-protocol-documentation',
+    badge: 'proof',
+    description: 'Use official docs for dated tokenomics framing and source boundaries.',
+  },
+];
 
 export default function RunePage() {
   return (
     <PageContainer>
       <h1 className="text-3xl font-bold tracking-tight mb-2">RUNE Token</h1>
-      <p className="text-slate-400 max-w-3xl mb-12">
+      <p className="text-slate-400 max-w-3xl mb-6">
         RUNE is the native asset used for settlement, liquidity pairing, economic security, and protocol accounting.
       </p>
+      <RouteSourcePosture
+        entry={entry}
+        className="mb-6"
+        useFor={[
+          'RUNE roles in settlement, liquidity pairing, node bonding, and protocol accounting.',
+          'Source-backed tokenomics framing that should remain dated when figures are quoted.',
+        ]}
+        verifyBeforeClaiming={[
+          'Current price, circulating balances, reserve balances, emissions, or market conclusions.',
+          'Current minimum bond, slash parameters, Mimir overrides, or investment suitability.',
+        ]}
+      />
+      <RelatedChecks
+        checks={runeRelatedChecks}
+        className="mb-12"
+        title="Continue From Here"
+        description="Move from the token overview into settlement mechanics, live network numbers, or official source boundaries before making current RUNE claims."
+        badgeLabel="claim path"
+      />
 
       <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-5">What is RUNE?</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-12">

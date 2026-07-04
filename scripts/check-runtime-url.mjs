@@ -1,4 +1,5 @@
 import { setTimeout as wait } from 'node:timers/promises';
+import { assertReadinessContract } from './lib/readiness-contract.mjs';
 
 const baseUrl = (process.env.CHECK_BASE_URL ?? process.argv[2] ?? '').replace(/\/$/, '');
 const expectedVersion = process.env.EXPECTED_VERSION;
@@ -88,9 +89,7 @@ const ready = await fetchUntil(
   (response) => requireReady ? response.status === 200 : response.status === 200 || response.status === 503
 );
 const readyJson = await ready.json();
-if (!['ready', 'degraded'].includes(readyJson.status) || typeof readyJson.ready !== 'boolean' || !readyJson.sources?.midgard || !readyJson.sources?.thornode) {
-  throw new Error(`Unexpected readiness response: ${JSON.stringify(readyJson)}`);
-}
+assertReadinessContract(readyJson);
 expectRuntimeMetadata(readyJson);
 expectHeader(ready.headers, 'cache-control', 'no-store');
 if (requireReady && (readyJson.status !== 'ready' || readyJson.ready !== true)) {
@@ -116,7 +115,11 @@ expectHeaderDirectives(rootResponse.headers, 'permissions-policy', [
   'usb=()',
 ]);
 const cspHeader = enforcedCsp ? 'content-security-policy' : 'content-security-policy-report-only';
+const unexpectedCspHeader = enforcedCsp ? 'content-security-policy-report-only' : 'content-security-policy';
 expectHeader(rootResponse.headers, cspHeader, 'report-uri /api/csp-report');
+if (rootResponse.headers.has(unexpectedCspHeader)) {
+  throw new Error(`Expected ${unexpectedCspHeader} to be absent when checking ${cspHeader}`);
+}
 expectNoHeaderSubstring(rootResponse.headers, cspHeader, 'unsafe-eval');
 expectNoHeaderSubstring(rootResponse.headers, cspHeader, 'unsafe-inline');
 

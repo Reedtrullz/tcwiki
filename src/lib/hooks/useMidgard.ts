@@ -5,6 +5,7 @@ import MidgardAPI from '@/lib/api/midgard';
 import ThornodeAPI from '@/lib/api/thornode';
 import { DynamicL1FeeStatus, HistoryItem, LiveDataResult, MidgardHealth, NetworkStats, NetworkStatus, Pool } from '@/lib/types';
 import { liveDegraded } from '@/lib/trust';
+import { liveResultIsDegraded } from '@/lib/live-result';
 
 const SWR_OPTIONS = {
   refreshInterval: 60000,
@@ -23,7 +24,7 @@ function unwrapLiveResult<T>(result: LiveDataResult<T> | undefined, error: unkno
     sources: resolvedResult?.sources,
     checkedAt: resolvedResult?.checkedAt,
     isLoading,
-    isDegraded: Boolean(resolvedResult?.status === 'degraded'),
+    isDegraded: liveResultIsDegraded(resolvedResult),
   };
 }
 

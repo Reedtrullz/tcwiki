@@ -1,0 +1,35 @@
+import lunr from 'lunr';
+import { describe, expect, it } from 'vitest';
+import { SEARCH_DOCUMENTS } from '@/lib/search/registry';
+import { runSafeLunrSearch } from '@/lib/search/lunr-query';
+import { rankSearchResults } from '@/lib/search/ranking';
+
+const searchIndex = lunr(function () {
+  this.ref('id');
+  this.field('title');
+  this.field('content');
+  SEARCH_DOCUMENTS.forEach((doc) => this.add(doc));
+});
+
+const searchDocumentsById = new Map(SEARCH_DOCUMENTS.map((doc) => [doc.id, doc]));
+
+function rankedIds(query: string) {
+  const mapped = runSafeLunrSearch(searchIndex, query).flatMap((result) => {
+    const doc = searchDocumentsById.get(result.ref);
+    return doc ? [{ ...doc, score: result.score }] : [];
+  });
+
+  return rankSearchResults(query, mapped).map((result) => result.id);
+}
+
+describe('task-aware search ranking', () => {
+  it('promotes task journeys for reader-job queries', () => {
+    expect(rankedIds('dynamic L1 fee')[0]).toBe('task:fees-and-adr026');
+    expect(rankedIds('Mimir halt')[0]).toBe('task:why-paused');
+    expect(rankedIds('wallet safety')[0]).toBe('task:choose-interface');
+    expect(rankedIds('TCY recovery')[0]).toBe('task:tcy-recovery');
+    expect(rankedIds('is trading halted')[0]).toBe('task:swap-availability');
+    expect(rankedIds('Midgard API')[0]).toBe('task:build-query');
+    expect(rankedIds('which source should i trust')[0]).toBe('task:source-choice');
+  });
+});

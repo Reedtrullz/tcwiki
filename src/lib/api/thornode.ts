@@ -529,18 +529,78 @@ function getWarningSnapshotScore(status: NetworkStatus) {
 }
 
 function getDynamicFeeWarningSnapshotScore(status: DynamicL1FeeStatus) {
-  return status.sourceWarnings.reduce((score, warning) => {
-    if (warning.includes('latest block timestamp')) {
-      return score + 100;
-    }
-    if (warning.includes('unparseable') || warning.includes('Invalid')) {
-      return score + 60;
-    }
-    if (warning.includes('mismatch') || warning.includes('without a sealed')) {
-      return score + 20;
-    }
-    return score + 10;
-  }, 0);
+  const details = status.sourceWarningDetails.length
+    ? status.sourceWarningDetails
+    : getDynamicFeeSourceWarningDetails(status.sourceWarnings);
+
+  return details.reduce((score, detail) => score + getWarningDetailSnapshotScore(detail), 0);
+}
+
+function dynamicFeeWarningKeys(message: string) {
+  return [...new Set(message.match(/\b(?:L1[A-Za-z0-9]+|DYNAMICFEE-WHITELIST-[A-Z0-9_-]+)\b/g) ?? [])]
+    .sort((left, right) => left.localeCompare(right));
+}
+
+function classifyDynamicFeeSourceWarning(message: string): NetworkStatusSourceWarning {
+  const keys = dynamicFeeWarningKeys(message);
+
+  if (message.includes('latest block timestamp')) {
+    return warningDetail({
+      severity: message.includes(' is stale.') ? 'critical' : 'warning',
+      category: 'freshness',
+      message,
+      action: 'Treat dynamic-fee values as stale until THORNode returns a fresh latest-block timestamp.',
+      keys,
+    });
+  }
+
+  if (
+    message.includes('unparseable') ||
+    message.includes('unsupported dynamic fee') ||
+    message.includes('outside ADR-026 clamp bounds')
+  ) {
+    return warningDetail({
+      severity: 'warning',
+      category: 'mimir-parse',
+      message,
+      action: 'Review the exact dynamic-fee Mimir values before treating controller state or configured bounds as clean.',
+      keys,
+    });
+  }
+
+  if (
+    message.includes('Invalid dynamic_l1_fees') ||
+    message.includes('did not include') ||
+    message.includes('unavailable') ||
+    message.includes('duplicate') ||
+    message.includes('without a sealed dynamic_l1_fees record') ||
+    message.includes('has no matching DYNAMICFEE-WHITELIST') ||
+    message.includes('disagrees with') ||
+    message.includes('epoch mismatch') ||
+    message.includes('should be pruned') ||
+    message.includes('below effective floor') ||
+    message.includes('above effective ceiling')
+  ) {
+    return warningDetail({
+      severity: 'warning',
+      category: 'source-shape',
+      message,
+      action: 'Treat the affected dynamic-fee record, history, or current accumulator as partial until THORNode returns consistent fields.',
+      keys,
+    });
+  }
+
+  return warningDetail({
+    severity: 'warning',
+    category: 'other',
+    message,
+    action: 'Review this dynamic-fee source warning before treating the live tracker as clean.',
+    keys,
+  });
+}
+
+function getDynamicFeeSourceWarningDetails(warnings: string[]) {
+  return uniqueSourceWarningDetails(warnings.map(classifyDynamicFeeSourceWarning));
 }
 
 function getDynamicFeeBlockAgeWarnings(blockAgeSeconds: number | undefined) {
@@ -1049,6 +1109,8 @@ export function deriveDynamicL1FeeStatus(
     }
   }
 
+  const uniqueWarnings = [...new Set(sourceWarnings)].sort((left, right) => left.localeCompare(right));
+
   return {
     mimir: mimirStatus,
     records,
@@ -1056,7 +1118,8 @@ export function deriveDynamicL1FeeStatus(
     currentEntries,
     histories,
     sourceFreshness,
-    sourceWarnings: [...new Set(sourceWarnings)].sort((left, right) => left.localeCompare(right)),
+    sourceWarnings: uniqueWarnings,
+    sourceWarningDetails: getDynamicFeeSourceWarningDetails(uniqueWarnings),
     caveats: ['current-only', 'adr-experiment', 'not-historical-fee-proof'],
   };
 }
@@ -2250,9 +2313,11 @@ export class ThornodeAPI {
           ...status.sourceWarnings,
           ...getDynamicFeeBlockAgeWarnings(blockAgeSeconds),
         ];
+        const uniqueWarnings = [...new Set(sourceWarnings)].sort((left, right) => left.localeCompare(right));
         const statusWithFreshnessWarnings = {
           ...status,
-          sourceWarnings: [...new Set(sourceWarnings)].sort((left, right) => left.localeCompare(right)),
+          sourceWarnings: uniqueWarnings,
+          sourceWarningDetails: getDynamicFeeSourceWarningDetails(uniqueWarnings),
         };
 
         if (statusWithFreshnessWarnings.sourceWarnings.length === 0) {

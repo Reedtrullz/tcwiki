@@ -6,10 +6,20 @@ import { Activity, TrendingUp, Shield, Layers } from 'lucide-react';
 import { useMidgardHealth, useNetworkData, useNetworkStatus, usePools } from '@/lib/hooks/useMidgard';
 import { StatCard } from '@/components/ui/StatCard';
 import { NetworkStatusBanner } from '@/components/features/NetworkStatusBanner';
-import { FEATURED_ENTRIES, JOURNEY_LINKS } from '@/lib/content/registry';
+import { DEEP_DIVE_READER_PATHS, FEATURED_ENTRIES, HOME_DECISION_LINKS, getContentEntry } from '@/lib/content/registry';
 import { formatPercent, formatRuneFromBaseUnits, normalizeApyToPercent } from '@/lib/trust';
 import { LiveSourceMeta } from '@/components/ui/LiveSourceMeta';
 import { recordAnchor } from '@/lib/utils';
+
+const homeReaderPaths = DEEP_DIVE_READER_PATHS.map((path) => {
+  const firstEntry = getContentEntry(path.entryIds[0]);
+
+  return {
+    ...path,
+    firstEntry,
+    href: `/deep-dives#deep-dive-path-${path.id}`,
+  };
+});
 
 export default function HomePage() {
   const { data: networkData, result: networkResult, isDegraded: networkDegraded } = useNetworkData();
@@ -36,15 +46,29 @@ export default function HomePage() {
       </section>
 
       <section className="px-6 max-w-7xl mx-auto mb-8">
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-5">
-          {JOURNEY_LINKS.map((journey) => (
+        <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-400">Check The Right Thing First</h2>
+            <p className="mt-1 max-w-2xl text-xs leading-relaxed text-slate-400">
+              Use the live surface that matches the question before turning a number, pause, or third-party listing into a claim.
+            </p>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {HOME_DECISION_LINKS.map((link) => (
             <Link
-              key={journey.href}
-              href={journey.href}
-              className="block rounded-lg border border-border bg-surface-elevated px-4 py-3 transition-colors hover:border-accent/30"
+              key={link.id}
+              href={link.href}
+              className="block rounded-lg border border-border bg-surface-elevated p-4 transition-colors hover:border-accent/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
             >
-              <p className="text-sm font-semibold text-slate-200">{journey.label}</p>
-              <p className="mt-1 text-[11px] leading-relaxed text-slate-400">{journey.description}</p>
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <span className="rounded border border-border bg-surface px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                  {link.badge}
+                </span>
+              </div>
+              <p className="text-sm font-semibold text-slate-100">{link.question}</p>
+              <p className="mt-1 text-xs font-medium text-accent">{link.label}</p>
+              <p className="mt-2 text-[11px] leading-relaxed text-slate-400">{link.description}</p>
             </Link>
           ))}
         </div>
@@ -52,6 +76,36 @@ export default function HomePage() {
 
       <section className="px-6 max-w-7xl mx-auto mb-8">
         <NetworkStatusBanner result={statusResult} isLoading={statusLoading} variant="compact" />
+      </section>
+
+      <section className="px-6 max-w-7xl mx-auto mb-16">
+        <div className="flex flex-col gap-1 mb-5 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">Learn in Sequence</h2>
+            <p className="mt-1 max-w-2xl text-xs leading-relaxed text-slate-400">
+              Guided reading paths keep explanatory articles separate from current-state proof.
+            </p>
+          </div>
+          <Link href="/deep-dives#deep-dive-reader-paths" className="text-xs text-slate-400 hover:text-slate-300 transition-colors">
+            View all paths →
+          </Link>
+        </div>
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+          {homeReaderPaths.map((path) => (
+            <Link
+              key={path.id}
+              href={path.href}
+              className="block rounded-lg border border-border bg-surface-elevated p-4 transition-colors hover:border-accent/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
+            >
+              <p className="text-sm font-semibold text-slate-200">{path.title}</p>
+              <p className="mt-2 text-xs leading-relaxed text-slate-400">{path.description}</p>
+              <div className="mt-4 border-t border-border pt-3 text-[11px] leading-relaxed text-slate-500">
+                <span className="block text-slate-400">Start with {path.firstEntry.title}</span>
+                <span className="mt-1 block">Verify before claiming: {path.verifyBeforeClaiming[0]}</span>
+              </div>
+            </Link>
+          ))}
+        </div>
       </section>
 
       {/* Network stats strip */}

@@ -20,6 +20,7 @@ import { LiveSourceMeta } from '@/components/ui/LiveSourceMeta';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { StatCard } from '@/components/ui/StatCard';
 import { PageContainer } from '@/components/layout/PageContainer';
+import { RelatedChecks, type RelatedCheck } from '@/components/features/RelatedChecks';
 import { useDynamicL1FeeStatus } from '@/lib/hooks/useMidgard';
 import type {
   DynamicL1FeeCurrentAccumulator,
@@ -29,6 +30,7 @@ import type {
   DynamicL1FeeWhitelistState,
   FreshnessMeta as FreshnessMetaType,
   LiveDataResult,
+  NetworkStatusSourceWarning,
   SourceMeta,
 } from '@/lib/types';
 
@@ -61,6 +63,33 @@ const staticFreshness: FreshnessMetaType = {
   confidence: 'curated',
   nextReviewDue: '2026-07-17',
 };
+
+const dynamicFeeRelatedChecks: RelatedCheck[] = [
+  {
+    label: 'Experiment source map',
+    href: '/docs#dynamic-fee-experiment',
+    badge: 'proof boundary',
+    description: 'Check which ADR-026 and THORNode endpoint fields support this page, and which claims remain unproven.',
+  },
+  {
+    label: 'Network diagnostics',
+    href: '/network#network-diagnostics',
+    badge: 'operations',
+    description: 'Confirm whether broader trading, signing, observation, or source warnings affect the live fee readback.',
+  },
+  {
+    label: 'Current source map',
+    href: '/docs#current-protocol-state',
+    badge: 'live evidence',
+    description: 'Separate current THORNode snapshots from durable governance history or long-term revenue conclusions.',
+  },
+  {
+    label: 'Dynamic fee search',
+    href: '/search?q=dynamic%20L1%20fee&filter=task',
+    badge: 'search',
+    description: 'Jump to task results for ADR-026, DYNAMICFEE-WHITELIST, fees_tor, and attribution caveats.',
+  },
+];
 
 function recordKey(thorname: string, pair: string) {
   return `${thorname.toLowerCase()}|${pair}`;
@@ -269,6 +298,58 @@ function whitelistBadge(state: DynamicL1FeeWhitelistState) {
   }
 }
 
+function sourceWarningBadgeVariant(detail: NetworkStatusSourceWarning) {
+  if (detail.severity === 'critical') {
+    return 'danger' as const;
+  }
+  if (detail.severity === 'review') {
+    return 'info' as const;
+  }
+  return 'warning' as const;
+}
+
+function sourceWarningHeadline(status: DynamicL1FeeStatus | undefined) {
+  if (!status || status.sourceWarnings.length === 0) {
+    return undefined;
+  }
+  const firstDetail = status.sourceWarningDetails[0];
+  if (!firstDetail) {
+    return `${status.sourceWarnings.length} source warning${status.sourceWarnings.length === 1 ? '' : 's'} in this snapshot.`;
+  }
+
+  return `${status.sourceWarnings.length} source warning${status.sourceWarnings.length === 1 ? '' : 's'} in this snapshot. First: ${firstDetail.category} / ${firstDetail.message}`;
+}
+
+function DynamicFeeSourceWarnings({ status }: { status: DynamicL1FeeStatus }) {
+  const details = status.sourceWarningDetails;
+  if (details.length === 0) {
+    return null;
+  }
+
+  return (
+    <div>
+      <p className="mb-2 font-semibold text-amber-300">Source warnings</p>
+      <div className="space-y-2">
+        {details.map((detail) => (
+          <div key={`${detail.category}-${detail.message}`} className="rounded-md border border-amber-500/20 bg-amber-500/5 p-3">
+            <div className="mb-2 flex flex-wrap items-center gap-2">
+              <Badge variant={sourceWarningBadgeVariant(detail)}>{detail.severity}</Badge>
+              <Badge variant="default">{detail.category}</Badge>
+              {detail.keys?.map((key) => <Badge key={key} variant="info">{key}</Badge>)}
+            </div>
+            <p className="break-words text-amber-200">{detail.message}</p>
+            <p className="mt-1 break-words text-slate-400">Action: {detail.action}</p>
+          </div>
+        ))}
+      </div>
+      <p className="mt-3 text-[11px] uppercase tracking-wider text-slate-500">Exact warning strings</p>
+      <ul className="mt-1 space-y-1 text-amber-300">
+        {status.sourceWarnings.map((warning) => <li key={warning}>{warning}</li>)}
+      </ul>
+    </div>
+  );
+}
+
 function enabledState(status: DynamicL1FeeStatus | undefined) {
   if (!status) {
     return { value: 'Loading', variant: 'default' as const };
@@ -353,7 +434,7 @@ function LookFirstPanel({
     : 'Loading source trust';
 
   return (
-    <Card className="mb-8">
+    <Card id="dynamic-fees-live" className="mb-8 scroll-mt-24">
       <div className="mb-5 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
         <div>
           <h2 className="text-lg font-semibold">Look Here First</h2>
@@ -869,7 +950,7 @@ function SourceStatusStrip({
           )}
           {status && sourceWarningCount !== undefined && sourceWarningCount > 0 && (
             <p className="mt-2 text-xs text-amber-300">
-              {sourceWarningCount} source warning{sourceWarningCount === 1 ? '' : 's'} in this snapshot. First warning: {status.sourceWarnings[0]}
+              {sourceWarningHeadline(status)}
             </p>
           )}
           {status && (
@@ -938,6 +1019,8 @@ export function DynamicFeesView({
         floorPinnedCount={floorPinnedCount}
         ceilingPinnedCount={ceilingPinnedCount}
       />
+
+      <RelatedChecks checks={dynamicFeeRelatedChecks} className="mb-8" />
 
       <SourceStatusStrip
         result={result}
@@ -1084,12 +1167,7 @@ export function DynamicFeesView({
                 <p><code>/dynamic_l1_fees/&lbrace;thorname&rbrace;</code>: thorname, whitelist_state, pair, dynamic_bps, last_active_epoch, history.epoch, history.volume_tor, history.fees_tor, history.bps_at_close.</p>
               </div>
               {status && sourceWarningCount !== undefined && sourceWarningCount > 0 && (
-                <div>
-                  <p className="mb-1 font-semibold text-amber-300">Source warnings</p>
-                  <ul className="space-y-1 text-amber-300">
-                    {status?.sourceWarnings.map((warning) => <li key={warning}>{warning}</li>)}
-                  </ul>
-                </div>
+                <DynamicFeeSourceWarnings status={status} />
               )}
             </div>
           </details>
