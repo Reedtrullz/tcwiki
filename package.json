@@ -16,6 +16,8 @@
     "test:unit": "vitest run",
     "test:unit:watch": "vitest",
     "test:e2e": "playwright test",
+    "test:e2e:visual": "playwright test tests/smoke.spec.ts -g \"visually safe\"",
+    "test:e2e:csp": "CSP_ENFORCE=1 playwright test tests/smoke.spec.ts -g \"security headers are present|normal page loads do not emit CSP reports\"",
     "generate:search": "node scripts/generate-mdx-search.mjs",
     "check:content": "node scripts/generate-mdx-search.mjs --check && node scripts/check-curated-data.mjs",
     "check:live-snapshot": "node scripts/check-live-chain-snapshot.mjs",

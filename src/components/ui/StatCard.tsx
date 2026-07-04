@@ -6,10 +6,11 @@ interface StatCardProps {
   label: string;
   value: string | number;
   unit?: string;
+  description?: string;
   className?: string;
 }
 
-export function StatCard({ icon, label, value, unit, className }: StatCardProps) {
+export function StatCard({ icon, label, value, unit, description, className }: StatCardProps) {
   return (
     <Card className={className}>
       <div className="flex items-center gap-2 text-accent mb-3">
@@ -20,6 +21,7 @@ export function StatCard({ icon, label, value, unit, className }: StatCardProps)
         {value}
         {unit && <span className="text-sm font-normal text-slate-400 ml-1">{unit}</span>}
       </p>
+      {description && <p className="mt-3 text-xs leading-relaxed text-slate-400">{description}</p>}
     </Card>
   );
 }

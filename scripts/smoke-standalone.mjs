@@ -4,6 +4,7 @@ import { dirname, join } from 'node:path';
 import { setTimeout as wait } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
 import { prepareStandaloneAssets } from './prepare-standalone-assets.mjs';
+import { assertReadinessContract } from './lib/readiness-contract.mjs';
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const serverPath = join(root, '.next/standalone/server.js');
@@ -151,9 +152,7 @@ try {
     (response) => requireReady ? response.status === 200 : response.status === 200 || response.status === 503
   );
   const readyJson = await ready.json();
-  if (!['ready', 'degraded'].includes(readyJson.status) || typeof readyJson.ready !== 'boolean' || !readyJson.version || !readyJson.sources?.midgard || !readyJson.sources?.thornode) {
-    throw new Error(`Unexpected readiness response: ${JSON.stringify(readyJson)}`);
-  }
+  assertReadinessContract(readyJson);
   expectRuntimeMetadata(readyJson);
   expectHeader(ready.headers, 'cache-control', 'no-store');
   if (requireReady && (readyJson.status !== 'ready' || readyJson.ready !== true)) {

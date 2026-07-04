@@ -1534,6 +1534,22 @@ describe('deriveNetworkStatus', () => {
       'L1DYNAMICFEEENABLED is unparseable; dynamic fee enablement is unknown.',
       'Sealed dynamic fee record ss THOR.RUNE|THOR.TCY has no matching DYNAMICFEE-WHITELIST Mimir key.',
     ]);
+    expect(status.sourceWarningDetails).toEqual([
+      expect.objectContaining({
+        severity: 'warning',
+        category: 'mimir-parse',
+        keys: ['DYNAMICFEE-WHITELIST-SYMBIOSIS'],
+      }),
+      expect.objectContaining({
+        severity: 'warning',
+        category: 'mimir-parse',
+        keys: ['L1DYNAMICFEEENABLED'],
+      }),
+      expect.objectContaining({
+        severity: 'warning',
+        category: 'source-shape',
+      }),
+    ]);
   });
 
   it('does not treat unsupported dynamic fee enablement values as enabled', () => {
@@ -1741,6 +1757,13 @@ describe('deriveNetworkStatus', () => {
 
     expect(result.status).toBe('ok');
     expect(result.data?.sourceWarnings).toContain('THORNode latest block timestamp is 1 minute old; dynamic fee state is stale.');
+    expect(result.data?.sourceWarningDetails).toEqual([
+      expect.objectContaining({
+        severity: 'critical',
+        category: 'freshness',
+        message: 'THORNode latest block timestamp is 1 minute old; dynamic fee state is stale.',
+      }),
+    ]);
   });
 
   it('surfaces future dynamic fee snapshot block timestamps as source warnings', async () => {

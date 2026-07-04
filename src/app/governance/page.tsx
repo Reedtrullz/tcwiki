@@ -9,6 +9,9 @@ import { SectionHeader } from '@/components/ui/SectionHeader';
 import { Card } from '@/components/ui/Card';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { FreshnessMeta } from '@/components/ui/FreshnessMeta';
+import { RouteSourcePosture } from '@/components/features/RouteSourcePosture';
+import { RelatedChecks, type RelatedCheck } from '@/components/features/RelatedChecks';
+import { getContentEntry } from '@/lib/content/registry';
 import { createRouteMetadata } from '@/lib/metadata';
 import { recordAnchor } from '@/lib/utils';
 
@@ -17,6 +20,35 @@ export const metadata = createRouteMetadata({
   description: 'Source-backed THORChain governance records, Mimir context, milestones, incident history, recovery tracker, and research.',
   path: '/governance',
 });
+
+const entry = getContentEntry('governance');
+
+const governanceRelatedChecks: RelatedCheck[] = [
+  {
+    label: 'Recovery tracker',
+    href: '/governance#current-recovery',
+    badge: 'current review',
+    description: 'Start with records explicitly tagged as current or needing current recovery review.',
+  },
+  {
+    label: 'Historical Recovery',
+    href: '/deep-dives#deep-dive-path-historical-recovery',
+    badge: 'path',
+    description: 'Read the historical feature, security, and recovery path before summarizing THORFi context.',
+  },
+  {
+    label: 'Network diagnostics',
+    href: '/network#network-diagnostics',
+    badge: 'live state',
+    description: 'Check current halts, signing, and source warnings before extending a dated record to now.',
+  },
+  {
+    label: 'Mimir halt search',
+    href: '/search?q=Mimir%20halt&filter=task',
+    badge: 'task',
+    description: 'Find operational halt guidance and the live diagnostics route from search.',
+  },
+];
 
 function incidentTrackerBadge(status: 'current' | 'needs-review') {
   return status === 'needs-review'
@@ -60,9 +92,28 @@ export default function GovernancePage() {
   return (
     <PageContainer>
       <h1 className="text-3xl font-bold tracking-tight mb-2">Governance & History</h1>
-      <p className="text-slate-400 max-w-3xl mb-12">
+      <p className="text-slate-400 max-w-3xl mb-6">
         ADRs, Mimir context, milestones, incidents, and research. Vote percentages are shown only when source-backed.
       </p>
+      <RouteSourcePosture
+        entry={entry}
+        className="mb-6"
+        useFor={[
+          'Source-backed ADR, Mimir, incident, milestone, and recovery-history context.',
+          'Dated incident and governance records with explicit current-review labels.',
+        ]}
+        verifyBeforeClaiming={[
+          'Current node consensus, live Mimir values, active recovery status, or final governance outcome.',
+          'That a historical incident record proves present-day network safety or solvency.',
+        ]}
+      />
+      <RelatedChecks
+        checks={governanceRelatedChecks}
+        className="mb-12"
+        title="Continue From Here"
+        description="Move from dated governance and incident records into current diagnostics, recovery review, or the historical recovery path before making present-tense claims."
+        badgeLabel="claim path"
+      />
 
       <section id="current-recovery" className="scroll-mt-24 mb-12">
         <SectionHeader>Current Incident & Recovery Tracker</SectionHeader>

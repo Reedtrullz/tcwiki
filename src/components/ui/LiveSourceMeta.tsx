@@ -1,5 +1,6 @@
 import { LiveDataResult, MidgardHealth, SourceHealthSeverity } from '@/lib/types';
 import { Badge } from '@/components/ui/Badge';
+import { liveResultHasSourceWarnings } from '@/lib/live-result';
 
 interface LiveSourceMetaProps {
   result?: LiveDataResult<unknown>;
@@ -39,7 +40,7 @@ function sourceBadge(result: LiveDataResult<unknown>, health: MidgardHealth | un
   if (healthUnavailable || health?.severity === 'degraded') {
     return { label: 'Source degraded', variant: 'danger' as const };
   }
-  if (health?.severity === 'warning' || health?.severity === 'unknown') {
+  if (liveResultHasSourceWarnings(result) || health?.severity === 'warning' || health?.severity === 'unknown') {
     return { label: 'Source warning', variant: 'warning' as const };
   }
   return { label: 'Current-only', variant: 'success' as const };

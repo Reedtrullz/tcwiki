@@ -78,6 +78,7 @@ const status: DynamicL1FeeStatus = {
     snapshotPinned: true,
   },
   sourceWarnings: [],
+  sourceWarningDetails: [],
   caveats: ['current-only', 'adr-experiment', 'not-historical-fee-proof'],
 };
 
@@ -152,13 +153,22 @@ describe('DynamicFeesView', () => {
       sourceWarnings: [
         'Current dynamic fee entry symbiosis BTC.BTC|THOR.RUNE exists without a sealed dynamic_l1_fees record.',
       ],
+      sourceWarningDetails: [
+        {
+          severity: 'warning',
+          category: 'source-shape',
+          message: 'Current dynamic fee entry symbiosis BTC.BTC|THOR.RUNE exists without a sealed dynamic_l1_fees record.',
+          action: 'Treat the affected dynamic-fee record, history, or current accumulator as partial until THORNode returns consistent fields.',
+        },
+      ],
     };
     const html = renderToStaticMarkup(<DynamicFeesView result={{ ...liveResult, data: warnedStatus }} status={warnedStatus} />);
 
     expect(html).toContain('Source warnings');
     expect(html).toContain('Source warnings 1');
-    expect(html).toContain('First warning: Current dynamic fee entry symbiosis BTC.BTC|THOR.RUNE exists without a sealed dynamic_l1_fees record.');
+    expect(html).toContain('First: source-shape / Current dynamic fee entry symbiosis BTC.BTC|THOR.RUNE exists without a sealed dynamic_l1_fees record.');
     expect(html).toContain('exists without a sealed dynamic_l1_fees record');
+    expect(html).toContain('Action: Treat the affected dynamic-fee record, history, or current accumulator as partial until THORNode returns consistent fields.');
     expect(html).toContain('/dynamic_l1_fees_current');
   });
 
@@ -177,6 +187,14 @@ describe('DynamicFeesView', () => {
       ],
       sourceWarnings: [
         'Current dynamic fee entry symbiosis BTC.BTC|THOR.RUNE exists without a sealed dynamic_l1_fees record.',
+      ],
+      sourceWarningDetails: [
+        {
+          severity: 'warning',
+          category: 'source-shape',
+          message: 'Current dynamic fee entry symbiosis BTC.BTC|THOR.RUNE exists without a sealed dynamic_l1_fees record.',
+          action: 'Treat the affected dynamic-fee record, history, or current accumulator as partial until THORNode returns consistent fields.',
+        },
       ],
     };
     const html = renderToStaticMarkup(<DynamicFeesView result={{ ...liveResult, data: pendingStatus }} status={pendingStatus} />);

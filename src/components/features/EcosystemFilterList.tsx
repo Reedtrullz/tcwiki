@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import Link from 'next/link';
 import type { Chain, EcosystemProject, SourcedRecord } from '@/lib/types';
 import { Badge } from '@/components/ui/Badge';
 import { FreshnessMeta } from '@/components/ui/FreshnessMeta';
@@ -86,11 +87,25 @@ export function EcosystemFilterList({ projectRecords, chainRecords }: EcosystemF
               <div className="flex items-center justify-between gap-3 mb-1">
                 <h3 className="text-sm font-medium">{project.name}</h3>
                 <div className="flex flex-wrap justify-end gap-1">
-                  <Badge variant="success">{project.status}</Badge>
+                  <Badge variant="info">Listed {project.status}</Badge>
                   <Badge variant={getConfidenceTone(record.freshness.confidence)}>{getConfidenceLabel(record.freshness.confidence)}</Badge>
                 </div>
               </div>
               <p className="text-xs text-slate-400 leading-relaxed mb-3">{project.description}</p>
+              <div className="mb-3 grid gap-3 border-t border-border pt-3 md:grid-cols-2">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-emerald-300">Use for</p>
+                  <ul className="mt-1 list-disc space-y-1 pl-4 text-xs leading-relaxed text-slate-400">
+                    {project.useFor.map((item) => <li key={item}>{item}</li>)}
+                  </ul>
+                </div>
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-wider text-amber-300">Check before use</p>
+                  <ul className="mt-1 list-disc space-y-1 pl-4 text-xs leading-relaxed text-slate-400">
+                    {project.verifyBeforeUse.map((item) => <li key={item}>{item}</li>)}
+                  </ul>
+                </div>
+              </div>
               <div className="flex flex-wrap gap-1 mb-3">
                 {project.chains.slice(0, 8).map((chainCode) => (
                   <span key={chainCode} className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">{chainCode}</span>
@@ -106,6 +121,12 @@ export function EcosystemFilterList({ projectRecords, chainRecords }: EcosystemF
                 >
                   Open project
                 </a>
+                <Link href="/network#network-diagnostics" className="text-xs text-slate-400 transition-colors hover:text-slate-200">
+                  Live status
+                </Link>
+                <Link href="/docs#third-party-interfaces-wallets" className="text-xs text-slate-400 transition-colors hover:text-slate-200">
+                  Source map
+                </Link>
                 <FreshnessMeta freshness={record.freshness} sources={record.sources} compact />
               </div>
             </div>
@@ -114,7 +135,14 @@ export function EcosystemFilterList({ projectRecords, chainRecords }: EcosystemF
       </div>
 
       <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4 mt-12">Curated Chain List ({chainRecords.length})</h2>
-      <p className="text-sm text-slate-400 mb-4">Use this list as a source-backed index, not as proof that swaps or LP actions are currently open.</p>
+      <p className="text-sm text-slate-400 mb-4">
+        Use this list as a source-backed index, not as proof that swaps or LP actions are currently open.
+        {' '}
+        <Link href="/network#network-diagnostics" className="text-accent transition-colors hover:text-accent/80">
+          Check live diagnostics
+        </Link>
+        {' '}for current availability.
+      </p>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
         {chainRecords.map((record) => {
           const chainData = record.data;
@@ -122,6 +150,9 @@ export function EcosystemFilterList({ projectRecords, chainRecords }: EcosystemF
             <div key={chainData.chain} className="p-3 rounded-lg bg-surface-elevated border border-border text-center">
               <p className="text-sm font-medium">{chainData.name}</p>
               <p className="text-[11px] text-slate-400 font-mono">{chainData.chain}</p>
+              {chainData.statusNote && (
+                <p className="mt-2 text-[11px] leading-relaxed text-slate-400">{chainData.statusNote}</p>
+              )}
               <FreshnessMeta freshness={record.freshness} sources={record.sources} compact />
             </div>
           );

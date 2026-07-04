@@ -28,6 +28,38 @@ const networkHaltsSource: SourceMeta = {
   url: 'https://dev.thorchain.org/concepts/network-halts.html',
 };
 
+const queryingThorchainSource: SourceMeta = {
+  label: 'Querying THORChain',
+  url: 'https://dev.thorchain.org/concepts/querying-thorchain.html',
+};
+
+const feesSource: SourceMeta = {
+  label: 'Fees',
+  url: 'https://dev.thorchain.org/concepts/fees.html',
+};
+
+const adr026DynamicFeesSource: SourceMeta = {
+  label: 'ADR-026 dynamic L1 fee model',
+  url: 'https://gitlab.com/thorchain/thornode/-/raw/develop/docs/architecture/adr-026-dynamic-l1-min-fee-per-thorname.md',
+  notes: 'Architecture decision text; compare with live THORNode state before making current claims.',
+};
+
+const assetNotationSource: SourceMeta = {
+  label: 'Asset Notation',
+  url: 'https://dev.thorchain.org/concepts/asset-notation.html',
+};
+
+const cosmwasmSource: SourceMeta = {
+  label: 'CosmWasm',
+  url: 'https://docs.thorchain.org/technical-documentation/technology/cosmwasm',
+};
+
+const exploitReport2Source: SourceMeta = {
+  label: 'THORChain Exploit Report 2',
+  url: 'https://blog.thorchain.org/thorchain-exploit-report-2',
+  retrievedAt: '2026-07-04',
+};
+
 const archivedSource: SourceMeta = {
   label: 'Archived Savers and Lending docs',
   url: 'https://docs.thorchain.org/thornodes/archived',
@@ -90,6 +122,83 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     relatedHrefs: ['/network', '/governance'],
   },
   {
+    id: slugifyFragment('Mimir override'),
+    term: 'Mimir override',
+    definition: 'A live operational value that can override a protocol default or constant. Current behavior should be checked against both constants and Mimir.',
+    category: 'operations',
+    confidence: 'official',
+    reviewedAt: '2026-07-04',
+    nextReviewDue: '2026-08-04',
+    sources: [networkHaltsSource, queryingThorchainSource],
+    relatedHrefs: ['/protocol', '/network#network-diagnostics'],
+  },
+  {
+    id: slugifyFragment('Inbound address'),
+    term: 'Inbound address',
+    definition: 'A current THORNode-provided address, router, gas-rate, and pause-state record for a supported external chain. Treat it as live availability evidence only.',
+    category: 'operations',
+    confidence: 'official',
+    reviewedAt: '2026-07-04',
+    nextReviewDue: '2026-08-04',
+    sources: [queryingThorchainSource, devDocsSource],
+    relatedHrefs: ['/protocol', '/docs#current-protocol-state'],
+  },
+  {
+    id: slugifyFragment('Memo'),
+    term: 'Memo',
+    definition: 'The transaction instruction string used by THORChain actions such as swaps, LP operations, refunds, affiliates, and other protocol messages.',
+    category: 'developer',
+    confidence: 'curated',
+    reviewedAt: '2026-07-04',
+    nextReviewDue: '2026-08-04',
+    sources: [devDocsSource, queryingThorchainSource],
+    relatedHrefs: ['/protocol', '/docs#developer-integration'],
+  },
+  {
+    id: slugifyFragment('Outbound fee'),
+    term: 'Outbound fee',
+    definition: 'A fee component associated with the outbound transaction and chain gas. Exact values are live protocol data, not static wiki constants.',
+    category: 'economics',
+    confidence: 'curated',
+    reviewedAt: '2026-07-04',
+    nextReviewDue: '2026-08-04',
+    sources: [feesSource],
+    relatedHrefs: ['/economics', '/stats#stats-look-here-first'],
+  },
+  {
+    id: slugifyFragment('Affiliate fee'),
+    term: 'Affiliate fee',
+    definition: 'An optional memo-defined interface or affiliate fee, usually expressed in basis points. It is distinct from protocol liquidity and gas-related fees.',
+    category: 'economics',
+    confidence: 'curated',
+    reviewedAt: '2026-07-04',
+    nextReviewDue: '2026-08-04',
+    sources: [feesSource],
+    relatedHrefs: ['/economics', '/dynamic-fees#dynamic-fees-live'],
+  },
+  {
+    id: slugifyFragment('Dynamic L1 fee'),
+    term: 'Dynamic L1 fee',
+    definition: 'ADR-026 experiment terminology for per-thorname, per-pair L1 minimum slip floors adjusted by TOR-denominated fee evidence. Live state is current-only THORNode evidence.',
+    category: 'economics',
+    confidence: 'curated',
+    reviewedAt: '2026-07-04',
+    nextReviewDue: '2026-08-04',
+    sources: [adr026DynamicFeesSource],
+    relatedHrefs: ['/dynamic-fees#dynamic-fees-live', '/docs#dynamic-fee-experiment'],
+  },
+  {
+    id: slugifyFragment('Protocol-owned liquidity'),
+    term: 'Protocol-owned liquidity',
+    definition: 'Liquidity controlled by the protocol rather than ordinary external LPs. Balances, exposure, and enabled state should be described with current source labels.',
+    category: 'economics',
+    confidence: 'curated',
+    reviewedAt: '2026-07-04',
+    nextReviewDue: '2026-08-04',
+    sources: [docsSource],
+    relatedHrefs: ['/economics', '/stats#stats-look-here-first'],
+  },
+  {
     id: slugifyFragment('RUNEPool'),
     term: 'RUNEPool',
     definition: 'A RUNE-only participation mechanism whose availability depends on current protocol controls and should not be assumed from static text.',
@@ -99,6 +208,50 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     nextReviewDue: '2026-08-02',
     sources: [docsSource, networkHaltsSource],
     relatedHrefs: ['/rune', '/network'],
+  },
+  {
+    id: slugifyFragment('Secured asset'),
+    term: 'Secured asset',
+    definition: 'A THORChain asset/accounting concept whose deposits, withdrawals, and enablement can depend on specific Mimir controls. Do not infer availability from static descriptions.',
+    category: 'protocol',
+    confidence: 'curated',
+    reviewedAt: '2026-07-04',
+    nextReviewDue: '2026-08-04',
+    sources: [assetNotationSource, networkHaltsSource],
+    relatedHrefs: ['/economics', '/network#network-diagnostics'],
+  },
+  {
+    id: slugifyFragment('Trade asset'),
+    term: 'Trade asset',
+    definition: 'A protocol accounting asset used for trade-account flows. Enablement and deposit availability are live controls, not durable glossary facts.',
+    category: 'protocol',
+    confidence: 'curated',
+    reviewedAt: '2026-07-04',
+    nextReviewDue: '2026-08-04',
+    sources: [assetNotationSource, networkHaltsSource],
+    relatedHrefs: ['/economics', '/network#network-diagnostics'],
+  },
+  {
+    id: slugifyFragment('App Layer'),
+    term: 'App Layer',
+    definition: 'THORChain application-layer functionality built around permissioned CosmWasm contracts and related Mimir-controlled deployer, checksum, and contract controls.',
+    category: 'developer',
+    confidence: 'curated',
+    reviewedAt: '2026-07-04',
+    nextReviewDue: '2026-08-04',
+    sources: [cosmwasmSource, networkHaltsSource],
+    relatedHrefs: ['/protocol', '/network#network-diagnostics'],
+  },
+  {
+    id: slugifyFragment('CosmWasm'),
+    term: 'CosmWasm',
+    definition: 'Smart-contract technology used for THORChain app-layer functionality. Current deployer, checksum, contract, or global halt state must be read from live controls.',
+    category: 'developer',
+    confidence: 'curated',
+    reviewedAt: '2026-07-04',
+    nextReviewDue: '2026-08-04',
+    sources: [cosmwasmSource, networkHaltsSource],
+    relatedHrefs: ['/protocol', '/docs#official-protocol-documentation'],
   },
   {
     id: slugifyFragment('Savers'),
@@ -121,6 +274,28 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     nextReviewDue: '2026-07-16',
     sources: [docsSource, archivedSource],
     relatedHrefs: ['/tcy', '/governance'],
+  },
+  {
+    id: slugifyFragment('GG20'),
+    term: 'GG20',
+    definition: 'A threshold-signature implementation family referenced in THORChain security history. Dated exploit and upgrade sources should not be treated as present-day safety proof by themselves.',
+    category: 'history',
+    confidence: 'curated',
+    reviewedAt: '2026-07-04',
+    nextReviewDue: '2026-08-04',
+    sources: [exploitReport2Source],
+    relatedHrefs: ['/deep-dives/tss', '/governance#current-recovery'],
+  },
+  {
+    id: slugifyFragment('KeyVerify'),
+    term: 'KeyVerify',
+    definition: 'A TSS-related verification concept discussed in THORChain security material. Use dated incident and protocol-upgrade sources before making current security claims.',
+    category: 'history',
+    confidence: 'curated',
+    reviewedAt: '2026-07-04',
+    nextReviewDue: '2026-08-04',
+    sources: [exploitReport2Source],
+    relatedHrefs: ['/deep-dives/tss', '/governance#current-recovery'],
   },
   {
     id: slugifyFragment('TSS'),

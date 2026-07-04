@@ -4,10 +4,60 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { Activity, TrendingUp, TrendingDown, Zap } from 'lucide-react';
 import { useNetworkData, useEarningsHistory, useNetworkStatus, useMidgardHealth } from '@/lib/hooks/useMidgard';
 import { NetworkStatusBanner } from '@/components/features/NetworkStatusBanner';
-import { PageContainer } from '@/components/layout/PageContainer';
 import { StatCard } from '@/components/ui/StatCard';
 import { LiveSourceMeta } from '@/components/ui/LiveSourceMeta';
-import { formatPercent, formatRuneFromBaseUnits, normalizeApyToPercent, runeBaseUnitsToNumber } from '@/lib/trust';
+import { Badge } from '@/components/ui/Badge';
+import { runeBaseUnitsToNumber } from '@/lib/trust';
+import { deriveStatsDecisionFacts, deriveStatsMetricCards, type StatsDecisionFact, type StatsMetricCard } from '@/lib/stats-dashboard';
+import { RelatedChecks, type RelatedCheck } from '@/components/features/RelatedChecks';
+
+const statsRelatedChecks: RelatedCheck[] = [
+  {
+    label: 'Source map',
+    href: '/docs#current-protocol-state',
+    badge: 'proof boundary',
+    description: 'Check what Midgard and THORNode snapshots can support before making a current-state claim.',
+  },
+  {
+    label: 'Network diagnostics',
+    href: '/network#network-diagnostics',
+    badge: 'operations',
+    description: 'Paused trading, signing, observation, or LP controls can decide whether loaded metrics are actionable.',
+  },
+  {
+    label: 'Dynamic fees',
+    href: '/dynamic-fees#dynamic-fees-live',
+    badge: 'fees',
+    description: 'Use the ADR-026 tracker when fee questions are about partner-pair floors rather than ordinary earnings.',
+  },
+  {
+    label: 'Build/query path',
+    href: '/search?q=Midgard%20API&filter=task',
+    badge: 'search',
+    description: 'Jump to the task guide for using Midgard, THORNode, inbound-address, and Mimir endpoint data.',
+  },
+];
+
+function toneToBadgeVariant(tone: StatsDecisionFact['tone']) {
+  return tone === 'success' ? 'success' : tone === 'danger' ? 'danger' : tone === 'warning' ? 'warning' : 'info';
+}
+
+function formatRuneMetric(value: number | null) {
+  return value === null ? 'Unavailable' : value.toLocaleString(undefined, { maximumFractionDigits: 0 });
+}
+
+function metricIcon(id: StatsMetricCard['id']) {
+  switch (id) {
+    case 'pooledRune':
+      return <Activity className="h-4 w-4" />;
+    case 'bondingApy':
+      return <TrendingUp className="h-4 w-4" />;
+    case 'activeNodes':
+      return <Zap className="h-4 w-4" />;
+    case 'reserveRune':
+      return <TrendingDown className="h-4 w-4" />;
+  }
+}
 
 export default function StatsPage() {
   const {
@@ -27,24 +77,11 @@ export default function StatsPage() {
   const { result: midgardHealthResult } = useMidgardHealth();
   const { result: statusResult, isLoading: statusLoading } = useNetworkStatus();
 
-  const isLoading = networkLoading || earningsLoading;
-  const networkHasError = networkError || networkDegraded || !networkData;
-  const earningsHasError = earningsError || earningsDegraded;
+  const networkHasError = !networkLoading && (networkError || networkDegraded || !networkData);
+  const earningsHasError = !earningsLoading && (earningsError || earningsDegraded);
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center pt-[52px]">
-        <div role="status" aria-live="polite" className="flex flex-col items-center gap-3 text-sm text-slate-400">
-          <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-accent" aria-hidden="true"></div>
-          <span>Loading live network statistics...</span>
-        </div>
-      </div>
-    );
-  }
-
-  const runePooled = networkData ? formatRuneFromBaseUnits(networkData.totalPooledRune) : 'Unavailable';
-  const bondingApy = networkData ? formatPercent(normalizeApyToPercent(networkData.bondingAPY, 'decimal')) : 'Unavailable';
-  const reserveRune = networkData ? formatRuneFromBaseUnits(networkData.totalReserve) : 'Unavailable';
+  const networkFallbackValue = networkLoading ? 'Loading' : 'Unavailable';
+  const metricCards = deriveStatsMetricCards(networkData, networkFallbackValue);
   const earningsChart = (earningsData || []).map(d => ({
     name: new Date(parseInt(d.startTime) * 1000).toLocaleDateString(),
     earnings: runeBaseUnitsToNumber(d.earnings),
@@ -52,34 +89,70 @@ export default function StatsPage() {
     lps: runeBaseUnitsToNumber(d.liquidityEarnings),
   })).reverse();
   const availableIntervals = earningsChart.filter((row) => row.earnings !== null).length;
-  const earningsSummary = earningsChart.length > 0
-    ? `Showing ${earningsChart.length} Midgard daily earnings intervals; ${availableIntervals} include a valid total earnings value.`
-    : 'No Midgard daily earnings intervals are available.';
+  const earningsSummary = earningsLoading && earningsChart.length === 0
+    ? 'Loading Midgard daily earnings intervals...'
+    : earningsChart.length > 0
+      ? `Showing ${earningsChart.length} Midgard daily earnings intervals; ${availableIntervals} include a valid total earnings value.`
+      : 'No Midgard daily earnings intervals are available.';
+  const unavailableIntervals = Math.max(0, earningsChart.length - availableIntervals);
+  const totalEarnings = earningsChart.reduce<number | null>((sum, row) => (
+    row.earnings === null ? sum : (sum ?? 0) + row.earnings
+  ), null);
+  const recentSevenEarnings = earningsChart.slice(-7).reduce<number | null>((sum, row) => (
+    row.earnings === null ? sum : (sum ?? 0) + row.earnings
+  ), null);
+  const decisionFacts = deriveStatsDecisionFacts({
+    networkLoading,
+    earningsLoading,
+    networkResult,
+    earningsResult,
+    midgardHealthResult,
+    statusResult,
+    earningsIntervals: earningsChart.length,
+    earningsIntervalsWithValues: availableIntervals,
+  });
 
   return (
-    <PageContainer>
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight mb-2">Network Statistics</h1>
-        <p className="text-slate-400 max-w-3xl">Current-only THORChain metrics from Midgard and THORNode. Unavailable upstream data is shown as degraded, not zero.</p>
-        {(networkHasError || earningsHasError) && (
-          <div className="mt-4 p-4 bg-amber-500/10 border border-amber-500/20 rounded-lg text-sm text-amber-400">
-            Live data is degraded. {networkError || earningsError || 'One or more sources did not respond.'}
-          </div>
-        )}
-      </div>
+    <>
+      {(networkHasError || earningsHasError) && (
+        <div className="mb-8 p-4 bg-amber-500/10 border border-amber-500/20 rounded-lg text-sm text-amber-400">
+          Live data is degraded. {networkError || earningsError || 'One or more sources did not respond.'}
+        </div>
+      )}
+
+      <section id="stats-look-here-first" className="mb-8 scroll-mt-24">
+        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-slate-400">Look Here First</h2>
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          {decisionFacts.map((fact) => (
+            <div key={fact.label} className="rounded-lg border border-border bg-surface-elevated p-4">
+              <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">{fact.label}</p>
+                <Badge variant={toneToBadgeVariant(fact.tone)}>{fact.value}</Badge>
+              </div>
+              <p className="text-xs leading-relaxed text-slate-400">{fact.detail}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <RelatedChecks checks={statsRelatedChecks} className="mb-8" />
 
       <div className="mb-8">
         <NetworkStatusBanner result={statusResult} isLoading={statusLoading} variant="compact" />
       </div>
 
-      {!networkHasError && networkData && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-12">
-          <StatCard icon={<Activity className="h-4 w-4" />} label="Pooled RUNE" value={runePooled} unit="RUNE" />
-          <StatCard icon={<TrendingUp className="h-4 w-4" />} label="Bonding APY" value={bondingApy} />
-          <StatCard icon={<Zap className="h-4 w-4" />} label="Active Nodes" value={networkData.activeNodeCount} />
-          <StatCard icon={<TrendingDown className="h-4 w-4" />} label="Reserve RUNE" value={reserveRune} unit="RUNE" />
-        </div>
-      )}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-12">
+        {metricCards.map((metric) => (
+          <StatCard
+            key={metric.id}
+            icon={metricIcon(metric.id)}
+            label={metric.label}
+            value={metric.value}
+            unit={metric.unit}
+            description={metric.description}
+          />
+        ))}
+      </div>
       <div className="mb-12">
         <LiveSourceMeta result={networkResult} healthResult={midgardHealthResult} />
       </div>
@@ -89,11 +162,36 @@ export default function StatsPage() {
         <p id="earnings-history-summary" className="mb-3 text-sm text-slate-400">
           {earningsSummary}
         </p>
+        <div className="mb-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="rounded-md border border-border bg-surface-elevated px-3 py-2">
+            <p className="text-[11px] uppercase tracking-wider text-slate-400">Usable intervals</p>
+            <p className="mt-1 text-sm font-semibold text-slate-200">{availableIntervals}/{earningsChart.length}</p>
+          </div>
+          <div className="rounded-md border border-border bg-surface-elevated px-3 py-2">
+            <p className="text-[11px] uppercase tracking-wider text-slate-400">Unavailable intervals</p>
+            <p className="mt-1 text-sm font-semibold text-slate-200">{earningsLoading && earningsChart.length === 0 ? 'Loading' : unavailableIntervals}</p>
+          </div>
+          <div className="rounded-md border border-border bg-surface-elevated px-3 py-2">
+            <p className="text-[11px] uppercase tracking-wider text-slate-400">Last 7 valid days</p>
+            <p className="mt-1 text-sm font-semibold text-slate-200">{formatRuneMetric(recentSevenEarnings)} RUNE</p>
+          </div>
+          <div className="rounded-md border border-border bg-surface-elevated px-3 py-2">
+            <p className="text-[11px] uppercase tracking-wider text-slate-400">30-day valid total</p>
+            <p className="mt-1 text-sm font-semibold text-slate-200">{formatRuneMetric(totalEarnings)} RUNE</p>
+          </div>
+        </div>
+        <p className="mb-3 text-xs leading-relaxed text-slate-400">
+          Earnings history is a Midgard-sourced current readback of available intervals. Use it to inspect recent distribution shape, not as durable revenue proof or protocol-attribution proof.
+        </p>
         <div className="mb-3">
           <LiveSourceMeta result={earningsResult} healthResult={midgardHealthResult} />
         </div>
         <div className="bg-surface-elevated border border-border rounded-lg p-6" aria-describedby="earnings-history-summary">
-          {earningsChart.length > 0 ? (
+          {earningsLoading && earningsChart.length === 0 ? (
+            <div role="status" aria-live="polite" className="flex min-h-[240px] items-center justify-center text-sm text-slate-400">
+              Loading earnings history from Midgard...
+            </div>
+          ) : earningsChart.length > 0 ? (
             <>
               <ResponsiveContainer width="100%" height={400}>
                 <LineChart data={earningsChart}>
@@ -136,6 +234,6 @@ export default function StatsPage() {
           )}
         </div>
       </div>
-    </PageContainer>
+    </>
   );
 }

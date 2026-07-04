@@ -223,17 +223,46 @@ const redditSource: SourceMeta = {
   url: 'https://reddit.com/r/THORChain',
 };
 
-const checkedFreshness = (confidence: DataConfidence, nextReviewDue = '2026-07-18'): FreshnessMeta => ({
-  checkedAt: STATIC_DATA_LAST_UPDATED,
-  confidence,
-  nextReviewDue,
-});
+interface StaticRecordFreshnessOptions {
+  checkedAt?: string;
+  nextReviewDue?: string;
+  reviewedBy?: string;
+}
+
+const checkedFreshness = (
+  confidence: DataConfidence,
+  nextReviewDue = '2026-07-18',
+  checkedAt = STATIC_DATA_LAST_UPDATED,
+  reviewedBy?: string
+): FreshnessMeta => {
+  const freshness: FreshnessMeta = {
+    checkedAt,
+    confidence,
+    nextReviewDue,
+  };
+
+  if (reviewedBy) {
+    freshness.reviewedBy = reviewedBy;
+  }
+
+  return freshness;
+};
 
 const record = <T>(
   data: T,
   sources: SourceMeta[],
-  confidence: DataConfidence = 'curated'
-): SourcedRecord<T> => withFreshness(data, sources, checkedFreshness(confidence));
+  confidence: DataConfidence = 'curated',
+  freshnessOptions: StaticRecordFreshnessOptions = {}
+): SourcedRecord<T> => withFreshness(
+  data,
+  sources,
+  checkedFreshness(
+    confidence,
+    freshnessOptions.nextReviewDue,
+    freshnessOptions.checkedAt,
+    freshnessOptions.reviewedBy
+  )
+);
 
 export const CHAIN_RECORDS: SourcedRecord<Chain>[] = [
   record({
@@ -337,43 +366,139 @@ export const SOURCE_MAP_SECTION_RECORDS: SourcedRecord<SourceMapSection>[] = [
   record({
     id: 'current-protocol-state',
     title: 'Current Protocol State',
+    decision: 'Is a protocol feature, chain, pool, or halt state available right now?',
     use: 'Use these for source-backed current state, live availability, halt flags, pool metrics, and operational checks.',
     caveat: 'Live API responses are current-only snapshots. A successful response is not durable historical proof.',
+    claimExamples: [
+      'Current halt, pause, signing, LP, TCY, trade-account, secured-asset, or chain-observation state.',
+      'Current inbound address, router, gas-rate, pool, node, bond, reserve, or earnings snapshot.',
+      'Whether a rendered live metric is available, unavailable, degraded, or warning-backed at check time.',
+    ],
+    nonClaims: [
+      'Durable historical uptime or availability.',
+      'Protocol design intent or governance approval.',
+      'Revenue lift, safety, or route quality beyond the checked snapshot.',
+    ],
     links: [thornodeMimirSource, liveInboundSource, midgardHealthSource, midgardNetworkSource],
   }, [thornodeMimirSource, liveInboundSource, midgardHealthSource, midgardNetworkSource], 'official'),
   record({
     id: 'runtime-live-data-failover',
     title: 'Runtime Live-Data Failover',
+    decision: 'Which live provider backed the value this wiki is showing?',
     use: 'Use these to understand the providers this wiki tries before it renders Midgard or THORNode status.',
     caveat: 'The app validates response shape before trusting a provider. Visible source labels identify the selected source for that snapshot.',
+    claimExamples: [
+      'Selected Midgard or THORNode provider for a rendered value.',
+      'Provider health, sync, lag, source-warning, and degraded-source posture.',
+      'Whether the app failed over instead of mixing data across providers.',
+    ],
+    nonClaims: [
+      'That every upstream provider agrees.',
+      'That a clean provider response proves historical correctness.',
+      'That degraded readiness is a deploy failure when warnings are intentionally conservative.',
+    ],
     links: [liquifyMidgardHealthSource, midgardHealthSource, liquifyThornodeVersionSource, thornodeVersionSource],
-  }, [liquifyMidgardHealthSource, midgardHealthSource, liquifyThornodeVersionSource, thornodeVersionSource], 'curated'),
+  }, [liquifyMidgardHealthSource, midgardHealthSource, liquifyThornodeVersionSource, thornodeVersionSource], 'curated', {
+    checkedAt: '2026-07-04',
+    nextReviewDue: '2026-08-04',
+  }),
   record({
     id: 'developer-integration',
     title: 'Developer Integration',
+    decision: 'How should an app or integration talk to THORChain?',
     use: 'Use these for integration behavior, API concepts, asset notation, fees, memos, and querying guidance.',
     caveat: 'Developer docs explain intended interfaces; still check live endpoints for current halts, fees, and chain availability.',
+    claimExamples: [
+      'Memo, asset notation, fee, quote, and API-query concepts.',
+      'Developer-facing behavior for swaps, affiliates, and current endpoint shapes.',
+      'Which source should be used before implementing or documenting integration behavior.',
+    ],
+    nonClaims: [
+      'That a feature is live and unpaused right now.',
+      'That every third-party interface implements the behavior safely.',
+      'That static docs supersede current THORNode halt or Mimir state.',
+    ],
     links: [developerDocs, queryingThorchainSource, feesSource, assetNotationSource],
-  }, [developerDocs, queryingThorchainSource, feesSource, assetNotationSource], 'official'),
+  }, [developerDocs, queryingThorchainSource, feesSource, assetNotationSource], 'official', {
+    checkedAt: '2026-07-04',
+    nextReviewDue: '2026-08-04',
+  }),
+  record({
+    id: 'third-party-interfaces-wallets',
+    title: 'Third-Party Interfaces And Wallets',
+    decision: 'Can I treat an ecosystem listing as safe, live, or endorsed?',
+    use: 'Use these sources to identify known interfaces, wallets, explorers, and developer tools, then pair them with live THORNode checks before assuming protocol availability.',
+    caveat: 'Ecosystem references are not wallet-security audits, URL-integrity guarantees, app-uptime monitors, quote-quality proof, compliance-policy proof, or endorsements.',
+    claimExamples: [
+      'That a project is a source-listed ecosystem reference as of the wiki review date.',
+      'Which chains, category, and source labels this wiki associates with a project.',
+      'Which live protocol checks should be reviewed before using a transaction surface.',
+    ],
+    nonClaims: [
+      'Wallet safety, download integrity, app uptime, quote quality, or transaction suitability.',
+      'Official endorsement of a third-party interface or wallet.',
+      'That a listed interface has implemented current protocol behavior correctly.',
+    ],
+    links: [ecosystemSource, developerDocs, liveInboundSource, networkHaltsSource],
+  }, [ecosystemSource, developerDocs, liveInboundSource, networkHaltsSource], 'curated', {
+    checkedAt: '2026-07-04',
+    nextReviewDue: '2026-08-04',
+  }),
   record({
     id: 'dynamic-fee-experiment',
     title: 'Dynamic Fee Experiment',
+    decision: 'What can ADR-026 and live dynamic-fee endpoints actually prove?',
     use: 'Use these for ADR-026 design context, live dynamic L1 fee Mimirs, sealed records, and current-epoch accumulators.',
     caveat: 'ADR text is design/governance context. THORNode endpoints are current-only snapshots and do not prove durable revenue lift, route competitiveness, or partner attribution quality.',
+    claimExamples: [
+      'ADR-026 design intent, whitelist states, pair scope, and controller mechanics.',
+      'Current dynamic-fee Mimirs, sealed records, and current-epoch accumulators exposed by THORNode.',
+      'Whether the dashboard has samples, warnings, or insufficient evidence for a particular pair.',
+    ],
+    nonClaims: [
+      'Durable revenue lift or route competitiveness.',
+      'Partner attribution quality or off-chain affiliate correctness.',
+      'A final governance outcome beyond the dated ADR and current THORNode state.',
+    ],
     links: [adr026DynamicFeesSource, thornodeMimirSource, dynamicL1FeesSource, dynamicL1FeesCurrentSource, thornameGuideSource, feesSource],
-  }, [adr026DynamicFeesSource, thornodeMimirSource, dynamicL1FeesSource, dynamicL1FeesCurrentSource, thornameGuideSource, feesSource], 'curated'),
+  }, [adr026DynamicFeesSource, thornodeMimirSource, dynamicL1FeesSource, dynamicL1FeesCurrentSource, thornameGuideSource, feesSource], 'curated', {
+    checkedAt: '2026-07-04',
+    nextReviewDue: '2026-08-04',
+  }),
   record({
     id: 'official-protocol-documentation',
     title: 'Official Protocol Documentation',
+    decision: 'Is this a high-level protocol or tokenomics claim?',
     use: 'Use for high-level protocol architecture, tokenomics, node concepts, RUNE, TCY, and canonical educational context.',
     caveat: 'Static docs can lag live protocol state. Prefer dated language when describing fast-moving operational controls.',
+    claimExamples: [
+      'Protocol architecture, tokenomics framing, node concepts, and educational mechanism summaries.',
+      'Officially documented halt key families, RUNE/TCY framing, and app-layer concepts.',
+      'Canonical background for pages that also expose current-only live checks.',
+    ],
+    nonClaims: [
+      'Exact current Mimir values, constants, pool state, or chain availability.',
+      'Post-incident operational safety unless the source is a dated incident or upgrade report.',
+      'Third-party interface status, wallet safety, or market conclusions.',
+    ],
     links: [officialDocs, networkHaltsSource, tokenomicsSource, cosmwasmSource],
   }, [officialDocs, networkHaltsSource, tokenomicsSource, cosmwasmSource], 'official'),
   record({
     id: 'historical-features-and-recovery',
     title: 'Historical Features And Recovery',
+    decision: 'Is this an incident, recovery, or deprecated-product claim?',
     use: 'Use for Savers/Lending deprecation, THORFi unwind, incident reports, recovery records, and source-dated historical context.',
     caveat: 'Historical records should not be converted into current availability claims without live or newly reviewed sources.',
+    claimExamples: [
+      'Savers/Lending deprecation and THORFi unwind history.',
+      'Official exploit-report root cause, remediation, restart, and recovery context.',
+      'Dated milestones or incident lessons where the source itself supports the claim.',
+    ],
+    nonClaims: [
+      'That historical products are available now.',
+      'Current solvency, safety, or recovery completion beyond dated sources.',
+      'Financial advice, recovery-value expectations, or investment outcomes.',
+    ],
     links: [
       archivedFeaturesSource,
       tcyGuideSource,
@@ -389,19 +514,44 @@ export const SOURCE_MAP_SECTION_RECORDS: SourcedRecord<SourceMapSection>[] = [
     exploitReportSource,
     exploitReport2Source,
     protocolUpgradeV319Source,
-  ], 'historical'),
+  ], 'historical', {
+    checkedAt: '2026-07-04',
+    nextReviewDue: '2026-08-04',
+  }),
   record({
     id: 'external-analytics-and-explorers',
     title: 'External Analytics And Explorers',
+    decision: 'Do you need independent transaction, explorer, or market context?',
     use: 'Use to inspect transactions, pools, nodes, and market or flow context outside this wiki.',
     caveat: 'Explorer and analytics data may use their own indexing rules. Treat them as references unless independently reconciled.',
+    claimExamples: [
+      'Transaction, pool, node, market, or flow context from external indexers.',
+      'Third-party research summaries when labeled as curated or needs-review.',
+      'Pointers for readers who want to inspect evidence outside this wiki.',
+    ],
+    nonClaims: [
+      'Canonical protocol state or official THORChain policy.',
+      'Reconciled accounting, tax, or solvency proof.',
+      'Endorsement, safety review, or complete interface coverage.',
+    ],
     links: [runescanSource, viewblockSource, messariReportsSource, thorchainGithubSource],
   }, [runescanSource, viewblockSource, messariReportsSource, thorchainGithubSource], 'curated'),
   record({
     id: 'community-channels',
     title: 'Community Channels',
+    decision: 'Are you looking for sentiment, debate, or open-source context?',
     use: 'Use these for community discussion, announcements, open-source repositories, and social context.',
     caveat: 'Community and social channels are not canonical protocol proof. Use official docs, live APIs, or dated incident reports for claims.',
+    claimExamples: [
+      'Community debate, implementation discussion, ecosystem chatter, and repository context.',
+      'Signals about what people are asking, disputing, or prioritizing.',
+      'Links to places where readers can continue non-canonical research.',
+    ],
+    nonClaims: [
+      'Canonical protocol proof, final governance state, or official incident truth.',
+      'Current operational availability or safety.',
+      'Representative sentiment without careful sampling and date boundaries.',
+    ],
     links: [discordSource, twitterSource, telegramSource, redditSource, thorchainGithubSource],
   }, [discordSource, twitterSource, telegramSource, redditSource, thorchainGithubSource], 'curated'),
 ];
@@ -444,6 +594,14 @@ export const ECOSYSTEM_PROJECT_RECORDS: SourcedRecord<EcosystemProject>[] = [
     url: 'https://swap.thorchain.org',
     status: 'Active',
     chains: chainCodes,
+    useFor: [
+      'Official swap-interface starting point for native cross-chain swap routes.',
+      'Checking whether the canonical interface exposes a route for a supported chain pair.',
+    ],
+    verifyBeforeUse: [
+      'Confirm live trading, signing, inbound-address, and gas status on the Network page before assuming a swap can settle.',
+      'Review quoted fees, route, slippage, recipient address, and wallet approvals in the interface before signing.',
+    ],
   }, [ecosystemSource, liveInboundSource], 'curated'),
   record({
     id: 'asgardex',
@@ -454,6 +612,14 @@ export const ECOSYSTEM_PROJECT_RECORDS: SourcedRecord<EcosystemProject>[] = [
     logo: '/logos/asgardex.svg',
     status: 'Active',
     chains: ['BTC', 'ETH', 'BSC', 'AVAX', 'GAIA', 'DOGE', 'LTC', 'BCH'],
+    useFor: [
+      'Desktop wallet and THORChain swap interface exploration.',
+      'Self-custody workflow research across the listed chains.',
+    ],
+    verifyBeforeUse: [
+      'Confirm the current release, download source, wallet permissions, and device security outside this wiki.',
+      'Check live chain and THORChain halt status before relying on any swap or LP action.',
+    ],
   }, [ecosystemSource], 'curated'),
   record({
     id: 'thorswap',
@@ -464,6 +630,14 @@ export const ECOSYSTEM_PROJECT_RECORDS: SourcedRecord<EcosystemProject>[] = [
     logo: '/logos/thorswap.svg',
     status: 'Active',
     chains: chainCodes,
+    useFor: [
+      'Third-party swap, aggregation, and THORChain interface research.',
+      'Comparing route options and interface support across many listed chains.',
+    ],
+    verifyBeforeUse: [
+      'Treat product availability, terms, compliance controls, and routed quotes as current third-party state.',
+      'Do not infer that historical Savers or Lending features are available; verify any product shown by the app.',
+    ],
   }, [ecosystemSource, archivedFeaturesSource], 'curated'),
   record({
     id: 'runescan',
@@ -473,6 +647,14 @@ export const ECOSYSTEM_PROJECT_RECORDS: SourcedRecord<EcosystemProject>[] = [
     url: 'https://runescan.io',
     status: 'Active',
     chains: ['THOR'],
+    useFor: [
+      'Exploring THORChain transactions, pools, nodes, addresses, and historical network context.',
+      'Cross-checking wiki claims against an independent explorer view.',
+    ],
+    verifyBeforeUse: [
+      'Do not treat explorer display alone as proof that swaps, LP actions, or signing are currently open.',
+      'Cross-check protocol availability against live THORNode diagnostics when making operational claims.',
+    ],
   }, [ecosystemSource], 'curated'),
   record({
     id: 'viewblock',
@@ -482,6 +664,14 @@ export const ECOSYSTEM_PROJECT_RECORDS: SourcedRecord<EcosystemProject>[] = [
     url: 'https://viewblock.io/thorchain',
     status: 'Active',
     chains: ['THOR'],
+    useFor: [
+      'Inspecting THORChain explorer data through a multi-chain explorer surface.',
+      'Comparing transaction or account context with other explorer sources.',
+    ],
+    verifyBeforeUse: [
+      'Use explorer data as evidence context, not as a wallet-safety or route-availability guarantee.',
+      'Check live THORNode state before making current operational claims.',
+    ],
   }, [ecosystemSource], 'curated'),
   record({
     id: 'swapkit',
@@ -491,6 +681,14 @@ export const ECOSYSTEM_PROJECT_RECORDS: SourcedRecord<EcosystemProject>[] = [
     url: 'https://swapkit.dev',
     status: 'Active',
     chains: chainCodes,
+    useFor: [
+      'Developer SDK/API research for THORChain and cross-chain swap integrations.',
+      'Finding integration concepts before checking current package and API documentation.',
+    ],
+    verifyBeforeUse: [
+      'Confirm current package versions, API behavior, supported chains, and integration security in upstream docs.',
+      'Test quotes, memos, slippage, affiliate settings, and error handling against live endpoints before shipping.',
+    ],
   }, [developerDocs], 'curated'),
   record({
     id: 'xchainjs',
@@ -500,6 +698,14 @@ export const ECOSYSTEM_PROJECT_RECORDS: SourcedRecord<EcosystemProject>[] = [
     url: 'https://xchainjs.org',
     status: 'Active',
     chains: chainCodes,
+    useFor: [
+      'JavaScript client-library research for THORChain and connected-chain tooling.',
+      'Developer orientation before checking package-specific docs and examples.',
+    ],
+    verifyBeforeUse: [
+      'Confirm current package versions, chain-module support, wallet handling, and breaking changes upstream.',
+      'Do not treat library presence here as proof of production readiness for an integration.',
+    ],
   }, [developerDocs], 'curated'),
 ];
 
@@ -607,7 +813,10 @@ export const SECURITY_INCIDENT_RECORDS: SourcedRecord<SecurityIncident>[] = [
       'Do not describe EdDSA chains as exposed to this specific GG20 attack path',
     ],
     url: 'https://blog.thorchain.org/thorchain-exploit-report-2',
-  }, [exploitReport2Source, protocolUpgradeV319Source, exploitReportSource], 'official'),
+  }, [exploitReport2Source, protocolUpgradeV319Source, exploitReportSource], 'official', {
+    checkedAt: '2026-07-04',
+    nextReviewDue: '2026-08-04',
+  }),
 ];
 
 export const SECURITY_INCIDENTS: SecurityIncident[] = SECURITY_INCIDENT_RECORDS.map(unwrapRecord);
@@ -656,7 +865,10 @@ export const GOVERNANCE_PROPOSAL_RECORDS: SourcedRecord<GovernanceProposal>[] = 
     createdDate: '2026-04-15',
     expiryDate: 'Review due 2026-07-17',
     sourceUrl: 'https://gitlab.com/thorchain/thornode/-/raw/develop/docs/architecture/adr-026-dynamic-l1-min-fee-per-thorname.md',
-  }, [adr026DynamicFeesSource, thornodeMimirSource, dynamicL1FeesSource, dynamicL1FeesCurrentSource], 'curated'),
+  }, [adr026DynamicFeesSource, thornodeMimirSource, dynamicL1FeesSource, dynamicL1FeesCurrentSource], 'curated', {
+    checkedAt: '2026-07-04',
+    nextReviewDue: '2026-08-04',
+  }),
 ];
 
 export const GOVERNANCE_PROPOSALS: GovernanceProposal[] = GOVERNANCE_PROPOSAL_RECORDS.map(unwrapRecord);
@@ -686,7 +898,10 @@ export const PROTOCOL_MILESTONE_RECORDS = [
     date: '2026-05-15',
     title: 'GG20 Vault Exploit and Emergency Halt',
     description: 'Official reports say one vault was drained through a GG20/TSS cryptographic attack; v3.19.0 carried restart recovery/security changes, and later reporting described v3.19.1 patching plus migration planning away from GG20.',
-  }, [exploitReport2Source, protocolUpgradeV319Source, exploitReportSource], 'official'),
+  }, [exploitReport2Source, protocolUpgradeV319Source, exploitReportSource], 'official', {
+    checkedAt: '2026-07-04',
+    nextReviewDue: '2026-08-04',
+  }),
 ];
 
 export const PROTOCOL_MILESTONES = PROTOCOL_MILESTONE_RECORDS.map(unwrapRecord);

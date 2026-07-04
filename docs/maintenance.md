@@ -7,6 +7,7 @@
 - Run `npm run check:content` after editing deep dives, curated records, glossary terms, or search metadata.
 - `npm run check:content` fails when `nextReviewDue` is before today's date. Use `CONTENT_CHECK_TODAY=YYYY-MM-DD` for deterministic local audits, and use `ALLOW_OVERDUE_CONTENT=1` only with explicit release evidence and non-claims.
 - Run `npm run check:live-snapshot` when reviewing supported-chain records. It compares curated supported chains with live THORNode `inbound_addresses`; CI runs it on the scheduled/manual live-source drift job rather than every PR.
+- Before merging content-shape changes, use the source-posture and reader-path checklist in `CONTRIBUTING.md`. It covers route `CONTENT_ENTRIES`, `RouteSourcePosture`, `TASK_INTENT_GUIDES`, `DEEP_DIVE_READER_PATHS`, source-map non-claims, ecosystem use/check fields, and the focused tests expected when journeys or anchors change.
 
 ## Confidence Labels
 
@@ -19,7 +20,8 @@
 
 - Local proof is not deploy proof. Keep local checks, CI checks, image publication, deployment, and live readback separate.
 - Before claiming production readiness, verify the immutable image ref and read back `/api/health`, `/api/version`, and `/api/ready`.
-- `/api/health` is liveness-only. `/api/ready` is the upstream readiness and source-confidence endpoint.
+- `/api/health` is liveness-only. `/api/ready` is the upstream readiness and source-confidence endpoint for visible Midgard datasets, THORNode operation state, and the dynamic L1 fee tracker.
+- `/api/ready` `reasons` and `sourceWarnings` remain string-compatible for simple monitors; top-level `warnings` carries non-blocking source caveats, and `sourceWarningDetails` carries structured category/action/key context for diagnostics.
 - Release-shaped smoke and deploy checks should validate `/api/ready` shape, metadata, and reasons, but source-confidence degradation is non-blocking unless `REQUIRE_READY=1` is set for a deliberate upstream-readiness audit.
 - Do not reintroduce mutable `latest` deploys; deploys must use digest image refs.
 - Local Playwright runs start a fresh standalone server by default. Use `PLAYWRIGHT_BASE_URL` only when deliberately proving an existing standalone server or remote deployment.
@@ -27,11 +29,13 @@
 
 ## CSP Promotion
 
-- Keep the policy in report-only mode while new UI routes and MDX content are changing.
+- Keep production in report-only mode until browser validation shows normal pages emit no `/api/csp-report` events.
+- Local standalone smoke runs report-only by default and enforced mode when `CSP_ENFORCE=1` is set.
 - Review structured `/api/csp-report` logs for blocked directive, blocked origin/path, document path, and source file.
 - Production and standalone CSP must not include `unsafe-eval` or `unsafe-inline`; the Next proxy generates a per-request nonce and the root layout intentionally renders dynamically so framework scripts receive it.
-- Use `CSP_ENFORCE=1 npm run smoke:standalone` for a local enforced-policy header smoke, then `CSP_ENFORCE=1 npm run test:e2e` to confirm normal browser page loads do not emit `/api/csp-report` reports under enforced headers.
-- Promote production from report-only to enforced `Content-Security-Policy` only after Playwright smoke, local browser checks, and report logs show no expected violations.
+- Use `CSP_ENFORCE=1 npm run smoke:standalone` for a local enforced-policy header smoke, then `npm run test:e2e:csp` to confirm CSP-sensitive browser paths do not emit `/api/csp-report` reports under enforced headers.
+- Do not promote production while report-only browser runs still show `style-src-elem` or other normal-page violations.
+- Use `CHECK_BASE_URL=https://wiki.thorchain.no npm run check:runtime-url` for a public runtime/header drift probe. Leave `REQUIRE_READY=1` unset unless deliberately auditing upstream readiness.
 
 ## Standard Local Gate
 
@@ -50,6 +54,8 @@ npm run lint
 npm run build
 npm run smoke:standalone
 CSP_ENFORCE=1 npm run smoke:standalone
+npm run test:e2e:visual # focused route overflow / first-viewport smoke
 npm run test:e2e
+CHECK_BASE_URL=https://wiki.thorchain.no npm run check:runtime-url # public runtime/header drift probe
 IMAGE_REF=ghcr.io/example/tcwiki@sha256:0000000000000000000000000000000000000000000000000000000000000000 APP_VERSION=local ansible-playbook -i inventory/hosts.yml ansible-playbook.yml --syntax-check
 ```

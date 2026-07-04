@@ -24,12 +24,13 @@ npm run build
 npm run smoke:standalone
 CSP_ENFORCE=1 npm run smoke:standalone
 npm run test:e2e
+CHECK_BASE_URL=https://wiki.thorchain.no npm run check:runtime-url # public runtime/header drift probe
 IMAGE_REF=ghcr.io/example/tcwiki@sha256:0000000000000000000000000000000000000000000000000000000000000000 APP_VERSION=local ansible-playbook -i inventory/hosts.yml ansible-playbook.yml --syntax-check
 ```
 
 `npm run test:e2e` starts a fresh standalone server by default. Set `PLAYWRIGHT_BASE_URL` only when you intentionally want to test an existing local standalone server or a remote deployment.
 
-CI will run audits, content checks, lint, typecheck, unit tests, build, standalone smoke in report-only and enforced CSP modes, Playwright, and PR-only Docker image build/scan/runtime plus Ansible syntax checks.
+CI will run audits, content checks, lint, typecheck, unit tests, build, standalone smoke in report-only and enforced CSP modes, Playwright, and PR-only Docker image build/scan/runtime plus Ansible syntax checks. Scheduled/manual drift checks also verify live-source snapshots and public runtime headers.
 
 ## How Content Works Today
 
@@ -41,12 +42,26 @@ Most of the site is **curated, hand-written content** in React components and MD
 - **Live data** comes from Midgard and THORNode via `src/lib/api/midgard.ts` and `src/lib/api/thornode.ts`.
 - **Navigation and search metadata** lives in `src/lib/content/registry.ts`.
 
+## Source Posture & Reader Paths Checklist
+
+The wiki now treats source posture, search journeys, and deep-dive paths as part of the content contract. When changing page claims or adding content, update the supporting metadata instead of patching visible copy alone:
+
+- Update the matching `CONTENT_ENTRIES` record when a page title, claim surface, confidence label, source set, review date, or review cadence changes.
+- Keep `RouteSourcePosture` on static education/reference routes and refresh its `useFor` and `verifyBeforeClaiming` copy when the page purpose changes.
+- Add or update `TASK_INTENT_GUIDES` when a common reader job, task-search phrase, or answer anchor changes.
+- Add or update `DEEP_DIVE_READER_PATHS` when a deep dive changes the recommended reading order, audience, follow-up checks, or current-state caveats.
+- Preserve source-map `decision`, `claimExamples`, and `nonClaims` whenever adding a source family or changing how a source should be used.
+- Keep ecosystem `useFor` and `verifyBeforeUse` fields specific; this directory is a source-listed pointer list, not an endorsement or safety review.
+- Run `npm run check:content` after registry, source-map, glossary, deep-dive, task-guide, or route-anchor changes.
+- Add focused unit or Playwright coverage when a visible journey, anchor, source label, or search result path changes.
+
 ## Common Contribution Tasks
 
 ### Edit an existing overview page
 - Open the relevant file under `src/app/<section>/page.tsx`.
 - Follow the existing card + section header patterns and use the design tokens from `globals.css` (`bg-surface-elevated`, `text-accent`, `border-border`, `text-rune`, etc.).
 - Keep explanations concise and accurate. Link out to official docs where deeper technical detail exists.
+- If the route is a static education/reference page, keep the registry-backed source posture visible and source dates current.
 
 ### Update curated data (incidents, ecosystem, research, milestones, etc.)
 - Edit `src/lib/data/static.ts`.
