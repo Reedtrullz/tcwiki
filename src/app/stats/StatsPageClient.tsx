@@ -69,7 +69,7 @@ export default function StatsPage() {
       </div>
 
       <div className="mb-8">
-        <NetworkStatusBanner result={statusResult} isLoading={statusLoading} />
+        <NetworkStatusBanner result={statusResult} isLoading={statusLoading} variant="compact" />
       </div>
 
       {!networkHasError && networkData && (

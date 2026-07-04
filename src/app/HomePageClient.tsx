@@ -51,7 +51,7 @@ export default function HomePage() {
       </section>
 
       <section className="px-6 max-w-7xl mx-auto mb-8">
-        <NetworkStatusBanner result={statusResult} isLoading={statusLoading} />
+        <NetworkStatusBanner result={statusResult} isLoading={statusLoading} variant="compact" />
       </section>
 
       {/* Network stats strip */}

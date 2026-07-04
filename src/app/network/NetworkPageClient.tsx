@@ -45,7 +45,7 @@ export default function NetworkPage() {
       </p>
 
       <div className="mb-12">
-        <NetworkStatusBanner result={statusResult} isLoading={statusLoading} />
+        <NetworkStatusBanner result={statusResult} isLoading={statusLoading} variant="diagnostic" />
       </div>
 
       <SectionHeader>Node Types</SectionHeader>

@@ -40,6 +40,31 @@ test.describe('THORChain Wiki Smoke Tests', () => {
     await expect(page.getByText(/Current-only|Source warning|Source degraded|Degraded|Loading live source/i).first()).toBeVisible();
   });
 
+  test('network status module has compact and diagnostic tiers', async ({ page, isMobile }) => {
+    if (isMobile) {
+      await page.setViewportSize({ width: 390, height: 760 });
+    }
+
+    await page.goto('/');
+    await expect(page.getByText(/Look here first/i).first()).toBeVisible();
+    await expect(page.getByRole('link', { name: /Open diagnostics/i })).toHaveAttribute('href', '/network');
+    await expect(page.getByText(/Operational evidence/i)).toHaveCount(0);
+
+    await page.goto('/stats');
+    await expect(page.getByRole('heading', { name: /Network Statistics/i })).toBeVisible();
+    await expect(page.getByRole('link', { name: /Open diagnostics/i })).toHaveAttribute('href', '/network');
+
+    await page.goto('/network');
+    await expect(page.getByRole('heading', { name: /Network & Security/i })).toBeVisible();
+    await expect(page.getByText(/Look here first/i).first()).toBeVisible();
+    await expect(page.getByText(/Priority Mimir controls/i)).toBeVisible();
+    await expect(page.getByText(/Operational evidence|Source warnings and Mimir review queue/i).first()).toBeVisible();
+
+    const bodyWidth = await page.locator('body').evaluate((body) => body.scrollWidth);
+    const viewportWidth = page.viewportSize()?.width ?? bodyWidth;
+    expect(bodyWidth).toBeLessThanOrEqual(viewportWidth + 2);
+  });
+
   test('dynamic fees page loads with live tracker or graceful degraded state', async ({ page, isMobile }) => {
     if (isMobile) {
       await page.setViewportSize({ width: 390, height: 760 });
@@ -114,7 +139,7 @@ test.describe('THORChain Wiki Smoke Tests', () => {
     await expect(incidentLink).toHaveAttribute('href', '/governance#incident-gg20-vault-exploit-2026');
     await expect(incidentLink.locator('span').filter({ hasText: /^incident$/ })).toBeVisible();
     await expect(incidentLink.getByText('Official source', { exact: true })).toBeVisible();
-    await expect(page.getByRole('link', { name: 'THORChain Exploit Report #1' }).first()).toBeVisible();
+    await expect(page.getByRole('link', { name: 'THORChain Exploit Report #2' }).first()).toBeVisible();
     await page.goto('/governance#incident-gg20-vault-exploit-2026');
     await expect(page).toHaveURL(/\/governance#incident-gg20-vault-exploit-2026$/);
     await expect(page.locator('#incident-gg20-vault-exploit-2026')).toBeVisible();
@@ -165,7 +190,7 @@ test.describe('THORChain Wiki Smoke Tests', () => {
     await expect(page.getByText('Curated', { exact: true }).first()).toBeVisible();
 
     await expect(page.getByText('THORChain Docs', { exact: true }).first()).toBeVisible();
-    await expect(page.getByText('+1 source', { exact: true }).first()).toBeVisible();
+    await expect(page.getByText('+4 sources', { exact: true }).first()).toBeVisible();
     await expect(page.getByRole('navigation', { name: /Table of contents/i })).toBeVisible();
     await expect(page.getByRole('main').getByRole('link', { name: 'Glossary' })).toBeVisible();
     await expect(page.getByText(/Related Reading/i)).toBeVisible();
@@ -306,7 +331,7 @@ test.describe('THORChain Wiki Smoke Tests', () => {
       {
         path: '/deep-dives/tss',
         title: 'Threshold Signatures (TSS) | THORChain Wiki',
-        description: 'How distributed signing protects cross-chain vault keys and why GG20/DKLS wording must be source-backed.',
+        description: 'How distributed signing protects cross-chain vault keys and why GG20, DKLS, Paillier, and key-sign failure wording must be source-backed.',
         canonical: 'https://wiki.thorchain.no/deep-dives/tss',
       },
     ] as const;

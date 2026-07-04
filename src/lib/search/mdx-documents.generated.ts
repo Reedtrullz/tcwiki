@@ -148,18 +148,36 @@ export const MDX_SEARCH_DOCUMENTS: SearchDoc[] = [
     "title": "Threshold Signatures (TSS) in THORChain",
     "description": "Threshold Signatures (TSS) in THORChain Threshold Signature Schemes are the cryptographic foundation that allows THORChain to custody assets across many chains without ever expo...",
     "confidence": "curated",
-    "reviewedAt": "2026-06-18",
-    "nextReviewDue": "2026-07-18",
+    "reviewedAt": "2026-07-04",
+    "nextReviewDue": "2026-08-04",
     "sources": [
       {
         "label": "THORChain Docs",
         "url": "https://docs.thorchain.org"
       },
       {
+        "label": "Under the Hood: Asgard Vaults, TSS and Node Churns",
+        "url": "https://blog.thorchain.org/under-the-hood-asgard-vaults-tss-and-node-churns",
+        "retrievedAt": "2026-07-04",
+        "notes": "Historical educational explainer for Asgard vault, TSS, and churn mechanics."
+      },
+      {
+        "label": "THORChain Exploit Report #2",
+        "url": "https://blog.thorchain.org/thorchain-exploit-report-2",
+        "retrievedAt": "2026-07-04",
+        "notes": "Official root-cause report for the May 2026 GG20/TSS vault exploit."
+      },
+      {
+        "label": "Protocol Upgrade v3.19.0",
+        "url": "https://blog.thorchain.org/protocol-upgrade-v3-19-0",
+        "retrievedAt": "2026-07-04",
+        "notes": "Official release summary for the post-exploit restart and recovery/security patch set."
+      },
+      {
         "label": "THORChain Exploit Report #1",
         "url": "https://blog.thorchain.org/thorchain-exploit-report-1"
       }
     ],
-    "content": "Threshold Signatures (TSS) in THORChain Threshold Signature Schemes are the cryptographic foundation that allows THORChain to custody assets across many chains without ever exposing a single private key. The Problem with Traditional Multisig Traditional multisignature schemes (like Bitcoin's 2 of 3) have significant limitations when used for cross chain protocols: Each chain has different multisig capabilities Keys must be generated per chain No unified security model across assets How TSS Solves This THORChain has used GG20 threshold signature schemes, with later cryptographic migration work discussed in official incident reporting. Details should stay tied to dated sources because the implementation and recovery path can change. Distributed key generation : No single node ever holds the full private key Threshold signing : A configurable threshold (typically 2/3) of nodes must cooperate to produce a valid signature Chain agnostic : The same TSS keys can be used to generate addresses on many different blockchains Security Properties No intended single point of failure : Correctly implemented threshold signing avoids one node holding a complete private key, but safety depends on the current cryptographic implementation and active incident status. Proactive security : Keys are regularly rotated during churn events. Accountability : Misbehaving nodes can be identified and penalized through reward slash points or bond slashing, depending on the fault. Real World Impact The May 15, 2026 official exploit report says a newly churned node operator exploited a GG20 TSS vulnerability and drained one vault before automated solvency detection and manual Mimir halts contained further activity. That report should be treated as dated incident evidence, not a timeless statement of current safety. TSS is what makes true native cross chain liquidity possible without bridges or wrapped tokens."
+    "content": "Threshold Signatures (TSS) in THORChain Threshold Signature Schemes are the cryptographic foundation that allows THORChain to custody assets across many chains without ever exposing a single private key. The Problem with Traditional Multisig Traditional multisignature schemes (like Bitcoin's 2 of 3) have significant limitations when used for cross chain protocols: Each chain has different multisig capabilities Keys must be generated per chain No unified security model across assets How TSS Solves This THORChain has used GG20 threshold signature schemes, with later cryptographic migration work discussed in official incident reporting. Details should stay tied to dated sources because the implementation and recovery path can change. Distributed key generation : No single node ever holds the full private key Threshold signing : A configurable threshold (typically 2/3) of nodes must cooperate to produce a valid signature Chain agnostic : The same TSS keys can be used to generate addresses on many different blockchains Security Properties No intended single point of failure : Correctly implemented threshold signing avoids one node holding a complete private key, but safety depends on the current cryptographic implementation and active incident status. Proactive security : Keys are regularly rotated during churn events. Accountability : Misbehaving nodes can be identified and penalized through reward slash points or bond slashing, depending on the fault. Real World Impact The May 15, 2026 official exploit reports say one vault was drained through a cryptographic attack against THORChain's GG20/TSS signing path. Report 2 adds important root cause detail: the attacker joined as a validator, planted malformed Paillier key material during setup, then deliberately failed the MTA signing round 864 times over roughly two and a half days. Those failures looked like ordinary node flakiness in isolation, but they leaked enough key share fragments for the attacker to reproduce the vault key and sign alone. The same report says this was not a smart contract, bridge, oracle, multisig operator, or Solana/EdDSA exposure. It was specific to the GG20/ECDSA path and its Paillier cryptography assumptions. It also explains why solvency checks did not halt the loss in time: by the time funds moved, the upstream key compromise had already happened and the outbound transaction looked like a valid signature. Post incident changes should be described in dated terms. THORChain's v3.19.0 upgrade post identifies restart recovery work such as TSS patches, compromised vault exclusion, temporary Keyverify checks, and pause safety rules. The later official exploit report says validators upgraded to v3.19.1, that THORChain plans to move away from GG20 toward alternatives such as DKLS and/or Schnorr style approaches, and that validator level key sign failure monitoring is being strengthened. Proposals such as minimum validator age, gradual exposure for new validators, dual scheme vault architecture, and bug bounty redesign should be presented as under consideration unless a later source verifies implementation. TSS is what makes true native cross chain liquidity possible without bridges or wrapped tokens."
   }
 ];

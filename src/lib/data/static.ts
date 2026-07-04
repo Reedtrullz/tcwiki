@@ -41,6 +41,20 @@ const exploitReportSource: SourceMeta = {
   url: 'https://blog.thorchain.org/thorchain-exploit-report-1',
 };
 
+const exploitReport2Source: SourceMeta = {
+  label: 'THORChain Exploit Report #2',
+  url: 'https://blog.thorchain.org/thorchain-exploit-report-2',
+  retrievedAt: '2026-07-04',
+  notes: 'Official root-cause report for the May 2026 GG20/TSS vault exploit.',
+};
+
+const protocolUpgradeV319Source: SourceMeta = {
+  label: 'Protocol Upgrade v3.19.0',
+  url: 'https://blog.thorchain.org/protocol-upgrade-v3-19-0',
+  retrievedAt: '2026-07-04',
+  notes: 'Official release summary for the post-exploit restart and recovery/security patch set.',
+};
+
 const ethRouterExploitSource: SourceMeta = {
   label: 'ETH Router exploit post-mortem',
   url: 'https://medium.com/thorchain/post-mortem-eth-router-exploits-1-2-and-premature-return-to-trading-incident-2908928c5fb',
@@ -304,8 +318,8 @@ export const CHAIN_RECORDS: SourcedRecord<Chain>[] = [
     explorer: 'https://solscan.io/block',
     addressFormats: ['Base58'],
     supported: true,
-    statusNote: 'SOL uses EdDSA signing and was called out separately in the May 2026 exploit report.',
-  }, [liveInboundSource, exploitReportSource], 'official'),
+    statusNote: 'SOL uses EdDSA signing; Exploit Report #2 says EdDSA chains such as Solana were not exposed to the GG20/Paillier attack path.',
+  }, [liveInboundSource, exploitReport2Source], 'official'),
   record({
     name: 'XRP Ledger',
     chain: 'XRP',
@@ -360,8 +374,22 @@ export const SOURCE_MAP_SECTION_RECORDS: SourcedRecord<SourceMapSection>[] = [
     title: 'Historical Features And Recovery',
     use: 'Use for Savers/Lending deprecation, THORFi unwind, incident reports, recovery records, and source-dated historical context.',
     caveat: 'Historical records should not be converted into current availability claims without live or newly reviewed sources.',
-    links: [archivedFeaturesSource, tcyGuideSource, thorfiUnwindSource, exploitReportSource],
-  }, [archivedFeaturesSource, tcyGuideSource, thorfiUnwindSource, exploitReportSource], 'historical'),
+    links: [
+      archivedFeaturesSource,
+      tcyGuideSource,
+      thorfiUnwindSource,
+      exploitReportSource,
+      exploitReport2Source,
+      protocolUpgradeV319Source,
+    ],
+  }, [
+    archivedFeaturesSource,
+    tcyGuideSource,
+    thorfiUnwindSource,
+    exploitReportSource,
+    exploitReport2Source,
+    protocolUpgradeV319Source,
+  ], 'historical'),
   record({
     id: 'external-analytics-and-explorers',
     title: 'External Analytics And Explorers',
@@ -569,17 +597,17 @@ export const SECURITY_INCIDENT_RECORDS: SourcedRecord<SecurityIncident>[] = [
     title: 'GG20 Vault Exploit',
     date: '2026-05-15',
     type: 'Exploit',
-    description: 'A newly churned node operator exploited a GG20 TSS vulnerability and drained one vault before automatic and manual halts contained the incident.',
-    impact: 'Approximately $10.7M drained from a single vault; remaining vaults were reported unaffected in the first official report.',
+    description: 'Exploit Report #2 describes a cryptographic GG20/TSS attack: a validator planted malformed Paillier key material and used repeated failed MTA rounds to leak key-share fragments before signing alone.',
+    impact: 'Approximately $10M-$10.7M drained from one vault; Report #2 says no other vault was affected and EdDSA chains such as Solana were not exposed.',
     resolved: false,
     trackerStatus: 'current',
     lessons: [
-      'Current halt and signing state must be displayed from live Mimir, not hard-coded copy',
-      'Recovery and root-cause status should remain dated and source-linked',
-      'TSS scheme details require careful, source-backed wording',
+      'Monitor validator-level key-sign failures instead of relying only on solvency outflow detection',
+      'GG20/Paillier migration wording should stay tied to dated official reports',
+      'Do not describe EdDSA chains as exposed to this specific GG20 attack path',
     ],
-    url: 'https://blog.thorchain.org/thorchain-exploit-report-1',
-  }, [exploitReportSource], 'official'),
+    url: 'https://blog.thorchain.org/thorchain-exploit-report-2',
+  }, [exploitReport2Source, protocolUpgradeV319Source, exploitReportSource], 'official'),
 ];
 
 export const SECURITY_INCIDENTS: SecurityIncident[] = SECURITY_INCIDENT_RECORDS.map(unwrapRecord);
@@ -657,8 +685,8 @@ export const PROTOCOL_MILESTONE_RECORDS = [
   record({
     date: '2026-05-15',
     title: 'GG20 Vault Exploit and Emergency Halt',
-    description: 'Official report says one vault was drained and automated/manual halt controls were activated.',
-  }, [exploitReportSource], 'official'),
+    description: 'Official reports say one vault was drained through a GG20/TSS cryptographic attack; v3.19.0 carried restart recovery/security changes, and later reporting described v3.19.1 patching plus migration planning away from GG20.',
+  }, [exploitReport2Source, protocolUpgradeV319Source, exploitReportSource], 'official'),
 ];
 
 export const PROTOCOL_MILESTONES = PROTOCOL_MILESTONE_RECORDS.map(unwrapRecord);
