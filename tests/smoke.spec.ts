@@ -619,6 +619,12 @@ test.describe('THORChain Wiki Smoke Tests', () => {
     await page.getByRole('searchbox', { name: /Filter glossary terms/i }).fill('gg20');
     await expect(page.locator('#term-gg20')).toBeVisible();
     await expect(page.locator('#term-mimir')).toHaveCount(0);
+    await page.getByRole('searchbox', { name: /Filter glossary terms/i }).fill('paillier');
+    await expect(page.locator('#term-paillier')).toBeVisible();
+    await expect(page.getByText(/malformed Paillier key material/i)).toBeVisible();
+    await page.getByRole('searchbox', { name: /Filter glossary terms/i }).fill('compromised vault');
+    await expect(page.locator('#term-compromised-vault')).toBeVisible();
+    await expect(page.getByText(/compromised-vault exclusion/i)).toBeVisible();
     await page.getByRole('button', { name: /Reset/i }).click();
     await expect(page.locator('#term-mimir')).toBeVisible();
     await page.getByRole('button', { name: /Developer/i }).click();

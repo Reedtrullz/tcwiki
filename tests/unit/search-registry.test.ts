@@ -404,6 +404,28 @@ describe('SEARCH_DOCUMENTS', () => {
     expect(docsMatching('Synthetics were part of historical Savers').some((doc) => doc.id === 'glossary:synthetic-asset')).toBe(true);
     expect(docsMatching('deployer, checksum').some((doc) => doc.id === 'glossary:cosmwasm')).toBe(true);
     expect(docsMatching('threshold-signature implementation').some((doc) => doc.id === 'glossary:gg20')).toBe(true);
+    expect(docsMatching('possible migration path away from GG20').some((doc) => doc.id === 'glossary:dkls')).toBe(true);
+    expect(docsMatching('current vault signing has moved to Schnorr').some((doc) => doc.id === 'glossary:schnorr')).toBe(true);
+    expect(docsMatching('malformed Paillier key material').some((doc) => doc.id === 'glossary:paillier')).toBe(true);
+    expect(docsMatching('failed MTA rounds leaked').some((doc) => doc.id === 'glossary:mta')).toBe(true);
+    expect(docsMatching('incident-root-cause vocabulary').some((doc) => doc.id === 'glossary:multi-prime-modulus')).toBe(true);
+    expect(docsMatching('ordinary node flakiness').some((doc) => doc.id === 'glossary:key-sign-failures')).toBe(true);
+    expect(docsMatching('compromised-vault exclusion').some((doc) => doc.id === 'glossary:compromised-vault')).toBe(true);
+
+    for (const id of [
+      'glossary:dkls',
+      'glossary:schnorr',
+      'glossary:paillier',
+      'glossary:mta',
+      'glossary:multi-prime-modulus',
+      'glossary:key-sign-failures',
+      'glossary:compromised-vault',
+      'glossary:keyverify',
+    ]) {
+      const doc = SEARCH_DOCUMENTS.find((candidate) => candidate.id === id);
+      expect(doc?.href, `${id} href`).toBe(`/glossary#term-${id.replace('glossary:', '')}`);
+      expect(doc?.sources.map((source) => source.label), `${id} sources`).toContain('THORChain Exploit Report 2');
+    }
   });
 
   it('indexes runtime providers and monitored Mimir control families', () => {
