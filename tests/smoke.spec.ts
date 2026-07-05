@@ -276,7 +276,7 @@ test.describe('THORChain Wiki Smoke Tests', () => {
     await expect(page.getByRole('heading', { name: /Learn in Sequence/i })).toBeVisible();
     await expect(page.getByRole('link', { name: /Network Security/i })).toHaveAttribute('href', '/deep-dives#deep-dive-path-network-security');
     await expect(page.getByText(/Verify before claiming: Current signing/i)).toBeVisible();
-    await expect(page.getByText(/live sources|checking live network status|source degraded/i).first()).toBeVisible();
+    await expect(page.getByText(/live sources|checking live network status|swap status|swaps appear|source degraded/i).first()).toBeVisible();
     await expect(page.getByRole('status').first()).toBeVisible();
     await expect(page.getByRole('link', { name: /THORChain Swap/i })).toHaveAttribute('href', '/ecosystem#ecosystem-thorchain-swap');
     if (!isMobile) {
@@ -550,19 +550,20 @@ test.describe('THORChain Wiki Smoke Tests', () => {
     await expect(page.getByText('Category: Developer Tools')).toBeVisible();
     await page.getByRole('button', { name: /^Reset$/ }).click();
     await expect(ecosystemFilters.getByLabel('Category')).toHaveValue('all');
-    await expect(page.getByText(/Showing 7 of/i)).toBeVisible();
+    await expect(page.getByText(/Showing 8 of/i)).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'ShapeShift' })).toBeVisible();
     await ecosystemFilters.getByLabel('Category').selectOption('Explorer');
     await ecosystemFilters.getByLabel('Chain').selectOption('BTC');
     await expect(page.getByText(/No ecosystem entries match the current filters/i)).toBeVisible();
     await expect(page.getByText(/do not prove an interface is unavailable/i)).toBeVisible();
-    await expect(page.getByText(/Showing 0 of 7/i)).toBeVisible();
+    await expect(page.getByText(/Showing 0 of 8/i)).toBeVisible();
     await expect(page.getByText('Category: Explorer')).toBeVisible();
     await expect(page.getByText('Chain: BTC')).toBeVisible();
     await page.getByRole('button', { name: /^Reset filters$/ }).click();
     await expect(ecosystemFilters.getByLabel('Category')).toHaveValue('all');
     await expect(ecosystemFilters.getByLabel('Chain')).toHaveValue('all');
     await expect(page.getByRole('heading', { name: 'THORChain Swap' })).toBeVisible();
-    await expect(page.getByText(/Showing 7 of/i)).toBeVisible();
+    await expect(page.getByText(/Showing 8 of/i)).toBeVisible();
     expect(messages.join('\n')).not.toMatch(/cannot contain a nested|hydration/i);
   });
 

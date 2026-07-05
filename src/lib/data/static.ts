@@ -75,6 +75,13 @@ const ecosystemSource: SourceMeta = {
   url: 'https://docs.thorchain.org/ecosystem',
 };
 
+const shapeshiftThorchainSource: SourceMeta = {
+  label: 'ShapeShift THORChain protocol page',
+  url: 'https://shapeshift.com/protocols/thorchain',
+  retrievedAt: '2026-07-05',
+  notes: 'ShapeShift-maintained protocol page describing THORChain route support; verify current app routing before using.',
+};
+
 const messariQ1Source: SourceMeta = {
   label: 'Messari THORChain Q1 2025 Brief',
   url: 'https://messari.io/report/thorchain-q1-2025-brief',
@@ -657,6 +664,26 @@ export const ECOSYSTEM_PROJECT_RECORDS: SourcedRecord<EcosystemProject>[] = [
       'Do not infer that historical Savers or Lending features are available; verify any product shown by the app.',
     ],
   }, [ecosystemSource, archivedFeaturesSource], 'curated'),
+  record({
+    id: 'shapeshift',
+    name: 'ShapeShift',
+    category: 'Interface',
+    description: 'Self-custody multichain wallet and DEX aggregator with THORChain route support for native cross-chain swaps.',
+    url: 'https://app.shapeshift.com',
+    status: 'Active',
+    chains: chainCodes,
+    useFor: [
+      'Third-party wallet and swap-interface research where THORChain can be one of the route sources.',
+      'Comparing ShapeShift quotes and route handling against other THORChain-enabled interfaces.',
+    ],
+    verifyBeforeUse: [
+      'Confirm the current app route, affiliate fee, slippage, recipient address, and supported chain pair before signing.',
+      'Check live THORNode diagnostics and ShapeShift app availability; this listing is not a wallet-security audit or route guarantee.',
+    ],
+  }, [ecosystemSource, shapeshiftThorchainSource, liveInboundSource], 'curated', {
+    checkedAt: '2026-07-05',
+    nextReviewDue: '2026-08-05',
+  }),
   record({
     id: 'runescan',
     name: 'RuneScan',

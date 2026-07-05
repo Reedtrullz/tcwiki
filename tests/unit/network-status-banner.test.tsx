@@ -121,6 +121,9 @@ describe('NetworkStatusBanner', () => {
     expect(html).toContain('aria-label="BSC: Trading halted"');
     expect(html).toContain('aria-label="BSC direct source evidence count"');
     expect(html).toContain('Look here first');
+    expect(html).toContain('Route scope');
+    expect(html).toContain('2 swap-limited');
+    expect(html).toContain('3 operation-affected');
     expect(html).toContain('Operational evidence');
     expect(html).toContain('3 evidence items');
     expect(html).toContain('Scope');
@@ -168,6 +171,8 @@ describe('NetworkStatusBanner', () => {
     const html = renderToStaticMarkup(<NetworkStatusBanner result={result} />);
 
     expect(html).toContain('aria-label="BTC: Global trading control"');
+    expect(html).toContain('Global swap halt');
+    expect(html).toContain('Global control applies before per-chain routing');
     expect(html).toContain('Inherited: 1 key');
     expect(html).toContain('HALTTRADING');
     expect(html).not.toContain('BTC direct source evidence count');
@@ -223,6 +228,49 @@ describe('NetworkStatusBanner', () => {
 
     expect(html.indexOf('aria-label="BSC: Trading halted"')).toBeLessThan(html.indexOf('aria-label="BTC: Global trading control"'));
     expect(html.indexOf('aria-label="BTC: Global trading control"')).toBeLessThan(html.indexOf('aria-label="ETH: Open"'));
+  });
+
+  it('sorts swap-limited chains before LP-only operation impacts on diagnostics', () => {
+    const result: LiveDataResult<NetworkStatus> = {
+      ...liveResult,
+      data: {
+        ...baseStatus,
+        tradingPaused: false,
+        signingPaused: false,
+        activeControlKeys: ['PAUSELP'],
+        activeChainKeys: ['HALTBSCTRADING', 'PAUSELPAVAX'],
+        activeEvidenceKeys: ['HALTBSCTRADING', 'PAUSELPAVAX'],
+        activePauseKeys: ['PAUSELP', 'HALTBSCTRADING', 'PAUSELPAVAX'],
+        chainStatuses: [
+          {
+            chain: 'AVAX',
+            halted: false,
+            tradingPaused: false,
+            lpActionsPaused: true,
+            lpDepositPaused: false,
+            signingPaused: false,
+            activeMimirKeys: ['PAUSELPAVAX'],
+            lpDepositPauseKeys: [],
+          },
+          {
+            chain: 'BSC',
+            halted: false,
+            tradingPaused: true,
+            lpActionsPaused: false,
+            lpDepositPaused: false,
+            signingPaused: false,
+            activeMimirKeys: ['HALTBSCTRADING'],
+            lpDepositPauseKeys: [],
+          },
+        ],
+      },
+    };
+    const html = renderToStaticMarkup(<NetworkStatusBanner result={result} />);
+
+    expect(html).toContain('Some swaps may be limited');
+    expect(html).toContain('1 swap-limited');
+    expect(html).toContain('2 operation-affected');
+    expect(html.indexOf('aria-label="BSC: Trading halted"')).toBeLessThan(html.indexOf('aria-label="AVAX: LP actions paused"'));
   });
 
   it('renders scoped secured and WASM evidence instead of only counting aggregate controls', () => {
@@ -388,6 +436,106 @@ describe('NetworkStatusBanner', () => {
     expect(html).not.toContain('LP actions: active');
   });
 
+  it('keeps non-swap pauses from becoming the primary swap status', () => {
+    const result: LiveDataResult<NetworkStatus> = {
+      ...liveResult,
+      data: {
+        ...baseStatus,
+        state: 'paused',
+        summary: 'Current-only live sources show one or more THORChain operations paused.',
+        tradingPaused: false,
+        signingPaused: false,
+        lpPaused: true,
+        loansPaused: true,
+        observedChainsPaused: false,
+        activeControlKeys: ['PAUSELP', 'PAUSELOANS', 'HALTCHURNING'],
+        activeChainKeys: [],
+        activeEvidenceKeys: [],
+        activePauseKeys: ['PAUSELP', 'PAUSELOANS', 'HALTCHURNING'],
+        chainStatuses: [],
+        monitoredControls: [
+          {
+            key: 'PAUSELP',
+            label: 'LP actions',
+            state: 'active',
+            active: true,
+            description: 'Liquidity-provider actions are paused when active.',
+          },
+          {
+            key: 'PAUSELOANS',
+            label: 'Loans',
+            state: 'active',
+            active: true,
+            description: 'Loans are paused when active.',
+          },
+          {
+            key: 'HALTCHURNING',
+            label: 'Churning',
+            state: 'active',
+            active: true,
+            description: 'Validator churn is halted when active.',
+          },
+        ],
+      },
+    };
+    const html = renderToStaticMarkup(<NetworkStatusBanner result={result} variant="compact" />);
+
+    expect(html).toContain('Swaps appear open; other operations paused');
+    expect(html).toContain('Swap status');
+    expect(html).toContain('Swaps appear open');
+    expect(html).toContain('Other operations may be paused');
+    expect(html).toContain('LP actions: paused');
+    expect(html).toContain('Loans: paused');
+    expect(html).not.toContain('Live sources show paused operations');
+    expect(html).not.toContain('Paused operations need source review');
+  });
+
+  it('keeps source warnings visible while showing non-swap pauses as partial', () => {
+    const result: LiveDataResult<NetworkStatus> = {
+      ...liveResult,
+      data: {
+        ...baseStatus,
+        state: 'paused',
+        summary: 'Current-only live sources show one or more THORChain operations paused, with source warnings to review.',
+        tradingPaused: false,
+        signingPaused: false,
+        lpPaused: true,
+        loansPaused: true,
+        observedChainsPaused: false,
+        activeControlKeys: ['PAUSELP', 'PAUSELOANS'],
+        activeChainKeys: [],
+        activeEvidenceKeys: [],
+        activePauseKeys: ['PAUSELP', 'PAUSELOANS'],
+        chainStatuses: [],
+        sourceWarnings: ['Unknown operation-like Mimir key need review: BURNSYNTHS.'],
+        monitoredControls: [
+          {
+            key: 'PAUSELP',
+            label: 'LP actions',
+            state: 'active',
+            active: true,
+            description: 'Liquidity-provider actions are paused when active.',
+          },
+          {
+            key: 'PAUSELOANS',
+            label: 'Loans',
+            state: 'active',
+            active: true,
+            description: 'Loans are paused when active.',
+          },
+        ],
+      },
+    };
+    const html = renderToStaticMarkup(<NetworkStatusBanner result={result} variant="compact" />);
+
+    expect(html).toContain('Swaps appear open; other operations need review');
+    expect(html).toContain('swap open');
+    expect(html).toContain('Source warning');
+    expect(html).toContain('1 key needs Mimir review; exact raw keys stay in diagnostics, not the headline.');
+    expect(html).not.toContain('BURNSYNTHS');
+    expect(html).not.toContain('Paused operations need source review');
+  });
+
   it('renders unparseable Mimir warnings without hiding operational context', () => {
     const result: LiveDataResult<NetworkStatus> = {
       ...liveResult,
@@ -427,7 +575,7 @@ describe('NetworkStatusBanner', () => {
     };
     const html = renderToStaticMarkup(<NetworkStatusBanner result={result} />);
 
-    expect(html).toContain('Network status source degraded');
+    expect(html).toContain('Swap status needs source review');
     expect(html).toContain('1 monitored Mimir key could not be parsed.');
     expect(html).toContain('aria-label="BTC: Mimir warning"');
     expect(html).toContain('aria-label="BTC source warnings"');
@@ -441,7 +589,7 @@ describe('NetworkStatusBanner', () => {
     expect(html).not.toContain('Signing: inactive');
   });
 
-  it('renders paused source warnings in the primary headline and source badge', () => {
+  it('renders swap-blocking source warnings in the primary headline and source badge', () => {
     const warning = 'THORNode latest block timestamp is 21 seconds old; live operation state may be stale.';
     const result: LiveDataResult<NetworkStatus> = {
       ...liveResult,
@@ -449,12 +597,20 @@ describe('NetworkStatusBanner', () => {
         ...baseStatus,
         state: 'paused',
         summary: 'Current-only live sources show one or more THORChain operations paused, with source warnings to review.',
+        tradingPaused: true,
+        signingPaused: false,
+        activeControlKeys: ['HALTTRADING'],
+        activeChainKeys: [],
+        activeEvidenceKeys: [],
+        activePauseKeys: ['HALTTRADING'],
+        chainStatuses: [],
         sourceWarnings: [warning],
       },
     };
     const html = renderToStaticMarkup(<NetworkStatusBanner result={result} />);
 
-    expect(html).toContain('Paused operations need source review');
+    expect(html).toContain('Swap controls need source review');
+    expect(html).toContain('swap paused');
     expect(html).toContain('Degraded');
     expect(html).toContain(warning);
     expect(html).not.toContain('Current-only</span>');
@@ -490,7 +646,7 @@ describe('NetworkStatusBanner', () => {
     };
     const html = renderToStaticMarkup(<NetworkStatusBanner result={result} />);
 
-    expect(html).toContain('Network status source degraded');
+    expect(html).toContain('Swap status needs source review');
     expect(html).toContain('1 chain-scoped Mimir key needs review.');
     expect(html).toContain('Show 1 key');
     expect(html).not.toContain('Live sources have unparseable Mimir controls');
@@ -528,7 +684,7 @@ describe('NetworkStatusBanner', () => {
     };
     const html = renderToStaticMarkup(<NetworkStatusBanner result={result} />);
 
-    expect(html).toContain('Network status source degraded');
+    expect(html).toContain('Swap status needs source review');
     expect(html).toContain('aria-label="BTC: Source warning"');
     expect(html).toContain('aria-label="BTC source warnings"');
     expect(html).toContain('Warning: 1 issue');
@@ -622,7 +778,7 @@ describe('NetworkStatusBanner', () => {
     };
     const html = renderToStaticMarkup(<NetworkStatusBanner result={result} variant="compact" />);
 
-    expect(html).toContain('Network status source degraded');
+    expect(html).toContain('Swap status needs source review');
     expect(html).toContain('1 key needs Mimir review; exact raw keys stay in diagnostics, not the headline.');
     expect(html).toContain('href="/network"');
     expect(html).toContain('Open diagnostics');
@@ -658,7 +814,7 @@ describe('NetworkStatusBanner', () => {
     };
     const html = renderToStaticMarkup(<NetworkStatusBanner result={result} />);
 
-    expect(html).toContain('Network status source degraded');
+    expect(html).toContain('Swap status needs source review');
     expect(html).toContain('Show 81 keys');
     expect(html).toContain('UNKNOWNENABLEMENT01');
     expect(html).toContain('UNKNOWNENABLEMENT80');
@@ -714,7 +870,7 @@ describe('NetworkStatusBanner', () => {
     };
     const html = renderToStaticMarkup(<NetworkStatusBanner result={result} />);
 
-    expect(html).toContain('Network status source degraded');
+    expect(html).toContain('Swap status needs source review');
     expect(html).toContain('Block age 21 sec in future');
     expect(html).toContain(warning);
     expect(html).not.toContain('Live sources show no global halt flags');
