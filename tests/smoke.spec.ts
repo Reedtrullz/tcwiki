@@ -836,4 +836,26 @@ test.describe('THORChain Wiki Smoke Tests', () => {
     await page.keyboard.press('Escape');
     await expect(page.getByLabel(/Search the wiki/i)).toHaveCount(0);
   });
+
+  test('global header search opens from keyboard and submits reader-job queries', async ({ page }) => {
+    await page.goto('/');
+
+    await page.keyboard.press('Control+K');
+    const siteSearch = page.getByRole('search', { name: /Site search/i });
+    const searchInput = siteSearch.getByLabel(/Search the wiki/i);
+    await expect(searchInput).toBeVisible();
+    await expect(searchInput).toBeFocused();
+    await expect(siteSearch.getByRole('link', { name: /Why did my swap refund/i })).toHaveAttribute('href', '/deep-dives/clp#swap-lifecycle-and-refunds');
+
+    await searchInput.fill('why did my swap refund');
+    await searchInput.press('Enter');
+    await expect(page).toHaveURL(/\/search\?q=why(%20|\+)did(%20|\+)my(%20|\+)swap(%20|\+)refund/);
+    await expect(page.locator('main article').first().locator('a[href="/deep-dives/clp#swap-lifecycle-and-refunds"]')).toBeVisible();
+
+    await page.goto('/');
+    await page.getByRole('button', { name: /Open search/i }).click();
+    await expect(siteSearch.getByRole('link', { name: /Which source should I trust/i })).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.getByLabel(/Search the wiki/i)).toHaveCount(0);
+  });
 });

@@ -106,6 +106,11 @@ const feesSource: SourceMeta = {
   url: 'https://dev.thorchain.org/concepts/fees.html',
 };
 
+const swapGuideSource: SourceMeta = {
+  label: 'THORChain Swap Guide',
+  url: 'https://dev.thorchain.org/swap-guide/quickstart-guide.html',
+};
+
 const thornameGuideSource: SourceMeta = {
   label: 'THORName affiliate guide',
   url: 'https://dev.thorchain.org/affiliate-guide/thorname-guide.html',
@@ -207,7 +212,7 @@ export const CONTENT_ENTRIES: ContentEntry[] = [
     category: 'section',
     confidence: 'curated',
     description: 'Architecture, swaps, TSS, Bifrost, Mimir, halts, app layer, and supported chains.',
-    body: 'THORChain protocol architecture native cross-chain swaps Bifrost observers TSS vaults Mimir halts inbound addresses refunds streaming swaps StreamingSwapPause HaltMemoless RUNEPoolHaltDeposit app layer CosmWasm.',
+    body: 'THORChain protocol architecture native cross-chain swaps Bifrost observers TSS vaults Mimir halts inbound addresses swap lifecycle refunds refund reasons streaming swaps StreamingSwapPause HaltMemoless RUNEPoolHaltDeposit app layer CosmWasm.',
     tags: ['architecture', 'swaps', 'mimir', 'halts'],
     reviewedAt: '2026-07-05',
     nextReviewDue: '2026-08-05',
@@ -393,7 +398,7 @@ export const CONTENT_ENTRIES: ContentEntry[] = [
     category: 'deep-dive',
     confidence: 'curated',
     description: 'How THORChain slip-based pools enable native swaps without order books or wrapped assets.',
-    body: 'Continuous Liquidity Pools CLP slip ratio x divided by X plus x liquidity fee output amount RUNE paired pools slippage liquidity providers native cross-chain swaps. Savers are historical and deprecated.',
+    body: 'Continuous Liquidity Pools CLP slip ratio x divided by X plus x liquidity fee output amount RUNE paired pools slippage liquidity providers native cross-chain swaps swap lifecycle quote inbound memo execution outbound refund stale quote min output halt signing trading. Savers are historical and deprecated.',
     tags: ['clp', 'fees', 'swaps'],
     reviewedAt: '2026-06-18',
     nextReviewDue: '2026-07-18',
@@ -847,6 +852,18 @@ export const TASK_INTENT_GUIDES: TaskIntentGuide[] = [
     sources: [networkHaltsSource, devDocsSource],
   },
   {
+    id: 'swap-refund-lifecycle',
+    label: 'Why did my swap refund?',
+    question: 'Was the swap stopped by memo input, quote limits, fees, halts, signing, or changing live state?',
+    href: '/deep-dives/clp#swap-lifecycle-and-refunds',
+    description: 'Start with the swap lifecycle before narrowing into live halts, quote limits, memos, outbound fees, or refund evidence.',
+    searchTerms: ['swap refund', 'swap failed', 'why did my swap refund', 'refund reason', 'stale quote', 'minimum output', 'memo invalid', 'outbound failed', 'quote failed', 'swap lifecycle', 'inbound outbound refund'],
+    confidence: 'curated',
+    reviewedAt: '2026-07-05',
+    nextReviewDue: '2026-08-05',
+    sources: [swapGuideSource, feesSource, networkHaltsSource],
+  },
+  {
     id: 'source-choice',
     label: 'Which source should I trust?',
     question: 'Am I making a current-state, historical, governance, integration, or sentiment claim?',
@@ -954,6 +971,7 @@ export const DEEP_DIVE_TOC: Record<string, DeepDiveTocItem[]> = {
   'deep-dive-clp': [
     tocItem('How CLP Works'),
     tocItem('Key Properties'),
+    tocItem('Swap Lifecycle and Refunds'),
     tocItem('Comparison to Traditional AMMs'),
   ],
   'deep-dive-incentive-pendulum': [

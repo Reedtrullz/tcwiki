@@ -38,6 +38,16 @@ const feesSource: SourceMeta = {
   url: 'https://dev.thorchain.org/concepts/fees.html',
 };
 
+const liquidityProvidersSource: SourceMeta = {
+  label: 'Liquidity Providers',
+  url: 'https://docs.thorchain.org/technical-documentation/understanding-thorchain/roles/liquidity-providers',
+};
+
+const clpSource: SourceMeta = {
+  label: 'Continuous Liquidity Pools',
+  url: 'https://docs.thorchain.org/technical-documentation/thorchain-finance/continuous-liquidity-pools',
+};
+
 const adr026DynamicFeesSource: SourceMeta = {
   label: 'ADR-026 dynamic L1 fee model',
   url: 'https://gitlab.com/thorchain/thornode/-/raw/develop/docs/architecture/adr-026-dynamic-l1-min-fee-per-thorname.md',
@@ -98,6 +108,28 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     nextReviewDue: '2026-08-02',
     sources: [docsSource, devDocsSource],
     relatedHrefs: ['/deep-dives/clp', '/economics'],
+  },
+  {
+    id: slugifyFragment('Impermanent loss'),
+    term: 'Impermanent loss',
+    definition: 'Liquidity-provider purchasing-power risk when relative pool asset prices move. THORChain docs frame slip-based fees as reducing this risk, not removing it; current LP return claims still need live pool and earnings evidence.',
+    category: 'economics',
+    confidence: 'curated',
+    reviewedAt: '2026-07-05',
+    nextReviewDue: '2026-08-05',
+    sources: [liquidityProvidersSource, clpSource],
+    relatedHrefs: ['/deep-dives/clp', '/stats#stats-look-here-first'],
+  },
+  {
+    id: slugifyFragment('Impermanent loss protection'),
+    term: 'Impermanent loss protection',
+    definition: 'A historical reserve-subsidy mechanism for LP withdrawals. Official THORChain docs now say IL protection has been removed or ended, so do not describe it as currently available for ordinary liquidity providers.',
+    category: 'history',
+    confidence: 'official',
+    reviewedAt: '2026-07-05',
+    nextReviewDue: '2026-08-05',
+    sources: [clpSource, liquidityProvidersSource],
+    relatedHrefs: ['/deep-dives/clp', '/docs#historical-features-and-recovery'],
   },
   {
     id: slugifyFragment('Liquidity provider'),
@@ -263,6 +295,17 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     nextReviewDue: '2026-08-04',
     sources: [assetNotationSource, networkHaltsSource],
     relatedHrefs: ['/economics', '/network#network-diagnostics'],
+  },
+  {
+    id: slugifyFragment('Synthetic asset'),
+    term: 'Synthetic asset',
+    definition: 'A THORChain asset-notation type, often shortened to synth, denoted with `CHAIN/ASSET`. Synthetics were part of historical Savers mechanics; notation may still appear in developer contexts, but current availability or halt state must be checked from live controls and archived-product boundaries.',
+    category: 'history',
+    confidence: 'curated',
+    reviewedAt: '2026-07-05',
+    nextReviewDue: '2026-08-05',
+    sources: [assetNotationSource, archivedSource, networkHaltsSource],
+    relatedHrefs: ['/deep-dives/savers', '/docs#developer-integration', '/network#network-diagnostics'],
   },
   {
     id: slugifyFragment('App Layer'),

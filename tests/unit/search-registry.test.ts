@@ -23,7 +23,7 @@ import {
 } from '@/lib/content/registry';
 import { SEARCH_DOCUMENTS } from '@/lib/search/registry';
 import type { SearchDocType } from '@/lib/search/registry';
-import { recordAnchor } from '@/lib/utils';
+import { recordAnchor, slugifyFragment } from '@/lib/utils';
 
 interface AnchoredSearchExpectation {
   id: string;
@@ -141,6 +141,17 @@ function knownAnchorsByRoute() {
   }
   for (const term of GLOSSARY_TERMS) {
     addAnchor(anchorsByRoute, '/glossary', term.category);
+  }
+  for (const entry of CONTENT_ENTRIES.filter((candidate) => candidate.category === 'deep-dive')) {
+    const slug = entry.href.replace('/deep-dives/', '');
+    const mdxPath = join(process.cwd(), 'content/deep-dives', `${slug}.mdx`);
+    if (!existsSync(mdxPath)) {
+      continue;
+    }
+    const source = readFileSync(mdxPath, 'utf8');
+    for (const match of source.matchAll(/^#{2,3}\s+(.+)$/gm)) {
+      addAnchor(anchorsByRoute, entry.href, slugifyFragment(match[1]));
+    }
   }
 
   return anchorsByRoute;
@@ -350,6 +361,9 @@ describe('SEARCH_DOCUMENTS', () => {
     expect(docsMatching('pool-share accounting').some((doc) => doc.id === 'glossary:liquidity-provider')).toBe(true);
     expect(docsMatching('pool ownership share').some((doc) => doc.id === 'glossary:liquidity-units')).toBe(true);
     expect(docsMatching('one side of a pool').some((doc) => doc.id === 'glossary:asymmetric-withdrawal')).toBe(true);
+    expect(docsMatching('purchasing-power risk').some((doc) => doc.id === 'glossary:impermanent-loss')).toBe(true);
+    expect(docsMatching('IL protection has been removed').some((doc) => doc.id === 'glossary:impermanent-loss-protection')).toBe(true);
+    expect(docsMatching('Synthetics were part of historical Savers').some((doc) => doc.id === 'glossary:synthetic-asset')).toBe(true);
     expect(docsMatching('deployer, checksum').some((doc) => doc.id === 'glossary:cosmwasm')).toBe(true);
     expect(docsMatching('threshold-signature implementation').some((doc) => doc.id === 'glossary:gg20')).toBe(true);
   });
@@ -372,6 +386,8 @@ describe('SEARCH_DOCUMENTS', () => {
     expect(docsMatching('which source should i trust').some((doc) => doc.id === 'task:source-choice' && doc.href === '/docs#source-map-chooser' && doc.slug === '/docs')).toBe(true);
     expect(sourceChoiceDoc?.content).toContain('Static docs explain intended/design behavior, not proof');
     expect(sourceChoiceDoc?.content).toContain('Community material is useful context');
+    expect(docsMatching('why did my swap refund').some((doc) => doc.id === 'task:swap-refund-lifecycle' && doc.href === '/deep-dives/clp#swap-lifecycle-and-refunds' && doc.slug === '/deep-dives/clp')).toBe(true);
+    expect(docsMatching('stale quote minimum output').some((doc) => doc.id === 'task:swap-refund-lifecycle')).toBe(true);
     expect(docsMatching('add liquidity').some((doc) => doc.id === 'task:liquidity-actions' && doc.href === '/network#network-diagnostics' && doc.slug === '/network')).toBe(true);
     expect(docsMatching('asymmetric withdrawal').some((doc) => doc.id === 'task:liquidity-actions')).toBe(true);
     expect(docsMatching('Midgard API').some((doc) => doc.id === 'task:build-query' && doc.href === '/docs#developer-integration' && doc.slug === '/docs')).toBe(true);

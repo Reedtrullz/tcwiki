@@ -22,6 +22,18 @@ Where `x` is the input amount, `X` is the input-side pool depth, and `Y` is the 
 
 If a swap limit is not met, the amount is below the recommended minimum, fees exceed the practical output, or a relevant chain/trading/signing control is halted, the transaction can be refunded or remain unavailable. Treat swap availability as live/current-only, not as a static property of the CLP formula.
 
+## Swap Lifecycle and Refunds
+
+A normal swap journey starts before the CLP math is executed:
+
+1. The user or interface asks THORNode for a quote and checks the current inbound address, router, fees, limits, and expected wait time.
+2. The user sends the native asset to the current inbound address with a memo that names the action, target asset, destination, and optional affiliate or streaming parameters.
+3. Bifrost observers report the inbound transaction to THORChain, where current Mimir controls, chain state, memo validity, pool status, and quote limits determine whether the swap can proceed.
+4. The state machine prices the swap through RUNE-paired pools, applying slip, liquidity fees, outbound fees, and current protocol rules.
+5. If execution is valid and signing is available, nodes sign the outbound transaction. If the memo, limits, pool state, dust amount, fee economics, halt state, or outbound path make the action invalid or impossible, the protocol can refund instead.
+
+Refunds are therefore not one single failure mode. They can point to user-input problems, stale quotes, minimum-output protection, paused chains, signing/trading controls, exhausted practical output after fees, or source-state changes between quote and execution. Use live network diagnostics before concluding that a refund was caused by the CLP formula itself.
+
 ## Comparison to Traditional AMMs
 
 Unlike constant-product AMMs (Uniswap v2 style), CLP's continuous nature and RUNE as universal settlement asset creates unified liquidity across supported chains. Current chain availability should be checked from live inbound-address and pool status, not from a hard-coded chain count.

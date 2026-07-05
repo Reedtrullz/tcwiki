@@ -29,6 +29,8 @@ describe('task-aware search ranking', () => {
     expect(rankedIds('wallet safety')[0]).toBe('task:choose-interface');
     expect(rankedIds('TCY recovery')[0]).toBe('task:tcy-recovery');
     expect(rankedIds('is trading halted')[0]).toBe('task:swap-availability');
+    expect(rankedIds('why did my swap refund')[0]).toBe('task:swap-refund-lifecycle');
+    expect(rankedIds('quote failed')[0]).toBe('task:swap-refund-lifecycle');
     expect(rankedIds('can i add liquidity')[0]).toBe('task:liquidity-actions');
     expect(rankedIds('LP deposit')[0]).toBe('task:liquidity-actions');
     expect(rankedIds('Midgard API')[0]).toBe('task:build-query');
@@ -39,5 +41,10 @@ describe('task-aware search ranking', () => {
     expect(rankedIds('SOL supported chain')[0]).toBe('chain:sol');
     expect(rankedIds('XRP Ledger')[0]).toBe('chain:xrp');
     expect(rankedIds('BTC supported chain')[0]).toBe('chain:btc');
+  });
+
+  it('routes glossary concept queries to source-aware definitions', () => {
+    expect(rankedIds('what is a synth')[0]).toBe('glossary:synthetic-asset');
+    expect(rankedIds('impermanent loss')[0]).toBe('glossary:impermanent-loss');
   });
 });

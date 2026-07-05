@@ -1,13 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Search, Menu, X, ChevronDown } from 'lucide-react';
 import { JOURNEY_LINKS, NAV_ITEMS, TASK_INTENT_GUIDES } from '@/lib/content/registry';
 
 export default function Header() {
   const pathname = usePathname();
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [showGuides, setShowGuides] = useState(false);
@@ -56,8 +57,11 @@ export default function Header() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (searchQuery.trim()) {
-      window.location.href = `/search?q=${encodeURIComponent(searchQuery)}`;
+    const trimmedQuery = searchQuery.trim();
+    if (trimmedQuery) {
+      closePanels(false);
+      setSearchQuery('');
+      router.push(`/search?q=${encodeURIComponent(trimmedQuery)}`);
     }
   };
 

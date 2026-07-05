@@ -1224,6 +1224,11 @@ function collectKnownRouteAnchors(collections, glossaryTerms, deepDiveReaderPath
   for (const readerPath of deepDiveReaderPaths) {
     addRouteAnchor(anchorsByRoute, '/deep-dives', `deep-dive-path-${readerPath.id}`);
   }
+  for (const slug of readDeepDiveSlugsFromMdx()) {
+    for (const anchor of mdxAnchorsForSlug(slug)) {
+      addRouteAnchor(anchorsByRoute, `/deep-dives/${slug}`, anchor);
+    }
+  }
 
   return anchorsByRoute;
 }
