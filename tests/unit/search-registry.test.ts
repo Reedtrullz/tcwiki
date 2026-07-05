@@ -244,6 +244,7 @@ describe('SEARCH_DOCUMENTS', () => {
     expect(docsMatching('wallet approvals').some((doc) => doc.id === 'ecosystem:thorchain-swap')).toBe(true);
     expect(docsMatching('download source').some((doc) => doc.id === 'ecosystem:asgardex')).toBe(true);
     expect(docsMatching('production readiness').some((doc) => doc.id === 'ecosystem:xchainjs')).toBe(true);
+    expect(docsMatching('ShapeShift').some((doc) => doc.id === 'ecosystem:shapeshift')).toBe(true);
     expect(docsMatching('quote quality').some((doc) => doc.id === 'source-map:third-party-interfaces-wallets')).toBe(true);
     expect(docsMatching('official endorsement').some((doc) => doc.id === 'source-map:third-party-interfaces-wallets')).toBe(true);
   });

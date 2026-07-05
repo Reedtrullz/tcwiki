@@ -34,6 +34,8 @@ interface ChainPresentation {
   chain: ChainOperationalStatus;
   labels: string[];
   statusText: string;
+  swapLimited: boolean;
+  operationAffected: boolean;
   directEvidenceCount: number;
   inheritedEvidenceCount: number;
   warningCount: number;
@@ -42,6 +44,18 @@ interface ChainPresentation {
   cardClassName: string;
   iconClassName: string;
 }
+
+type SwapStatusTone = 'open' | 'limited' | 'paused' | 'unknown';
+
+interface SwapStatusPresentation {
+  tone: SwapStatusTone;
+  label: string;
+  badge: string;
+  summary: string;
+  detail: string;
+}
+
+const SWAP_LIMITING_CHAIN_LABELS = new Set(['Chain halted', 'Trading halted', 'Signing paused']);
 
 function uniqueStrings(values: string[]) {
   return Array.from(new Set(values));
@@ -353,7 +367,9 @@ function getChainPresentation(chain: ChainOperationalStatus): ChainPresentation 
   const warningCount = unparseableKeys.length + chainSourceWarnings.length;
   const directEvidenceCount = directEvidenceKeys.length + inboundFields.length;
   const inheritedEvidenceCount = inheritedMimirKeys.length;
-  const hasDirectRisk = directLabels.length > 0 || warningCount > 0;
+  const operationAffected = directLabels.length > 0;
+  const swapLimited = directLabels.some((label) => SWAP_LIMITING_CHAIN_LABELS.has(label));
+  const hasDirectRisk = operationAffected || warningCount > 0;
   const hasScheduled = scheduledKeys.length > 0;
   const inheritedOnly = directLabels.length === 0 && inheritedMimirKeys.length > 0;
 
@@ -361,11 +377,13 @@ function getChainPresentation(chain: ChainOperationalStatus): ChainPresentation 
     chain,
     labels,
     statusText: labels.length > 0 ? labels.join(' / ') : 'Open',
+    swapLimited,
+    operationAffected,
     directEvidenceCount,
     inheritedEvidenceCount,
     warningCount,
     scheduledCount: scheduledKeys.length,
-    rank: hasDirectRisk ? 0 : hasScheduled ? 1 : inheritedOnly ? 2 : 3,
+    rank: swapLimited ? 0 : warningCount > 0 ? 1 : operationAffected ? 2 : hasScheduled ? 3 : inheritedOnly ? 4 : 5,
     cardClassName: hasDirectRisk
       ? 'border-amber-500/25 bg-amber-500/5'
       : hasScheduled
@@ -391,9 +409,114 @@ function getActionSummary(status: NetworkStatus | undefined, chainPresentations:
     .filter((control) => control.active)
     .map((control) => `${control.label}: ${getControlStateLabel(control.key, control.state)}`);
   const directChainActions = chainPresentations
-    .filter((chain) => chain.rank === 0)
+    .filter((chain) => chain.operationAffected)
     .flatMap((chain) => chain.labels.filter((label) => !label.includes('warning')));
   return uniqueStrings([...activeControls, ...directChainActions]);
+}
+
+function formatList(values: string[]) {
+  if (values.length <= 1) {
+    return values[0] ?? '';
+  }
+  if (values.length === 2) {
+    return `${values[0]} and ${values[1]}`;
+  }
+  return `${values.slice(0, -1).join(', ')}, and ${values[values.length - 1]}`;
+}
+
+function pluralize(value: number, singular: string, plural = `${singular}s`) {
+  return `${value} ${value === 1 ? singular : plural}`;
+}
+
+function getUpperKeySet(keys: string[] | undefined) {
+  return new Set((keys ?? []).map((key) => key.toUpperCase()));
+}
+
+function getSwapStatusPresentation(
+  status: NetworkStatus | undefined,
+  chainPresentations: ChainPresentation[]
+): SwapStatusPresentation {
+  if (!status) {
+    return {
+      tone: 'unknown',
+      label: 'Unavailable',
+      badge: 'unavailable',
+      summary: 'Current-only THORNode swap status is unavailable.',
+      detail: 'No live swap controls were available.',
+    };
+  }
+  if (status.state === 'unknown') {
+    return {
+      tone: 'unknown',
+      label: 'Unknown',
+      badge: 'unknown',
+      summary: status.summary || 'THORNode status could not be classified.',
+      detail: 'Live swap controls could not be classified.',
+    };
+  }
+
+  const activeControlKeys = getUpperKeySet(status.activeControlKeys);
+  const activeEvidenceKeys = getUpperKeySet(status.activeEvidenceKeys);
+  const blockingControls = [
+    activeControlKeys.has('HALTTRADING') ? 'global trading' : null,
+    activeControlKeys.has('HALTSIGNING') ? 'global signing' : null,
+    activeControlKeys.has('HALTCHAINGLOBAL') ? 'global chain observation' : null,
+    activeControlKeys.has('NODEPAUSECHAINGLOBAL') || activeEvidenceKeys.has('NODEPAUSECHAINGLOBAL') ? 'node chain pause' : null,
+  ].filter((control): control is string => control !== null);
+  const limitedControls = [
+    status.streamingSwapsPaused === true ? 'streaming swaps' : null,
+    status.manualSwapsToSynthDisabled === true ? 'manual synth swaps' : null,
+    status.tcyTradingPaused === true ? 'TCY trading' : null,
+  ].filter((control): control is string => control !== null);
+  const routeLimitedChains = chainPresentations.filter((presentation) => (
+    presentation.swapLimited
+  ));
+
+  if (blockingControls.length > 0) {
+    const controls = formatList(blockingControls);
+    return {
+      tone: 'paused',
+      label: 'Swaps paused',
+      badge: 'swap paused',
+      summary: `${controls} ${blockingControls.length === 1 ? 'is' : 'are'} active in current THORNode data; treat swap availability as paused until diagnostics clear.`,
+      detail: `${blockingControls.length} blocking swap control${blockingControls.length === 1 ? '' : 's'}`,
+    };
+  }
+
+  if (routeLimitedChains.length > 0 || limitedControls.length > 0) {
+    const constraints = [
+      routeLimitedChains.length > 0 ? `${pluralize(routeLimitedChains.length, 'chain')} with direct trading, signing, or chain-halt evidence` : null,
+      limitedControls.length > 0 ? formatList(limitedControls) : null,
+    ].filter((constraint): constraint is string => constraint !== null);
+
+    return {
+      tone: 'limited',
+      label: 'Some swaps limited',
+      badge: 'limited',
+      summary: `No global swap halt is active, but ${formatList(constraints)} should be reviewed before assuming a pair is available.`,
+      detail: routeLimitedChains.length > 0
+        ? `${pluralize(routeLimitedChains.length, 'chain')} limited`
+        : formatList(limitedControls),
+    };
+  }
+
+  if (status.state === 'paused') {
+    return {
+      tone: 'open',
+      label: 'Swaps appear open',
+      badge: 'swap open',
+      summary: 'No global swap halt is active in current THORNode data; the active pauses are outside ordinary swap execution.',
+      detail: 'Other operations may be paused',
+    };
+  }
+
+  return {
+    tone: 'open',
+    label: 'Swaps appear open',
+    badge: 'swap open',
+    summary: 'No global swap halt is active in current THORNode data.',
+    detail: 'No swap halt observed',
+  };
 }
 
 function renderControlChip(control: OperationalControlStatus) {
@@ -437,9 +560,11 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
   const chainPresentations = (status?.chainStatuses ?? [])
     .map(getChainPresentation)
     .sort((left, right) => left.rank - right.rank || left.chain.chain.localeCompare(right.chain.chain));
-  const directlyAffectedChains = chainPresentations.filter((chain) => chain.rank === 0);
-  const inheritedOnlyChains = chainPresentations.filter((chain) => chain.rank === 2);
+  const swapLimitedChains = chainPresentations.filter((chain) => chain.swapLimited);
+  const operationAffectedChains = chainPresentations.filter((chain) => chain.operationAffected);
+  const inheritedOnlyChains = chainPresentations.filter((chain) => !chain.operationAffected && chain.inheritedEvidenceCount > 0);
   const activeActions = getActionSummary(status, chainPresentations);
+  const swapStatus = getSwapStatusPresentation(status, chainPresentations);
   const keyReviewCount = warningDetails
     .filter(hasKeyLikeWarning)
     .reduce((count, warning) => count + (warning.keys?.length ?? 0), 0);
@@ -514,25 +639,56 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
   const evidenceRows = [...controlEvidenceRows, ...chainMimirEvidenceRows, ...inboundEvidenceRows, ...scopedEvidenceRows];
   const evidenceCount = evidenceRows.length;
   const Icon = hasTrustWarning ? AlertTriangle : CheckCircle2;
+  const primaryBadgeVariant = swapStatus.tone === 'open'
+    ? 'success'
+    : swapStatus.tone === 'paused'
+      ? 'danger'
+      : 'warning';
   const title = isLoading
     ? 'Checking live network status'
     : isUnavailable
       ? 'Network status unavailable'
       : isUnknown
         ? 'Network status unknown'
-        : isPaused && hasSourceWarnings
-          ? 'Paused operations need source review'
-          : isPaused
-            ? 'Live sources show paused operations'
-            : isDegraded || hasSourceWarnings
-              ? 'Network status source degraded'
-              : hasScheduledMimirKeys
-                ? 'Live sources show scheduled Mimir controls'
-                : 'Live sources show no global halt flags';
+        : swapStatus.tone === 'paused' && hasSourceWarnings
+          ? 'Swap controls need source review'
+          : swapStatus.tone === 'paused'
+            ? 'Swap controls are paused'
+            : swapStatus.tone === 'limited' && hasSourceWarnings
+              ? 'Some swaps limited; source review needed'
+              : swapStatus.tone === 'limited'
+                ? 'Some swaps may be limited'
+                : isPaused && hasSourceWarnings
+                  ? 'Swaps appear open; other operations need review'
+                  : isPaused
+                    ? 'Swaps appear open; other operations paused'
+                    : isDegraded || hasSourceWarnings
+                      ? 'Swap status needs source review'
+                      : hasScheduledMimirKeys
+                        ? 'Live sources show scheduled Mimir controls'
+                        : 'Live sources show no global halt flags';
   const summary = isLoading
     ? 'Fetching THORNode Mimir, inbound-address, version, and block evidence.'
-    : result?.error ?? status?.summary ?? 'Current-only THORNode status is unavailable.';
+    : result?.error ?? (isUnavailable ? 'Current-only THORNode status is unavailable.' : swapStatus.summary);
   const compact = variant === 'compact';
+  const routeScopeValue = status
+    ? swapStatus.tone === 'paused'
+      ? 'Global swap halt'
+      : swapLimitedChains.length > 0
+        ? `${swapLimitedChains.length} swap-limited`
+        : 'No swap-limited chains'
+    : 'Unavailable';
+  const routeScopeDetail = status
+    ? swapStatus.tone === 'paused'
+      ? operationAffectedChains.length > 0
+        ? `${operationAffectedChains.length} chain status${operationAffectedChains.length === 1 ? '' : 'es'} with direct operation impacts`
+        : 'Global control applies before per-chain routing'
+      : operationAffectedChains.length > swapLimitedChains.length
+        ? `${operationAffectedChains.length} operation-affected${inheritedOnlyChains.length > 0 ? ` / ${inheritedOnlyChains.length} inherited` : ''}`
+        : inheritedOnlyChains.length > 0
+          ? `${inheritedOnlyChains.length} inherited-only`
+          : 'No other chain operation impacts'
+    : null;
 
   return (
     <Card
@@ -547,8 +703,8 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="text-sm font-semibold">{title}</h2>
               {status?.state && (
-                <Badge variant={hasTrustWarning ? 'warning' : 'success'}>
-                  {status.state}
+                <Badge variant={primaryBadgeVariant}>
+                  {swapStatus.badge}
                 </Badge>
               )}
               {hasSourceWarnings && (
@@ -596,22 +752,28 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
         </p>
         <div className="grid gap-2 md:grid-cols-4" aria-label="Look here first">
           <div className="rounded-md border border-border bg-surface/50 px-3 py-2">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Posture</p>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Swap status</p>
             <p className="mt-1 text-sm font-semibold">
-              {isLoading ? 'Checking' : isUnavailable ? 'Unavailable' : isPaused ? 'Paused' : isDegraded || hasSourceWarnings ? 'Degraded' : 'Operational'}
+              {isLoading ? 'Checking' : isUnavailable ? 'Unavailable' : swapStatus.label}
             </p>
+            {status && (
+              <p className="mt-1 text-[11px] leading-relaxed text-slate-500">{swapStatus.detail}</p>
+            )}
           </div>
           <div className="rounded-md border border-border bg-surface/50 px-3 py-2">
             <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Actions affected</p>
             <p className="mt-1 text-sm font-semibold">{status ? activeActions.length > 0 ? activeActions.slice(0, 2).join(', ') : 'None observed' : 'Unavailable'}</p>
           </div>
           <div className="rounded-md border border-border bg-surface/50 px-3 py-2">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Chains</p>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Route scope</p>
             <p className="mt-1 text-sm font-semibold">
-              {status
-                ? `${directlyAffectedChains.length} affected${inheritedOnlyChains.length > 0 ? ` / ${inheritedOnlyChains.length} inherited` : ''}`
-                : 'Unavailable'}
+              {routeScopeValue}
             </p>
+            {routeScopeDetail && (
+              <p className="mt-1 text-[11px] leading-relaxed text-slate-500">
+                {routeScopeDetail}
+              </p>
+            )}
           </div>
           <div className="rounded-md border border-border bg-surface/50 px-3 py-2">
             <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Data quality</p>
