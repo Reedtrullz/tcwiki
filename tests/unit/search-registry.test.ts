@@ -268,9 +268,10 @@ describe('SEARCH_DOCUMENTS', () => {
     expect(runeSupply?.sources.map((source) => source.label)).toContain('RUNE and TCY tokenomics');
     expect(tcyRecovery?.href).toBe('/tcy#tokenomics-tcy-recovery-context');
     expect(tcyRecovery?.confidence).toBe('needs-review');
-    expect(tcyRecovery?.content).toContain('Deprecated historical products');
+    expect(tcyRecovery?.content).toContain('Full recovery Not guaranteed');
+    expect(tcyRecovery?.sources.map((source) => source.label)).toContain('TCY Developer Guide');
     expect(docsMatching('reduced supply near 425M').some((doc) => doc.id === 'tokenomics:rune-supply-framing')).toBe(true);
-    expect(docsMatching('recovery-token context associated with').some((doc) => doc.id === 'tokenomics:tcy-recovery-context')).toBe(true);
+    expect(docsMatching('full debt recovery is market dependent').some((doc) => doc.id === 'tokenomics:tcy-recovery-context')).toBe(true);
   });
 
   it('uses stable ids even when multiple records share a slug', () => {
@@ -347,7 +348,7 @@ describe('SEARCH_DOCUMENTS', () => {
     expect(dynamicFeeSourceMap?.reviewedAt).toBe('2026-07-04');
     expect(dynamicFeeSourceMap?.nextReviewDue).toBe('2026-08-04');
     expect(SEARCH_DOCUMENTS.find((doc) => doc.id === 'tokenomics:rune-supply-framing')?.reviewedAt).toBe(STATIC_DATA_LAST_UPDATED);
-    expect(SEARCH_DOCUMENTS.find((doc) => doc.id === 'tokenomics:tcy-recovery-context')?.nextReviewDue).toBe('2026-07-18');
+    expect(SEARCH_DOCUMENTS.find((doc) => doc.id === 'tokenomics:tcy-recovery-context')?.nextReviewDue).toBe('2026-08-05');
     expect(olderIncident?.reviewedAt).toBe(STATIC_DATA_LAST_UPDATED);
     expect(olderIncident?.nextReviewDue).toBe('2026-07-18');
   });

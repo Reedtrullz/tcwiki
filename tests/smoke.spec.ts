@@ -552,8 +552,20 @@ test.describe('THORChain Wiki Smoke Tests', () => {
     await page.goto('/governance');
     await expect(page.getByRole('heading', { name: /Governance & History/i })).toBeVisible();
     await expect(page.getByRole('heading', { name: /Current Incident & Recovery Tracker/i })).toBeVisible();
+    await expect(page.getByText('TCY restored the original debt value')).toBeVisible();
+    await expect(page.getByText(/full recovery is not guaranteed/i)).toBeVisible();
     await expect(page.locator('#current-recovery').getByRole('heading', { name: /ADR-028 Recovery Path/i })).toBeVisible();
     await expect(page.getByRole('heading', { name: /Security Incidents/i })).toBeVisible();
+  });
+
+  test('tcy page keeps recovery caveats decision-shaped', async ({ page }) => {
+    await page.goto('/tcy');
+    await expect(page.getByRole('heading', { name: /TCY, Savers, and THORFi History/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Reader Decision Matrix/i })).toBeVisible();
+    await expect(page.getByText('Recovery not guaranteed')).toBeVisible();
+    await expect(page.getByText(/Did TCY fully recover creditors/i)).toBeVisible();
+    await expect(page.getByText(/Developer docs state full debt recovery is market dependent and not guaranteed/i)).toBeVisible();
+    await expect(page.getByText(/Do not describe TCY as governance power/i)).toBeVisible();
   });
 
   test('deep dives index and article pages load', async ({ page }) => {

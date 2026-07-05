@@ -133,6 +133,13 @@ const tokenomicsSource: SourceMeta = {
   url: 'https://docs.thorchain.org/tokenomics-rune-tcy',
 };
 
+const tcyGuideSource: SourceMeta = {
+  label: 'TCY Developer Guide',
+  url: 'https://dev.thorchain.org/concepts/tcy.html',
+  retrievedAt: '2026-07-05',
+  notes: 'Developer-facing TCY mechanics, claim, staking, and recovery caveats.',
+};
+
 const networkHaltsSource: SourceMeta = {
   label: 'THORChain Network Halts',
   url: 'https://dev.thorchain.org/concepts/network-halts.html',
@@ -1030,12 +1037,12 @@ export const TASK_INTENT_GUIDES: TaskIntentGuide[] = [
     label: 'TCY and recovery',
     question: 'Is this about historical THORFi products, TCY, or post-incident recovery?',
     href: '/governance#current-recovery',
-    description: 'Use dated incident, upgrade, and recovery records; avoid converting historical context into current solvency or value claims.',
-    searchTerms: ['TCY', 'recovery', 'THORFi', 'Savers', 'Lending', 'exploit report', 'governance history', 'recovery token'],
+    description: 'Use dated incident, upgrade, and recovery records; avoid converting historical context into current solvency, availability, or value claims.',
+    searchTerms: ['TCY', 'recovery', 'THORFi', 'Savers', 'Lending', 'exploit report', 'governance history', 'recovery token', 'full debt recovery not guaranteed', 'TCY claim state', 'TCY staking'],
     confidence: 'historical',
-    reviewedAt: '2026-07-04',
-    nextReviewDue: '2026-08-04',
-    sources: [tokenomicsSource, archivedSource, exploitReport2Source, protocolUpgradeV319Source],
+    reviewedAt: '2026-07-05',
+    nextReviewDue: '2026-08-05',
+    sources: [tokenomicsSource, archivedSource, tcyGuideSource, exploitReport2Source, protocolUpgradeV319Source],
   },
   {
     id: 'choose-interface',

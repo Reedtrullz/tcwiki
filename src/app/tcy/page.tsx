@@ -46,6 +46,33 @@ const tcyRelatedChecks: RelatedCheck[] = [
   },
 ];
 
+const tcyDecisionRows = [
+  {
+    question: 'Was THORFi still available after the unwind?',
+    answer: 'No current-product claim from this page.',
+    evidence: 'Use archived Savers/Lending docs for historical mechanics and deprecation context.',
+    boundary: 'Do not turn historical mechanics into current deposit, borrow, or yield instructions.',
+  },
+  {
+    question: 'What does TCY represent?',
+    answer: 'Recovery-token framing for defaulted THORFi claims.',
+    evidence: 'Official TCY sources describe debt conversion into TCY and a 10% system-income share for stakers.',
+    boundary: 'Do not describe TCY as governance power, a guaranteed redemption claim, or financial advice.',
+  },
+  {
+    question: 'Can a reader claim, stake, or trade TCY right now?',
+    answer: 'Treat as current-only.',
+    evidence: 'Check official claim/interface sources and live TCY Mimir controls before making availability claims.',
+    boundary: 'Do not infer live availability from old launch or tokenomics pages alone.',
+  },
+  {
+    question: 'Did TCY fully recover creditors?',
+    answer: 'Not proven here.',
+    evidence: 'Developer docs state full debt recovery is market dependent and not guaranteed.',
+    boundary: 'Do not claim par recovery, price outcome, or completeness without separate dated evidence.',
+  },
+];
+
 export default function TCYPage() {
   return (
     <PageContainer>
@@ -78,6 +105,7 @@ export default function TCYPage() {
         <div className="flex flex-wrap items-center gap-2 mb-2">
           <Badge variant="warning">Historical</Badge>
           <Badge variant="danger">Deprecated products</Badge>
+          <Badge variant="info">Recovery not guaranteed</Badge>
         </div>
         <p className="text-sm text-slate-300">
           {tcyRecord.data.summary} Do not treat Savers or Lending as active yield products.
@@ -85,6 +113,18 @@ export default function TCYPage() {
         <div className="mt-3">
           <FreshnessMeta freshness={tcyRecord.freshness} sources={tcyRecord.sources} compact />
         </div>
+      </div>
+
+      <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-5">Reader Decision Matrix</h2>
+      <div className="grid grid-cols-1 gap-3 mb-12 lg:grid-cols-2">
+        {tcyDecisionRows.map((row) => (
+          <Card key={row.question} padding="sm">
+            <h3 className="text-sm font-semibold text-slate-200">{row.question}</h3>
+            <p className="mt-2 text-xs font-semibold text-accent">{row.answer}</p>
+            <p className="mt-2 text-xs leading-relaxed text-slate-400">{row.evidence}</p>
+            <p className="mt-2 text-xs leading-relaxed text-amber-300">{row.boundary}</p>
+          </Card>
+        ))}
       </div>
 
       <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-5">Historical Timeline</h2>
