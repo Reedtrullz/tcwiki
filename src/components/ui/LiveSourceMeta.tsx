@@ -33,14 +33,24 @@ function healthLabel(health: MidgardHealth) {
   return 'Lag unavailable';
 }
 
-function sourceBadge(result: LiveDataResult<unknown>, health: MidgardHealth | undefined, healthUnavailable: boolean) {
+function sourceBadge(
+  result: LiveDataResult<unknown>,
+  health: MidgardHealth | undefined,
+  healthUnavailable: boolean,
+  healthSourceMismatch: boolean
+) {
   if (result.status === 'degraded') {
     return { label: 'Degraded', variant: 'warning' as const };
   }
   if (healthUnavailable || health?.severity === 'degraded') {
     return { label: 'Source degraded', variant: 'danger' as const };
   }
-  if (liveResultHasSourceWarnings(result) || health?.severity === 'warning' || health?.severity === 'unknown') {
+  if (
+    healthSourceMismatch ||
+    liveResultHasSourceWarnings(result) ||
+    health?.severity === 'warning' ||
+    health?.severity === 'unknown'
+  ) {
     return { label: 'Source warning', variant: 'warning' as const };
   }
   return { label: 'Current-only', variant: 'success' as const };
@@ -66,7 +76,7 @@ export function LiveSourceMeta({ result, health, healthResult }: LiveSourceMetaP
     sources.some((source) => sameSourceGroup(source.url, healthSource.url));
   const resolvedHealth = healthMatchesMetric ? (healthResult ? healthResult.data : health) : undefined;
   const healthUnavailable = Boolean(healthResult && !healthResult.data && healthMatchesMetric);
-  const primaryBadge = sourceBadge(result, resolvedHealth, healthUnavailable);
+  const primaryBadge = sourceBadge(result, resolvedHealth, healthUnavailable, !healthMatchesMetric);
 
   return (
     <div className="space-y-1">

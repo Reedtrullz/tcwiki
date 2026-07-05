@@ -171,6 +171,17 @@ describe('readiness runtime contract helper', () => {
     expect(() => assertReadinessContract(response)).toThrow(/visibleData\.earnings\.source must be present/);
   });
 
+  it('rejects ready responses with mixed Midgard health and visible-data providers', () => {
+    const response = readyResponse();
+    response.sources.midgard.source = { label: 'THORChain Midgard Health', url: 'https://midgard.thorchain.network/v2/health' };
+    response.sources.midgard.visibleData.network.source = {
+      label: 'Liquify Midgard Network',
+      url: 'https://gateway.liquify.com/chain/thorchain_midgard/v2/network',
+    };
+
+    expect(() => assertReadinessContract(response)).toThrow(/visibleData\.network\.source must share provider origin/);
+  });
+
   it('rejects ready responses that omit visible source subsections with a clear path', () => {
     const response = readyResponse();
     delete (response.sources.midgard.visibleData as { earnings?: unknown }).earnings;
@@ -190,5 +201,16 @@ describe('readiness runtime contract helper', () => {
     ];
 
     expect(() => assertReadinessContract(response)).toThrow(/dynamicFees\.sourceWarningDetails/);
+  });
+
+  it('rejects ready responses with mixed THORNode and dynamic-fee providers', () => {
+    const response = readyResponse();
+    response.sources.thornode.source = { label: 'THORNode', url: 'https://thornode.thorchain.network/thorchain' };
+    response.sources.thornode.dynamicFees.source = {
+      label: 'Liquify THORNode',
+      url: 'https://gateway.liquify.com/chain/thorchain_api/thorchain',
+    };
+
+    expect(() => assertReadinessContract(response)).toThrow(/dynamicFees\.source must share provider origin/);
   });
 });

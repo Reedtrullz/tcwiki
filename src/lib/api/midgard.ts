@@ -40,17 +40,30 @@ export function resetMidgardEndpointForTests() {
   activeEndpoint = 0;
 }
 
+function sourceForPath(endpoint: SourceMeta, path: string): SourceMeta {
+  return {
+    ...endpoint,
+    url: joinEndpointPath(endpoint.url, path),
+  };
+}
+
+function joinEndpointPath(baseUrl: string, path: string) {
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  return `${baseUrl.replace(/\/$/, '')}${normalizedPath}`;
+}
+
 async function request<T>(path: string): Promise<LiveDataResult<T>> {
   const errors: string[] = [];
 
   for (let i = 0; i < MIDGARD_ENDPOINTS.length; i += 1) {
     const endpointIndex = (activeEndpoint + i) % MIDGARD_ENDPOINTS.length;
     const endpoint = MIDGARD_ENDPOINTS[endpointIndex];
+    const checkedAt = new Date().toISOString();
 
     try {
       const data = await requestFromEndpoint<T>(endpoint, path);
       activeEndpoint = endpointIndex;
-      return liveOk(data, endpoint);
+      return liveOk(data, sourceForPath(endpoint, path), checkedAt);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown Midgard error';
       errors.push(`${endpoint.label}: ${message}`);
@@ -65,7 +78,7 @@ async function requestFromEndpoint<T>(endpoint: SourceMeta, path: string): Promi
   const timeoutId = globalThis.setTimeout(() => controller.abort(), 5000);
 
   try {
-    const response = await fetch(`${endpoint.url}${path}`, {
+    const response = await fetch(joinEndpointPath(endpoint.url, path), {
       signal: controller.signal,
       cache: 'no-store',
     });
@@ -93,7 +106,7 @@ async function requestNormalized<Raw, Normalized>(
 
     try {
       const data = await requestFromEndpoint<Raw>(endpoint, path);
-      const normalized = normalize(liveOk(data, endpoint, checkedAt));
+      const normalized = normalize(liveOk(data, sourceForPath(endpoint, path), checkedAt));
       if (normalized.status !== 'ok' || normalized.data === undefined) {
         throw new Error(normalized.error ?? 'Midgard response could not be normalized');
       }

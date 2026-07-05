@@ -340,7 +340,7 @@ describe('SEARCH_DOCUMENTS', () => {
     }
 
     expect(SEARCH_DOCUMENTS.find((doc) => doc.id === 'stats')?.sources.map((source) => source.label)).toEqual(
-      expect.arrayContaining(['Midgard v2 Health', 'Midgard v2 Network', 'Midgard v2 Earnings', 'THORNode Mimir endpoint'])
+      expect.arrayContaining(['Midgard v2 Health', 'Midgard v2 Network', 'Midgard v2 Pools', 'Midgard v2 Earnings', 'THORNode Mimir endpoint'])
     );
     expect(SEARCH_DOCUMENTS.find((doc) => doc.id === 'ecosystem')?.sources.map((source) => source.label)).toEqual(
       expect.arrayContaining(['THORChain Ecosystem', 'THORNode inbound_addresses', 'THORChain Network Halts'])

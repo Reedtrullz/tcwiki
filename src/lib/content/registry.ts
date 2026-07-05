@@ -162,9 +162,15 @@ const midgardNetworkSource: SourceMeta = {
   notes: 'Current-only network totals; pair with visible source freshness before treating values as live.',
 };
 
+const midgardPoolsSource: SourceMeta = {
+  label: 'Midgard v2 Pools',
+  url: 'https://midgard.thorchain.network/v2/pools?status=available',
+  notes: 'Current-only available-pool snapshot used by the home pool count.',
+};
+
 const midgardEarningsSource: SourceMeta = {
   label: 'Midgard v2 Earnings',
-  url: 'https://midgard.thorchain.network/v2/history/earnings',
+  url: 'https://midgard.thorchain.network/v2/history/earnings?interval=day&count=30',
   notes: 'Current-only historical intervals as returned by Midgard, not protocol revenue attribution proof.',
 };
 
@@ -312,7 +318,7 @@ export const CONTENT_ENTRIES: ContentEntry[] = [
     tags: ['stats', 'midgard', 'thornode', 'live'],
     reviewedAt: '2026-07-05',
     nextReviewDue: '2026-08-05',
-    sources: [midgardHealthSource, midgardNetworkSource, midgardEarningsSource, thornodeMimirSource, devDocsSource],
+    sources: [midgardHealthSource, midgardNetworkSource, midgardPoolsSource, midgardEarningsSource, thornodeMimirSource, devDocsSource],
     nav: true,
     footer: true,
   },

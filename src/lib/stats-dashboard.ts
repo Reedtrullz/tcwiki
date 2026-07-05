@@ -97,6 +97,26 @@ function midgardHealthFact(result?: LiveDataResult<MidgardHealth>): StatsDecisio
   };
 }
 
+function sameSourceGroup(leftUrl: string, rightUrl: string) {
+  try {
+    return new URL(leftUrl).origin === new URL(rightUrl).origin;
+  } catch {
+    return leftUrl === rightUrl;
+  }
+}
+
+function healthSourceDiffersFrom(result: LiveDataResult<unknown> | undefined, healthResult: LiveDataResult<MidgardHealth> | undefined) {
+  return Boolean(
+    result?.status === 'ok' &&
+    result.data !== undefined &&
+    result.source &&
+    healthResult?.status === 'ok' &&
+    healthResult.data !== undefined &&
+    healthResult.source &&
+    !sameSourceGroup(result.source.url, healthResult.source.url)
+  );
+}
+
 function operationalFact(result?: LiveDataResult<NetworkStatus>): StatsDecisionFact {
   if (!result) {
     return {
@@ -157,6 +177,14 @@ function metricsFact(input: StatsDecisionInput): StatsDecisionFact {
       detail: input.networkResult?.error ?? 'Do not treat missing or warning-backed metric values as zero.',
     };
   }
+  if (healthSourceDiffersFrom(input.networkResult, input.midgardHealthResult)) {
+    return {
+      label: 'Headline metrics',
+      value: 'Source mismatch',
+      tone: 'warning',
+      detail: 'Metrics loaded, but Midgard health came from a different provider; use source labels before treating freshness as clean.',
+    };
+  }
   return {
     label: 'Headline metrics',
     value: 'Loaded',
@@ -196,6 +224,14 @@ function earningsFact(input: StatsDecisionInput): StatsDecisionFact {
       value: `${input.earningsIntervalsWithValues}/${input.earningsIntervals} usable`,
       tone: 'warning',
       detail: 'Some intervals have unavailable totals; avoid over-reading the chart.',
+    };
+  }
+  if (healthSourceDiffersFrom(input.earningsResult, input.midgardHealthResult)) {
+    return {
+      label: 'Earnings history',
+      value: 'Source mismatch',
+      tone: 'warning',
+      detail: 'Intervals loaded, but Midgard health came from a different provider; avoid treating chart freshness as clean.',
     };
   }
   return {

@@ -336,7 +336,7 @@ describe('source and freshness labels', () => {
     expect(html).not.toContain('4 block lag');
   });
 
-  it('does not apply a different provider health status to the metric badge', () => {
+  it('warns without applying a different provider health status to the metric badge', () => {
     const html = renderToStaticMarkup(
       <LiveSourceMeta
         result={{
@@ -358,11 +358,12 @@ describe('source and freshness labels', () => {
       />
     );
 
-    expect(html).toContain('Current-only');
+    expect(html).toContain('Source warning');
     expect(html).toContain('Health source differs');
     expect(html).toContain('Metric via Liquify Midgard network');
     expect(html).toContain('health via THORChain Midgard health');
     expect(html).not.toContain('Source degraded');
+    expect(html).not.toContain('Current-only');
     expect(html).not.toContain('Different provider lag.');
   });
 });

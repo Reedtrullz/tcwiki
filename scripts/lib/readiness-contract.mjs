@@ -121,6 +121,23 @@ function assertReadySource(value, path) {
   assertRequiredSourceMeta(value.source, `${path}.source`);
 }
 
+function sameSourceGroup(leftUrl, rightUrl) {
+  try {
+    return new URL(leftUrl).origin === new URL(rightUrl).origin;
+  } catch {
+    return leftUrl === rightUrl;
+  }
+}
+
+function assertSameReadySourceGroup(referenceSource, candidate, path, referencePath) {
+  assertReadySource(candidate, path);
+  assertRequiredSourceMeta(referenceSource, referencePath);
+  assert(
+    sameSourceGroup(referenceSource.url, candidate.source.url),
+    `${path}.source must share provider origin with ${referencePath} when readiness is ready`
+  );
+}
+
 export function assertReadinessContract(json) {
   assert(json && typeof json === 'object', 'readiness response must be an object');
   assert(allowedReadinessStatuses.has(json.status), 'readiness status must be ready or degraded');
@@ -191,15 +208,15 @@ export function assertReadinessContract(json) {
   if (json.ready) {
     assertEmptyArray(json.reasons, 'reasons');
     assertReadySource(midgard, 'sources.midgard');
-    assertReadySource(midgard.visibleData.network, 'sources.midgard.visibleData.network');
-    assertReadySource(midgard.visibleData.pools, 'sources.midgard.visibleData.pools');
-    assertReadySource(midgard.visibleData.earnings, 'sources.midgard.visibleData.earnings');
+    assertSameReadySourceGroup(midgard.source, midgard.visibleData.network, 'sources.midgard.visibleData.network', 'sources.midgard.source');
+    assertSameReadySourceGroup(midgard.source, midgard.visibleData.pools, 'sources.midgard.visibleData.pools', 'sources.midgard.source');
+    assertSameReadySourceGroup(midgard.source, midgard.visibleData.earnings, 'sources.midgard.visibleData.earnings', 'sources.midgard.source');
     assertEmptyArray(midgard.sourceWarnings, 'sources.midgard.sourceWarnings');
     assertEmptyArray(midgard.sourceWarningDetails, 'sources.midgard.sourceWarningDetails');
     assertReadySource(thornode, 'sources.thornode');
     assertEmptyArray(thornode.sourceWarnings, 'sources.thornode.sourceWarnings');
     assertEmptyArray(thornode.sourceWarningDetails, 'sources.thornode.sourceWarningDetails');
-    assertReadySource(dynamicFees, 'sources.thornode.dynamicFees');
+    assertSameReadySourceGroup(thornode.source, dynamicFees, 'sources.thornode.dynamicFees', 'sources.thornode.source');
     assertEmptyArray(dynamicFees.sourceWarnings, 'sources.thornode.dynamicFees.sourceWarnings');
     assertEmptyArray(dynamicFees.sourceWarningDetails, 'sources.thornode.dynamicFees.sourceWarningDetails');
     if (json.runtime.strict) {

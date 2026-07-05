@@ -5,7 +5,7 @@ import {
   deriveStatsEarningsRows,
   deriveStatsMetricCards,
 } from '@/lib/stats-dashboard';
-import type { HistoryItem, LiveDataResult, MidgardHealth, NetworkStats, NetworkStatus } from '@/lib/types';
+import type { HistoryItem, LiveDataResult, MidgardHealth, NetworkStats, NetworkStatus, SourceMeta } from '@/lib/types';
 
 const networkStats: NetworkStats = {
   totalPooledRune: '100000000',
@@ -47,11 +47,12 @@ const operationalStatus: NetworkStatus = {
   sourceWarnings: [],
 };
 
-function ok<T>(data: T): LiveDataResult<T> {
+function ok<T>(data: T, source?: SourceMeta): LiveDataResult<T> {
   return {
     status: 'ok',
     checkedAt: '2026-07-04T20:00:00.000Z',
     data,
+    source,
   };
 }
 
@@ -142,6 +143,45 @@ describe('stats dashboard decision facts', () => {
       expect.objectContaining({ label: 'Midgard health', value: 'Degraded', tone: 'danger' }),
       expect.objectContaining({ label: 'Operations', value: 'Degraded', tone: 'danger' }),
       expect.objectContaining({ label: 'Earnings history', value: 'Degraded', tone: 'danger' }),
+    ]);
+  });
+
+  it('warns when loaded Midgard metrics and health come from different providers', () => {
+    const health: MidgardHealth = {
+      severity: 'ok',
+      reasons: [],
+      checkedAt: '2026-07-04T20:00:00.000Z',
+      lagBlocks: 1,
+    };
+    const healthSource = { label: 'THORChain Midgard health', url: 'https://midgard.thorchain.network/v2/health' };
+    const visibleSource = { label: 'Liquify Midgard network', url: 'https://gateway.liquify.com/chain/thorchain_midgard/v2/network' };
+
+    const facts = deriveStatsDecisionFacts({
+      networkLoading: false,
+      earningsLoading: false,
+      networkResult: ok(networkStats, visibleSource),
+      earningsResult: ok([{}], visibleSource),
+      midgardHealthResult: ok(health, healthSource),
+      statusResult: ok(operationalStatus),
+      earningsIntervals: 30,
+      earningsIntervalsWithValues: 30,
+    });
+
+    expect(facts).toEqual([
+      expect.objectContaining({
+        label: 'Headline metrics',
+        value: 'Source mismatch',
+        tone: 'warning',
+        detail: expect.stringContaining('different provider'),
+      }),
+      expect.objectContaining({ label: 'Midgard health', value: '1 block lag', tone: 'success' }),
+      expect.objectContaining({ label: 'Operations', value: 'No active pause', tone: 'success' }),
+      expect.objectContaining({
+        label: 'Earnings history',
+        value: 'Source mismatch',
+        tone: 'warning',
+        detail: expect.stringContaining('different provider'),
+      }),
     ]);
   });
 
