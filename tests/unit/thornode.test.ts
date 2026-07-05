@@ -1007,7 +1007,7 @@ describe('deriveNetworkStatus', () => {
     ]);
   });
 
-  it('warns on explicit high-impact operational Mimir families that are not yet modeled', () => {
+  it('splits reviewed operational-support Mimir families from unknown high-impact keys', () => {
     const status = deriveNetworkStatus(
       {
         'COMPROMISEDVAULT-thor1vault': 1,
@@ -1028,21 +1028,28 @@ describe('deriveNetworkStatus', () => {
 
     expect(status.state).toBe('degraded');
     expect(status.sourceWarnings).toEqual([
-      'Unknown operation-like Mimir keys need review: BURNSYNTHS, COMPROMISEDVAULT-thor1vault, ENABLESWITCH-BTC, EVMDISABLECONTRACTWHITELIST, FUNDMIGRATIONINTERVAL, MimirRecallFundFoo, MimirUpgradeContractBar, RAGNAROK-BTC, SCHEDULEDMIGRATION, STOPSOLVENCYCHECK.',
+      'Known operational-support Mimir keys present: BURNSYNTHS, COMPROMISEDVAULT-thor1vault, ENABLESWITCH-BTC, FUNDMIGRATIONINTERVAL, MimirRecallFundFoo, MimirUpgradeContractBar, SCHEDULEDMIGRATION.',
+      'Unknown operation-like Mimir keys need review: EVMDISABLECONTRACTWHITELIST, RAGNAROK-BTC, STOPSOLVENCYCHECK.',
     ]);
     expect(status.sourceWarningDetails?.[0]).toMatchObject({
       severity: 'review',
-      category: 'unknown-operation',
+      category: 'mimir-support',
       keys: [
         'BURNSYNTHS',
         'COMPROMISEDVAULT-thor1vault',
         'ENABLESWITCH-BTC',
-        'EVMDISABLECONTRACTWHITELIST',
         'FUNDMIGRATIONINTERVAL',
         'MimirRecallFundFoo',
         'MimirUpgradeContractBar',
-        'RAGNAROK-BTC',
         'SCHEDULEDMIGRATION',
+      ],
+    });
+    expect(status.sourceWarningDetails?.[1]).toMatchObject({
+      severity: 'review',
+      category: 'unknown-operation',
+      keys: [
+        'EVMDISABLECONTRACTWHITELIST',
+        'RAGNAROK-BTC',
         'STOPSOLVENCYCHECK',
       ],
     });
@@ -1297,8 +1304,13 @@ describe('deriveNetworkStatus', () => {
     expect(result.source?.label).toBe('THORChain THORNode');
     expect(result.data?.thorNodeVersion).toBe('less-degraded-provider');
     expect(result.data?.sourceWarnings).toEqual([
-      'Unknown operation-like Mimir key need review: BURNSYNTHS.',
+      'Known operational-support Mimir key present: BURNSYNTHS.',
     ]);
+    expect(result.data?.sourceWarningDetails?.[0]).toMatchObject({
+      severity: 'review',
+      category: 'mimir-support',
+      keys: ['BURNSYNTHS'],
+    });
     expect(result.data?.thorchainBlockAgeSeconds).toBe(5);
   });
 

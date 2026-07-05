@@ -561,6 +561,7 @@ export type NetworkStatusWarningCategory =
   | 'height-divergence'
   | 'source-shape'
   | 'mimir-parse'
+  | 'mimir-support'
   | 'unknown-chain'
   | 'unknown-operation'
   | 'other';

@@ -226,21 +226,23 @@ function parseWarningKeys(message: string) {
 function fallbackWarningDetail(message: string): NetworkStatusSourceWarning {
   const category = message.includes('Unknown operation-like')
     ? 'unknown-operation'
-    : message.includes('Unknown chain-scoped')
-      ? 'unknown-chain'
-      : message.includes('could not be parsed')
-        ? 'mimir-parse'
-        : message.includes('latest block timestamp')
-          ? 'freshness'
-          : message.includes('omitted') || message.includes('missing') || message.includes('did not include')
-            ? 'source-shape'
-            : 'other';
-  const keys = category === 'unknown-operation' || category === 'unknown-chain'
+    : message.includes('Known operational-support')
+      ? 'mimir-support'
+      : message.includes('Unknown chain-scoped')
+        ? 'unknown-chain'
+        : message.includes('could not be parsed')
+          ? 'mimir-parse'
+          : message.includes('latest block timestamp')
+            ? 'freshness'
+            : message.includes('omitted') || message.includes('missing') || message.includes('did not include')
+              ? 'source-shape'
+              : 'other';
+  const keys = category === 'unknown-operation' || category === 'unknown-chain' || category === 'mimir-support'
     ? parseWarningKeys(message)
     : [];
 
   return {
-    severity: category === 'unknown-operation' || category === 'unknown-chain' ? 'review' : 'warning',
+    severity: category === 'unknown-operation' || category === 'unknown-chain' || category === 'mimir-support' ? 'review' : 'warning',
     category,
     message,
     action: 'Review this source warning before treating the live status as clean.',
@@ -261,6 +263,9 @@ function getWarningTitle(detail: NetworkStatusSourceWarning) {
   if ((detail.category === 'unknown-operation' || detail.category === 'unknown-chain') && detail.keys?.length) {
     return `${detail.keys.length} ${detail.category === 'unknown-operation' ? 'operation-like' : 'chain-scoped'} Mimir ${detail.keys.length === 1 ? 'key needs' : 'keys need'} review.`;
   }
+  if (detail.category === 'mimir-support' && detail.keys?.length) {
+    return `${detail.keys.length} operational-support Mimir ${detail.keys.length === 1 ? 'key is' : 'keys are'} present.`;
+  }
   if (detail.category === 'mimir-parse' && detail.keys?.length) {
     return `${formatKeyCount(detail.keys.length)} monitored Mimir ${detail.keys.length === 1 ? 'key was' : 'keys were'} unparseable.`;
   }
@@ -280,6 +285,7 @@ function getWarningTone(detail: NetworkStatusSourceWarning) {
 function hasKeyLikeWarning(detail: NetworkStatusSourceWarning) {
   return detail.category === 'unknown-operation' ||
     detail.category === 'unknown-chain' ||
+    detail.category === 'mimir-support' ||
     detail.category === 'mimir-parse';
 }
 

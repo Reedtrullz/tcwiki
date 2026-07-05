@@ -9,6 +9,7 @@ const allowedWarningCategories = new Set([
   'height-divergence',
   'source-shape',
   'mimir-parse',
+  'mimir-support',
   'unknown-chain',
   'unknown-operation',
   'other',

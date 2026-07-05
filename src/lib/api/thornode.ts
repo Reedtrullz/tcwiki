@@ -108,14 +108,16 @@ const REVIEWED_NON_PAUSING_OPERATIONAL_MIMIR_PREFIXES = [
   'TORANCHOR-',
 ] as const;
 const UNKNOWN_OPERATION_REVIEW_MIMIR_PREFIXES = [
-  'COMPROMISEDVAULT-',
   'STOPSOLVENCYCHECK',
   'EVMDISABLECONTRACTWHITELIST',
+  'RAGNAROK-',
+] as const;
+const REVIEWED_OPERATIONAL_SUPPORT_MIMIR_PREFIXES = [
+  'COMPROMISEDVAULT-',
   'ENABLESWITCH-',
   'BURNSYNTHS',
   'SCHEDULEDMIGRATION',
   'FUNDMIGRATIONINTERVAL',
-  'RAGNAROK-',
   'MIMIRRECALLFUND',
   'MIMIRUPGRADECONTRACT',
 ] as const;
@@ -572,6 +574,8 @@ function getWarningDetailSnapshotScore(detail: NetworkStatusSourceWarning) {
     case 'source-shape':
     case 'mimir-parse':
       return 60;
+    case 'mimir-support':
+      return 10;
     case 'unknown-chain':
       return 25;
     case 'unknown-operation':
@@ -1505,6 +1509,9 @@ function getUnknownOperationMimirKeys(mimir: Record<string, unknown>): string[] 
       if (KNOWN_NON_OPERATIONAL_PAUSE_KEYS.has(upperKey) || isKnownMonitoredMimirKey(key)) {
         return false;
       }
+      if (REVIEWED_OPERATIONAL_SUPPORT_MIMIR_PREFIXES.some((prefix) => upperKey.startsWith(prefix))) {
+        return false;
+      }
 
       const numericValue = toMimirNumber(value);
       if (UNKNOWN_OPERATION_REVIEW_MIMIR_PREFIXES.some((prefix) => upperKey.startsWith(prefix))) {
@@ -1520,6 +1527,18 @@ function getUnknownOperationMimirKeys(mimir: Record<string, unknown>): string[] 
         return numericValue === null || numericValue <= 0;
       }
       return false;
+    })
+    .map(([key]) => key)
+    .sort();
+}
+
+function getReviewedOperationalSupportMimirKeys(mimir: Record<string, unknown>): string[] {
+  return Object.entries(mimir)
+    .filter(([key, value]) => {
+      const upperKey = key.toUpperCase();
+      const numericValue = toMimirNumber(value);
+      return REVIEWED_OPERATIONAL_SUPPORT_MIMIR_PREFIXES.some((prefix) => upperKey.startsWith(prefix)) &&
+        (numericValue === null || numericValue > 0);
     })
     .map(([key]) => key)
     .sort();
@@ -1941,6 +1960,7 @@ export function deriveNetworkStatus(
   const recognizedChainCodes = new Set([...CURATED_CHAIN_CODES, ...inboundChainCodes]);
   const unknownChainScopedMimirKeys = getUnknownChainScopedMimirKeys(mimir, recognizedChainCodes);
   const unknownOperationMimirKeys = getUnknownOperationMimirKeys(mimir);
+  const reviewedOperationalSupportMimirKeys = getReviewedOperationalSupportMimirKeys(mimir);
   const scheduledMimirKeys = uniqueKeys(
     scheduledExactMimirKeys,
     scheduledSecuredAssetDepositPauseKeys,
@@ -2188,11 +2208,15 @@ export function deriveNetworkStatus(
   const unknownOperationWarning = unknownOperationMimirKeys.length > 0
     ? `Unknown operation-like Mimir key${unknownOperationMimirKeys.length === 1 ? '' : 's'} need review: ${unknownOperationMimirKeys.join(', ')}.`
     : null;
+  const reviewedOperationalSupportWarning = reviewedOperationalSupportMimirKeys.length > 0
+    ? `Known operational-support Mimir key${reviewedOperationalSupportMimirKeys.length === 1 ? '' : 's'} present: ${reviewedOperationalSupportMimirKeys.join(', ')}.`
+    : null;
   const sourceWarnings = [
     ...(options.sourceWarnings ?? []),
     ...chainSourceWarnings,
     ...(invalidMimirWarning ? [invalidMimirWarning] : []),
     ...(unknownChainWarning ? [unknownChainWarning] : []),
+    ...(reviewedOperationalSupportWarning ? [reviewedOperationalSupportWarning] : []),
     ...(unknownOperationWarning ? [unknownOperationWarning] : []),
   ];
   const sourceWarningDetails = uniqueSourceWarningDetails([
@@ -2217,6 +2241,17 @@ export function deriveNetworkStatus(
             message: unknownChainWarning,
             action: 'Classify the chain-scoped key family before treating it as non-pausing.',
             keys: unknownChainScopedMimirKeys,
+          }),
+        ]
+      : []),
+    ...(reviewedOperationalSupportWarning
+      ? [
+          warningDetail({
+            severity: 'review',
+            category: 'mimir-support',
+            message: reviewedOperationalSupportWarning,
+            action: 'These are known THORNode support, migration, or security Mimir families; inspect them before inferring a user-facing pause.',
+            keys: reviewedOperationalSupportMimirKeys,
           }),
         ]
       : []),
