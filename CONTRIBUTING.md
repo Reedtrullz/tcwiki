@@ -15,6 +15,7 @@ nvm use
 df -h /System/Volumes/Data # stop if free space is below 50 GiB
 npm run check:content
 npm run check:live-snapshot
+npm run check:live-snapshot -- --artifact .artifacts/live-source-drift/local.json # optional bounded JSON evidence
 npm run audit:prod
 npm run audit:all
 npm run typecheck
@@ -31,7 +32,7 @@ IMAGE_REF=ghcr.io/example/tcwiki@sha256:1111111111111111111111111111111111111111
 
 `npm run test:e2e` starts a fresh standalone server by default. Set `PLAYWRIGHT_BASE_URL` only when you intentionally want to test an existing local standalone server or a remote deployment.
 
-CI will run audits, content checks, lint, typecheck, unit tests, build, standalone smoke in report-only and enforced CSP modes, Playwright, enforced CSP browser smoke, and PR-only Docker image build/scan/runtime plus Ansible syntax checks. Scheduled/manual drift checks also verify live-source snapshots and public runtime headers with enforced CSP expected for production.
+CI will run audits, content checks, lint, typecheck, unit tests, build, standalone smoke in report-only and enforced CSP modes, Playwright, enforced CSP browser smoke, and PR-only Docker image build/scan/runtime plus Ansible syntax checks. Scheduled/manual drift checks also verify live-source snapshots, upload a bounded JSON drift-evidence artifact, and check public runtime headers with enforced CSP expected for production.
 
 ## How Content Works Today
 
