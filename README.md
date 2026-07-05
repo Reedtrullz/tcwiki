@@ -53,8 +53,8 @@ We welcome improvements! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for:
 - **Production**: Self-hosted via Docker (standalone Next.js output) + Ansible on a VPS.
 - **CI**: GitHub Actions audits production dependencies, lints, type-checks, runs unit tests, builds, and runs Playwright smoke tests.
 - **Images**: GHCR images are deployed by immutable digest, not mutable `latest`.
-- **Health, readiness, and version checks**: The site exposes `/api/health`, `/api/ready`, and `/api/version`. `/api/health` is liveness-only; `/api/ready` carries upstream source confidence. Ansible keeps the Docker health check on liveness and verifies health, version, image, and runtime metadata. Rollback uses the previous `/api/version` readback with Docker env fallback, verifies restored metadata, then fails closed after rollback attempts.
-- **Runtime headers**: Production currently emits nonce-based `Content-Security-Policy-Report-Only`; local checks also exercise opt-in enforced mode before any future promotion.
+- **Health, readiness, and version checks**: The site exposes `/api/health`, `/api/ready`, and `/api/version`. `/api/health` is liveness-only; `/api/ready` carries upstream source confidence and strict runtime identity diagnostics when `RUNTIME_METADATA_REQUIRED=1`. Ansible keeps the Docker health check on liveness and verifies health, version, image digest, commit metadata, and runtime diagnostics. Rollback uses the previous `/api/version` readback with Docker env fallback, verifies restored metadata, then fails closed after rollback attempts.
+- **Runtime headers**: Production deploys are configured to emit nonce-based `Content-Security-Policy` by default. Set `CSP_ENFORCE=0` only as an explicit rollback/diagnostic escape hatch, and keep enforced CSP smoke coverage green before shipping.
 
 Recommended local release-shaped gate:
 
@@ -62,7 +62,7 @@ Recommended local release-shaped gate:
 nvm use
 df -h /System/Volumes/Data # stop if free space is below 50 GiB
 npm run check:content
-npm run check:live-snapshot
+npm run check:live-snapshot # pinned same-provider THORNode supported-chain drift check with stale/future block guardrails
 npm run audit:prod
 npm run audit:all
 npm run typecheck
@@ -74,8 +74,8 @@ CSP_ENFORCE=1 npm run smoke:standalone
 npm run test:e2e:visual # focused route overflow / first-viewport smoke
 npm run test:e2e
 npm run test:e2e:csp
-CHECK_BASE_URL=https://wiki.thorchain.no npm run check:runtime-url # public runtime/header drift probe
-IMAGE_REF=ghcr.io/example/tcwiki@sha256:0000000000000000000000000000000000000000000000000000000000000000 APP_VERSION=local ansible-playbook -i inventory/hosts.yml ansible-playbook.yml --syntax-check
+CHECK_BASE_URL=https://wiki.thorchain.no REQUIRE_RUNTIME_METADATA=1 CSP_ENFORCE=1 npm run check:runtime-url # public runtime/header drift probe
+IMAGE_REF=ghcr.io/example/tcwiki@sha256:1111111111111111111111111111111111111111111111111111111111111111 APP_VERSION=1111111111111111111111111111111111111111 ansible-playbook -i inventory/hosts.yml ansible-playbook.yml --syntax-check
 ```
 
 `npm run test:e2e` starts a fresh standalone server by default. To test an already running standalone server or a remote deployment instead, set `PLAYWRIGHT_BASE_URL`, for example:

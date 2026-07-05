@@ -86,7 +86,11 @@ export function classifySearchDoc(doc: SearchDoc): SearchFilterId {
   if (doc.type === 'source-map') {
     return 'source-map';
   }
-  if (doc.type === 'mimir' || liveRoutePrefixes.some((prefix) => doc.href === prefix || doc.href.startsWith(`${prefix}#`))) {
+  if (
+    doc.type === 'mimir' ||
+    doc.type === 'chain' ||
+    liveRoutePrefixes.some((prefix) => doc.href === prefix || doc.href.startsWith(`${prefix}#`))
+  ) {
     return 'live';
   }
   if (doc.type === 'deep-dive' || doc.type === 'deep-dive-path') {
@@ -158,4 +162,13 @@ export function getSearchStartingPoints<T extends SearchDoc>(results: T[], limit
   }
 
   return startingPoints;
+}
+
+export function excludeSearchStartingPoints<T extends SearchDoc>(results: T[], startingPoints: T[]): T[] {
+  if (startingPoints.length === 0) {
+    return results;
+  }
+
+  const startingPointIds = new Set(startingPoints.map((result) => result.id));
+  return results.filter((result) => !startingPointIds.has(result.id));
 }

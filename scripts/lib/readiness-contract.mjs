@@ -1,3 +1,5 @@
+import { runtimeMetadataWarnings } from './runtime-metadata-contract.mjs';
+
 const allowedReadinessStatuses = new Set(['ready', 'degraded']);
 const allowedSourceStatuses = new Set(['ok', 'degraded']);
 const allowedWarningSeverities = new Set(['critical', 'warning', 'review']);
@@ -62,6 +64,39 @@ function assertSourceMeta(value, path) {
   assertString(value.url, `${path}.url`);
 }
 
+function assertSourceMetaArray(value, path) {
+  assert(Array.isArray(value), `${path} must be an array`);
+  value.forEach((source, index) => {
+    assert(source !== undefined, `${path}[${index}] must be present`);
+    assertSourceMeta(source, `${path}[${index}]`);
+  });
+}
+
+function assertRequiredSourceMeta(value, path) {
+  assert(value !== undefined, `${path} must be present when readiness is ready`);
+  assertSourceMeta(value, path);
+}
+
+function assertRuntimeMetadata(json) {
+  const runtime = json.runtime;
+  assert(runtime && typeof runtime === 'object', 'runtime must be an object');
+  assertString(runtime.version, 'runtime.version');
+  assertString(runtime.commit, 'runtime.commit');
+  assertString(runtime.image, 'runtime.image');
+  assert(typeof runtime.strict === 'boolean', 'runtime.strict must be boolean');
+  assert(typeof runtime.verified === 'boolean', 'runtime.verified must be boolean');
+  assertStringArray(runtime.warnings, 'runtime.warnings');
+  assert(runtime.version === json.version, 'runtime.version must match top-level version');
+  assert(runtime.commit === json.commit, 'runtime.commit must match top-level commit');
+  assert(runtime.image === json.image, 'runtime.image must match top-level image');
+  const computedWarnings = runtimeMetadataWarnings(json);
+  assert(runtime.verified === (computedWarnings.length === 0), 'runtime.verified must match runtime metadata validation');
+  assert(runtime.warnings.length === computedWarnings.length, 'runtime.warnings must match runtime metadata validation');
+  for (const warning of computedWarnings) {
+    assert(runtime.warnings.includes(warning), `runtime.warnings must include ${warning}`);
+  }
+}
+
 function assertSourceCheck(value, path) {
   assert(value && typeof value === 'object', `${path} must be an object`);
   assert(allowedSourceStatuses.has(value.status), `${path}.status must be ok or degraded`);
@@ -83,6 +118,82 @@ function assertWarningDetails(value, path) {
   });
 }
 
+function assertEmptyArray(value, path) {
+  assert(Array.isArray(value), `${path} must be an array`);
+  assert(value.length === 0, `${path} must be empty when readiness is ready`);
+}
+
+function assertReadySource(value, path) {
+  assert(value && typeof value === 'object', `${path} must be an object`);
+  assert(value.status === 'ok', `${path}.status must be ok when readiness is ready`);
+  assertRequiredSourceMeta(value.source, `${path}.source`);
+}
+
+function sameSourceGroup(leftUrl, rightUrl) {
+  try {
+    return new URL(leftUrl).origin === new URL(rightUrl).origin;
+  } catch {
+    return leftUrl === rightUrl;
+  }
+}
+
+function sourceUrlMatches(sources, predicate) {
+  return sources.some((source) => {
+    try {
+      return predicate(new URL(source.url));
+    } catch {
+      return false;
+    }
+  });
+}
+
+function sourcePathEndsWith(pathname, suffix) {
+  return pathname.toLowerCase().endsWith(suffix.toLowerCase());
+}
+
+function isHeightPinnedSource(url, suffix) {
+  const height = url.searchParams.get('height');
+  return sourcePathEndsWith(url.pathname, suffix) && height !== null && /^\d+$/.test(height);
+}
+
+function assertExactThornodeNetworkSources(sources, path) {
+  assertSourceMetaArray(sources, path);
+  const requiredSources = [
+    ['latest Cosmos block', (url) => sourcePathEndsWith(url.pathname, '/base/tendermint/v1beta1/blocks/latest')],
+    ['height-pinned /mimir', (url) => isHeightPinnedSource(url, '/mimir')],
+    ['height-pinned /inbound_addresses', (url) => isHeightPinnedSource(url, '/inbound_addresses')],
+    ['height-pinned /version', (url) => isHeightPinnedSource(url, '/version')],
+    ['height-pinned /lastblock', (url) => isHeightPinnedSource(url, '/lastblock')],
+  ];
+
+  for (const [label, predicate] of requiredSources) {
+    assert(sourceUrlMatches(sources, predicate), `${path} must include ${label}`);
+  }
+}
+
+function assertExactDynamicFeeSources(sources, path) {
+  assertSourceMetaArray(sources, path);
+  const requiredSources = [
+    ['latest Cosmos block', (url) => sourcePathEndsWith(url.pathname, '/base/tendermint/v1beta1/blocks/latest')],
+    ['height-pinned /mimir', (url) => isHeightPinnedSource(url, '/mimir')],
+    ['height-pinned /dynamic_l1_fees', (url) => isHeightPinnedSource(url, '/dynamic_l1_fees')],
+    ['height-pinned /dynamic_l1_fees_current', (url) => isHeightPinnedSource(url, '/dynamic_l1_fees_current')],
+  ];
+
+  for (const [label, predicate] of requiredSources) {
+    assert(sourceUrlMatches(sources, predicate), `${path} must include ${label}`);
+  }
+}
+
+function assertSameReadySourceGroup(referenceSource, candidate, path, referencePath) {
+  assertReadySource(candidate, path);
+  assertRequiredSourceMeta(referenceSource, referencePath);
+  assert(
+    sameSourceGroup(referenceSource.url, candidate.source.url),
+    `${path}.source must share provider origin with ${referencePath} when readiness is ready`
+  );
+}
+
 export function assertReadinessContract(json) {
   assert(json && typeof json === 'object', 'readiness response must be an object');
   assert(allowedReadinessStatuses.has(json.status), 'readiness status must be ready or degraded');
@@ -91,6 +202,7 @@ export function assertReadinessContract(json) {
   assertString(json.version, 'version');
   assertString(json.commit, 'commit');
   assertString(json.image, 'image');
+  assertRuntimeMetadata(json);
   assertStringArray(json.reasons, 'reasons');
   assertStringArray(json.warnings, 'warnings');
   assert(json.sources && typeof json.sources === 'object', 'sources must be an object');
@@ -145,4 +257,29 @@ export function assertReadinessContract(json) {
   assertOptionalNumber(dynamicFees.thorchainBlockAgeSeconds, 'sources.thornode.dynamicFees.thorchainBlockAgeSeconds');
   assertStringArray(dynamicFees.sourceWarnings, 'sources.thornode.dynamicFees.sourceWarnings');
   assertWarningDetails(dynamicFees.sourceWarningDetails, 'sources.thornode.dynamicFees.sourceWarningDetails');
+
+  const statusIsReady = json.status === 'ready';
+  assert(statusIsReady === json.ready, 'readiness status and ready flag must agree');
+
+  if (json.ready) {
+    assertEmptyArray(json.reasons, 'reasons');
+    assertReadySource(midgard, 'sources.midgard');
+    assertSameReadySourceGroup(midgard.source, midgard.visibleData.network, 'sources.midgard.visibleData.network', 'sources.midgard.source');
+    assertSameReadySourceGroup(midgard.source, midgard.visibleData.pools, 'sources.midgard.visibleData.pools', 'sources.midgard.source');
+    assertSameReadySourceGroup(midgard.source, midgard.visibleData.earnings, 'sources.midgard.visibleData.earnings', 'sources.midgard.source');
+    assertEmptyArray(midgard.sourceWarnings, 'sources.midgard.sourceWarnings');
+    assertEmptyArray(midgard.sourceWarningDetails, 'sources.midgard.sourceWarningDetails');
+    assertReadySource(thornode, 'sources.thornode');
+    assertExactThornodeNetworkSources(thornode.sources, 'sources.thornode.sources');
+    assertEmptyArray(thornode.sourceWarnings, 'sources.thornode.sourceWarnings');
+    assertEmptyArray(thornode.sourceWarningDetails, 'sources.thornode.sourceWarningDetails');
+    assertSameReadySourceGroup(thornode.source, dynamicFees, 'sources.thornode.dynamicFees', 'sources.thornode.source');
+    assertExactDynamicFeeSources(dynamicFees.sources, 'sources.thornode.dynamicFees.sources');
+    assertEmptyArray(dynamicFees.sourceWarnings, 'sources.thornode.dynamicFees.sourceWarnings');
+    assertEmptyArray(dynamicFees.sourceWarningDetails, 'sources.thornode.dynamicFees.sourceWarningDetails');
+    if (json.runtime.strict) {
+      assert(json.runtime.verified, 'ready responses with strict runtime metadata must be verified');
+      assertEmptyArray(json.runtime.warnings, 'runtime.warnings');
+    }
+  }
 }

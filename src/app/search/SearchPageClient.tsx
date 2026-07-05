@@ -14,6 +14,7 @@ import { getSearchQueryTerms, runSafeLunrSearch } from '@/lib/search/lunr-query'
 import { rankSearchResults } from '@/lib/search/ranking';
 import {
   buildSearchFilterOptions,
+  excludeSearchStartingPoints,
   filterSearchResults,
   getSearchFilterSpec,
   getSearchStartingPoints,
@@ -302,6 +303,12 @@ function SearchResultsInner() {
     () => selectedFilter === 'all' ? getSearchStartingPoints(results) : [],
     [results, selectedFilter],
   );
+  const displayedResults = useMemo(
+    () => selectedFilter === 'all'
+      ? excludeSearchStartingPoints(filteredResults, startingPoints)
+      : filteredResults,
+    [filteredResults, selectedFilter, startingPoints],
+  );
   const selectedFilterSpec = getSearchFilterSpec(selectedFilter);
 
   return (
@@ -346,7 +353,7 @@ function SearchResultsInner() {
         </>
       )}
       <div className="space-y-2">
-        {filteredResults.map((result) => (
+        {displayedResults.map((result) => (
           <SearchResultCard key={result.id} result={result} query={query} />
         ))}
         {query && results.length === 0 && (

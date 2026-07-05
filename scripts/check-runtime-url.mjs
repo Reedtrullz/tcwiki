@@ -1,5 +1,6 @@
 import { setTimeout as wait } from 'node:timers/promises';
 import { assertReadinessContract } from './lib/readiness-contract.mjs';
+import { assertRuntimeMetadataContract } from './lib/runtime-metadata-contract.mjs';
 
 const baseUrl = (process.env.CHECK_BASE_URL ?? process.argv[2] ?? '').replace(/\/$/, '');
 const expectedVersion = process.env.EXPECTED_VERSION;
@@ -7,11 +8,21 @@ const expectedCommit = process.env.EXPECTED_COMMIT_SHA ??
   (expectedVersion && /^[0-9a-f]{7,40}$/i.test(expectedVersion) ? expectedVersion : undefined);
 const expectedImageRef = process.env.EXPECTED_IMAGE_REF;
 const requireReady = process.env.REQUIRE_READY === '1';
+const requireRuntimeMetadata = process.env.REQUIRE_RUNTIME_METADATA === '1' || shouldRequireRuntimeMetadata(baseUrl);
 const enforcedCsp = process.env.CSP_ENFORCE === '1';
 
 if (!baseUrl) {
   console.error('CHECK_BASE_URL or first argument is required.');
   process.exit(1);
+}
+
+function shouldRequireRuntimeMetadata(value) {
+  try {
+    const hostname = new URL(value).hostname.toLowerCase();
+    return hostname !== 'localhost' && hostname !== '127.0.0.1' && hostname !== '::1' && hostname !== '[::1]';
+  } catch {
+    return false;
+  }
 }
 
 async function fetchUntil(path, isExpectedStatus) {
@@ -66,6 +77,10 @@ function expectRuntimeMetadata(json) {
   if (expectedImageRef && json.image !== expectedImageRef) {
     throw new Error(`Expected image ${expectedImageRef}; got ${json.image ?? 'missing'}`);
   }
+  assertRuntimeMetadataContract(json, {
+    requireVerified: requireRuntimeMetadata,
+    requireStrict: requireRuntimeMetadata,
+  });
 }
 
 const health = await fetchUntil('/api/health', (response) => response.ok);

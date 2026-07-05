@@ -31,6 +31,11 @@ describe('MidgardAPI', () => {
     expect(fetchMock.mock.calls[0][0]).toContain('/pools?status=available');
     expect(fetchMock.mock.calls[1][0]).toContain('midgard.thorchain.network');
     expect(result.data?.[0].apyPercent).toBe(12);
+    expect(result.source).toEqual({
+      label: 'THORChain Midgard',
+      url: 'https://midgard.thorchain.network/v2/pools?status=available',
+      retrievedAt: result.checkedAt,
+    });
   });
 
   it('returns degraded when all endpoints fail', async () => {
@@ -78,6 +83,7 @@ describe('MidgardAPI', () => {
     expect(fetchMock.mock.calls[0][0]).toContain('gateway.liquify.com');
     expect(fetchMock.mock.calls[1][0]).toContain('midgard.thorchain.network');
     expect(result.source?.label).toBe('THORChain Midgard');
+    expect(result.source?.url).toBe('https://midgard.thorchain.network/v2/network');
     expect(result.data?.activeNodeCount).toBe(101);
   });
 
@@ -98,6 +104,7 @@ describe('MidgardAPI', () => {
     expect(result.status).toBe('ok');
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(result.source?.label).toBe('THORChain Midgard');
+    expect(result.source?.url).toBe('https://midgard.thorchain.network/v2/pool/BTC.BTC');
     expect(result.data?.asset).toBe('BTC.BTC');
   });
 

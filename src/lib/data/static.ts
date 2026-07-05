@@ -113,6 +113,18 @@ const midgardNetworkSource: SourceMeta = {
   notes: 'Current-only network metrics; source label and health should be shown beside values.',
 };
 
+const midgardPoolsSource: SourceMeta = {
+  label: 'Midgard v2 Pools',
+  url: 'https://midgard.thorchain.network/v2/pools?status=available',
+  notes: 'Current-only pool availability and pool-count snapshot; not durable pool uptime proof.',
+};
+
+const midgardEarningsSource: SourceMeta = {
+  label: 'Midgard v2 Earnings',
+  url: 'https://midgard.thorchain.network/v2/history/earnings?interval=day&count=30',
+  notes: 'Current-only earnings intervals as returned by Midgard, not protocol revenue attribution proof.',
+};
+
 const liquifyMidgardHealthSource: SourceMeta = {
   label: 'Liquify Midgard Gateway',
   url: 'https://gateway.liquify.com/chain/thorchain_midgard/v2/health',
@@ -379,8 +391,8 @@ export const SOURCE_MAP_SECTION_RECORDS: SourcedRecord<SourceMapSection>[] = [
       'Protocol design intent or governance approval.',
       'Revenue lift, safety, or route quality beyond the checked snapshot.',
     ],
-    links: [thornodeMimirSource, liveInboundSource, midgardHealthSource, midgardNetworkSource],
-  }, [thornodeMimirSource, liveInboundSource, midgardHealthSource, midgardNetworkSource], 'official'),
+    links: [thornodeMimirSource, liveInboundSource, midgardHealthSource, midgardNetworkSource, midgardPoolsSource, midgardEarningsSource],
+  }, [thornodeMimirSource, liveInboundSource, midgardHealthSource, midgardNetworkSource, midgardPoolsSource, midgardEarningsSource], 'official'),
   record({
     id: 'runtime-live-data-failover',
     title: 'Runtime Live-Data Failover',

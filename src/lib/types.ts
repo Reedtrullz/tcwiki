@@ -64,6 +64,15 @@ export interface ThorNodeReadiness {
 /** @deprecated Use ThorNodeReadiness. */
 export type ThornodeReadiness = ThorNodeReadiness;
 
+export interface RuntimeMetadataDiagnostics {
+  version: string;
+  commit: string;
+  image: string;
+  strict: boolean;
+  verified: boolean;
+  warnings: string[];
+}
+
 export interface ReadinessResponse {
   status: 'ready' | 'degraded';
   ready: boolean;
@@ -71,6 +80,7 @@ export interface ReadinessResponse {
   version: string;
   commit: string;
   image: string;
+  runtime: RuntimeMetadataDiagnostics;
   warnings: string[];
   sources: {
     midgard: {

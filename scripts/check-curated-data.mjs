@@ -27,6 +27,7 @@ const glossaryPath = join(root, 'src/lib/content/glossary.ts');
 const searchRegistryPath = join(root, 'src/lib/search/registry.ts');
 const generatedSearchPath = join(root, 'src/lib/search/mdx-documents.generated.ts');
 const ecosystemFilterPath = join(root, 'src/components/features/EcosystemFilterList.tsx');
+const glossaryExplorerPath = join(root, 'src/components/features/GlossaryExplorer.tsx');
 const appDir = join(root, 'src/app');
 const deepDiveContentDir = join(root, 'content/deep-dives');
 const staticSource = readFileSync(staticPath, 'utf8');
@@ -56,6 +57,7 @@ const routeSourcePostureEntryIds = new Set([
   'tcy',
   'ecosystem',
   'governance',
+  'network',
   'docs',
   'deep-dives',
   'glossary',
@@ -1213,12 +1215,20 @@ function collectKnownRouteAnchors(collections, glossaryTerms, deepDiveReaderPath
   for (const record of collections.SOURCE_MAP_SECTION_RECORDS) {
     addRouteAnchor(anchorsByRoute, '/docs', record.data.id);
   }
+  for (const record of collections.CHAIN_RECORDS) {
+    addRouteAnchor(anchorsByRoute, '/protocol', recordAnchor('chain', record.data.chain));
+  }
   for (const term of glossaryTerms) {
     addRouteAnchor(anchorsByRoute, '/glossary', `term-${term.id}`);
     addRouteAnchor(anchorsByRoute, '/glossary', term.category);
   }
   for (const readerPath of deepDiveReaderPaths) {
     addRouteAnchor(anchorsByRoute, '/deep-dives', `deep-dive-path-${readerPath.id}`);
+  }
+  for (const slug of readDeepDiveSlugsFromMdx()) {
+    for (const anchor of mdxAnchorsForSlug(slug)) {
+      addRouteAnchor(anchorsByRoute, `/deep-dives/${slug}`, anchor);
+    }
   }
 
   return anchorsByRoute;
@@ -1367,6 +1377,18 @@ function buildExpectedAnchoredSearchDocuments(collections, glossaryTerms, deepDi
       reviewedAt: record.freshness.checkedAt,
       nextReviewDue: record.freshness.nextReviewDue,
     })),
+    ...collections.CHAIN_RECORDS.map((record) => {
+      const anchor = recordAnchor('chain', record.data.chain);
+      return {
+        id: `chain:${record.data.chain.toLowerCase()}`,
+        href: `/protocol#${anchor}`,
+        type: 'chain',
+        anchor,
+        confidence: record.freshness.confidence,
+        reviewedAt: record.freshness.checkedAt,
+        nextReviewDue: record.freshness.nextReviewDue,
+      };
+    }),
     ...collections.RESEARCH_REPORT_RECORDS.map((record) => {
       const anchor = recordAnchor('research', record.data.id);
       return {
@@ -1618,6 +1640,7 @@ function validateSearchSurface(collections, contentEntries, taskGuides, glossary
   const governanceSource = readFileSync(routePathForHref('/governance'), 'utf8');
   const ecosystemSource = readFileSync(ecosystemFilterPath, 'utf8');
   const glossaryPageSource = readFileSync(routePathForHref('/glossary'), 'utf8');
+  const glossaryExplorerSource = readFileSync(glossaryExplorerPath, 'utf8');
 
   for (const prefix of ['governance', 'incident', 'research', 'milestone']) {
     if (!governanceSource.includes(`recordAnchor('${prefix}'`)) {
@@ -1627,7 +1650,7 @@ function validateSearchSurface(collections, contentEntries, taskGuides, glossary
   if (!ecosystemSource.includes("recordAnchor('ecosystem'")) {
     fail('src/components/features/EcosystemFilterList.tsx', 'missing ecosystem record anchors for search results');
   }
-  if (!glossaryPageSource.includes('term-${term.id}')) {
+  if (!glossaryPageSource.includes('GlossaryExplorer') || !glossaryExplorerSource.includes('term-${term.id}')) {
     fail('src/app/glossary/page.tsx', 'missing glossary term anchors for search results');
   }
 

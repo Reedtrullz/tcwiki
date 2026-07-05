@@ -45,6 +45,8 @@ const THORNODE_BLOCK_STALE_DEGRADED_SECONDS = 30;
 const THORNODE_BLOCK_FUTURE_WARNING_SECONDS = 12;
 const THORNODE_BLOCK_FUTURE_DEGRADED_SECONDS = 30;
 const THORNODE_LASTBLOCK_SPREAD_WARNING_BLOCKS = 3;
+const DYNAMIC_L1_FEE_HISTORY_THORNAME_LIMIT = 16;
+const DYNAMIC_L1_FEE_HISTORY_CONCURRENCY = 4;
 
 let activeEndpoint = 0;
 
@@ -208,16 +210,89 @@ function withQueryHeight(path: string, height: number | undefined) {
   return `${path}${path.includes('?') ? '&' : '?'}height=${height}`;
 }
 
+function thornodePathUrl(endpoint: SourceMeta, path: string, height?: number) {
+  return `${endpoint.url}${withQueryHeight(path, height)}`;
+}
+
+function sourceForThornodePath(endpoint: SourceMeta, label: string, path: string, height?: number): SourceMeta {
+  return {
+    label: `${endpoint.label} ${label}`,
+    url: thornodePathUrl(endpoint, path, height),
+    notes: height === undefined
+      ? 'Latest unpinned THORNode read used to choose a conservative pinned snapshot height.'
+      : `Height-pinned THORNode read at ${height}.`,
+  };
+}
+
+function sourceForCosmosPath(endpoint: ThornodeEndpoint, label: string, path: string): SourceMeta {
+  return {
+    label: `${endpoint.label} ${label}`,
+    url: `${endpoint.cosmosUrl}${path}`,
+    notes: 'Latest Cosmos block read used to choose a conservative pinned THORChain snapshot height.',
+  };
+}
+
+function uniqueSourcesByUrl(sources: SourceMeta[]) {
+  const seen = new Set<string>();
+  return sources.filter((source) => {
+    if (seen.has(source.url)) {
+      return false;
+    }
+    seen.add(source.url);
+    return true;
+  });
+}
+
+function networkStatusSources(endpoint: ThornodeEndpoint, snapshotHeight: number) {
+  return [
+    endpoint,
+    sourceForCosmosPath(endpoint, 'latest block', '/base/tendermint/v1beta1/blocks/latest'),
+    sourceForThornodePath(endpoint, 'Mimir', '/mimir', snapshotHeight),
+    sourceForThornodePath(endpoint, 'inbound addresses', '/inbound_addresses', snapshotHeight),
+    sourceForThornodePath(endpoint, 'version', '/version', snapshotHeight),
+    sourceForThornodePath(endpoint, 'lastblock', '/lastblock', snapshotHeight),
+  ];
+}
+
+function dynamicL1FeeStatusSources(endpoint: ThornodeEndpoint, snapshotHeight: number) {
+  return [
+    endpoint,
+    sourceForCosmosPath(endpoint, 'latest block', '/base/tendermint/v1beta1/blocks/latest'),
+    sourceForThornodePath(endpoint, 'Mimir', '/mimir', snapshotHeight),
+    sourceForThornodePath(endpoint, 'dynamic L1 fee records', '/dynamic_l1_fees', snapshotHeight),
+    sourceForThornodePath(endpoint, 'dynamic L1 fee current epoch', '/dynamic_l1_fees_current', snapshotHeight),
+  ];
+}
+
 function getConservativeSnapshotHeight(latestHeight: number) {
   return Math.max(0, latestHeight - 1);
 }
 
 async function requestFromEndpoint<T>(endpoint: SourceMeta, path: string, height?: number): Promise<T> {
-  return requestJson<T>(`${endpoint.url}${withQueryHeight(path, height)}`);
+  return requestJson<T>(thornodePathUrl(endpoint, path, height));
 }
 
 async function requestCosmosFromEndpoint<T>(endpoint: ThornodeEndpoint, path: string): Promise<T> {
   return requestJson<T>(`${endpoint.cosmosUrl}${path}`);
+}
+
+async function forEachWithConcurrency<T>(
+  items: T[],
+  concurrency: number,
+  handler: (item: T) => Promise<void>
+) {
+  let nextIndex = 0;
+  const workerCount = Math.min(Math.max(1, concurrency), items.length);
+
+  await Promise.all(Array.from({ length: workerCount }, async () => {
+    while (nextIndex < items.length) {
+      const item = items[nextIndex];
+      nextIndex += 1;
+      if (item !== undefined) {
+        await handler(item);
+      }
+    }
+  }));
 }
 
 function toMimirNumber(value: unknown): number | null {
@@ -571,6 +646,8 @@ function classifyDynamicFeeSourceWarning(message: string): NetworkStatusSourceWa
   if (
     message.includes('Invalid dynamic_l1_fees') ||
     message.includes('did not include') ||
+    message.includes('not requested') ||
+    message.includes('history fetch capped') ||
     message.includes('unavailable') ||
     message.includes('duplicate') ||
     message.includes('without a sealed dynamic_l1_fees record') ||
@@ -1008,18 +1085,36 @@ async function requestDynamicL1FeeHistories(
   endpoint: ThornodeEndpoint,
   snapshotHeight: number,
   status: DynamicL1FeeStatus
-): Promise<{ histories: DynamicL1FeeThornameHistory[]; sourceWarnings: string[] }> {
-  const thornames = [...new Set([
-    ...status.mimir.whitelistedPartners
-      .filter((partner) => partner.whitelisted === true)
-      .map((partner) => partner.thorname),
-    ...status.records.map((record) => record.thorname),
-  ])].sort((left, right) => left.localeCompare(right));
+): Promise<{ histories: DynamicL1FeeThornameHistory[]; sourceWarnings: string[]; sources: SourceMeta[] }> {
+  const recordThornames = [...new Set(status.records.map((record) => record.thorname))]
+    .sort((left, right) => left.localeCompare(right));
+  const recordThornameSet = new Set(recordThornames);
+  const activeWhitelistedThornames = [...new Set(status.mimir.whitelistedPartners
+    .filter((partner) => partner.whitelisted === true)
+    .map((partner) => partner.thorname))]
+    .sort((left, right) => left.localeCompare(right));
+  const allThornames = [
+    ...recordThornames,
+    ...activeWhitelistedThornames.filter((thorname) => !recordThornameSet.has(thorname)),
+  ];
+  const thornames = allThornames.slice(0, DYNAMIC_L1_FEE_HISTORY_THORNAME_LIMIT);
+  const omittedThornameCount = allThornames.length - thornames.length;
 
   const histories: DynamicL1FeeThornameHistory[] = [];
   const sourceWarnings: string[] = [];
+  if (omittedThornameCount > 0) {
+    sourceWarnings.push(
+      `Dynamic fee history fetch capped at ${DYNAMIC_L1_FEE_HISTORY_THORNAME_LIMIT} thornames; ${omittedThornameCount} additional thorname histories were not requested.`
+    );
+  }
+  const sources = thornames.map((thorname) => sourceForThornodePath(
+    endpoint,
+    `dynamic L1 fee history ${thorname}`,
+    `/dynamic_l1_fees/${encodeURIComponent(thorname)}`,
+    snapshotHeight
+  ));
 
-  await Promise.all(thornames.map(async (thorname) => {
+  await forEachWithConcurrency(thornames, DYNAMIC_L1_FEE_HISTORY_CONCURRENCY, async (thorname) => {
     try {
       const response = await requestFromEndpoint<unknown>(
         endpoint,
@@ -1033,11 +1128,74 @@ async function requestDynamicL1FeeHistories(
       const message = error instanceof Error ? error.message : 'Unknown dynamic fee history error';
       sourceWarnings.push(`Dynamic fee history for ${thorname} was unavailable: ${message}`);
     }
-  }));
+  });
 
   return {
     histories: histories.sort((left, right) => left.thorname.localeCompare(right.thorname)),
     sourceWarnings,
+    sources,
+  };
+}
+
+type DynamicL1FeeProviderSnapshot = {
+  endpointIndex: number;
+  endpoint: ThornodeEndpoint;
+  mimir: Record<string, unknown>;
+  dynamicFees: unknown;
+  currentDynamicFees: unknown;
+  sourceFreshness: DynamicL1FeeSourceFreshness;
+  blockAgeWarnings: string[];
+  status: DynamicL1FeeStatus;
+  sources: SourceMeta[];
+};
+
+type DynamicL1FeeWarningCandidate = {
+  endpointIndex: number;
+  status: DynamicL1FeeStatus;
+  sources: SourceMeta[];
+  snapshot?: DynamicL1FeeProviderSnapshot;
+};
+
+function shouldTryNextDynamicFeeProvider(status: DynamicL1FeeStatus) {
+  return status.sourceWarnings.some((warning) => (
+    !warning.startsWith('Dynamic fee history fetch capped at ')
+  ));
+}
+
+async function finalizeDynamicL1FeeProviderSnapshot(
+  snapshot: DynamicL1FeeProviderSnapshot
+): Promise<DynamicL1FeeWarningCandidate> {
+  const historyResult = await requestDynamicL1FeeHistories(
+    snapshot.endpoint,
+    snapshot.sourceFreshness.thorchainHeight,
+    snapshot.status
+  );
+  const status = deriveDynamicL1FeeStatus(
+    snapshot.mimir,
+    snapshot.dynamicFees,
+    snapshot.currentDynamicFees,
+    snapshot.sourceFreshness,
+    historyResult.histories,
+    historyResult.sourceWarnings
+  );
+  const sourceWarnings = [
+    ...status.sourceWarnings,
+    ...snapshot.blockAgeWarnings,
+  ];
+  const uniqueWarnings = [...new Set(sourceWarnings)].sort((left, right) => left.localeCompare(right));
+  const sources = uniqueSourcesByUrl([
+    ...snapshot.sources,
+    ...historyResult.sources,
+  ]);
+
+  return {
+    endpointIndex: snapshot.endpointIndex,
+    status: {
+      ...status,
+      sourceWarnings: uniqueWarnings,
+      sourceWarningDetails: getDynamicFeeSourceWarningDetails(uniqueWarnings),
+    },
+    sources,
   };
 }
 
@@ -2195,6 +2353,7 @@ export class ThornodeAPI {
       endpointIndex: number;
       endpoint: ThornodeEndpoint;
       status: NetworkStatus;
+      sources: SourceMeta[];
     }> = [];
 
     for (let i = 0; i < THORNODE_ENDPOINTS.length; i += 1) {
@@ -2209,6 +2368,7 @@ export class ThornodeAPI {
         }
 
         const snapshotHeight = getConservativeSnapshotHeight(latestBlockInfo.height);
+        const sources = networkStatusSources(endpoint, snapshotHeight);
         const [mimir, inbound, version, lastBlock] = await Promise.all([
           requestFromEndpoint<unknown>(endpoint, '/mimir', snapshotHeight),
           requestFromEndpoint<unknown>(endpoint, '/inbound_addresses', snapshotHeight),
@@ -2226,10 +2386,10 @@ export class ThornodeAPI {
         );
         if (status.sourceWarnings.length === 0) {
           activeEndpoint = endpointIndex;
-          return liveOk(status, endpoint, checkedAt);
+          return liveOk(status, sources, checkedAt);
         }
 
-        warningSnapshots.push({ endpointIndex, endpoint, status });
+        warningSnapshots.push({ endpointIndex, endpoint, status, sources });
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Unknown THORNode status error';
         errors.push(`${endpoint.label}: ${message}`);
@@ -2244,7 +2404,7 @@ export class ThornodeAPI {
       ));
     if (bestWarningSnapshot) {
       activeEndpoint = bestWarningSnapshot.endpointIndex;
-      return liveOk(bestWarningSnapshot.status, bestWarningSnapshot.endpoint, checkedAt);
+      return liveOk(bestWarningSnapshot.status, bestWarningSnapshot.sources, checkedAt);
     }
 
     return liveDegraded<NetworkStatus>(
@@ -2257,11 +2417,7 @@ export class ThornodeAPI {
   static async getDynamicL1FeeStatus(): Promise<LiveDataResult<DynamicL1FeeStatus>> {
     const checkedAt = new Date().toISOString();
     const errors: string[] = [];
-    const warningSnapshots: Array<{
-      endpointIndex: number;
-      endpoint: ThornodeEndpoint;
-      status: DynamicL1FeeStatus;
-    }> = [];
+    const warningSnapshots: DynamicL1FeeWarningCandidate[] = [];
 
     for (let i = 0; i < THORNODE_ENDPOINTS.length; i += 1) {
       const endpointIndex = (activeEndpoint + i) % THORNODE_ENDPOINTS.length;
@@ -2275,6 +2431,7 @@ export class ThornodeAPI {
         }
 
         const snapshotHeight = getConservativeSnapshotHeight(latestBlockInfo.height);
+        const baseSources = dynamicL1FeeStatusSources(endpoint, snapshotHeight);
         const checkedAtMs = Date.parse(checkedAt);
         const blockTimeMs = Date.parse(latestBlockInfo.time);
         const blockAgeSeconds = Number.isNaN(checkedAtMs) || Number.isNaN(blockTimeMs)
@@ -2300,32 +2457,44 @@ export class ThornodeAPI {
           currentDynamicFees,
           sourceFreshness
         );
-        const historyResult = await requestDynamicL1FeeHistories(endpoint, snapshotHeight, baseStatus);
-        const status = deriveDynamicL1FeeStatus(
+        const sourceWarnings = [
+          ...baseStatus.sourceWarnings,
+          ...getDynamicFeeBlockAgeWarnings(blockAgeSeconds),
+        ];
+        const uniqueWarnings = [...new Set(sourceWarnings)].sort((left, right) => left.localeCompare(right));
+        const snapshot = {
+          endpointIndex,
+          endpoint,
           mimir,
           dynamicFees,
           currentDynamicFees,
           sourceFreshness,
-          historyResult.histories,
-          historyResult.sourceWarnings
-        );
-        const sourceWarnings = [
-          ...status.sourceWarnings,
-          ...getDynamicFeeBlockAgeWarnings(blockAgeSeconds),
-        ];
-        const uniqueWarnings = [...new Set(sourceWarnings)].sort((left, right) => left.localeCompare(right));
-        const statusWithFreshnessWarnings = {
-          ...status,
-          sourceWarnings: uniqueWarnings,
-          sourceWarningDetails: getDynamicFeeSourceWarningDetails(uniqueWarnings),
+          blockAgeWarnings: getDynamicFeeBlockAgeWarnings(blockAgeSeconds),
+          status: {
+            ...baseStatus,
+            sourceWarnings: uniqueWarnings,
+            sourceWarningDetails: getDynamicFeeSourceWarningDetails(uniqueWarnings),
+          },
+          sources: baseSources,
         };
 
-        if (statusWithFreshnessWarnings.sourceWarnings.length === 0) {
-          activeEndpoint = endpointIndex;
-          return liveOk(statusWithFreshnessWarnings, endpoint, checkedAt);
+        if (snapshot.status.sourceWarnings.length === 0) {
+          const finalized = await finalizeDynamicL1FeeProviderSnapshot(snapshot);
+          if (finalized.status.sourceWarnings.length === 0 || !shouldTryNextDynamicFeeProvider(finalized.status)) {
+            activeEndpoint = endpointIndex;
+            return liveOk(finalized.status, finalized.sources, checkedAt);
+          }
+
+          warningSnapshots.push(finalized);
+          continue;
         }
 
-        warningSnapshots.push({ endpointIndex, endpoint, status: statusWithFreshnessWarnings });
+        warningSnapshots.push({
+          endpointIndex,
+          status: snapshot.status,
+          sources: snapshot.sources,
+          snapshot,
+        });
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Unknown THORNode dynamic fee status error';
         errors.push(`${endpoint.label}: ${message}`);
@@ -2340,7 +2509,11 @@ export class ThornodeAPI {
       ));
     if (bestWarningSnapshot) {
       activeEndpoint = bestWarningSnapshot.endpointIndex;
-      return liveOk(bestWarningSnapshot.status, bestWarningSnapshot.endpoint, checkedAt);
+      if (bestWarningSnapshot.snapshot) {
+        const finalized = await finalizeDynamicL1FeeProviderSnapshot(bestWarningSnapshot.snapshot);
+        return liveOk(finalized.status, finalized.sources, checkedAt);
+      }
+      return liveOk(bestWarningSnapshot.status, bestWarningSnapshot.sources, checkedAt);
     }
 
     return liveDegraded<DynamicL1FeeStatus>(

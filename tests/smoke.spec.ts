@@ -1,4 +1,4 @@
-import { test, expect, type Locator, type Page } from '@playwright/test';
+import { test, expect, type Locator, type Page, type Route } from '@playwright/test';
 
 function expectStrictCsp(headers: Record<string, string>) {
   const enforced = process.env.CSP_ENFORCE === '1';
@@ -63,6 +63,92 @@ function expectWarningDetails(value: unknown) {
   }
 }
 
+function sourceUrls(value: unknown) {
+  expect(Array.isArray(value)).toBe(true);
+  return (value as Array<{ url?: unknown }>).map((source, index) => {
+    expect(typeof source.url, `sources[${index}].url`).toBe('string');
+    return source.url as string;
+  });
+}
+
+function hasLatestBlockSource(urls: string[]) {
+  return urls.some((url) => {
+    try {
+      return new URL(url).pathname.endsWith('/base/tendermint/v1beta1/blocks/latest');
+    } catch {
+      return false;
+    }
+  });
+}
+
+function hasPinnedSource(urls: string[], suffix: string) {
+  return urls.some((url) => {
+    try {
+      const parsed = new URL(url);
+      return parsed.pathname.endsWith(suffix) && parsed.searchParams.has('height');
+    } catch {
+      return false;
+    }
+  });
+}
+
+async function fulfillJson(route: Route, value: unknown) {
+  await route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify(value),
+  });
+}
+
+function earningsInterval(index: number) {
+  const startTime = 1_704_067_200 + index * 86_400;
+  const earnings = (100_000_000 * (index + 1)).toString();
+  const bondingEarnings = (60_000_000 * (index + 1)).toString();
+  const liquidityEarnings = (40_000_000 * (index + 1)).toString();
+
+  return {
+    startTime: String(startTime),
+    endTime: String(startTime + 86_400),
+    liquidityFees: '0',
+    blockRewards: '0',
+    earnings,
+    bondingEarnings,
+    liquidityEarnings,
+    avgNodeCount: '100',
+    runePriceUSD: '5',
+    pools: [],
+  };
+}
+
+async function mockStatsMidgard(page: Page) {
+  await page.route(/gateway\.liquify\.com\/chain\/thorchain_midgard\/v2\/history\/earnings.*/, async (route) => {
+    await fulfillJson(route, {
+      intervals: Array.from({ length: 8 }, (_, index) => earningsInterval(index)),
+    });
+  });
+  await page.route(/gateway\.liquify\.com\/chain\/thorchain_midgard\/v2\/network$/, async (route) => {
+    await fulfillJson(route, {
+      totalPooledRune: '100000000000',
+      totalReserve: '200000000000',
+      activeNodeCount: 100,
+      standbyNodeCount: 20,
+      bondingAPY: '0.10',
+      liquidityAPY: '0.05',
+      nextChurnHeight: 123,
+      bondMetrics: {},
+    });
+  });
+  await page.route(/gateway\.liquify\.com\/chain\/thorchain_midgard\/v2\/health$/, async (route) => {
+    await fulfillJson(route, {
+      database: true,
+      inSync: true,
+      scannerHeight: 101,
+      lastAggregated: { height: 100, timestamp: 1_704_153_600 },
+      lastThorNode: { height: 101, timestamp: 1_704_153_605 },
+    });
+  });
+}
+
 const VISUAL_SAFETY_ROUTES: Array<{ path: string; heading: string | RegExp }> = [
   { path: '/', heading: /THORChain Wiki/i },
   { path: '/protocol', heading: /Protocol Overview/i },
@@ -85,6 +171,7 @@ const ANCHOR_TARGETS: Array<{ href: string; selector: string }> = [
   { href: '/network#network-diagnostics', selector: '#network-diagnostics' },
   { href: '/stats#stats-look-here-first', selector: '#stats-look-here-first' },
   { href: '/dynamic-fees#dynamic-fees-live', selector: '#dynamic-fees-live' },
+  { href: '/protocol#chain-sol', selector: '#chain-sol' },
   { href: '/ecosystem#interface-use-checklist', selector: '#interface-use-checklist' },
   { href: '/docs#current-protocol-state', selector: '#current-protocol-state' },
   { href: '/docs#developer-integration', selector: '#developer-integration' },
@@ -195,6 +282,10 @@ test.describe('THORChain Wiki Smoke Tests', () => {
     if (!isMobile) {
       await page.getByRole('button', { name: /Guides/i }).click();
       const guides = page.getByRole('navigation', { name: /Guide links/i });
+      await expect(guides.getByText(/Reader Paths/i)).toBeVisible();
+      await expect(guides.getByText(/Common Tasks/i)).toBeVisible();
+      await expect(guides.getByRole('link', { name: /New to THORChain/i })).toHaveAttribute('href', '/deep-dives#deep-dive-path-new-to-thorchain');
+      await expect(guides.getByRole('link', { name: /Can I swap right now/i })).toHaveAttribute('href', '/network#network-diagnostics');
       await expect(guides.getByRole('link', { name: /Learning paths/i })).toHaveAttribute('href', '/deep-dives#deep-dive-reader-paths');
       await expect(guides.getByRole('link', { name: /Live metrics/i })).toHaveAttribute('href', '/stats#stats-look-here-first');
       await expect(guides.getByRole('link', { name: /Build\/query/i })).toHaveAttribute('href', '/docs#developer-integration');
@@ -223,6 +314,31 @@ test.describe('THORChain Wiki Smoke Tests', () => {
     await expect(page.getByText(/Usable intervals/i)).toBeVisible();
     await expect(page.getByText(/not as durable revenue proof/i)).toBeVisible();
     await expect(page.getByText(/Current-only|Source warning|Source degraded|Degraded|Loading live source/i).first()).toBeVisible();
+  });
+
+  test('stats earnings history uses mobile cards for loaded intervals', async ({ page, isMobile }) => {
+    test.skip(!isMobile, 'mobile cards are only rendered below the md breakpoint');
+
+    await mockStatsMidgard(page);
+    await page.goto('/stats');
+    await expect(page.getByRole('heading', { name: /Network Statistics/i })).toBeVisible();
+    await expect(page.getByText(/Showing 8 Midgard daily earnings intervals/i)).toBeVisible();
+    await expect(page.getByText(/Latest 7 interval total/i)).toBeVisible();
+    await expect(page.getByText(/7\/7 intervals with values/i)).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Recent Daily Earnings Intervals/i })).toBeVisible();
+    const recentList = page.getByRole('list', { name: /Recent daily earnings intervals/i });
+    await expect(recentList).toBeVisible();
+    await expect(recentList.getByRole('listitem').first().getByText('8 RUNE', { exact: true })).toBeVisible();
+    await expect(page.getByText(/Node operators/i).first()).toBeVisible();
+    await expect(page.getByText('LPs', { exact: true }).first()).toBeVisible();
+    await expect(page.locator('table').first()).toBeHidden();
+
+    const layout = await readLayoutSafety(page);
+    expect(layout.hasFrameworkOverlay).toBe(false);
+    expect(
+      layout.pageWidth,
+      `mobile stats loaded state overflow ${JSON.stringify({ viewportWidth: layout.viewportWidth, overflowing: layout.overflowing })}`
+    ).toBeLessThanOrEqual(layout.viewportWidth + 2);
   });
 
   test('network status module has compact and diagnostic tiers', async ({ page, isMobile }) => {
@@ -417,6 +533,9 @@ test.describe('THORChain Wiki Smoke Tests', () => {
     await expect(page.getByText(/Live check/i)).toHaveCount(0);
     await expect(page.getByText('Signing State', { exact: true })).toBeVisible();
     await expect(page.getByText('TCY Claims', { exact: true })).toBeVisible();
+    await expect(page.getByText(/Page Source Posture/i)).toBeVisible();
+    await expect(page.getByText(/Use This Page For/i)).toBeVisible();
+    await expect(page.getByText(/Verify Elsewhere Before Claiming/i)).toBeVisible();
     await expect(page.getByRole('heading', { name: /Related Checks/i })).toBeVisible();
     await expect(page.getByRole('link', { name: /Pause search/i })).toHaveAttribute('href', '/search?q=Mimir%20halt&filter=task');
   });
@@ -446,7 +565,9 @@ test.describe('THORChain Wiki Smoke Tests', () => {
       tssCard.click(),
     ]);
     await expect(page.getByRole('heading', { name: /The Problem with Traditional Multisig/i })).toBeVisible();
-    await expect(page.locator('nav[aria-label="Primary navigation"] a[href="/deep-dives"]')).toHaveAttribute('aria-current', 'page');
+    const deepDivesNavLink = page.locator('nav[aria-label="Primary navigation"] a[href="/deep-dives"]');
+    await expect(deepDivesNavLink).toHaveAttribute('aria-current', 'page');
+    await expect(deepDivesNavLink).toHaveClass(/text-accent/);
     await expect(page.getByText('Curated', { exact: true }).first()).toBeVisible();
 
     await expect(page.getByText('THORChain Docs', { exact: true }).first()).toBeVisible();
@@ -477,6 +598,8 @@ test.describe('THORChain Wiki Smoke Tests', () => {
 
     await page.goto('/glossary');
     await expect(page.getByRole('heading', { name: /Glossary/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Term Finder/i })).toBeVisible();
+    await expect(page.getByRole('searchbox', { name: /Filter glossary terms/i })).toBeVisible();
     await expect(page.locator('#term-mimir')).toBeVisible();
     await expect(page.getByText(/Operational parameter storage/i)).toBeVisible();
     await expect(page.locator('#term-dynamic-l1-fee')).toBeVisible();
@@ -484,6 +607,16 @@ test.describe('THORChain Wiki Smoke Tests', () => {
     await expect(page.getByRole('link', { name: /Dynamic-fee live tracker/i }).first()).toHaveAttribute('href', '/dynamic-fees#dynamic-fees-live');
     await expect(page.getByRole('link', { name: /Current Protocol State/i }).first()).toHaveAttribute('href', '/docs#current-protocol-state');
     await expect(page.getByRole('link', { name: /Network diagnostics/i }).first()).toHaveAttribute('href', '/network#network-diagnostics');
+
+    await page.getByRole('searchbox', { name: /Filter glossary terms/i }).fill('gg20');
+    await expect(page.locator('#term-gg20')).toBeVisible();
+    await expect(page.locator('#term-mimir')).toHaveCount(0);
+    await page.getByRole('button', { name: /Reset/i }).click();
+    await expect(page.locator('#term-mimir')).toBeVisible();
+    await page.getByRole('button', { name: /Developer/i }).click();
+    await expect(page.getByText(/Showing 3 of/i)).toBeVisible();
+    await expect(page.locator('#term-cosmwasm')).toBeVisible();
+    await expect(page.locator('#term-gg20')).toHaveCount(0);
   });
 
   test('all deep-dive routes load', async ({ page }) => {
@@ -494,6 +627,7 @@ test.describe('THORChain Wiki Smoke Tests', () => {
       ['churning', /Churning and Node Lifecycle/i],
       ['slashing', /Slashing and Economic Security/i],
       ['bifrost', /Bifrost Bridge/i],
+      ['app-layer', /App Layer, CosmWasm, and Secured Assets/i],
       ['rune-settlement', /RUNE as the Universal Settlement Asset/i],
       ['savers', /Savers and Lending/i],
     ] as const;
@@ -510,6 +644,8 @@ test.describe('THORChain Wiki Smoke Tests', () => {
     await expect(page.getByText(/Page Source Posture/i)).toBeVisible();
     await expect(page.getByText(/Verify Elsewhere Before Claiming/i)).toBeVisible();
     await expect(page.getByText(/Threshold Signature Schemes/i)).toBeVisible();
+    await expect(page.locator('#chain-sol')).toBeVisible();
+    await expect(page.locator('#chain-sol').getByText(/EdDSA/i)).toBeVisible();
   });
 
   test('static education routes expose route source posture', async ({ page }) => {
@@ -584,6 +720,8 @@ test.describe('THORChain Wiki Smoke Tests', () => {
     expect(response.headers()['cache-control']).toContain('no-store');
     const json = await response.json();
     expect(json.status).toBe('healthy');
+    expect(json.runtime).toBeTruthy();
+    expect(typeof json.runtime.verified).toBe('boolean');
   });
 
   test('version API endpoint responds', async ({ request }) => {
@@ -592,6 +730,8 @@ test.describe('THORChain Wiki Smoke Tests', () => {
     expect(response.headers()['cache-control']).toContain('no-store');
     const json = await response.json();
     expect(json.version).toBeTruthy();
+    expect(json.runtime).toBeTruthy();
+    expect(json.runtime.version).toBe(json.version);
   });
 
   test('readiness API endpoint responds with readiness metadata', async ({ request }) => {
@@ -602,6 +742,8 @@ test.describe('THORChain Wiki Smoke Tests', () => {
     const json = await response.json();
     expect(['ready', 'degraded']).toContain(json.status);
     expect(json.version).toBeTruthy();
+    expect(json.runtime).toBeTruthy();
+    expect(typeof json.runtime.strict).toBe('boolean');
     expectStringArray(json.reasons);
     expectStringArray(json.warnings);
     expect(json.sources.midgard).toBeTruthy();
@@ -615,6 +757,21 @@ test.describe('THORChain Wiki Smoke Tests', () => {
     expect(['ok', 'degraded']).toContain(json.sources.thornode.dynamicFees.status);
     expectStringArray(json.sources.thornode.dynamicFees.sourceWarnings);
     expectWarningDetails(json.sources.thornode.dynamicFees.sourceWarningDetails);
+    if (json.sources.thornode.status === 'ok') {
+      const urls = sourceUrls(json.sources.thornode.sources);
+      expect(hasLatestBlockSource(urls)).toBe(true);
+      expect(hasPinnedSource(urls, '/mimir')).toBe(true);
+      expect(hasPinnedSource(urls, '/inbound_addresses')).toBe(true);
+      expect(hasPinnedSource(urls, '/version')).toBe(true);
+      expect(hasPinnedSource(urls, '/lastblock')).toBe(true);
+    }
+    if (json.sources.thornode.dynamicFees.status === 'ok') {
+      const urls = sourceUrls(json.sources.thornode.dynamicFees.sources);
+      expect(hasLatestBlockSource(urls)).toBe(true);
+      expect(hasPinnedSource(urls, '/mimir')).toBe(true);
+      expect(hasPinnedSource(urls, '/dynamic_l1_fees')).toBe(true);
+      expect(hasPinnedSource(urls, '/dynamic_l1_fees_current')).toBe(true);
+    }
   });
 
   test('security headers are present', async ({ request }) => {
@@ -729,9 +886,13 @@ test.describe('THORChain Wiki Smoke Tests', () => {
     await page.setViewportSize({ width: 375, height: 320 });
     await page.goto('/');
     await page.getByRole('button', { name: /open navigation menu/i }).click();
+    await expect(page.locator('#mobile-navigation').getByText('Sections', { exact: true })).toBeVisible();
+    await expect(page.locator('#mobile-navigation').getByText('Reader Paths', { exact: true })).toBeVisible();
+    await expect(page.locator('#mobile-navigation').getByText('Common Tasks', { exact: true })).toBeVisible();
     await expect(page.locator('#mobile-navigation').getByRole('link', { name: 'Deep Dives' })).toBeVisible();
     await expect(page.locator('#mobile-navigation').getByRole('link', { name: 'Start here' })).toBeVisible();
     await expect(page.locator('#mobile-navigation').getByRole('link', { name: 'Learning paths' })).toHaveAttribute('href', '/deep-dives#deep-dive-reader-paths');
+    await expect(page.locator('#mobile-navigation').getByRole('link', { name: 'New to THORChain' })).toHaveAttribute('href', '/deep-dives#deep-dive-path-new-to-thorchain');
     await expect(page.locator('#mobile-navigation')).toHaveCSS('overflow-y', 'auto');
     const navBox = await page.locator('#mobile-navigation').boundingBox();
     expect(navBox?.height ?? 0).toBeLessThanOrEqual(268);
@@ -745,6 +906,29 @@ test.describe('THORChain Wiki Smoke Tests', () => {
     await expect(siteSearch.getByRole('button', { name: /Submit site search/i })).toBeVisible();
     await expect(siteSearch.getByRole('link', { name: /Build or query data/i })).toBeVisible();
     await expect(siteSearch.getByRole('link', { name: /Choose an interface/i })).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.getByLabel(/Search the wiki/i)).toHaveCount(0);
+  });
+
+  test('global header search opens from keyboard and submits reader-job queries', async ({ page }) => {
+    await page.goto('/');
+
+    await page.keyboard.press('Control+K');
+    const siteSearch = page.getByRole('search', { name: /Site search/i });
+    const searchInput = siteSearch.getByLabel(/Search the wiki/i);
+    await expect(searchInput).toBeVisible();
+    await expect(searchInput).toBeFocused();
+    await expect(siteSearch.getByRole('link', { name: /New to THORChain/i })).toHaveAttribute('href', '/deep-dives#deep-dive-path-new-to-thorchain');
+    await expect(siteSearch.getByRole('link', { name: /Why did my swap refund/i })).toHaveAttribute('href', '/deep-dives/clp#swap-lifecycle-and-refunds');
+
+    await searchInput.fill('why did my swap refund');
+    await searchInput.press('Enter');
+    await expect(page).toHaveURL(/\/search\?q=why(%20|\+)did(%20|\+)my(%20|\+)swap(%20|\+)refund/);
+    await expect(page.locator('main article').first().locator('a[href="/deep-dives/clp#swap-lifecycle-and-refunds"]')).toBeVisible();
+
+    await page.goto('/');
+    await page.getByRole('button', { name: /Open search/i }).click();
+    await expect(siteSearch.getByRole('link', { name: /Which source should I trust/i })).toBeVisible();
     await page.keyboard.press('Escape');
     await expect(page.getByLabel(/Search the wiki/i)).toHaveCount(0);
   });

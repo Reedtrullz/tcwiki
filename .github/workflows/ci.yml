@@ -63,7 +63,7 @@ jobs:
             --pull \
             --build-arg VERSION=${{ github.sha }} \
             --build-arg COMMIT_SHA=${{ github.sha }} \
-            --build-arg IMAGE_REF=ghcr.io/${{ github.repository }}@sha256:0000000000000000000000000000000000000000000000000000000000000000 \
+            --build-arg IMAGE_REF=ghcr.io/${{ github.repository }}@sha256:1111111111111111111111111111111111111111111111111111111111111111 \
             --tag tcwiki-pr:${{ github.sha }} \
             .
       - name: Scan PR Docker image for runtime OS vulnerabilities
@@ -79,7 +79,7 @@ jobs:
       - name: Run Docker image for PR runtime check
         if: github.event_name == 'pull_request'
         env:
-          IMAGE_REF: ghcr.io/${{ github.repository }}@sha256:0000000000000000000000000000000000000000000000000000000000000000
+          IMAGE_REF: ghcr.io/${{ github.repository }}@sha256:1111111111111111111111111111111111111111111111111111111111111111
         run: |
           container_id="$(docker run --rm -d \
             -p 127.0.0.1:3011:3000 \
@@ -87,12 +87,16 @@ jobs:
             -e VERSION=${{ github.sha }} \
             -e COMMIT_SHA=${{ github.sha }} \
             -e IMAGE_REF="$IMAGE_REF" \
+            -e RUNTIME_METADATA_REQUIRED=1 \
+            -e CSP_ENFORCE=1 \
             tcwiki-pr:${{ github.sha }})"
           trap 'docker rm -f "$container_id"' EXIT
           CHECK_BASE_URL=http://127.0.0.1:3011 \
             EXPECTED_VERSION=${{ github.sha }} \
             EXPECTED_COMMIT_SHA=${{ github.sha }} \
             EXPECTED_IMAGE_REF="$IMAGE_REF" \
+            REQUIRE_RUNTIME_METADATA=1 \
+            CSP_ENFORCE=1 \
             npm run check:runtime-url
       - name: Install pinned Ansible for PR syntax check
         if: github.event_name == 'pull_request'
@@ -103,8 +107,9 @@ jobs:
       - name: Ansible syntax check
         if: github.event_name == 'pull_request'
         env:
-          IMAGE_REF: ghcr.io/example/tcwiki@sha256:0000000000000000000000000000000000000000000000000000000000000000
+          IMAGE_REF: ghcr.io/example/tcwiki@sha256:1111111111111111111111111111111111111111111111111111111111111111
           APP_VERSION: ${{ github.sha }}
+          CSP_ENFORCE: '1'
         run: ansible-playbook -i inventory/hosts.yml ansible-playbook.yml --syntax-check
 
   live-source-drift:
@@ -123,6 +128,8 @@ jobs:
       - run: npm run check:runtime-url
         env:
           CHECK_BASE_URL: https://wiki.thorchain.no
+          REQUIRE_RUNTIME_METADATA: '1'
+          CSP_ENFORCE: '1'
 
   publish:
     name: Build & publish image
@@ -223,6 +230,7 @@ jobs:
         env:
           IMAGE_REF: ${{ needs.publish.outputs.image_ref }}
           APP_VERSION: ${{ needs.publish.outputs.app_version }}
+          CSP_ENFORCE: '1'
         run: ansible-playbook -i inventory/hosts.yml ansible-playbook.yml
       - name: Verify public production readback
         env:
@@ -230,4 +238,6 @@ jobs:
           EXPECTED_VERSION: ${{ needs.publish.outputs.app_version }}
           EXPECTED_COMMIT_SHA: ${{ needs.publish.outputs.app_version }}
           EXPECTED_IMAGE_REF: ${{ needs.publish.outputs.image_ref }}
+          REQUIRE_RUNTIME_METADATA: '1'
+          CSP_ENFORCE: '1'
         run: npm run check:runtime-url

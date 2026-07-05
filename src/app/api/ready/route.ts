@@ -1,5 +1,6 @@
 import MidgardAPI from '@/lib/api/midgard';
 import ThornodeAPI from '@/lib/api/thornode';
+import { getRuntimeMetadata } from '@/lib/runtime-metadata';
 import type {
   DynamicL1FeeStatus,
   LiveDataResult,
@@ -14,10 +15,13 @@ import type {
 export const dynamic = 'force-dynamic';
 
 function runtimeMetadata() {
+  const runtime = getRuntimeMetadata();
+
   return {
-    version: process.env.APP_VERSION ?? process.env.VERSION ?? 'development',
-    commit: process.env.COMMIT_SHA ?? 'unknown',
-    image: process.env.IMAGE_REF ?? 'unknown',
+    version: runtime.version,
+    commit: runtime.commit,
+    image: runtime.image,
+    runtime,
   };
 }
 
@@ -152,7 +156,14 @@ function classifyReadinessWarning(
     });
   }
 
-  if (message.includes('did not include') || message.includes('omitted') || message.includes('missing')) {
+  if (
+    message.includes('did not include') ||
+    message.includes('do not include') ||
+    message.includes('not requested') ||
+    message.includes('history fetch capped') ||
+    message.includes('omitted') ||
+    message.includes('missing')
+  ) {
     return sourceWarningDetail({
       severity: 'warning',
       category: 'source-shape',
@@ -206,6 +217,55 @@ function sameSourceGroup(leftUrl: string, rightUrl: string) {
   } catch {
     return leftUrl === rightUrl;
   }
+}
+
+function sourceUrlMatches(
+  sources: Array<{ url: string }>,
+  predicate: (url: URL) => boolean
+) {
+  return sources.some((source) => {
+    try {
+      return predicate(new URL(source.url));
+    } catch {
+      return false;
+    }
+  });
+}
+
+function sourcePathEndsWith(pathname: string, suffix: string) {
+  return pathname.toLowerCase().endsWith(suffix.toLowerCase());
+}
+
+function isHeightPinnedSource(url: URL, suffix: string) {
+  const height = url.searchParams.get('height');
+  return sourcePathEndsWith(url.pathname, suffix) && height !== null && /^\d+$/.test(height);
+}
+
+function hasExactThornodeNetworkSources(sources: Array<{ url: string }> | undefined) {
+  if (!sources?.length) {
+    return false;
+  }
+
+  return [
+    (url: URL) => sourcePathEndsWith(url.pathname, '/base/tendermint/v1beta1/blocks/latest'),
+    (url: URL) => isHeightPinnedSource(url, '/mimir'),
+    (url: URL) => isHeightPinnedSource(url, '/inbound_addresses'),
+    (url: URL) => isHeightPinnedSource(url, '/version'),
+    (url: URL) => isHeightPinnedSource(url, '/lastblock'),
+  ].every((predicate) => sourceUrlMatches(sources, predicate));
+}
+
+function hasExactDynamicFeeSources(sources: Array<{ url: string }> | undefined) {
+  if (!sources?.length) {
+    return false;
+  }
+
+  return [
+    (url: URL) => sourcePathEndsWith(url.pathname, '/base/tendermint/v1beta1/blocks/latest'),
+    (url: URL) => isHeightPinnedSource(url, '/mimir'),
+    (url: URL) => isHeightPinnedSource(url, '/dynamic_l1_fees'),
+    (url: URL) => isHeightPinnedSource(url, '/dynamic_l1_fees_current'),
+  ].every((predicate) => sourceUrlMatches(sources, predicate));
 }
 
 function getMidgardSourceWarnings(
@@ -299,6 +359,14 @@ export async function GET() {
   ) {
     computedThornodeWarnings.push(`THORNode network status source ${thornode.source.label} differs from dynamic fee source ${dynamicFees.source.label}.`);
   }
+  if (thornode.status === 'ok' && thornode.data !== undefined && !hasExactThornodeNetworkSources(thornode.sources)) {
+    computedThornodeWarnings.push('THORNode network status sources do not include exact pinned endpoint evidence.');
+  }
+  const dynamicFeeExactSourceWarnings = dynamicFees.status === 'ok' &&
+    dynamicFees.data !== undefined &&
+    !hasExactDynamicFeeSources(dynamicFees.sources)
+    ? ['THORNode dynamic fee sources do not include exact pinned endpoint evidence.']
+    : [];
   const midgardSourceWarnings = [
     ...(midgardHeightLagBlocks !== undefined && midgardHeightLagBlocks > 20
       ? [`Midgard latest height is ${midgardHeightLagBlocks} blocks behind THORNode lastblock.`]
@@ -323,10 +391,18 @@ export async function GET() {
     ...(thornode.data?.sourceWarnings ?? []),
     ...thornodeSourceWarningDetails.map((detail) => detail.message),
   ]);
-  const dynamicFeeSourceWarnings = uniqueStrings(dynamicFees.data?.sourceWarnings ?? []);
-  const dynamicFeeSourceWarningDetails = dynamicFees.data?.sourceWarningDetails?.length
+  const dynamicFeeClientWarningDetails = dynamicFees.data?.sourceWarningDetails?.length
     ? dynamicFees.data.sourceWarningDetails
-    : getDynamicFeeWarningDetails(dynamicFeeSourceWarnings);
+    : getDynamicFeeWarningDetails(dynamicFees.data?.sourceWarnings ?? []);
+  const dynamicFeeSourceWarningDetails = uniqueSourceWarningDetails([
+    ...dynamicFeeClientWarningDetails,
+    ...getDynamicFeeWarningDetails(dynamicFeeExactSourceWarnings),
+  ]);
+  const dynamicFeeSourceWarnings = uniqueStrings([
+    ...(dynamicFees.data?.sourceWarnings ?? []),
+    ...dynamicFeeSourceWarningDetails.map((detail) => detail.message),
+    ...dynamicFeeExactSourceWarnings,
+  ]);
   const midgardSourceWarningDetails = getMidgardSourceWarningDetails(midgardSourceWarnings);
   const midgardHealthWarnings = getMidgardHealthWarnings(midgard);
   const midgardHealthReady = midgard.status === 'ok' &&
@@ -375,8 +451,12 @@ export async function GET() {
     reasons.push(...dynamicFeeSourceWarnings);
   }
 
-  const ready = midgardReady && visibleMidgardReady && thornodeReady && dynamicFeesReady;
   const metadata = runtimeMetadata();
+  if (metadata.runtime.strict && !metadata.runtime.verified) {
+    reasons.push(...metadata.runtime.warnings);
+  }
+  const runtimeReady = !metadata.runtime.strict || metadata.runtime.verified;
+  const ready = midgardReady && visibleMidgardReady && thornodeReady && dynamicFeesReady && runtimeReady;
   const body: ReadinessResponse = {
     status: ready ? 'ready' : 'degraded',
     ready,

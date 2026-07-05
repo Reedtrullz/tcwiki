@@ -1,13 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Search, Menu, X, ChevronDown } from 'lucide-react';
 import { JOURNEY_LINKS, NAV_ITEMS, TASK_INTENT_GUIDES } from '@/lib/content/registry';
 
 export default function Header() {
   const pathname = usePathname();
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [showGuides, setShowGuides] = useState(false);
@@ -23,6 +24,35 @@ export default function Header() {
   const isCurrentHref = (href: string) => (
     href === '/' ? pathname === href : pathname === href || pathname.startsWith(`${href}/`)
   );
+  const pathForHref = (href: string) => href.split(/[?#]/)[0] || href;
+  const isCurrentLink = (href: string) => isCurrentHref(pathForHref(href));
+  const navLinkClassName = (href: string) => {
+    const current = isCurrentLink(href);
+    return [
+      'rounded-md border px-3 py-1.5 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60',
+      current
+        ? 'border-accent/25 bg-accent/10 text-accent'
+        : 'border-transparent text-slate-400 hover:bg-slate-800/50 hover:text-slate-100',
+    ].join(' ');
+  };
+  const panelLinkClassName = (href: string) => {
+    const current = isCurrentLink(href);
+    return [
+      'rounded-lg border px-3 py-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60',
+      current
+        ? 'border-accent/30 bg-accent/10'
+        : 'border-border bg-surface hover:border-accent/30',
+    ].join(' ');
+  };
+  const mobileLinkClassName = (href: string) => {
+    const current = isCurrentLink(href);
+    return [
+      'block rounded-md px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60',
+      current
+        ? 'bg-accent/10 text-accent'
+        : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-100',
+    ].join(' ');
+  };
 
   const closePanels = useCallback((restoreFocus = false) => {
     setIsOpen(false);
@@ -56,8 +86,11 @@ export default function Header() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (searchQuery.trim()) {
-      window.location.href = `/search?q=${encodeURIComponent(searchQuery)}`;
+    const trimmedQuery = searchQuery.trim();
+    if (trimmedQuery) {
+      closePanels(false);
+      setSearchQuery('');
+      router.push(`/search?q=${encodeURIComponent(trimmedQuery)}`);
     }
   };
 
@@ -80,7 +113,7 @@ export default function Header() {
                 key={item.href}
                 href={item.href}
                 aria-current={isCurrentHref(item.href) ? 'page' : undefined}
-                className="px-3 py-1.5 text-sm text-slate-400 hover:text-slate-100 hover:bg-slate-800/50 rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
+                className={navLinkClassName(item.href)}
               >
                 {item.name}
               </Link>
@@ -97,7 +130,12 @@ export default function Header() {
               }}
               aria-expanded={showGuidesForPath}
               aria-controls="desktop-guides-panel"
-              className="inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-sm text-slate-400 transition-colors hover:bg-slate-800/50 hover:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
+              className={[
+                'inline-flex items-center gap-1 rounded-md border px-3 py-1.5 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60',
+                showGuidesForPath
+                  ? 'border-accent/25 bg-accent/10 text-accent'
+                  : 'border-transparent text-slate-400 hover:bg-slate-800/50 hover:text-slate-100',
+              ].join(' ')}
             >
               Guides
               <ChevronDown className={`h-3.5 w-3.5 transition-transform ${showGuidesForPath ? 'rotate-180' : ''}`} />
@@ -183,19 +221,46 @@ export default function Header() {
       )}
 
       {showGuidesForPath && (
-        <div id="desktop-guides-panel" className="hidden border-t border-border bg-surface-elevated px-6 py-3 lg:block">
-          <nav aria-label="Guide links" className="mx-auto grid max-w-7xl grid-cols-3 gap-2 xl:grid-cols-6">
-            {JOURNEY_LINKS.map((journey) => (
-              <Link
-                key={journey.href}
-                href={journey.href}
-                className="rounded-lg border border-border bg-surface px-3 py-2 transition-colors hover:border-accent/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
-                onClick={() => closePanels(false)}
-              >
-                <span className="text-xs font-semibold text-slate-200">{journey.label}</span>
-                <span className="mt-1 block text-[11px] leading-relaxed text-slate-400">{journey.description}</span>
-              </Link>
-            ))}
+        <div id="desktop-guides-panel" className="hidden max-h-[calc(100vh-52px)] overflow-y-auto border-t border-border bg-surface-elevated px-6 py-3 lg:block">
+          <nav aria-label="Guide links" className="mx-auto grid max-w-7xl gap-4 xl:grid-cols-[0.95fr_1.35fr]">
+            <section aria-labelledby="desktop-reader-paths">
+              <p id="desktop-reader-paths" className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                Reader Paths
+              </p>
+              <div className="grid grid-cols-2 gap-2 xl:grid-cols-3">
+                {JOURNEY_LINKS.map((journey) => (
+                  <Link
+                    key={journey.href}
+                    href={journey.href}
+                    aria-current={isCurrentLink(journey.href) ? 'page' : undefined}
+                    className={panelLinkClassName(journey.href)}
+                    onClick={() => closePanels(false)}
+                  >
+                    <span className={`text-xs font-semibold ${isCurrentLink(journey.href) ? 'text-accent' : 'text-slate-200'}`}>{journey.label}</span>
+                    <span className="mt-1 block text-[11px] leading-relaxed text-slate-400">{journey.description}</span>
+                  </Link>
+                ))}
+              </div>
+            </section>
+            <section aria-labelledby="desktop-common-tasks">
+              <p id="desktop-common-tasks" className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                Common Tasks
+              </p>
+              <div className="grid grid-cols-2 gap-2 xl:grid-cols-3">
+                {TASK_INTENT_GUIDES.map((guide) => (
+                  <Link
+                    key={guide.id}
+                    href={guide.href}
+                    aria-current={isCurrentLink(guide.href) ? 'page' : undefined}
+                    className={panelLinkClassName(guide.href)}
+                    onClick={() => closePanels(false)}
+                  >
+                    <span className={`text-xs font-semibold ${isCurrentLink(guide.href) ? 'text-accent' : 'text-slate-200'}`}>{guide.label}</span>
+                    <span className="mt-1 block text-[11px] leading-relaxed text-slate-400">{guide.description}</span>
+                  </Link>
+                ))}
+              </div>
+            </section>
           </nav>
         </div>
       )}
@@ -203,34 +268,45 @@ export default function Header() {
       {isOpenForPath && (
         <div id="mobile-navigation" className="max-h-[calc(100vh-52px)] overflow-y-auto overscroll-contain border-t border-border bg-surface-elevated lg:hidden">
           <nav aria-label="Mobile navigation" className="px-4 py-2 space-y-0.5">
+            <p className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+              Sections
+            </p>
             {NAV_ITEMS.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
                 aria-current={isCurrentHref(item.href) ? 'page' : undefined}
-                className="block px-3 py-2 text-sm text-slate-400 hover:text-slate-100 hover:bg-slate-800/50 rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
+                className={mobileLinkClassName(item.href)}
                 onClick={() => closePanels(false)}
               >
                 {item.name}
               </Link>
             ))}
             <div className="my-2 border-t border-border" />
+            <p className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+              Reader Paths
+            </p>
             {JOURNEY_LINKS.map((journey) => (
               <Link
                 key={journey.href}
                 href={journey.href}
-                className="block px-3 py-2 text-sm text-slate-400 hover:text-slate-100 hover:bg-slate-800/50 rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
+                aria-current={isCurrentLink(journey.href) ? 'page' : undefined}
+                className={mobileLinkClassName(journey.href)}
                 onClick={() => closePanels(false)}
               >
                 {journey.label}
               </Link>
             ))}
             <div className="my-2 border-t border-border" />
+            <p className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+              Common Tasks
+            </p>
             {TASK_INTENT_GUIDES.map((guide) => (
               <Link
                 key={guide.id}
                 href={guide.href}
-                className="block px-3 py-2 text-sm text-slate-400 hover:text-slate-100 hover:bg-slate-800/50 rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
+                aria-current={isCurrentLink(guide.href) ? 'page' : undefined}
+                className={mobileLinkClassName(guide.href)}
                 onClick={() => closePanels(false)}
               >
                 {guide.label}

@@ -6,6 +6,7 @@ import { rankSearchResults } from '@/lib/search/ranking';
 import {
   buildSearchFilterOptions,
   classifySearchDoc,
+  excludeSearchStartingPoints,
   filterSearchResults,
   getSearchStartingPoints,
   normalizeSearchFilter,
@@ -34,12 +35,14 @@ describe('search presentation helpers', () => {
     const dynamicFeesSection = SEARCH_DOCUMENTS.find((doc) => doc.id === 'dynamic-fees');
     const sourceMap = SEARCH_DOCUMENTS.find((doc) => doc.id === 'source-map:current-protocol-state');
     const task = SEARCH_DOCUMENTS.find((doc) => doc.id === 'task:swap-availability');
+    const chain = SEARCH_DOCUMENTS.find((doc) => doc.id === 'chain:sol');
     const deepDivePath = SEARCH_DOCUMENTS.find((doc) => doc.id === 'deep-dive-path:network-security');
     const incident = SEARCH_DOCUMENTS.find((doc) => doc.id === 'incident:gg20-vault-exploit-2026');
 
     expect(dynamicFeesSection && classifySearchDoc(dynamicFeesSection)).toBe('live');
     expect(sourceMap && classifySearchDoc(sourceMap)).toBe('source-map');
     expect(task && classifySearchDoc(task)).toBe('task');
+    expect(chain && classifySearchDoc(chain)).toBe('live');
     expect(deepDivePath && classifySearchDoc(deepDivePath)).toBe('deep-dive');
     expect(incident && classifySearchDoc(incident)).toBe('governance');
   });
@@ -60,12 +63,14 @@ describe('search presentation helpers', () => {
 
   it('selects deduped task and source-map starting points', () => {
     const startingPoints = getSearchStartingPoints(rankedResults('which source should I trust'));
+    const remainingResults = excludeSearchStartingPoints(rankedResults('which source should I trust'), startingPoints);
 
     expect(startingPoints.length).toBeGreaterThan(0);
     expect(startingPoints[0].id).toBe('task:source-choice');
     expect(startingPoints.map((result) => result.id)).toContain('task:source-choice');
     expect(new Set(startingPoints.map((result) => result.href)).size).toBe(startingPoints.length);
     expect(startingPoints.every((result) => result.type === 'task' || result.type === 'source-map')).toBe(true);
+    expect(remainingResults.some((result) => result.id === startingPoints[0]?.id)).toBe(false);
   });
 
   it('normalizes unsupported filters back to all', () => {

@@ -1,6 +1,6 @@
-import type { LiveDataResult, MidgardHealth, NetworkStats, NetworkStatus } from '@/lib/types';
+import type { HistoryItem, LiveDataResult, MidgardHealth, NetworkStats, NetworkStatus } from '@/lib/types';
 import { liveResultIsDegraded } from '@/lib/live-result';
-import { formatPercent, formatRuneFromBaseUnits, normalizeApyToPercent } from '@/lib/trust';
+import { formatPercent, formatRuneFromBaseUnits, normalizeApyToPercent, runeBaseUnitsToNumber } from '@/lib/trust';
 
 export interface StatsDecisionInput {
   networkLoading: boolean;
@@ -28,8 +28,37 @@ export interface StatsMetricCard {
   description: string;
 }
 
+export interface StatsEarningsRow {
+  id: string;
+  name: string;
+  earnings: number | null;
+  nodeOps: number | null;
+  lps: number | null;
+}
+
+export interface StatsEarningsCoverage {
+  availableIntervals: number;
+  unavailableIntervals: number;
+  recentIntervalCount: number;
+  recentAvailableIntervals: number;
+  recentUnavailableIntervals: number;
+  totalEarnings: number | null;
+  recentSevenEarnings: number | null;
+  summary: string;
+  recentRows: StatsEarningsRow[];
+}
+
 function liveResultHasWarning(result?: LiveDataResult<unknown>) {
   return liveResultIsDegraded(result);
+}
+
+function formatHistoryDate(startTime: string) {
+  const seconds = Number.parseInt(startTime, 10);
+  if (!Number.isSafeInteger(seconds)) {
+    return 'Unknown date';
+  }
+
+  return new Date(seconds * 1000).toLocaleDateString();
 }
 
 function midgardHealthFact(result?: LiveDataResult<MidgardHealth>): StatsDecisionFact {
@@ -66,6 +95,26 @@ function midgardHealthFact(result?: LiveDataResult<MidgardHealth>): StatsDecisio
     tone: health.severity === 'warning' ? 'warning' : 'danger',
     detail: health.reasons[0] ?? 'Provider health needs review before relying on metrics.',
   };
+}
+
+function sameSourceGroup(leftUrl: string, rightUrl: string) {
+  try {
+    return new URL(leftUrl).origin === new URL(rightUrl).origin;
+  } catch {
+    return leftUrl === rightUrl;
+  }
+}
+
+function healthSourceDiffersFrom(result: LiveDataResult<unknown> | undefined, healthResult: LiveDataResult<MidgardHealth> | undefined) {
+  return Boolean(
+    result?.status === 'ok' &&
+    result.data !== undefined &&
+    result.source &&
+    healthResult?.status === 'ok' &&
+    healthResult.data !== undefined &&
+    healthResult.source &&
+    !sameSourceGroup(result.source.url, healthResult.source.url)
+  );
 }
 
 function operationalFact(result?: LiveDataResult<NetworkStatus>): StatsDecisionFact {
@@ -128,6 +177,14 @@ function metricsFact(input: StatsDecisionInput): StatsDecisionFact {
       detail: input.networkResult?.error ?? 'Do not treat missing or warning-backed metric values as zero.',
     };
   }
+  if (healthSourceDiffersFrom(input.networkResult, input.midgardHealthResult)) {
+    return {
+      label: 'Headline metrics',
+      value: 'Source mismatch',
+      tone: 'warning',
+      detail: 'Metrics loaded, but Midgard health came from a different provider; use source labels before treating freshness as clean.',
+    };
+  }
   return {
     label: 'Headline metrics',
     value: 'Loaded',
@@ -169,6 +226,14 @@ function earningsFact(input: StatsDecisionInput): StatsDecisionFact {
       detail: 'Some intervals have unavailable totals; avoid over-reading the chart.',
     };
   }
+  if (healthSourceDiffersFrom(input.earningsResult, input.midgardHealthResult)) {
+    return {
+      label: 'Earnings history',
+      value: 'Source mismatch',
+      tone: 'warning',
+      detail: 'Intervals loaded, but Midgard health came from a different provider; avoid treating chart freshness as clean.',
+    };
+  }
   return {
     label: 'Earnings history',
     value: `${input.earningsIntervals} intervals`,
@@ -184,6 +249,52 @@ export function deriveStatsDecisionFacts(input: StatsDecisionInput): StatsDecisi
     operationalFact(input.statusResult),
     earningsFact(input),
   ];
+}
+
+export function deriveStatsEarningsRows(earningsData: HistoryItem[] | undefined): StatsEarningsRow[] {
+  return (earningsData ?? []).map((item, index) => ({
+    id: `${item.startTime}-${item.endTime || 'open'}-${index}`,
+    name: formatHistoryDate(item.startTime),
+    earnings: runeBaseUnitsToNumber(item.earnings),
+    nodeOps: runeBaseUnitsToNumber(item.bondingEarnings),
+    lps: runeBaseUnitsToNumber(item.liquidityEarnings),
+  })).reverse();
+}
+
+export function deriveStatsEarningsCoverage(
+  rows: StatsEarningsRow[],
+  earningsLoading: boolean
+): StatsEarningsCoverage {
+  const availableIntervals = rows.filter((row) => row.earnings !== null).length;
+  const unavailableIntervals = Math.max(0, rows.length - availableIntervals);
+  const totalEarnings = rows.reduce<number | null>((sum, row) => (
+    row.earnings === null ? sum : (sum ?? 0) + row.earnings
+  ), null);
+  // deriveStatsEarningsRows returns newest-first; keep this window anchored to the latest intervals.
+  const recentRows = rows.slice(0, 7);
+  const recentIntervalCount = recentRows.length;
+  const recentAvailableIntervals = recentRows.filter((row) => row.earnings !== null).length;
+  const recentUnavailableIntervals = Math.max(0, recentIntervalCount - recentAvailableIntervals);
+  const recentSevenEarnings = recentRows.reduce<number | null>((sum, row) => (
+    row.earnings === null ? sum : (sum ?? 0) + row.earnings
+  ), null);
+  const summary = earningsLoading && rows.length === 0
+    ? 'Loading Midgard daily earnings intervals...'
+    : rows.length > 0
+      ? `Showing ${rows.length} Midgard daily earnings intervals; ${availableIntervals} include a valid total earnings value.`
+      : 'No Midgard daily earnings intervals are available.';
+
+  return {
+    availableIntervals,
+    unavailableIntervals,
+    recentIntervalCount,
+    recentAvailableIntervals,
+    recentUnavailableIntervals,
+    totalEarnings,
+    recentSevenEarnings,
+    summary,
+    recentRows,
+  };
 }
 
 export function deriveStatsMetricCards(networkData: NetworkStats | undefined, fallbackValue: string): StatsMetricCard[] {

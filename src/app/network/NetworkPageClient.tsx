@@ -1,5 +1,6 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import { Card } from '@/components/ui/Card';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { PageContainer } from '@/components/layout/PageContainer';
@@ -36,7 +37,11 @@ const networkRelatedChecks: RelatedCheck[] = [
   },
 ];
 
-export default function NetworkPage() {
+interface NetworkPageClientProps {
+  children?: ReactNode;
+}
+
+export default function NetworkPageClient({ children }: NetworkPageClientProps) {
   const { data: networkData, result: networkResult } = useNetworkData();
   const { result: midgardHealthResult } = useMidgardHealth();
   const { result: statusResult, isLoading: statusLoading, isDegraded: statusDegraded } = useNetworkStatus();
@@ -75,6 +80,8 @@ export default function NetworkPage() {
       <div id="network-diagnostics" className="scroll-mt-24 mb-12">
         <NetworkStatusBanner result={statusResult} isLoading={statusLoading} variant="diagnostic" />
       </div>
+
+      {children}
 
       <RelatedChecks checks={networkRelatedChecks} className="mb-12" />
 

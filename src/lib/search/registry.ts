@@ -1,4 +1,5 @@
 import {
+  CHAIN_RECORDS,
   ECOSYSTEM_PROJECT_RECORDS,
   GOVERNANCE_PROPOSAL_RECORDS,
   PROTOCOL_MILESTONE_RECORDS,
@@ -22,6 +23,7 @@ export type SearchDocType =
   | 'governance'
   | 'milestone'
   | 'mimir'
+  | 'chain'
   | 'glossary'
   | 'source-map'
   | 'task'
@@ -185,6 +187,32 @@ export const SEARCH_DOCUMENTS: SearchDoc[] = [
     href: doc.slug,
     type: doc.slug.startsWith('/deep-dives/') ? 'deep-dive' as const : 'resource' as const,
   })),
+  ...CHAIN_RECORDS.map((record) => {
+    const chain = record.data;
+    const anchor = recordAnchor('chain', chain.chain);
+    return {
+      id: `chain:${chain.chain.toLowerCase()}`,
+      slug: '/protocol',
+      href: withAnchor('/protocol', anchor),
+      anchor,
+      type: 'chain' as const,
+      title: `${chain.name} (${chain.chain}) supported chain`,
+      description: chain.statusNote ?? `${chain.name} is listed in the curated supported-chain snapshot. Current availability remains live/current-only.`,
+      ...searchMeta(record),
+      content: [
+        chain.name,
+        chain.chain,
+        `${chain.name} ${chain.chain} supported chain`,
+        `${chain.name} chain support`,
+        chain.supported ? 'listed supported live inbound address current-only chain availability' : 'needs review unsupported',
+        `Address formats: ${chain.addressFormats.join(' ')}`,
+        chain.dustThreshold ? `Dust threshold: ${chain.dustThreshold}` : '',
+        chain.statusNote ?? '',
+        chain.explorer,
+        record.sources.map((source) => source.label).join(' '),
+      ].join(' '),
+    };
+  }),
   ...SOURCE_MAP_SECTION_RECORDS.map((record) => ({
     id: `source-map:${record.data.id}`,
     slug: '/docs',

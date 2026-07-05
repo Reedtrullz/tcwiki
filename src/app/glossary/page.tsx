@@ -1,9 +1,7 @@
-import Link from 'next/link';
 import { GLOSSARY_TERMS } from '@/lib/content/glossary';
 import { PageContainer } from '@/components/layout/PageContainer';
-import { Badge } from '@/components/ui/Badge';
-import { FreshnessMeta } from '@/components/ui/FreshnessMeta';
 import { RouteSourcePosture } from '@/components/features/RouteSourcePosture';
+import { GlossaryExplorer, type GlossaryExplorerTerm } from '@/components/features/GlossaryExplorer';
 import { SOURCE_MAP_SECTION_RECORDS } from '@/lib/data/static';
 import { CONTENT_ENTRIES, DEEP_DIVE_READER_PATHS, getContentEntry } from '@/lib/content/registry';
 import { createRouteMetadata } from '@/lib/metadata';
@@ -67,7 +65,13 @@ function relatedHrefLabel(href: string) {
 }
 
 export default function GlossaryPage() {
-  const categories = Array.from(new Set(GLOSSARY_TERMS.map((term) => term.category))).sort();
+  const terms: GlossaryExplorerTerm[] = GLOSSARY_TERMS.map((term) => ({
+    ...term,
+    relatedLinks: term.relatedHrefs.map((href) => ({
+      href,
+      label: relatedHrefLabel(href),
+    })),
+  }));
 
   return (
     <PageContainer>
@@ -87,51 +91,7 @@ export default function GlossaryPage() {
           'That a compact definition is enough evidence for a protocol or safety claim.',
         ]}
       />
-
-      <nav aria-label="Glossary categories" className="mb-8 flex flex-wrap gap-2">
-        {categories.map((category) => (
-          <a key={category} href={`#${category}`} className="rounded-md border border-border px-3 py-1.5 text-xs text-slate-400 hover:border-accent/30 hover:text-slate-100">
-            {category}
-          </a>
-        ))}
-      </nav>
-
-      {categories.map((category) => (
-        <section key={category} id={category} className="scroll-mt-24 mb-10">
-          <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-slate-400">{category}</h2>
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-            {GLOSSARY_TERMS.filter((term) => term.category === category).map((term) => (
-              <article key={term.id} id={`term-${term.id}`} className="scroll-mt-24 rounded-lg border border-border bg-surface-elevated p-5">
-                <div className="mb-2 flex flex-wrap items-center gap-2">
-                  <h3 className="text-sm font-semibold">{term.term}</h3>
-                  <Badge variant="info">{term.category}</Badge>
-                </div>
-                <p className="text-sm leading-relaxed text-slate-400">{term.definition}</p>
-                <div className="mt-3">
-                  <FreshnessMeta
-                    freshness={{
-                      checkedAt: term.reviewedAt,
-                      confidence: term.confidence,
-                      nextReviewDue: term.nextReviewDue,
-                    }}
-                    sources={term.sources}
-                    compact
-                  />
-                </div>
-                {term.relatedHrefs.length > 0 && (
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {term.relatedHrefs.map((href) => (
-                      <Link key={href} href={href} className="text-[11px] text-accent hover:text-accent/80">
-                        {relatedHrefLabel(href)}
-                      </Link>
-                    ))}
-                  </div>
-                )}
-              </article>
-            ))}
-          </div>
-        </section>
-      ))}
+      <GlossaryExplorer terms={terms} />
     </PageContainer>
   );
 }

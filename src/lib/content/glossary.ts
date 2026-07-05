@@ -38,6 +38,16 @@ const feesSource: SourceMeta = {
   url: 'https://dev.thorchain.org/concepts/fees.html',
 };
 
+const liquidityProvidersSource: SourceMeta = {
+  label: 'Liquidity Providers',
+  url: 'https://docs.thorchain.org/technical-documentation/understanding-thorchain/roles/liquidity-providers',
+};
+
+const clpSource: SourceMeta = {
+  label: 'Continuous Liquidity Pools',
+  url: 'https://docs.thorchain.org/technical-documentation/thorchain-finance/continuous-liquidity-pools',
+};
+
 const adr026DynamicFeesSource: SourceMeta = {
   label: 'ADR-026 dynamic L1 fee model',
   url: 'https://gitlab.com/thorchain/thornode/-/raw/develop/docs/architecture/adr-026-dynamic-l1-min-fee-per-thorname.md',
@@ -98,6 +108,61 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     nextReviewDue: '2026-08-02',
     sources: [docsSource, devDocsSource],
     relatedHrefs: ['/deep-dives/clp', '/economics'],
+  },
+  {
+    id: slugifyFragment('Impermanent loss'),
+    term: 'Impermanent loss',
+    definition: 'Liquidity-provider purchasing-power risk when relative pool asset prices move. THORChain docs frame slip-based fees as reducing this risk, not removing it; current LP return claims still need live pool and earnings evidence.',
+    category: 'economics',
+    confidence: 'curated',
+    reviewedAt: '2026-07-05',
+    nextReviewDue: '2026-08-05',
+    sources: [liquidityProvidersSource, clpSource],
+    relatedHrefs: ['/deep-dives/clp', '/stats#stats-look-here-first'],
+  },
+  {
+    id: slugifyFragment('Impermanent loss protection'),
+    term: 'Impermanent loss protection',
+    definition: 'A historical reserve-subsidy mechanism for LP withdrawals. Official THORChain docs now say IL protection has been removed or ended, so do not describe it as currently available for ordinary liquidity providers.',
+    category: 'history',
+    confidence: 'official',
+    reviewedAt: '2026-07-05',
+    nextReviewDue: '2026-08-05',
+    sources: [clpSource, liquidityProvidersSource],
+    relatedHrefs: ['/deep-dives/clp', '/docs#historical-features-and-recovery'],
+  },
+  {
+    id: slugifyFragment('Liquidity provider'),
+    term: 'Liquidity provider',
+    definition: 'A participant who supplies assets to a THORChain pool and receives pool-share accounting. Current deposit or withdrawal availability depends on live LP controls and chain state.',
+    category: 'economics',
+    confidence: 'curated',
+    reviewedAt: '2026-07-05',
+    nextReviewDue: '2026-08-05',
+    sources: [docsSource, networkHaltsSource],
+    relatedHrefs: ['/deep-dives/clp', '/network#network-diagnostics'],
+  },
+  {
+    id: slugifyFragment('Liquidity units'),
+    term: 'Liquidity units',
+    definition: 'Accounting units used to track a provider share of a THORChain pool. They explain pool ownership share, not whether LP deposits or withdrawals are currently open.',
+    category: 'economics',
+    confidence: 'curated',
+    reviewedAt: '2026-07-05',
+    nextReviewDue: '2026-08-05',
+    sources: [docsSource, devDocsSource],
+    relatedHrefs: ['/deep-dives/clp', '/stats#stats-look-here-first'],
+  },
+  {
+    id: slugifyFragment('Asymmetric withdrawal'),
+    term: 'Asymmetric withdrawal',
+    definition: 'A liquidity withdrawal that takes one side of a pool rather than both sides proportionally. Availability can be controlled separately by live Mimir pause keys.',
+    category: 'operations',
+    confidence: 'curated',
+    reviewedAt: '2026-07-05',
+    nextReviewDue: '2026-08-05',
+    sources: [devDocsSource, networkHaltsSource],
+    relatedHrefs: ['/network#network-diagnostics', '/deep-dives/clp'],
   },
   {
     id: slugifyFragment('Current-only'),
@@ -218,7 +283,7 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     reviewedAt: '2026-07-04',
     nextReviewDue: '2026-08-04',
     sources: [assetNotationSource, networkHaltsSource],
-    relatedHrefs: ['/economics', '/network#network-diagnostics'],
+    relatedHrefs: ['/deep-dives/app-layer', '/economics', '/network#network-diagnostics'],
   },
   {
     id: slugifyFragment('Trade asset'),
@@ -229,7 +294,18 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     reviewedAt: '2026-07-04',
     nextReviewDue: '2026-08-04',
     sources: [assetNotationSource, networkHaltsSource],
-    relatedHrefs: ['/economics', '/network#network-diagnostics'],
+    relatedHrefs: ['/deep-dives/app-layer', '/economics', '/network#network-diagnostics'],
+  },
+  {
+    id: slugifyFragment('Synthetic asset'),
+    term: 'Synthetic asset',
+    definition: 'A THORChain asset-notation type, often shortened to synth, denoted with `CHAIN/ASSET`. Synthetics were part of historical Savers mechanics; notation may still appear in developer contexts, but current availability or halt state must be checked from live controls and archived-product boundaries.',
+    category: 'history',
+    confidence: 'curated',
+    reviewedAt: '2026-07-05',
+    nextReviewDue: '2026-08-05',
+    sources: [assetNotationSource, archivedSource, networkHaltsSource],
+    relatedHrefs: ['/deep-dives/savers', '/docs#developer-integration', '/network#network-diagnostics'],
   },
   {
     id: slugifyFragment('App Layer'),
@@ -240,7 +316,7 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     reviewedAt: '2026-07-04',
     nextReviewDue: '2026-08-04',
     sources: [cosmwasmSource, networkHaltsSource],
-    relatedHrefs: ['/protocol', '/network#network-diagnostics'],
+    relatedHrefs: ['/deep-dives/app-layer', '/protocol', '/network#network-diagnostics'],
   },
   {
     id: slugifyFragment('CosmWasm'),
@@ -251,7 +327,7 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     reviewedAt: '2026-07-04',
     nextReviewDue: '2026-08-04',
     sources: [cosmwasmSource, networkHaltsSource],
-    relatedHrefs: ['/protocol', '/docs#official-protocol-documentation'],
+    relatedHrefs: ['/deep-dives/app-layer', '/protocol', '/docs#official-protocol-documentation'],
   },
   {
     id: slugifyFragment('Savers'),

@@ -106,6 +106,11 @@ const feesSource: SourceMeta = {
   url: 'https://dev.thorchain.org/concepts/fees.html',
 };
 
+const swapGuideSource: SourceMeta = {
+  label: 'THORChain Swap Guide',
+  url: 'https://dev.thorchain.org/swap-guide/quickstart-guide.html',
+};
+
 const thornameGuideSource: SourceMeta = {
   label: 'THORName affiliate guide',
   url: 'https://dev.thorchain.org/affiliate-guide/thorname-guide.html',
@@ -157,9 +162,15 @@ const midgardNetworkSource: SourceMeta = {
   notes: 'Current-only network totals; pair with visible source freshness before treating values as live.',
 };
 
+const midgardPoolsSource: SourceMeta = {
+  label: 'Midgard v2 Pools',
+  url: 'https://midgard.thorchain.network/v2/pools?status=available',
+  notes: 'Current-only available-pool snapshot used by the home pool count.',
+};
+
 const midgardEarningsSource: SourceMeta = {
   label: 'Midgard v2 Earnings',
-  url: 'https://midgard.thorchain.network/v2/history/earnings',
+  url: 'https://midgard.thorchain.network/v2/history/earnings?interval=day&count=30',
   notes: 'Current-only historical intervals as returned by Midgard, not protocol revenue attribution proof.',
 };
 
@@ -199,6 +210,36 @@ const archivedSource: SourceMeta = {
   url: 'https://docs.thorchain.org/thornodes/archived',
 };
 
+const appLayerSource: SourceMeta = {
+  label: 'THORChain Application Layer docs',
+  url: 'https://docs.thorchain.org/application-layer',
+  retrievedAt: '2026-07-05',
+};
+
+const cosmWasmSource: SourceMeta = {
+  label: 'THORChain CosmWasm docs',
+  url: 'https://docs.thorchain.org/technical-documentation/technology/cosmwasm',
+  retrievedAt: '2026-07-05',
+};
+
+const securedAssetsSource: SourceMeta = {
+  label: 'THORChain Secured Assets docs',
+  url: 'https://docs.thorchain.org/technical-documentation/thorchain-finance/secured-assets',
+  retrievedAt: '2026-07-05',
+};
+
+const securedAssetsDevSource: SourceMeta = {
+  label: 'THORChain secured assets developer docs',
+  url: 'https://dev.thorchain.org/concepts/secured-assets.html',
+  retrievedAt: '2026-07-05',
+};
+
+const constantsMimirSource: SourceMeta = {
+  label: 'THORChain constants and Mimirs',
+  url: 'https://dev.thorchain.org/mimir.html',
+  retrievedAt: '2026-07-05',
+};
+
 export const CONTENT_ENTRIES: ContentEntry[] = [
   {
     id: 'protocol',
@@ -207,7 +248,7 @@ export const CONTENT_ENTRIES: ContentEntry[] = [
     category: 'section',
     confidence: 'curated',
     description: 'Architecture, swaps, TSS, Bifrost, Mimir, halts, app layer, and supported chains.',
-    body: 'THORChain protocol architecture native cross-chain swaps Bifrost observers TSS vaults Mimir halts inbound addresses refunds streaming swaps StreamingSwapPause HaltMemoless RUNEPoolHaltDeposit app layer CosmWasm.',
+    body: 'THORChain protocol architecture native cross-chain swaps Bifrost observers TSS vaults Mimir halts inbound addresses swap lifecycle refunds refund reasons streaming swaps StreamingSwapPause HaltMemoless RUNEPoolHaltDeposit app layer CosmWasm.',
     tags: ['architecture', 'swaps', 'mimir', 'halts'],
     reviewedAt: '2026-07-05',
     nextReviewDue: '2026-08-05',
@@ -307,7 +348,7 @@ export const CONTENT_ENTRIES: ContentEntry[] = [
     tags: ['stats', 'midgard', 'thornode', 'live'],
     reviewedAt: '2026-07-05',
     nextReviewDue: '2026-08-05',
-    sources: [midgardHealthSource, midgardNetworkSource, midgardEarningsSource, thornodeMimirSource, devDocsSource],
+    sources: [midgardHealthSource, midgardNetworkSource, midgardPoolsSource, midgardEarningsSource, thornodeMimirSource, devDocsSource],
     nav: true,
     footer: true,
   },
@@ -348,11 +389,11 @@ export const CONTENT_ENTRIES: ContentEntry[] = [
     category: 'section',
     confidence: 'curated',
     description: 'Long-form explainers for core THORChain concepts.',
-    body: 'Deep dives CLP Bifrost TSS churning slashing incentive pendulum RUNE settlement Savers historical halt Mimir swap lifecycle.',
+    body: 'Deep dives CLP Bifrost TSS churning slashing incentive pendulum RUNE settlement App Layer CosmWasm secured assets WASM controls Savers historical halt Mimir swap lifecycle.',
     tags: ['deep-dives', 'education'],
     reviewedAt: '2026-07-05',
     nextReviewDue: '2026-08-05',
-    sources: [docsSource, devDocsSource, archivedSource, asgardTssChurnSource, exploitReport2Source],
+    sources: [docsSource, devDocsSource, archivedSource, asgardTssChurnSource, exploitReport2Source, appLayerSource],
     nav: true,
     footer: true,
     featured: true,
@@ -364,7 +405,7 @@ export const CONTENT_ENTRIES: ContentEntry[] = [
     category: 'resource',
     confidence: 'curated',
     description: 'Source-aware definitions for THORChain protocol, economics, operations, and historical terms.',
-    body: 'Glossary definitions Mimir Mimir override inbound address memo outbound fee affiliate fee dynamic L1 fee ADR-026 protocol-owned liquidity POL secured asset trade asset App Layer CosmWasm Current-only CLP TSS GG20 KeyVerify Bifrost RUNEPool Savers TCY Asgard vault protocol economics operations history developer terminology.',
+    body: 'Glossary definitions Mimir Mimir override inbound address memo outbound fee affiliate fee dynamic L1 fee ADR-026 protocol-owned liquidity POL liquidity provider liquidity units asymmetric withdrawal secured asset trade asset App Layer CosmWasm Current-only CLP TSS GG20 KeyVerify Bifrost RUNEPool Savers TCY Asgard vault protocol economics operations history developer terminology.',
     tags: ['glossary', 'terms', 'definitions'],
     reviewedAt: '2026-07-05',
     nextReviewDue: '2026-08-05',
@@ -393,7 +434,7 @@ export const CONTENT_ENTRIES: ContentEntry[] = [
     category: 'deep-dive',
     confidence: 'curated',
     description: 'How THORChain slip-based pools enable native swaps without order books or wrapped assets.',
-    body: 'Continuous Liquidity Pools CLP slip ratio x divided by X plus x liquidity fee output amount RUNE paired pools slippage liquidity providers native cross-chain swaps. Savers are historical and deprecated.',
+    body: 'Continuous Liquidity Pools CLP slip ratio x divided by X plus x liquidity fee output amount RUNE paired pools slippage liquidity providers native cross-chain swaps swap lifecycle quote inbound memo execution outbound refund stale quote min output halt signing trading. Savers are historical and deprecated.',
     tags: ['clp', 'fees', 'swaps'],
     reviewedAt: '2026-06-18',
     nextReviewDue: '2026-07-18',
@@ -466,6 +507,20 @@ export const CONTENT_ENTRIES: ContentEntry[] = [
     reviewedAt: '2026-06-18',
     nextReviewDue: '2026-07-18',
     sources: [docsSource],
+  },
+  {
+    id: 'deep-dive-app-layer',
+    title: 'App Layer, CosmWasm, and Secured Assets',
+    href: '/deep-dives/app-layer',
+    category: 'deep-dive',
+    confidence: 'curated',
+    description: 'How THORChain App Layer contracts, secured assets, trade-account boundaries, and WASM halt controls fit together.',
+    body: 'App Layer CosmWasm WASM x/wasm Rujira secured assets trade accounts TokenFactory X assets IBC SECURE+ SECURE- HaltSecuredGlobal HaltSecuredDeposit HaltSecuredWithdraw HaltWasmGlobal HaltWasmDeployer HaltWasmCs HaltWasmContract HaltOracle WasmPermissionless WasmMinGasPrice current-only Mimir network diagnostics.',
+    tags: ['app-layer', 'cosmwasm', 'secured-assets', 'mimir'],
+    reviewedAt: '2026-07-05',
+    nextReviewDue: '2026-08-05',
+    sources: [appLayerSource, cosmWasmSource, securedAssetsSource, securedAssetsDevSource, networkHaltsSource, constantsMimirSource],
+    featured: true,
   },
   {
     id: 'deep-dive-rune-settlement',
@@ -599,6 +654,34 @@ export const DEEP_DIVE_READER_PATHS: DeepDiveReaderPath[] = [
     reviewedAt: '2026-07-04',
     nextReviewDue: '2026-08-04',
     sources: [docsSource, asgardTssChurnSource, exploitReport2Source, protocolUpgradeV319Source, networkHaltsSource],
+  },
+  {
+    id: 'app-layer-integrations',
+    title: 'App Layer And Integrations',
+    audience: 'Readers trying to separate base-layer swaps, CosmWasm contracts, secured assets, trade accounts, and live halt controls.',
+    description: 'Start with the App Layer model, then connect it back to pools, observation, and current network diagnostics before making availability claims.',
+    entryIds: ['deep-dive-app-layer', 'deep-dive-clp', 'deep-dive-bifrost'],
+    verifyBeforeClaiming: [
+      'Current secured-asset, trade-account, oracle, WASM, signing, trading, and chain-specific Mimir state.',
+      'That a specific interface, contract, deployer, checksum, or asset flow is safe, supported, or currently available.',
+    ],
+    followUpLinks: [
+      {
+        label: 'Network diagnostics',
+        href: '/network#network-diagnostics',
+        description: 'Check live secured-asset, trade-account, app-layer, and chain halt evidence.',
+      },
+      {
+        label: 'Developer integration',
+        href: '/docs#developer-integration',
+        description: 'Use official docs before giving memo, endpoint, or asset-notation guidance.',
+      },
+    ],
+    searchTerms: ['app layer integrations', 'app layer', 'CosmWasm', 'secured assets', 'trade accounts', 'WASM halt', 'HaltWasm', 'HaltSecured'],
+    confidence: 'curated',
+    reviewedAt: '2026-07-05',
+    nextReviewDue: '2026-08-05',
+    sources: [appLayerSource, cosmWasmSource, securedAssetsDevSource, networkHaltsSource, constantsMimirSource],
   },
   {
     id: 'historical-recovery',
@@ -835,6 +918,18 @@ export const SOURCE_CHOICE_DECISIONS: SourceChoiceDecision[] = [
 
 export const TASK_INTENT_GUIDES: TaskIntentGuide[] = [
   {
+    id: 'learn-thorchain',
+    label: 'New to THORChain',
+    question: 'How does THORChain work, and where should a beginner start?',
+    href: '/deep-dives#deep-dive-path-new-to-thorchain',
+    description: 'Start with the curated reader path for settlement, pools, Bifrost, and vault signing before opening the dashboards.',
+    searchTerms: ['how does thorchain work', 'getting started', 'beginner', 'start here', 'protocol basics', 'new to thorchain', 'learn thorchain', 'how thorchain works', 'native swaps'],
+    confidence: 'curated',
+    reviewedAt: '2026-07-05',
+    nextReviewDue: '2026-08-05',
+    sources: [docsSource, devDocsSource],
+  },
+  {
     id: 'swap-availability',
     label: 'Can I swap right now?',
     question: 'Is trading, signing, observation, or a specific chain paused?',
@@ -845,6 +940,18 @@ export const TASK_INTENT_GUIDES: TaskIntentGuide[] = [
     reviewedAt: '2026-07-04',
     nextReviewDue: '2026-08-04',
     sources: [networkHaltsSource, devDocsSource],
+  },
+  {
+    id: 'swap-refund-lifecycle',
+    label: 'Why did my swap refund?',
+    question: 'Was the swap stopped by memo input, quote limits, fees, halts, signing, or changing live state?',
+    href: '/deep-dives/clp#swap-lifecycle-and-refunds',
+    description: 'Start with the swap lifecycle before narrowing into live halts, quote limits, memos, outbound fees, or refund evidence.',
+    searchTerms: ['swap refund', 'swap failed', 'why did my swap refund', 'refund reason', 'stale quote', 'minimum output', 'memo invalid', 'outbound failed', 'quote failed', 'swap lifecycle', 'inbound outbound refund'],
+    confidence: 'curated',
+    reviewedAt: '2026-07-05',
+    nextReviewDue: '2026-08-05',
+    sources: [swapGuideSource, feesSource, networkHaltsSource],
   },
   {
     id: 'source-choice',
@@ -859,6 +966,18 @@ export const TASK_INTENT_GUIDES: TaskIntentGuide[] = [
     sources: [docsSource, devDocsSource, networkHaltsSource],
   },
   {
+    id: 'liquidity-actions',
+    label: 'Add or withdraw liquidity',
+    question: 'Can I add liquidity, withdraw liquidity, or rely on LP-related metrics right now?',
+    href: '/network#network-diagnostics',
+    description: 'Start with live LP controls and chain diagnostics before using static CLP explanations, LP APY, liquidity units, or interface flows.',
+    searchTerms: ['add liquidity', 'withdraw liquidity', 'LP deposit', 'LP withdrawal', 'LP actions', 'LP controls', 'asymmetric withdrawal', 'liquidity units', 'liquidity provider', 'LP APY'],
+    confidence: 'official',
+    reviewedAt: '2026-07-05',
+    nextReviewDue: '2026-08-05',
+    sources: [docsSource, devDocsSource, networkHaltsSource, midgardNetworkSource],
+  },
+  {
     id: 'build-query',
     label: 'Build or query data',
     question: 'Which docs or live endpoints should I use before building against THORChain data?',
@@ -869,6 +988,18 @@ export const TASK_INTENT_GUIDES: TaskIntentGuide[] = [
     reviewedAt: '2026-07-04',
     nextReviewDue: '2026-08-04',
     sources: [docsSource, devDocsSource, thornodeMimirSource],
+  },
+  {
+    id: 'app-layer-and-secured-assets',
+    label: 'App Layer and secured assets',
+    question: 'Can this app, contract, secured asset, or trade-account flow be used right now?',
+    href: '/deep-dives/app-layer#what-to-verify-before-claiming',
+    description: 'Start with the App Layer explainer, then verify live WASM, secured-asset, trade-account, oracle, signing, trading, and chain controls.',
+    searchTerms: ['app layer', 'CosmWasm', 'secured asset', 'secured assets', 'trade account', 'WASM contract', 'HaltWasmGlobal', 'HaltSecuredDeposit', 'HaltSecuredWithdraw', 'WasmPermissionless', 'SECURE+', 'SECURE-'],
+    confidence: 'curated',
+    reviewedAt: '2026-07-05',
+    nextReviewDue: '2026-08-05',
+    sources: [appLayerSource, cosmWasmSource, securedAssetsDevSource, networkHaltsSource, constantsMimirSource],
   },
   {
     id: 'why-paused',
@@ -933,6 +1064,15 @@ export const DEEP_DIVE_TOC: Record<string, DeepDiveTocItem[]> = {
     tocItem('How Observation Works'),
     tocItem('Why It Matters'),
   ],
+  'deep-dive-app-layer': [
+    tocItem('What Changed From The Base Layer'),
+    tocItem('CosmWasm Permission Model'),
+    tocItem('Secured Assets'),
+    tocItem('Trade Accounts And Non-Contract Assets'),
+    tocItem('Operational Controls'),
+    tocItem('What To Verify Before Claiming'),
+    tocItem('Non-Claims'),
+  ],
   'deep-dive-churning': [
     tocItem('What is Churning?'),
     tocItem('Why Churning Matters'),
@@ -942,6 +1082,7 @@ export const DEEP_DIVE_TOC: Record<string, DeepDiveTocItem[]> = {
   'deep-dive-clp': [
     tocItem('How CLP Works'),
     tocItem('Key Properties'),
+    tocItem('Swap Lifecycle and Refunds'),
     tocItem('Comparison to Traditional AMMs'),
   ],
   'deep-dive-incentive-pendulum': [

@@ -6,7 +6,7 @@
 - Review curated static records at least monthly, or sooner when official docs, incident reports, ADRs, or tokenomics pages change.
 - Run `npm run check:content` after editing deep dives, curated records, glossary terms, or search metadata.
 - `npm run check:content` fails when `nextReviewDue` is before today's date. Use `CONTENT_CHECK_TODAY=YYYY-MM-DD` for deterministic local audits, and use `ALLOW_OVERDUE_CONTENT=1` only with explicit release evidence and non-claims.
-- Run `npm run check:live-snapshot` when reviewing supported-chain records. It compares curated supported chains with live THORNode `inbound_addresses`; CI runs it on the scheduled/manual live-source drift job rather than every PR.
+- Run `npm run check:live-snapshot` when reviewing supported-chain records. It compares curated supported chains with same-provider, height-pinned THORNode `inbound_addresses` snapshots and fails on duplicate chains, missing operation fields, provider disagreement, stale/far-future latest-block timestamps, or curated/live chain drift; CI runs it on the scheduled/manual live-source drift job rather than every PR.
 - Before merging content-shape changes, use the source-posture and reader-path checklist in `CONTRIBUTING.md`. It covers route `CONTENT_ENTRIES`, `RouteSourcePosture`, `TASK_INTENT_GUIDES`, `DEEP_DIVE_READER_PATHS`, source-map non-claims, ecosystem use/check fields, and the focused tests expected when journeys or anchors change.
 
 ## Confidence Labels
@@ -20,22 +20,24 @@
 
 - Local proof is not deploy proof. Keep local checks, CI checks, image publication, deployment, and live readback separate.
 - Before claiming production readiness, verify the immutable image ref and read back `/api/health`, `/api/version`, and `/api/ready`.
-- `/api/health` is liveness-only. `/api/ready` is the upstream readiness and source-confidence endpoint for visible Midgard datasets, THORNode operation state, and the dynamic L1 fee tracker.
+- `/api/health` is liveness-only. `/api/ready` is the upstream readiness and source-confidence endpoint for visible Midgard datasets, THORNode operation state, the dynamic L1 fee tracker, and strict runtime metadata when `RUNTIME_METADATA_REQUIRED=1`.
+- `/api/health`, `/api/version`, and `/api/ready` include `runtime` diagnostics. Production evidence should show `runtime.verified: true`, commit metadata shaped like a git SHA, and image metadata shaped like an immutable `@sha256:` ref.
 - `/api/ready` `reasons` and `sourceWarnings` remain string-compatible for simple monitors; top-level `warnings` carries non-blocking source caveats, and `sourceWarningDetails` carries structured category/action/key context for diagnostics.
 - Release-shaped smoke and deploy checks should validate `/api/ready` shape, metadata, and reasons, but source-confidence degradation is non-blocking unless `REQUIRE_READY=1` is set for a deliberate upstream-readiness audit.
 - Do not reintroduce mutable `latest` deploys; deploys must use digest image refs.
 - Local Playwright runs start a fresh standalone server by default. Use `PLAYWRIGHT_BASE_URL` only when deliberately proving an existing standalone server or remote deployment.
 - PR CI builds, scans, and runs the Docker image before deploy code can publish; the `main` publish job scans the locally built image before pushing it to GHCR.
 
-## CSP Promotion
+## CSP Enforcement
 
-- Keep production in report-only mode until browser validation shows normal pages emit no `/api/csp-report` events.
-- Local standalone smoke runs report-only by default and enforced mode when `CSP_ENFORCE=1` is set.
+- Production deploys set `CSP_ENFORCE=1` and should emit `Content-Security-Policy`, not `Content-Security-Policy-Report-Only`.
+- `CSP_ENFORCE=0` is an explicit rollback/diagnostic escape hatch only. Record the exception, reason, and follow-up evidence if it is used.
+- Local standalone smoke runs report-only by default and enforced mode when `CSP_ENFORCE=1` is set, so both comparison modes remain easy to test before release.
 - Review structured `/api/csp-report` logs for blocked directive, blocked origin/path, document path, and source file.
 - Production and standalone CSP must not include `unsafe-eval` or `unsafe-inline`; the Next proxy generates a per-request nonce and the root layout intentionally renders dynamically so framework scripts receive it.
 - Use `CSP_ENFORCE=1 npm run smoke:standalone` for a local enforced-policy header smoke, then `npm run test:e2e:csp` to confirm CSP-sensitive browser paths do not emit `/api/csp-report` reports under enforced headers.
-- Do not promote production while report-only browser runs still show `style-src-elem` or other normal-page violations.
-- Use `CHECK_BASE_URL=https://wiki.thorchain.no npm run check:runtime-url` for a public runtime/header drift probe. Leave `REQUIRE_READY=1` unset unless deliberately auditing upstream readiness.
+- Do not ship CSP-affecting changes while report-only browser runs still show `style-src-elem` or other normal-page violations.
+- Use `CHECK_BASE_URL=https://wiki.thorchain.no REQUIRE_RUNTIME_METADATA=1 CSP_ENFORCE=1 npm run check:runtime-url` for a public runtime/header drift probe. Leave `REQUIRE_READY=1` unset unless deliberately auditing upstream readiness.
 
 ## Standard Local Gate
 
@@ -56,6 +58,6 @@ npm run smoke:standalone
 CSP_ENFORCE=1 npm run smoke:standalone
 npm run test:e2e:visual # focused route overflow / first-viewport smoke
 npm run test:e2e
-CHECK_BASE_URL=https://wiki.thorchain.no npm run check:runtime-url # public runtime/header drift probe
-IMAGE_REF=ghcr.io/example/tcwiki@sha256:0000000000000000000000000000000000000000000000000000000000000000 APP_VERSION=local ansible-playbook -i inventory/hosts.yml ansible-playbook.yml --syntax-check
+CHECK_BASE_URL=https://wiki.thorchain.no REQUIRE_RUNTIME_METADATA=1 CSP_ENFORCE=1 npm run check:runtime-url # public runtime/header drift probe
+IMAGE_REF=ghcr.io/example/tcwiki@sha256:1111111111111111111111111111111111111111111111111111111111111111 APP_VERSION=1111111111111111111111111111111111111111 ansible-playbook -i inventory/hosts.yml ansible-playbook.yml --syntax-check
 ```

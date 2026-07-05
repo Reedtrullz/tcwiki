@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { deriveStatsDecisionFacts, deriveStatsMetricCards } from '@/lib/stats-dashboard';
-import type { LiveDataResult, MidgardHealth, NetworkStats, NetworkStatus } from '@/lib/types';
+import {
+  deriveStatsDecisionFacts,
+  deriveStatsEarningsCoverage,
+  deriveStatsEarningsRows,
+  deriveStatsMetricCards,
+} from '@/lib/stats-dashboard';
+import type { HistoryItem, LiveDataResult, MidgardHealth, NetworkStats, NetworkStatus, SourceMeta } from '@/lib/types';
 
 const networkStats: NetworkStats = {
   totalPooledRune: '100000000',
@@ -42,11 +47,32 @@ const operationalStatus: NetworkStatus = {
   sourceWarnings: [],
 };
 
-function ok<T>(data: T): LiveDataResult<T> {
+function ok<T>(data: T, source?: SourceMeta): LiveDataResult<T> {
   return {
     status: 'ok',
     checkedAt: '2026-07-04T20:00:00.000Z',
     data,
+    source,
+  };
+}
+
+function historyInterval(
+  startTime: string,
+  earnings: string,
+  bondingEarnings = earnings,
+  liquidityEarnings = '0'
+): HistoryItem {
+  return {
+    startTime,
+    endTime: String(Number(startTime) + 86_400),
+    liquidityFees: '0',
+    blockRewards: '0',
+    earnings,
+    bondingEarnings,
+    liquidityEarnings,
+    avgNodeCount: '100',
+    runePriceUSD: '5',
+    pools: [],
   };
 }
 
@@ -120,6 +146,45 @@ describe('stats dashboard decision facts', () => {
     ]);
   });
 
+  it('warns when loaded Midgard metrics and health come from different providers', () => {
+    const health: MidgardHealth = {
+      severity: 'ok',
+      reasons: [],
+      checkedAt: '2026-07-04T20:00:00.000Z',
+      lagBlocks: 1,
+    };
+    const healthSource = { label: 'THORChain Midgard health', url: 'https://midgard.thorchain.network/v2/health' };
+    const visibleSource = { label: 'Liquify Midgard network', url: 'https://gateway.liquify.com/chain/thorchain_midgard/v2/network' };
+
+    const facts = deriveStatsDecisionFacts({
+      networkLoading: false,
+      earningsLoading: false,
+      networkResult: ok(networkStats, visibleSource),
+      earningsResult: ok([{}], visibleSource),
+      midgardHealthResult: ok(health, healthSource),
+      statusResult: ok(operationalStatus),
+      earningsIntervals: 30,
+      earningsIntervalsWithValues: 30,
+    });
+
+    expect(facts).toEqual([
+      expect.objectContaining({
+        label: 'Headline metrics',
+        value: 'Source mismatch',
+        tone: 'warning',
+        detail: expect.stringContaining('different provider'),
+      }),
+      expect.objectContaining({ label: 'Midgard health', value: '1 block lag', tone: 'success' }),
+      expect.objectContaining({ label: 'Operations', value: 'No active pause', tone: 'success' }),
+      expect.objectContaining({
+        label: 'Earnings history',
+        value: 'Source mismatch',
+        tone: 'warning',
+        detail: expect.stringContaining('different provider'),
+      }),
+    ]);
+  });
+
   it('warns when only part of the earnings history is usable', () => {
     const facts = deriveStatsDecisionFacts({
       networkLoading: true,
@@ -160,5 +225,72 @@ describe('stats dashboard decision facts', () => {
       expect.objectContaining({ id: 'activeNodes', value: 'Unavailable' }),
       expect.objectContaining({ id: 'reserveRune', value: 'Unavailable' }),
     ]);
+  });
+
+  it('derives earnings coverage without treating missing interval amounts as zero', () => {
+    const intervals = [
+      historyInterval('1704067200', '100000000', '60000000', '40000000'),
+      historyInterval('1704153600', '', '', ''),
+      historyInterval('1704240000', '300000000', '100000000', '200000000'),
+    ];
+
+    const rows = deriveStatsEarningsRows(intervals);
+    const coverage = deriveStatsEarningsCoverage(rows, false);
+
+    expect(rows).toHaveLength(3);
+    expect(rows[0]).toEqual(expect.objectContaining({
+      earnings: 3,
+      nodeOps: 1,
+      lps: 2,
+    }));
+    expect(rows[1]).toEqual(expect.objectContaining({
+      earnings: null,
+      nodeOps: null,
+      lps: null,
+    }));
+    expect(coverage).toEqual(expect.objectContaining({
+      availableIntervals: 2,
+      unavailableIntervals: 1,
+      recentIntervalCount: 3,
+      recentAvailableIntervals: 2,
+      recentUnavailableIntervals: 1,
+      totalEarnings: 4,
+      recentSevenEarnings: 4,
+      recentRows: rows,
+      summary: expect.stringContaining('2 include a valid total earnings value'),
+    }));
+  });
+
+  it('uses the newest seven intervals for recent earnings coverage', () => {
+    const intervals = Array.from({ length: 8 }, (_, index) => (
+      historyInterval(String(1_704_067_200 + index * 86_400), String(100_000_000 * (index + 1)))
+    ));
+
+    const rows = deriveStatsEarningsRows(intervals);
+    const coverage = deriveStatsEarningsCoverage(rows, false);
+
+    expect(rows.map((row) => row.earnings)).toEqual([8, 7, 6, 5, 4, 3, 2, 1]);
+    expect(coverage.recentRows.map((row) => row.earnings)).toEqual([8, 7, 6, 5, 4, 3, 2]);
+    expect(coverage.recentAvailableIntervals).toBe(7);
+    expect(coverage.recentUnavailableIntervals).toBe(0);
+    expect(coverage.recentSevenEarnings).toBe(35);
+  });
+
+  it('reports sparse newest-window coverage without filling missing values with zero', () => {
+    const intervals = Array.from({ length: 8 }, (_, index) => (
+      historyInterval(
+        String(1_704_067_200 + index * 86_400),
+        index === 7 ? '' : String(100_000_000 * (index + 1))
+      )
+    ));
+
+    const rows = deriveStatsEarningsRows(intervals);
+    const coverage = deriveStatsEarningsCoverage(rows, false);
+
+    expect(coverage.recentRows.map((row) => row.earnings)).toEqual([null, 7, 6, 5, 4, 3, 2]);
+    expect(coverage.recentIntervalCount).toBe(7);
+    expect(coverage.recentAvailableIntervals).toBe(6);
+    expect(coverage.recentUnavailableIntervals).toBe(1);
+    expect(coverage.recentSevenEarnings).toBe(27);
   });
 });
