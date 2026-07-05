@@ -1,3 +1,6 @@
+import { mkdir, writeFile } from 'node:fs/promises';
+import { dirname } from 'node:path';
+
 export const DEFAULT_THORNODE_SOURCES = [
   {
     label: 'Liquify THORNode',
@@ -24,6 +27,9 @@ const BLOCK_STALE_DEGRADED_SECONDS = 30;
 const BLOCK_FUTURE_WARNING_SECONDS = 12;
 const BLOCK_FUTURE_DEGRADED_SECONDS = 30;
 const FETCH_TIMEOUT_MS = 10_000;
+const MAX_EVIDENCE_MESSAGE_LENGTH = 500;
+const EVIDENCE_CHECK_NAME = 'live-chain-snapshot';
+const EVIDENCE_SCHEMA_VERSION = 1;
 
 function isPlainRecord(value) {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -152,6 +158,147 @@ function chainSetSignature(chains) {
   return [...chains].sort().join(',');
 }
 
+function sortedChains(chains) {
+  return [...chains].sort();
+}
+
+function boundedMessage(message) {
+  const singleLine = String(message).replace(/\s+/g, ' ').trim();
+  if (singleLine.length <= MAX_EVIDENCE_MESSAGE_LENGTH) {
+    return singleLine;
+  }
+
+  return `${singleLine.slice(0, MAX_EVIDENCE_MESSAGE_LENGTH - 3)}...`;
+}
+
+function errorMessage(error) {
+  return boundedMessage(error instanceof Error ? error.message : 'unknown error');
+}
+
+function sourceEvidence(source) {
+  return {
+    label: source.label,
+    url: source.url,
+    cosmosUrl: source.cosmosUrl,
+  };
+}
+
+function providerSnapshotEvidence(snapshot, status = 'usable') {
+  const liveChains = sortedChains(snapshot.liveChains);
+  return {
+    source: sourceEvidence(snapshot.source),
+    status: status === 'usable' && snapshot.warnings.length > 0 ? 'warning' : status,
+    latestHeight: snapshot.latestHeight,
+    snapshotHeight: snapshot.snapshotHeight,
+    blockTime: snapshot.blockTime,
+    blockAgeSeconds: snapshot.blockAgeSeconds,
+    liveChains,
+    chainSignature: liveChains.join(','),
+    warnings: [...snapshot.warnings],
+  };
+}
+
+function providerErrorEvidence(source, message) {
+  return {
+    source: sourceEvidence(source),
+    status: 'error',
+    error: boundedMessage(message),
+  };
+}
+
+function evidenceSourcePolicy() {
+  return {
+    latestBlockPath: LATEST_BLOCK_PATH,
+    pinnedSnapshot: 'latest_height_minus_1',
+    inboundAddressesPath: '/inbound_addresses?height={snapshotHeight}',
+    requiredInboundOperationFields: [...INBOUND_OPERATION_FIELDS],
+    providerAgreement: 'all usable providers must expose the same live chain set',
+    driftRule: 'curated supported chains must match the selected pinned live chain set',
+    failureSemantics: 'stale/far-future blocks, malformed inbound rows, provider disagreement, and curated/live drift fail the check',
+  };
+}
+
+function ciEvidence(env) {
+  return {
+    eventName: env.GITHUB_EVENT_NAME ?? null,
+    runId: env.GITHUB_RUN_ID ?? null,
+    runAttempt: env.GITHUB_RUN_ATTEMPT ?? null,
+    sha: env.GITHUB_SHA ?? null,
+    ref: env.GITHUB_REF ?? null,
+    workflow: env.GITHUB_WORKFLOW ?? null,
+    repository: env.GITHUB_REPOSITORY ?? null,
+  };
+}
+
+function failureMessageForNoUsableProvider(providerErrors) {
+  return `No THORNode inbound_addresses source returned a usable pinned snapshot (${providerErrors.join('; ')}).`;
+}
+
+function failureMessageForProviderDisagreement(snapshots) {
+  return `THORNode inbound_addresses sources disagree on live chain set: ${snapshots
+    .map((snapshot) => `${snapshot.source.label}=[${chainSetSignature(snapshot.liveChains)}]`)
+    .join('; ')}.`;
+}
+
+function failureMessageForDrift(selectedSnapshot, drift) {
+  const parts = [];
+  if (drift.missingFromLive.length > 0) {
+    parts.push(`Curated but missing live: ${drift.missingFromLive.join(', ')}`);
+  }
+  if (drift.missingFromCurated.length > 0) {
+    parts.push(`Live but missing curated: ${drift.missingFromCurated.join(', ')}`);
+  }
+
+  return `THORChain inbound_addresses chain snapshot drift detected via ${selectedSnapshot.source.label}. ${parts.join(' ')}`;
+}
+
+function baseEvidence({ checkedAt, curatedChains, providers, providerErrors, warnings }) {
+  const sortedCuratedChains = sortedChains(curatedChains);
+  return {
+    schemaVersion: EVIDENCE_SCHEMA_VERSION,
+    kind: 'thorchain-live-chain-snapshot-drift',
+    check: EVIDENCE_CHECK_NAME,
+    generatedAt: checkedAt,
+    checkedAt,
+    status: 'fail',
+    exitCode: 1,
+    failureReason: 'unknown',
+    failureMessage: null,
+    summary: 'Live chain snapshot check did not complete.',
+    command: 'check-live-chain-snapshot',
+    ci: ciEvidence(process.env),
+    sourcePolicy: evidenceSourcePolicy(),
+    selectedSource: null,
+    selected: null,
+    latestHeight: null,
+    snapshotHeight: null,
+    blockTime: null,
+    blockAgeSeconds: null,
+    curated: {
+      source: 'src/lib/data/static.ts#CHAIN_RECORDS',
+      count: sortedCuratedChains.length,
+      chains: sortedCuratedChains,
+    },
+    curatedChains: sortedCuratedChains,
+    liveChains: [],
+    drift: {
+      missingFromLive: [],
+      missingFromCurated: [],
+    },
+    warnings,
+    providerErrors,
+    providers,
+  };
+}
+
+export class LiveChainSnapshotError extends Error {
+  constructor(message, evidence) {
+    super(message);
+    this.name = 'LiveChainSnapshotError';
+    this.evidence = evidence;
+  }
+}
+
 async function fetchJson(fetchImpl, url) {
   const controller = new AbortController();
   const timeoutId = globalThis.setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
@@ -195,50 +342,115 @@ export async function checkLiveChainSnapshot({
   fetchImpl = fetch,
   nowMs = Date.now(),
 }) {
+  const evidence = await buildLiveChainSnapshotEvidence({
+    chainRecords,
+    sources,
+    fetchImpl,
+    nowMs,
+  });
+
+  if (evidence.status !== 'pass') {
+    throw new LiveChainSnapshotError(evidence.failureMessage ?? 'Live chain snapshot check failed.', evidence);
+  }
+
+  return {
+    source: evidence.selectedSource,
+    liveChains: new Set(evidence.liveChains),
+    latestHeight: evidence.latestHeight,
+    snapshotHeight: evidence.snapshotHeight,
+    blockTime: evidence.blockTime,
+    blockAgeSeconds: evidence.blockAgeSeconds,
+    curatedChains: new Set(evidence.curatedChains),
+    providerErrors: evidence.providerErrors,
+    warnings: evidence.warnings,
+    evidence,
+  };
+}
+
+export async function buildLiveChainSnapshotEvidence({
+  chainRecords,
+  sources = DEFAULT_THORNODE_SOURCES,
+  fetchImpl = fetch,
+  nowMs = Date.now(),
+}) {
   const curatedChains = supportedChainCodes(chainRecords);
   const snapshots = [];
   const providerErrors = [];
+  const providers = [];
 
   for (const source of sources) {
     try {
-      snapshots.push(await fetchProviderSnapshot(source, fetchImpl, nowMs));
+      const snapshot = await fetchProviderSnapshot(source, fetchImpl, nowMs);
+      snapshots.push(snapshot);
+      providers.push(providerSnapshotEvidence(snapshot));
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'unknown error';
+      const message = errorMessage(error);
       providerErrors.push(`${source.label}: ${message}`);
+      providers.push(providerErrorEvidence(source, message));
     }
   }
 
+  const warnings = snapshots.flatMap((snapshot) => snapshot.warnings.map((warning) => `${snapshot.source.label}: ${warning}`));
+  const evidence = baseEvidence({
+    checkedAt: new Date(nowMs).toISOString(),
+    curatedChains,
+    providers,
+    providerErrors,
+    warnings,
+  });
+
   if (snapshots.length === 0) {
-    throw new Error(`No THORNode inbound_addresses source returned a usable pinned snapshot (${providerErrors.join('; ')}).`);
+    evidence.failureReason = 'no-usable-provider';
+    evidence.failureMessage = failureMessageForNoUsableProvider(providerErrors);
+    evidence.summary = boundedMessage(evidence.failureMessage);
+    return evidence;
   }
 
   const [selectedSnapshot] = snapshots;
   const selectedSignature = chainSetSignature(selectedSnapshot.liveChains);
   const disagreeingSnapshots = snapshots.filter((snapshot) => chainSetSignature(snapshot.liveChains) !== selectedSignature);
-  if (disagreeingSnapshots.length > 0) {
-    throw new Error(
-      `THORNode inbound_addresses sources disagree on live chain set: ${snapshots
-        .map((snapshot) => `${snapshot.source.label}=[${chainSetSignature(snapshot.liveChains)}]`)
-        .join('; ')}.`
-    );
-  }
-
   const drift = deriveChainSnapshotDrift(curatedChains, selectedSnapshot.liveChains);
-  if (drift.missingFromLive.length > 0 || drift.missingFromCurated.length > 0) {
-    const parts = [];
-    if (drift.missingFromLive.length > 0) {
-      parts.push(`Curated but missing live: ${drift.missingFromLive.join(', ')}`);
+
+  evidence.selectedSource = sourceEvidence(selectedSnapshot.source);
+  evidence.selected = providerSnapshotEvidence(selectedSnapshot);
+  evidence.latestHeight = selectedSnapshot.latestHeight;
+  evidence.snapshotHeight = selectedSnapshot.snapshotHeight;
+  evidence.blockTime = selectedSnapshot.blockTime;
+  evidence.blockAgeSeconds = selectedSnapshot.blockAgeSeconds;
+  evidence.liveChains = sortedChains(selectedSnapshot.liveChains);
+  evidence.drift = drift;
+
+  if (disagreeingSnapshots.length > 0) {
+    evidence.failureReason = 'provider-disagreement';
+    evidence.failureMessage = failureMessageForProviderDisagreement(snapshots);
+    evidence.summary = boundedMessage(evidence.failureMessage);
+    for (const provider of evidence.providers) {
+      if (
+        (provider.status === 'usable' || provider.status === 'warning') &&
+        Array.isArray(provider.liveChains) &&
+        provider.chainSignature !== selectedSignature
+      ) {
+        provider.status = 'disagreeing';
+      }
     }
-    if (drift.missingFromCurated.length > 0) {
-      parts.push(`Live but missing curated: ${drift.missingFromCurated.join(', ')}`);
-    }
-    throw new Error(`THORChain inbound_addresses chain snapshot drift detected via ${selectedSnapshot.source.label}. ${parts.join(' ')}`);
+    return evidence;
   }
 
-  return {
-    ...selectedSnapshot,
-    curatedChains,
-    providerErrors,
-    warnings: snapshots.flatMap((snapshot) => snapshot.warnings.map((warning) => `${snapshot.source.label}: ${warning}`)),
-  };
+  if (drift.missingFromLive.length > 0 || drift.missingFromCurated.length > 0) {
+    evidence.failureReason = 'chain-drift';
+    evidence.failureMessage = failureMessageForDrift(selectedSnapshot, drift);
+    evidence.summary = boundedMessage(evidence.failureMessage);
+    return evidence;
+  }
+
+  evidence.status = 'pass';
+  evidence.exitCode = 0;
+  evidence.failureReason = 'none';
+  evidence.summary = `Live chain snapshot matches curated supported chains via ${selectedSnapshot.source.label}.`;
+  return evidence;
+}
+
+export async function writeLiveChainSnapshotEvidence(evidence, outputPath) {
+  await mkdir(dirname(outputPath), { recursive: true });
+  await writeFile(outputPath, `${JSON.stringify(evidence, null, 2)}\n`, 'utf8');
 }
