@@ -82,9 +82,23 @@ function readinessResponse() {
   };
 }
 
+function readyResponse() {
+  const response = readinessResponse();
+  response.status = 'ready';
+  response.ready = true;
+  response.reasons = [];
+  response.sources.thornode.dynamicFees.sourceWarnings = [];
+  response.sources.thornode.dynamicFees.sourceWarningDetails = [];
+  return response;
+}
+
 describe('readiness runtime contract helper', () => {
   it('accepts the dynamic-fee readiness subsection', () => {
     expect(() => assertReadinessContract(readinessResponse())).not.toThrow();
+  });
+
+  it('accepts warning-free ready responses', () => {
+    expect(() => assertReadinessContract(readyResponse())).not.toThrow();
   });
 
   it('rejects readiness responses that omit dynamic-fee diagnostics', () => {
@@ -92,5 +106,33 @@ describe('readiness runtime contract helper', () => {
     delete (response.sources.thornode as { dynamicFees?: unknown }).dynamicFees;
 
     expect(() => assertReadinessContract(response)).toThrow(/dynamicFees/);
+  });
+
+  it('rejects contradictory ready status flags', () => {
+    const response = readyResponse();
+    response.ready = false;
+
+    expect(() => assertReadinessContract(response)).toThrow(/status and ready flag/);
+  });
+
+  it('rejects ready responses with degraded visible source subsections', () => {
+    const response = readyResponse();
+    response.sources.midgard.visibleData.earnings.status = 'degraded';
+
+    expect(() => assertReadinessContract(response)).toThrow(/visibleData\.earnings\.status/);
+  });
+
+  it('rejects ready responses with dynamic-fee warning details', () => {
+    const response = readyResponse();
+    response.sources.thornode.dynamicFees.sourceWarningDetails = [
+      {
+        severity: 'review',
+        category: 'unknown-operation',
+        message: 'Dynamic fee source returned an unknown warning detail.',
+        action: 'Review the dynamic-fee source warning before treating readiness as clean.',
+      },
+    ];
+
+    expect(() => assertReadinessContract(response)).toThrow(/dynamicFees\.sourceWarningDetails/);
   });
 });

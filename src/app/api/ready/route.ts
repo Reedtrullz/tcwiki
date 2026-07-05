@@ -323,10 +323,14 @@ export async function GET() {
     ...(thornode.data?.sourceWarnings ?? []),
     ...thornodeSourceWarningDetails.map((detail) => detail.message),
   ]);
-  const dynamicFeeSourceWarnings = uniqueStrings(dynamicFees.data?.sourceWarnings ?? []);
-  const dynamicFeeSourceWarningDetails = dynamicFees.data?.sourceWarningDetails?.length
+  const dynamicFeeClientWarningDetails = dynamicFees.data?.sourceWarningDetails?.length
     ? dynamicFees.data.sourceWarningDetails
-    : getDynamicFeeWarningDetails(dynamicFeeSourceWarnings);
+    : getDynamicFeeWarningDetails(dynamicFees.data?.sourceWarnings ?? []);
+  const dynamicFeeSourceWarningDetails = uniqueSourceWarningDetails(dynamicFeeClientWarningDetails);
+  const dynamicFeeSourceWarnings = uniqueStrings([
+    ...(dynamicFees.data?.sourceWarnings ?? []),
+    ...dynamicFeeSourceWarningDetails.map((detail) => detail.message),
+  ]);
   const midgardSourceWarningDetails = getMidgardSourceWarningDetails(midgardSourceWarnings);
   const midgardHealthWarnings = getMidgardHealthWarnings(midgard);
   const midgardHealthReady = midgard.status === 'ok' &&

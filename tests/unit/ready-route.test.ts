@@ -440,6 +440,31 @@ describe('/api/ready', () => {
     expect(body.reasons).toEqual([warning]);
   });
 
+  it('returns degraded when dynamic fee structured warning details are present without warning strings', async () => {
+    const warning = {
+      severity: 'review' as const,
+      category: 'unknown-operation' as const,
+      message: 'Dynamic fee source returned an unknown warning detail.',
+      action: 'Review the dynamic-fee source warning before treating readiness as clean.',
+      keys: ['DYNAMICFEE-WHITELIST-TEST'],
+    };
+    vi.mocked(ThornodeAPI.getDynamicL1FeeStatus).mockResolvedValue(dynamicFeeStatus({
+      sourceWarnings: [],
+      sourceWarningDetails: [warning],
+    }));
+
+    const response = await GET();
+    const body = await response.json();
+
+    expect(response.status).toBe(503);
+    expect(body.status).toBe('degraded');
+    expect(body.ready).toBe(false);
+    expect(body.sources.thornode.dynamicFees.status).toBe('ok');
+    expect(body.sources.thornode.dynamicFees.sourceWarnings).toEqual([warning.message]);
+    expect(body.sources.thornode.dynamicFees.sourceWarningDetails).toEqual([warning]);
+    expect(body.reasons).toEqual([warning.message]);
+  });
+
   it('keeps paused THORNode state ready while exposing active evidence', async () => {
     vi.mocked(ThornodeAPI.getNetworkStatus).mockResolvedValue(thornodeStatus({
       state: 'paused',

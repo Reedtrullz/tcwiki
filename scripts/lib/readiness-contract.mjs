@@ -83,6 +83,15 @@ function assertWarningDetails(value, path) {
   });
 }
 
+function assertEmptyArray(value, path) {
+  assert(Array.isArray(value), `${path} must be an array`);
+  assert(value.length === 0, `${path} must be empty when readiness is ready`);
+}
+
+function assertReadySource(value, path) {
+  assert(value.status === 'ok', `${path}.status must be ok when readiness is ready`);
+}
+
 export function assertReadinessContract(json) {
   assert(json && typeof json === 'object', 'readiness response must be an object');
   assert(allowedReadinessStatuses.has(json.status), 'readiness status must be ready or degraded');
@@ -145,4 +154,23 @@ export function assertReadinessContract(json) {
   assertOptionalNumber(dynamicFees.thorchainBlockAgeSeconds, 'sources.thornode.dynamicFees.thorchainBlockAgeSeconds');
   assertStringArray(dynamicFees.sourceWarnings, 'sources.thornode.dynamicFees.sourceWarnings');
   assertWarningDetails(dynamicFees.sourceWarningDetails, 'sources.thornode.dynamicFees.sourceWarningDetails');
+
+  const statusIsReady = json.status === 'ready';
+  assert(statusIsReady === json.ready, 'readiness status and ready flag must agree');
+
+  if (json.ready) {
+    assertEmptyArray(json.reasons, 'reasons');
+    assertReadySource(midgard, 'sources.midgard');
+    assertReadySource(midgard.visibleData.network, 'sources.midgard.visibleData.network');
+    assertReadySource(midgard.visibleData.pools, 'sources.midgard.visibleData.pools');
+    assertReadySource(midgard.visibleData.earnings, 'sources.midgard.visibleData.earnings');
+    assertEmptyArray(midgard.sourceWarnings, 'sources.midgard.sourceWarnings');
+    assertEmptyArray(midgard.sourceWarningDetails, 'sources.midgard.sourceWarningDetails');
+    assertReadySource(thornode, 'sources.thornode');
+    assertEmptyArray(thornode.sourceWarnings, 'sources.thornode.sourceWarnings');
+    assertEmptyArray(thornode.sourceWarningDetails, 'sources.thornode.sourceWarningDetails');
+    assertReadySource(dynamicFees, 'sources.thornode.dynamicFees');
+    assertEmptyArray(dynamicFees.sourceWarnings, 'sources.thornode.dynamicFees.sourceWarnings');
+    assertEmptyArray(dynamicFees.sourceWarningDetails, 'sources.thornode.dynamicFees.sourceWarningDetails');
+  }
 }
