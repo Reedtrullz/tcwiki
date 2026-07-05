@@ -72,5 +72,9 @@ describe('task-aware search ranking', () => {
   it('routes glossary concept queries to source-aware definitions', () => {
     expect(rankedIds('what is a synth')[0]).toBe('glossary:synthetic-asset');
     expect(rankedIds('impermanent loss')[0]).toBe('glossary:impermanent-loss');
+    expect(rankedIds('what is DKLS')[0]).toBe('glossary:dkls');
+    expect(rankedIds('what is Paillier')[0]).toBe('glossary:paillier');
+    expect(rankedIds('multi-prime modulus')[0]).toBe('glossary:multi-prime-modulus');
+    expect(rankedIds('compromised vault')[0]).toBe('glossary:compromised-vault');
   });
 });
