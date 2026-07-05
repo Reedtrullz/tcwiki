@@ -142,6 +142,7 @@ const ANCHOR_TARGETS: Array<{ href: string; selector: string }> = [
   { href: '/network#network-diagnostics', selector: '#network-diagnostics' },
   { href: '/stats#stats-look-here-first', selector: '#stats-look-here-first' },
   { href: '/dynamic-fees#dynamic-fees-live', selector: '#dynamic-fees-live' },
+  { href: '/protocol#chain-sol', selector: '#chain-sol' },
   { href: '/ecosystem#interface-use-checklist', selector: '#interface-use-checklist' },
   { href: '/docs#current-protocol-state', selector: '#current-protocol-state' },
   { href: '/docs#developer-integration', selector: '#developer-integration' },
@@ -495,6 +496,9 @@ test.describe('THORChain Wiki Smoke Tests', () => {
     await expect(page.getByText(/Live check/i)).toHaveCount(0);
     await expect(page.getByText('Signing State', { exact: true })).toBeVisible();
     await expect(page.getByText('TCY Claims', { exact: true })).toBeVisible();
+    await expect(page.getByText(/Page Source Posture/i)).toBeVisible();
+    await expect(page.getByText(/Use This Page For/i)).toBeVisible();
+    await expect(page.getByText(/Verify Elsewhere Before Claiming/i)).toBeVisible();
     await expect(page.getByRole('heading', { name: /Related Checks/i })).toBeVisible();
     await expect(page.getByRole('link', { name: /Pause search/i })).toHaveAttribute('href', '/search?q=Mimir%20halt&filter=task');
   });
@@ -588,6 +592,8 @@ test.describe('THORChain Wiki Smoke Tests', () => {
     await expect(page.getByText(/Page Source Posture/i)).toBeVisible();
     await expect(page.getByText(/Verify Elsewhere Before Claiming/i)).toBeVisible();
     await expect(page.getByText(/Threshold Signature Schemes/i)).toBeVisible();
+    await expect(page.locator('#chain-sol')).toBeVisible();
+    await expect(page.locator('#chain-sol').getByText(/EdDSA/i)).toBeVisible();
   });
 
   test('static education routes expose route source posture', async ({ page }) => {

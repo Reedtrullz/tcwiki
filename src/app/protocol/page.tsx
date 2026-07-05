@@ -8,6 +8,7 @@ import { RouteSourcePosture } from '@/components/features/RouteSourcePosture';
 import { RelatedChecks, type RelatedCheck } from '@/components/features/RelatedChecks';
 import { getContentEntry } from '@/lib/content/registry';
 import { createRouteMetadata } from '@/lib/metadata';
+import { recordAnchor } from '@/lib/utils';
 
 export const metadata = createRouteMetadata({
   title: 'THORChain Protocol Overview | THORChain Wiki',
@@ -137,17 +138,23 @@ export default function ProtocolPage() {
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
         {CHAIN_RECORDS.map((record) => {
           const chain = record.data;
+          const anchor = recordAnchor('chain', chain.chain);
           return (
-          <Card key={chain.chain} padding="sm" className="text-center">
-            <p className="text-sm font-medium">{chain.name}</p>
-            <p className="text-[11px] text-slate-400 font-mono">{chain.chain}</p>
-            <Badge variant={chain.supported ? 'success' : 'warning'} className="mt-2">
-              {chain.supported ? 'listed' : 'needs review'}
-            </Badge>
-            <div className="mt-2 text-left">
-              <FreshnessMeta freshness={record.freshness} sources={record.sources} compact />
-            </div>
-          </Card>
+            <Card key={chain.chain} id={anchor} padding="sm" className="scroll-mt-24 text-center">
+              <p className="text-sm font-medium">{chain.name}</p>
+              <p className="text-[11px] text-slate-400 font-mono">{chain.chain}</p>
+              <Badge variant={chain.supported ? 'success' : 'warning'} className="mt-2">
+                {chain.supported ? 'listed' : 'needs review'}
+              </Badge>
+              {chain.statusNote ? (
+                <p className="mt-2 text-left text-[11px] leading-relaxed text-slate-400">
+                  {chain.statusNote}
+                </p>
+              ) : null}
+              <div className="mt-2 text-left">
+                <FreshnessMeta freshness={record.freshness} sources={record.sources} compact />
+              </div>
+            </Card>
           );
         })}
       </div>

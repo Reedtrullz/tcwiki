@@ -56,6 +56,7 @@ const routeSourcePostureEntryIds = new Set([
   'tcy',
   'ecosystem',
   'governance',
+  'network',
   'docs',
   'deep-dives',
   'glossary',
@@ -1213,6 +1214,9 @@ function collectKnownRouteAnchors(collections, glossaryTerms, deepDiveReaderPath
   for (const record of collections.SOURCE_MAP_SECTION_RECORDS) {
     addRouteAnchor(anchorsByRoute, '/docs', record.data.id);
   }
+  for (const record of collections.CHAIN_RECORDS) {
+    addRouteAnchor(anchorsByRoute, '/protocol', recordAnchor('chain', record.data.chain));
+  }
   for (const term of glossaryTerms) {
     addRouteAnchor(anchorsByRoute, '/glossary', `term-${term.id}`);
     addRouteAnchor(anchorsByRoute, '/glossary', term.category);
@@ -1367,6 +1371,18 @@ function buildExpectedAnchoredSearchDocuments(collections, glossaryTerms, deepDi
       reviewedAt: record.freshness.checkedAt,
       nextReviewDue: record.freshness.nextReviewDue,
     })),
+    ...collections.CHAIN_RECORDS.map((record) => {
+      const anchor = recordAnchor('chain', record.data.chain);
+      return {
+        id: `chain:${record.data.chain.toLowerCase()}`,
+        href: `/protocol#${anchor}`,
+        type: 'chain',
+        anchor,
+        confidence: record.freshness.confidence,
+        reviewedAt: record.freshness.checkedAt,
+        nextReviewDue: record.freshness.nextReviewDue,
+      };
+    }),
     ...collections.RESEARCH_REPORT_RECORDS.map((record) => {
       const anchor = recordAnchor('research', record.data.id);
       return {

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import {
+  CHAIN_RECORDS,
   ECOSYSTEM_PROJECT_RECORDS,
   GOVERNANCE_PROPOSAL_RECORDS,
   PROTOCOL_MILESTONE_RECORDS,
@@ -75,6 +76,13 @@ function anchoredSearchExpectations(): AnchoredSearchExpectation[] {
       id: `source-map:${record.data.id}`,
       href: `/docs#${record.data.id}`,
       type: 'source-map' as const,
+      reviewedAt: record.freshness.checkedAt,
+      nextReviewDue: record.freshness.nextReviewDue,
+    })),
+    ...CHAIN_RECORDS.map((record) => ({
+      id: `chain:${record.data.chain.toLowerCase()}`,
+      href: `/protocol#${recordAnchor('chain', record.data.chain)}`,
+      type: 'chain' as const,
       reviewedAt: record.freshness.checkedAt,
       nextReviewDue: record.freshness.nextReviewDue,
     })),
@@ -199,6 +207,23 @@ describe('SEARCH_DOCUMENTS', () => {
     expect(docsMatching('production readiness').some((doc) => doc.id === 'ecosystem:xchainjs')).toBe(true);
     expect(docsMatching('quote quality').some((doc) => doc.id === 'source-map:third-party-interfaces-wallets')).toBe(true);
     expect(docsMatching('official endorsement').some((doc) => doc.id === 'source-map:third-party-interfaces-wallets')).toBe(true);
+  });
+
+  it('indexes supported chains at exact protocol anchors', () => {
+    const chainDocs = SEARCH_DOCUMENTS.filter((doc) => doc.type === 'chain');
+    const sol = SEARCH_DOCUMENTS.find((doc) => doc.id === 'chain:sol');
+    const xrp = SEARCH_DOCUMENTS.find((doc) => doc.id === 'chain:xrp');
+    const base = SEARCH_DOCUMENTS.find((doc) => doc.id === 'chain:base');
+
+    expect(chainDocs).toHaveLength(CHAIN_RECORDS.length);
+    expect(sol?.href).toBe('/protocol#chain-sol');
+    expect(sol?.content).toContain('EdDSA');
+    expect(sol?.sources.map((source) => source.label)).toContain('THORChain Exploit Report #2');
+    expect(xrp?.title).toBe('XRP Ledger (XRP) supported chain');
+    expect(base?.content).toContain('EIP-55');
+    expect(docsMatching('SOL supported chain').some((doc) => doc.id === 'chain:sol')).toBe(true);
+    expect(docsMatching('XRP Ledger').some((doc) => doc.id === 'chain:xrp')).toBe(true);
+    expect(docsMatching('Base chain support').some((doc) => doc.id === 'chain:base')).toBe(true);
   });
 
   it('uses stable ids even when multiple records share a slug', () => {

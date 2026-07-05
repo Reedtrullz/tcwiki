@@ -54,7 +54,7 @@ function taskQueryBoost(query: string, doc: SearchDoc) {
     return 500;
   }
 
-  return 25;
+  return 0;
 }
 
 export function rankSearchResults<T extends SearchResultWithScore>(query: string, results: T[]): T[] {

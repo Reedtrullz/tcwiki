@@ -34,12 +34,14 @@ describe('search presentation helpers', () => {
     const dynamicFeesSection = SEARCH_DOCUMENTS.find((doc) => doc.id === 'dynamic-fees');
     const sourceMap = SEARCH_DOCUMENTS.find((doc) => doc.id === 'source-map:current-protocol-state');
     const task = SEARCH_DOCUMENTS.find((doc) => doc.id === 'task:swap-availability');
+    const chain = SEARCH_DOCUMENTS.find((doc) => doc.id === 'chain:sol');
     const deepDivePath = SEARCH_DOCUMENTS.find((doc) => doc.id === 'deep-dive-path:network-security');
     const incident = SEARCH_DOCUMENTS.find((doc) => doc.id === 'incident:gg20-vault-exploit-2026');
 
     expect(dynamicFeesSection && classifySearchDoc(dynamicFeesSection)).toBe('live');
     expect(sourceMap && classifySearchDoc(sourceMap)).toBe('source-map');
     expect(task && classifySearchDoc(task)).toBe('task');
+    expect(chain && classifySearchDoc(chain)).toBe('live');
     expect(deepDivePath && classifySearchDoc(deepDivePath)).toBe('deep-dive');
     expect(incident && classifySearchDoc(incident)).toBe('governance');
   });

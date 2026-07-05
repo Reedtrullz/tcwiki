@@ -34,4 +34,10 @@ describe('task-aware search ranking', () => {
     expect(rankedIds('Midgard API')[0]).toBe('task:build-query');
     expect(rankedIds('which source should i trust')[0]).toBe('task:source-choice');
   });
+
+  it('routes supported-chain queries to exact chain anchors', () => {
+    expect(rankedIds('SOL supported chain')[0]).toBe('chain:sol');
+    expect(rankedIds('XRP Ledger')[0]).toBe('chain:xrp');
+    expect(rankedIds('BTC supported chain')[0]).toBe('chain:btc');
+  });
 });

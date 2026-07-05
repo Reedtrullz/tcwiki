@@ -86,7 +86,11 @@ export function classifySearchDoc(doc: SearchDoc): SearchFilterId {
   if (doc.type === 'source-map') {
     return 'source-map';
   }
-  if (doc.type === 'mimir' || liveRoutePrefixes.some((prefix) => doc.href === prefix || doc.href.startsWith(`${prefix}#`))) {
+  if (
+    doc.type === 'mimir' ||
+    doc.type === 'chain' ||
+    liveRoutePrefixes.some((prefix) => doc.href === prefix || doc.href.startsWith(`${prefix}#`))
+  ) {
     return 'live';
   }
   if (doc.type === 'deep-dive' || doc.type === 'deep-dive-path') {
