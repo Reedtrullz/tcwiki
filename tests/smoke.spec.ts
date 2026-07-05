@@ -492,7 +492,11 @@ test.describe('THORChain Wiki Smoke Tests', () => {
     await expect(incidentLink).toHaveAttribute('href', '/governance#incident-gg20-vault-exploit-2026');
     await expect(incidentLink.locator('span').filter({ hasText: /^incident$/ })).toBeVisible();
     await expect(incidentLink.getByText('Official source', { exact: true })).toBeVisible();
-    await expect(page.getByRole('link', { name: 'THORChain Exploit Report #2' }).first()).toBeVisible();
+    const incidentResult = page.locator('main article').filter({ has: incidentLink }).first();
+    await expect(incidentResult.getByRole('link', { name: 'THORChain Exploit Report #2' })).toBeVisible();
+    await incidentResult.getByText('source details').click();
+    await expect(incidentResult.getByText(/Retrieved 2026-07-04/i).first()).toBeVisible();
+    await expect(incidentResult.getByText(/Official root-cause report for the May 2026 GG20\/TSS vault exploit/i)).toBeVisible();
     await page.goto('/governance#incident-gg20-vault-exploit-2026');
     await expect(page).toHaveURL(/\/governance#incident-gg20-vault-exploit-2026$/);
     await expect(page.locator('#incident-gg20-vault-exploit-2026')).toBeVisible();

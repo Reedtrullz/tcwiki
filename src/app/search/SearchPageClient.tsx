@@ -17,6 +17,7 @@ import {
   excludeSearchStartingPoints,
   filterSearchResults,
   getSearchFilterSpec,
+  getSearchSourceDisclosureRows,
   getSearchStartingPoints,
   normalizeSearchFilter,
   type SearchFilterId,
@@ -215,17 +216,18 @@ function StartingPoints({
 function SourceList({ sources, resultTitle }: { sources: SearchDoc['sources']; resultTitle: string }) {
   const visibleSources = sources.slice(0, 2);
   const remainingSources = sources.slice(2);
+  const disclosureRows = getSearchSourceDisclosureRows(sources);
 
   return (
     <>
       {visibleSources.map((source, index) => (
-        <span key={source.url}>
+        <span key={`${source.url}-${index}`}>
           {index > 0 ? ', ' : ''}
           <a
             href={source.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-slate-400 underline-offset-4 hover:text-slate-200 hover:underline"
+            className="rounded-sm text-slate-400 underline-offset-4 hover:text-slate-200 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
           >
             {source.label}
           </a>
@@ -235,21 +237,51 @@ function SourceList({ sources, resultTitle }: { sources: SearchDoc['sources']; r
         <details className="ml-1 inline-block align-baseline">
           <summary
             aria-label={`Show ${remainingSources.length} additional source${remainingSources.length === 1 ? '' : 's'} for ${resultTitle}`}
-            className="inline cursor-pointer list-none text-slate-400 underline decoration-dotted underline-offset-4 hover:text-slate-200"
+            className="inline cursor-pointer list-none rounded-sm text-slate-400 underline decoration-dotted underline-offset-4 hover:text-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
           >
             +{remainingSources.length} source{remainingSources.length === 1 ? '' : 's'}
           </summary>
-          <div className="mt-1 flex max-w-xs flex-wrap gap-x-2 gap-y-1 rounded border border-border bg-surface px-2 py-1">
-            {remainingSources.map((source) => (
+          <div className="mt-1 flex max-w-full flex-wrap gap-x-2 gap-y-1 rounded border border-border bg-surface px-2 py-1 sm:max-w-xs">
+            {remainingSources.map((source, index) => (
               <a
-                key={source.url}
+                key={`${source.url}-${index}`}
                 href={source.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-slate-400 underline-offset-4 hover:text-slate-200 hover:underline"
+                className="rounded-sm text-slate-400 underline-offset-4 hover:text-slate-200 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
               >
                 {source.label}
               </a>
+            ))}
+          </div>
+        </details>
+      )}
+      {disclosureRows.length > 0 && (
+        <details className="mt-1 block max-w-full align-baseline sm:ml-1 sm:inline-block">
+          <summary
+            aria-label={`Show source details for ${resultTitle}`}
+            className="inline cursor-pointer list-none rounded-sm text-slate-400 underline decoration-dotted underline-offset-4 hover:text-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
+          >
+            source details
+          </summary>
+          <div className="mt-1 grid max-w-full gap-2 rounded border border-border bg-surface px-2 py-2 text-xs sm:max-w-lg">
+            {disclosureRows.map((source, index) => (
+              <div key={`${source.url}-${index}`} className="min-w-0">
+                <a
+                  href={source.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-sm font-medium text-slate-300 underline-offset-4 hover:text-slate-100 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
+                >
+                  {source.label}
+                </a>
+                {source.retrievedAt && (
+                  <p className="mt-0.5 text-slate-500">Retrieved {source.retrievedAt}</p>
+                )}
+                {source.notes && (
+                  <p className="mt-0.5 break-words leading-relaxed text-slate-400">{source.notes}</p>
+                )}
+              </div>
             ))}
           </div>
         </details>

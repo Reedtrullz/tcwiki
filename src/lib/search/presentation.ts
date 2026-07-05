@@ -21,6 +21,13 @@ export interface SearchFilterOption extends SearchFilterSpec {
   count: number;
 }
 
+export interface SearchSourceDisclosureRow {
+  label: string;
+  url: string;
+  retrievedAt?: string;
+  notes?: string;
+}
+
 export const SEARCH_FILTER_SPECS: SearchFilterSpec[] = [
   {
     id: 'all',
@@ -171,4 +178,15 @@ export function excludeSearchStartingPoints<T extends SearchDoc>(results: T[], s
 
   const startingPointIds = new Set(startingPoints.map((result) => result.id));
   return results.filter((result) => !startingPointIds.has(result.id));
+}
+
+export function getSearchSourceDisclosureRows(sources: SearchDoc['sources']): SearchSourceDisclosureRow[] {
+  return sources
+    .filter((source) => Boolean(source.retrievedAt || source.notes))
+    .map((source) => ({
+      label: source.label,
+      url: source.url,
+      retrievedAt: source.retrievedAt,
+      notes: source.notes,
+    }));
 }

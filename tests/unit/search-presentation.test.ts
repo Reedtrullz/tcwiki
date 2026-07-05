@@ -8,6 +8,7 @@ import {
   classifySearchDoc,
   excludeSearchStartingPoints,
   filterSearchResults,
+  getSearchSourceDisclosureRows,
   getSearchStartingPoints,
   normalizeSearchFilter,
 } from '@/lib/search/presentation';
@@ -79,5 +80,17 @@ describe('search presentation helpers', () => {
     expect(normalizeSearchFilter('deep-dive')).toBe('deep-dive');
     expect(normalizeSearchFilter('unsupported')).toBe('all');
     expect(normalizeSearchFilter(null)).toBe('all');
+  });
+
+  it('preserves source notes and retrieval dates for search result disclosures', () => {
+    const incident = SEARCH_DOCUMENTS.find((doc) => doc.id === 'incident:gg20-vault-exploit-2026');
+    const rows = getSearchSourceDisclosureRows(incident?.sources ?? []);
+
+    expect(rows).toContainEqual(expect.objectContaining({
+      label: 'THORChain Exploit Report #2',
+      retrievedAt: '2026-07-04',
+      notes: expect.stringContaining('root-cause'),
+    }));
+    expect(rows.every((row) => row.retrievedAt || row.notes)).toBe(true);
   });
 });
