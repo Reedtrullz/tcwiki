@@ -32,22 +32,16 @@ function uniqueItems(items: string[], limit: number) {
   return unique;
 }
 
-function getArticleUseCases(
+function getArticleUseCase(
   title: string,
   confidence: string,
-  readerPaths: typeof DEEP_DIVE_READER_PATHS,
 ) {
-  const baseUseCase = confidence === 'historical'
+  return confidence === 'historical'
     ? `Historical context for ${title}; not current product instructions.`
     : `Curated explanation of ${title} mechanics and terminology.`;
-  const pathUseCase = readerPaths.length > 0
-    ? `Following the ${readerPaths.map((path) => path.title).join(' or ')} reader path.`
-    : 'Preparing questions before checking live diagnostics or official docs.';
-
-  return [baseUseCase, pathUseCase];
 }
 
-function getArticleClaimBoundaries(
+function getArticleClaimBoundary(
   confidence: string,
   readerPaths: typeof DEEP_DIVE_READER_PATHS,
 ) {
@@ -60,7 +54,7 @@ function getArticleClaimBoundaries(
     ...historicalBoundary,
     ...readerPathBoundaries,
     defaultCurrentStateBoundary,
-  ], 4);
+  ], 1)[0] ?? defaultCurrentStateBoundary;
 }
 
 export function DeepDiveShell({ entryId, editPath, children }: DeepDiveShellProps) {
@@ -72,8 +66,8 @@ export function DeepDiveShell({ entryId, editPath, children }: DeepDiveShellProp
   const previous = currentIndex > 0 ? DEEP_DIVE_ENTRIES[currentIndex - 1] : undefined;
   const next = currentIndex >= 0 && currentIndex < DEEP_DIVE_ENTRIES.length - 1 ? DEEP_DIVE_ENTRIES[currentIndex + 1] : undefined;
   const readerPaths = DEEP_DIVE_READER_PATHS.filter((path) => path.entryIds.includes(entryId));
-  const articleUseCases = getArticleUseCases(entry.title, entry.confidence, readerPaths);
-  const articleClaimBoundaries = getArticleClaimBoundaries(entry.confidence, readerPaths);
+  const articleUseCase = getArticleUseCase(entry.title, entry.confidence);
+  const articleClaimBoundary = getArticleClaimBoundary(entry.confidence, readerPaths);
   const related = DEEP_DIVE_ENTRIES
     .filter((candidate) => candidate.id !== entryId)
     .map((candidate) => ({
@@ -117,11 +111,11 @@ export function DeepDiveShell({ entryId, editPath, children }: DeepDiveShellProp
         <div className="mt-3 grid gap-2 border-t border-border pt-3 text-xs leading-relaxed text-slate-300 md:grid-cols-2">
           <p>
             <span className="font-semibold text-emerald-300">Use This Article For: </span>
-            {articleUseCases[0]}
+            {articleUseCase}
           </p>
           <p>
             <span className="font-semibold text-amber-300">Verify Elsewhere Before Claiming: </span>
-            {articleClaimBoundaries[0]}
+            {articleClaimBoundary}
           </p>
         </div>
       </div>
