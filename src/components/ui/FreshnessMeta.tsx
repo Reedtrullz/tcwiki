@@ -22,7 +22,7 @@ function SourceDetails({ source, compact }: { source: SourceMeta; compact: boole
     <details className="inline-block align-baseline">
       <summary
         aria-label={`Show source details for ${source.label}`}
-        className="inline cursor-pointer list-none text-slate-400 underline decoration-dotted underline-offset-4 hover:text-slate-200"
+        className="inline cursor-pointer list-none text-slate-400 underline decoration-dotted underline-offset-4 hover:text-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
       >
         {compact ? 'details' : 'source details'}
       </summary>
@@ -40,7 +40,7 @@ function SourceLink({ source, children }: { source: SourceMeta; children: ReactN
       href={source.url}
       target="_blank"
       rel="noopener noreferrer"
-      className="text-slate-400 hover:text-slate-200 transition-colors"
+      className="text-slate-400 transition-colors hover:text-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
     >
       {children}
     </a>
@@ -81,7 +81,7 @@ export function FreshnessMeta({ freshness, sources = [], compact = false }: Fres
               <details className="inline-block">
                 <summary
                   aria-label={`Show ${secondarySources.length} additional source${secondarySources.length === 1 ? '' : 's'} for ${primarySource.label}`}
-                  className="inline cursor-pointer list-none text-slate-400 underline decoration-dotted underline-offset-4 hover:text-slate-200"
+                  className="inline cursor-pointer list-none text-slate-400 underline decoration-dotted underline-offset-4 hover:text-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
                 >
                   +{secondarySources.length} source{secondarySources.length === 1 ? '' : 's'}
                 </summary>
