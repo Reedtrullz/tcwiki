@@ -968,6 +968,7 @@ function SourceStatusStrip({
 }
 
 interface DynamicFeesViewProps {
+  children?: ReactNode;
   result?: LiveDataResult<DynamicL1FeeStatus>;
   status?: DynamicL1FeeStatus;
   isLoading?: boolean;
@@ -976,6 +977,7 @@ interface DynamicFeesViewProps {
 }
 
 export function DynamicFeesView({
+  children,
   result,
   status,
   isLoading = false,
@@ -1021,6 +1023,8 @@ export function DynamicFeesView({
       />
 
       <RelatedChecks checks={dynamicFeeRelatedChecks} className="mb-8" />
+
+      {children}
 
       <SourceStatusStrip
         result={result}
@@ -1239,7 +1243,7 @@ export function DynamicFeesView({
   );
 }
 
-export default function DynamicFeesPageClient() {
+export default function DynamicFeesPageClient({ children }: { children?: ReactNode }) {
   const { result, data: status, isLoading, isDegraded, error } = useDynamicL1FeeStatus();
 
   return (
@@ -1249,6 +1253,8 @@ export default function DynamicFeesPageClient() {
       isLoading={isLoading}
       isDegraded={isDegraded}
       error={error}
-    />
+    >
+      {children}
+    </DynamicFeesView>
   );
 }
