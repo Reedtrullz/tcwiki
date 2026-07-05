@@ -48,6 +48,20 @@ describe('task-aware search ranking', () => {
     expect(rankedIds('RUNEPoolHaltDeposit')[0]).toBe('task:why-paused');
   });
 
+  it('routes post-exploit TSS cryptography terms to source-backed security context', () => {
+    for (const query of ['DKLS', 'Schnorr', 'GG20 DKLS', 'key-sign failures', 'Paillier']) {
+      expect(rankedIds(query)[0], query).toBe('task:tss-security-claims');
+    }
+
+    const dklsResults = rankedIds('DKLS');
+    expect(dklsResults.indexOf('deep-dive-tss')).toBeGreaterThan(-1);
+    expect(dklsResults.indexOf('network')).toBe(-1);
+
+    const paillierResults = rankedIds('Paillier');
+    expect(paillierResults.indexOf('deep-dive-tss')).toBeLessThan(paillierResults.indexOf('incident:gg20-vault-exploit-2026'));
+    expect(paillierResults).not.toContain('governance');
+  });
+
   it('routes supported-chain queries to exact chain anchors', () => {
     expect(rankedIds('SOL supported chain')[0]).toBe('chain:sol');
     expect(rankedIds('XRP Ledger')[0]).toBe('chain:xrp');

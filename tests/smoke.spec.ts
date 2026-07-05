@@ -483,6 +483,11 @@ test.describe('THORChain Wiki Smoke Tests', () => {
     await page.goto('/search?q=network%20security%20path');
     await expect(page.locator('main a[href="/deep-dives#deep-dive-path-network-security"]').first()).toBeVisible();
     await expect(page.getByText(/Network Security/i).first()).toBeVisible();
+
+    await page.goto('/search?q=DKLS');
+    const tssStartHere = page.locator('section[aria-labelledby="search-start-here"] article').first();
+    await expect(tssStartHere.getByRole('link', { name: /TSS security claims/i })).toHaveAttribute('href', '/deep-dives/tss');
+    await expect(page.locator('main a[href="/deep-dives#deep-dive-path-network-security"]').first()).toBeVisible();
   });
 
   test('search results link to exact record anchors with trust labels', async ({ page }) => {
