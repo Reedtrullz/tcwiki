@@ -17,6 +17,10 @@ import {
   NetworkStatusSourceWarning,
   OperationalControlStatus,
   SourceMeta,
+  SwapQuoteFailure,
+  SwapQuoteProbeResult,
+  SwapQuoteRequest,
+  SwapQuoteSuccess,
   ThornodeInboundAddress,
   ThornodeLastBlock,
 } from '@/lib/types';
@@ -124,6 +128,7 @@ const REVIEWED_OPERATIONAL_SUPPORT_MIMIR_PREFIXES = [
 const DYNAMIC_L1_FEE_WHITELIST_PREFIX = 'DYNAMICFEE-WHITELIST-';
 const TOR_BASE_UNIT_MAX_DIGITS = 80;
 const TOR_BASE_UNIT_PATTERN = /^\d+$/;
+const SWAP_QUOTE_AMOUNT_PATTERN = /^\d+$/;
 
 type MimirActivationMode = 'positive' | 'at-or-after-height' | 'after-height' | 'until-height';
 
@@ -265,6 +270,133 @@ function dynamicL1FeeStatusSources(endpoint: ThornodeEndpoint, snapshotHeight: n
     sourceForThornodePath(endpoint, 'dynamic L1 fee records', '/dynamic_l1_fees', snapshotHeight),
     sourceForThornodePath(endpoint, 'dynamic L1 fee current epoch', '/dynamic_l1_fees_current', snapshotHeight),
   ];
+}
+
+function quotePath(request: SwapQuoteRequest) {
+  const params = new URLSearchParams({
+    from_asset: request.fromAsset,
+    to_asset: request.toAsset,
+    amount: request.amountBaseUnits,
+  });
+  return `/quote/swap?${params.toString()}`;
+}
+
+function sourceForSwapQuote(endpoint: SourceMeta, request: SwapQuoteRequest): SourceMeta {
+  return {
+    label: `${endpoint.label} swap quote`,
+    url: `${endpoint.url}${quotePath(request)}`,
+    notes: 'Current-only THORNode quote probe without destination address. Do not cache or treat as transaction instructions.',
+  };
+}
+
+function asQuoteString(value: unknown, field: string): string {
+  if (typeof value !== 'string' || value === '') {
+    throw new Error(`THORNode quote response missing ${field}`);
+  }
+  if (!SWAP_QUOTE_AMOUNT_PATTERN.test(value)) {
+    throw new Error(`THORNode quote response has invalid ${field}`);
+  }
+  return value;
+}
+
+function asOptionalQuoteString(value: unknown, field: string): string | undefined {
+  if (value === undefined || value === null || value === '') {
+    return undefined;
+  }
+  return asQuoteString(value, field);
+}
+
+function asOptionalQuoteNumber(value: unknown, field: string): number | undefined {
+  if (value === undefined || value === null || value === '') {
+    return undefined;
+  }
+  if (typeof value === 'string' && SWAP_QUOTE_AMOUNT_PATTERN.test(value)) {
+    const numericValue = Number(value);
+    if (Number.isSafeInteger(numericValue)) {
+      return numericValue;
+    }
+  }
+  if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < 0) {
+    throw new Error(`THORNode quote response has invalid ${field}`);
+  }
+  return value;
+}
+
+function quoteRecord(value: unknown): Record<string, unknown> {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    throw new Error('THORNode quote response was not an object');
+  }
+  return value as Record<string, unknown>;
+}
+
+function normalizeSwapQuoteSuccess(request: SwapQuoteRequest, rawValue: unknown): SwapQuoteProbeResult {
+  const raw = quoteRecord(rawValue);
+  const feesRecord = raw.fees === undefined ? {} : quoteRecord(raw.fees);
+  const fees = {
+    asset: typeof feesRecord.asset === 'string' && feesRecord.asset !== '' ? feesRecord.asset : undefined,
+    affiliate: asOptionalQuoteString(feesRecord.affiliate, 'fees.affiliate'),
+    outbound: asOptionalQuoteString(feesRecord.outbound, 'fees.outbound'),
+    liquidity: asOptionalQuoteString(feesRecord.liquidity, 'fees.liquidity'),
+    total: asOptionalQuoteString(feesRecord.total, 'fees.total'),
+    slippageBps: asOptionalQuoteNumber(feesRecord.slippage_bps, 'fees.slippage_bps'),
+    totalBps: asOptionalQuoteNumber(feesRecord.total_bps, 'fees.total_bps'),
+  };
+  const quote: SwapQuoteSuccess = {
+    expectedAmountOut: asQuoteString(raw.expected_amount_out, 'expected_amount_out'),
+    recommendedMinAmountIn: asOptionalQuoteString(raw.recommended_min_amount_in, 'recommended_min_amount_in'),
+    inboundConfirmationSeconds: asOptionalQuoteNumber(raw.inbound_confirmation_seconds, 'inbound_confirmation_seconds'),
+    outboundDelaySeconds: asOptionalQuoteNumber(raw.outbound_delay_seconds, 'outbound_delay_seconds'),
+    streamingSwapSeconds: asOptionalQuoteNumber(raw.streaming_swap_seconds, 'streaming_swap_seconds'),
+    totalSwapSeconds: asOptionalQuoteNumber(raw.total_swap_seconds, 'total_swap_seconds'),
+    expiry: asOptionalQuoteNumber(raw.expiry, 'expiry'),
+    warning: typeof raw.warning === 'string' && raw.warning !== '' ? raw.warning : undefined,
+    fees,
+    raw,
+  };
+
+  return {
+    request,
+    status: 'available',
+    summary: 'THORNode returned a current swap quote for this route.',
+    quote,
+  };
+}
+
+function normalizeSwapQuoteFailure(request: SwapQuoteRequest, rawValue: unknown): SwapQuoteProbeResult {
+  const raw = quoteRecord(rawValue);
+  const message = typeof raw.message === 'string' && raw.message !== ''
+    ? raw.message
+    : 'THORNode did not return a usable quote for this route.';
+  const code = typeof raw.code === 'number' && Number.isSafeInteger(raw.code) ? raw.code : undefined;
+  const details = Array.isArray(raw.details) ? raw.details : undefined;
+  const status = /halt|pause|disabled|unavailable|not available/i.test(message) ? 'limited' : 'failed';
+  const failure: SwapQuoteFailure = {
+    ...(code !== undefined ? { code } : {}),
+    message,
+    ...(details !== undefined ? { details } : {}),
+    raw,
+  };
+
+  return {
+    request,
+    status,
+    summary: status === 'limited'
+      ? 'THORNode says this route is currently limited.'
+      : 'THORNode could not quote this route.',
+    failure,
+  };
+}
+
+function validateSwapQuoteRequest(request: SwapQuoteRequest) {
+  if (!request.fromAsset || !request.toAsset) {
+    throw new Error('Swap quote request requires fromAsset and toAsset.');
+  }
+  if (request.fromAsset === request.toAsset) {
+    throw new Error('Swap quote request requires two different assets.');
+  }
+  if (!SWAP_QUOTE_AMOUNT_PATTERN.test(request.amountBaseUnits) || request.amountBaseUnits === '0') {
+    throw new Error('Swap quote request requires a positive base-unit amount.');
+  }
 }
 
 function getConservativeSnapshotHeight(latestHeight: number) {
@@ -2445,6 +2577,50 @@ export class ThornodeAPI {
 
     return liveDegraded<NetworkStatus>(
       `THORNode status sources did not provide a usable snapshot (${errors.join('; ')})`,
+      THORNODE_ENDPOINTS,
+      checkedAt
+    );
+  }
+
+  static async getSwapQuoteProbe(request: SwapQuoteRequest): Promise<LiveDataResult<SwapQuoteProbeResult>> {
+    const checkedAt = new Date().toISOString();
+    const errors: string[] = [];
+
+    try {
+      validateSwapQuoteRequest(request);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Invalid swap quote request.';
+      return liveDegraded<SwapQuoteProbeResult>(message, THORNODE_ENDPOINTS, checkedAt);
+    }
+
+    for (let i = 0; i < THORNODE_ENDPOINTS.length; i += 1) {
+      const endpointIndex = (activeEndpoint + i) % THORNODE_ENDPOINTS.length;
+      const endpoint = THORNODE_ENDPOINTS[endpointIndex];
+      const controller = new AbortController();
+      const timeoutId = globalThis.setTimeout(() => controller.abort(), 5000);
+      const source = sourceForSwapQuote(endpoint, request);
+
+      try {
+        const response = await fetch(source.url, {
+          signal: controller.signal,
+          cache: 'no-store',
+        });
+        const raw = await response.json();
+        const result = response.ok
+          ? normalizeSwapQuoteSuccess(request, raw)
+          : normalizeSwapQuoteFailure(request, raw);
+        activeEndpoint = endpointIndex;
+        return liveOk(result, source, checkedAt);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unknown THORNode quote error';
+        errors.push(`${endpoint.label}: ${message}`);
+      } finally {
+        globalThis.clearTimeout(timeoutId);
+      }
+    }
+
+    return liveDegraded<SwapQuoteProbeResult>(
+      `THORNode quote sources did not provide a usable response (${errors.join('; ')})`,
       THORNODE_ENDPOINTS,
       checkedAt
     );

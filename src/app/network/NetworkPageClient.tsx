@@ -78,7 +78,7 @@ export default function NetworkPageClient({ children }: NetworkPageClientProps) 
       </p>
 
       <div id="network-diagnostics" className="scroll-mt-24 mb-12">
-        <NetworkStatusBanner result={statusResult} isLoading={statusLoading} variant="diagnostic" />
+        <NetworkStatusBanner result={statusResult} isLoading={statusLoading} variant="diagnostic" showQuoteChecker />
       </div>
 
       {children}

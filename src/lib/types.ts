@@ -185,6 +185,50 @@ export interface Pool {
   rewards?: string;
 }
 
+export interface SwapQuoteRequest {
+  fromAsset: string;
+  toAsset: string;
+  amountBaseUnits: string;
+}
+
+export interface SwapQuoteFees {
+  asset?: string;
+  affiliate?: string;
+  outbound?: string;
+  liquidity?: string;
+  total?: string;
+  slippageBps?: number;
+  totalBps?: number;
+}
+
+export interface SwapQuoteSuccess {
+  expectedAmountOut: string;
+  recommendedMinAmountIn?: string;
+  inboundConfirmationSeconds?: number;
+  outboundDelaySeconds?: number;
+  streamingSwapSeconds?: number;
+  totalSwapSeconds?: number;
+  expiry?: number;
+  warning?: string;
+  fees: SwapQuoteFees;
+  raw: Record<string, unknown>;
+}
+
+export interface SwapQuoteFailure {
+  code?: number;
+  message: string;
+  details?: unknown[];
+  raw?: Record<string, unknown>;
+}
+
+export interface SwapQuoteProbeResult {
+  request: SwapQuoteRequest;
+  status: 'available' | 'limited' | 'failed';
+  summary: string;
+  quote?: SwapQuoteSuccess;
+  failure?: SwapQuoteFailure;
+}
+
 export interface NetworkStats {
   totalPooledRune: string;
   totalReserve: string;

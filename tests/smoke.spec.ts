@@ -149,6 +149,87 @@ async function mockStatsMidgard(page: Page) {
   });
 }
 
+async function mockSwapperFirstNetwork(page: Page) {
+  const pools = [
+    { asset: 'BTC.BTC', assetDepth: '100000000', runeDepth: '100000000', status: 'available' },
+    { asset: 'ETH.ETH', assetDepth: '100000000', runeDepth: '100000000', status: 'available' },
+    { asset: 'BSC.BNB', assetDepth: '100000000', runeDepth: '100000000', status: 'available' },
+    { asset: 'SOL.SOL', assetDepth: '100000000', runeDepth: '100000000', status: 'available' },
+  ];
+
+  await page.route(/\/base\/tendermint\/v1beta1\/blocks\/latest$/, async (route) => {
+    await fulfillJson(route, {
+      block: {
+        header: {
+          height: '101',
+          time: new Date().toISOString(),
+        },
+      },
+    });
+  });
+  await page.route(/\/thorchain\/mimir(?:\?.*)?$/, async (route) => {
+    await fulfillJson(route, {
+      HALTBSCTRADING: 1,
+      HALTSOLCHAIN: 1,
+      PAUSELP: 1,
+      BURNSYNTHS: 1,
+    });
+  });
+  await page.route(/\/thorchain\/inbound_addresses(?:\?.*)?$/, async (route) => {
+    await fulfillJson(route, [
+      { chain: 'BTC', halted: false, global_trading_paused: false, chain_trading_paused: false, chain_lp_actions_paused: false },
+      { chain: 'ETH', halted: false, global_trading_paused: false, chain_trading_paused: false, chain_lp_actions_paused: false },
+      { chain: 'BSC', halted: false, global_trading_paused: false, chain_trading_paused: false, chain_lp_actions_paused: false },
+      { chain: 'SOL', halted: false, global_trading_paused: false, chain_trading_paused: false, chain_lp_actions_paused: false },
+    ]);
+  });
+  await page.route(/\/thorchain\/version(?:\?.*)?$/, async (route) => {
+    await fulfillJson(route, { current: '3.19.2' });
+  });
+  await page.route(/\/thorchain\/lastblock(?:\?.*)?$/, async (route) => {
+    await fulfillJson(route, [
+      { chain: 'BTC', thorchain: 100, last_observed_in: 100, last_signed_out: 100 },
+      { chain: 'ETH', thorchain: 100, last_observed_in: 100, last_signed_out: 100 },
+      { chain: 'BSC', thorchain: 100, last_observed_in: 100, last_signed_out: 100 },
+      { chain: 'SOL', thorchain: 100, last_observed_in: 100, last_signed_out: 100 },
+    ]);
+  });
+  await page.route(/\/v2\/pools\?status=available$/, async (route) => {
+    await fulfillJson(route, pools);
+  });
+  await page.route(/\/thorchain\/quote\/swap\?.*$/, async (route) => {
+    const url = new URL(route.request().url());
+    const fromAsset = url.searchParams.get('from_asset');
+
+    if (fromAsset === 'BSC.BNB' || fromAsset === 'SOL.SOL') {
+      await route.fulfill({
+        status: 400,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          code: 400,
+          message: `trading is halted on ${fromAsset.split('.')[0]}`,
+        }),
+      });
+      return;
+    }
+
+    await fulfillJson(route, {
+      expected_amount_out: '99000000',
+      recommended_min_amount_in: '1000000',
+      inbound_confirmation_seconds: 600,
+      outbound_delay_seconds: 12,
+      total_swap_seconds: 612,
+      expiry: 1790000000,
+      fees: {
+        asset: 'ETH.ETH',
+        total: '30000',
+        total_bps: 25,
+        slippage_bps: 7,
+      },
+    });
+  });
+}
+
 const VISUAL_SAFETY_ROUTES: Array<{ path: string; heading: string | RegExp }> = [
   { path: '/', heading: /THORChain Wiki/i },
   { path: '/protocol', heading: /Protocol Overview/i },
@@ -349,9 +430,11 @@ test.describe('THORChain Wiki Smoke Tests', () => {
     if (isMobile) {
       await page.setViewportSize({ width: 390, height: 760 });
     }
+    await mockSwapperFirstNetwork(page);
 
     await page.goto('/');
     await expect(page.getByText(/Look here first/i).first()).toBeVisible();
+    await expect(page.getByText(/BSC and SOL are swap-limited/i).first()).toBeVisible();
     await expect(page.getByRole('link', { name: /Open diagnostics/i })).toHaveAttribute('href', '/network');
     await expect(page.getByText(/Operational evidence/i)).toHaveCount(0);
 
@@ -362,10 +445,35 @@ test.describe('THORChain Wiki Smoke Tests', () => {
     await page.goto('/network');
     await expect(page.getByRole('heading', { name: /Network & Security/i })).toBeVisible();
     await expect(page.getByText(/Look here first/i).first()).toBeVisible();
+    await expect(page.getByText(/BSC and SOL are swap-limited/i).first()).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Chain availability/i })).toBeVisible();
+    await expect(page.getByText(/BSC: Trading halted/i).first()).toBeVisible();
+    await expect(page.getByText(/SOL: Chain halted/i).first()).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Check A Route/i })).toBeVisible();
+    await expect(page.getByText(/Network-wide LP pause/i).first()).toBeVisible();
     await expect(page.getByText(/Priority Mimir controls/i)).toBeVisible();
     await expect(page.getByText(/Operational evidence|Source warnings and Mimir review queue/i).first()).toBeVisible();
+    await expect(page.getByText(/Direct:/i)).toHaveCount(0);
+    await expect(page.getByText(/Inherited:/i)).toHaveCount(0);
+    await expect(page.getByText(/evidence items/i)).toHaveCount(0);
     await expect(page.getByRole('link', { name: /Live-source failover/i })).toHaveAttribute('href', '/docs#runtime-live-data-failover');
     await expect(page.getByRole('link', { name: /Stats dashboard/i })).toHaveAttribute('href', '/stats#stats-look-here-first');
+
+    const quotePanel = page.locator('section[aria-labelledby="route-check-heading"]');
+    await quotePanel.getByLabel(/From asset/i).selectOption('BTC.BTC');
+    await quotePanel.getByLabel(/To asset/i).selectOption('ETH.ETH');
+    await quotePanel.getByLabel(/Amount/i).fill('0.01');
+    await quotePanel.getByRole('button', { name: /Check route/i }).click();
+    await expect(quotePanel.getByText(/Quote available/i)).toBeVisible();
+    await expect(quotePanel.getByText(/Expected output/i)).toBeVisible();
+    await expect(quotePanel.getByText(/Fee bps|Total fee bps/i)).toBeVisible();
+
+    await page.waitForTimeout(1100);
+    await quotePanel.getByLabel(/From asset/i).selectOption('BSC.BNB');
+    await quotePanel.getByLabel(/To asset/i).selectOption('ETH.ETH');
+    await quotePanel.getByRole('button', { name: /Check route/i }).click();
+    await expect(quotePanel.getByText(/Quote limited/i)).toBeVisible();
+    await expect(quotePanel.getByText(/trading is halted on BSC/i).first()).toBeVisible();
 
     const bodyWidth = await page.locator('body').evaluate((body) => body.scrollWidth);
     const viewportWidth = page.viewportSize()?.width ?? bodyWidth;

@@ -2073,4 +2073,118 @@ describe('deriveNetworkStatus', () => {
     expect(result.error).toContain('Invalid dynamic_l1_fees_current epoch');
     expect(result.sources?.map((source) => source.label)).toEqual(['Liquify THORNode', 'THORChain THORNode']);
   });
+
+  it('parses swap quote success without destination-address inputs', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(makeResponse(true, {
+      expected_amount_out: '99000000',
+      recommended_min_amount_in: '1000000',
+      inbound_confirmation_seconds: '600',
+      outbound_delay_seconds: 12,
+      streaming_swap_seconds: 0,
+      total_swap_seconds: 612,
+      expiry: 1790000000,
+      warning: 'short-lived quote',
+      fees: {
+        asset: 'ETH.ETH',
+        affiliate: '0',
+        outbound: '10000',
+        liquidity: '20000',
+        total: '30000',
+        total_bps: '25',
+        slippage_bps: 7,
+      },
+    }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const result = await ThornodeAPI.getSwapQuoteProbe({
+      fromAsset: 'BTC.BTC',
+      toAsset: 'ETH.ETH',
+      amountBaseUnits: '100000000',
+    });
+    const firstUrl = String(fetchMock.mock.calls[0]?.[0]);
+
+    expect(result.status).toBe('ok');
+    expect(firstUrl).toContain('/quote/swap?');
+    expect(firstUrl).toContain('from_asset=BTC.BTC');
+    expect(firstUrl).toContain('to_asset=ETH.ETH');
+    expect(firstUrl).toContain('amount=100000000');
+    expect(firstUrl).not.toContain('destination');
+    expect(result.data).toMatchObject({
+      status: 'available',
+      quote: {
+        expectedAmountOut: '99000000',
+        recommendedMinAmountIn: '1000000',
+        inboundConfirmationSeconds: 600,
+        outboundDelaySeconds: 12,
+        streamingSwapSeconds: 0,
+        totalSwapSeconds: 612,
+        expiry: 1790000000,
+        warning: 'short-lived quote',
+        fees: {
+          asset: 'ETH.ETH',
+          total: '30000',
+          totalBps: 25,
+          slippageBps: 7,
+        },
+      },
+    });
+    expect(result.source?.notes).toContain('Do not cache or treat as transaction instructions.');
+  });
+
+  it('parses halted-trading quote errors as limited routes', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(makeResponse(false, {
+      code: 400,
+      message: 'trading is halted on SOL',
+      details: [{ chain: 'SOL' }],
+    }, 400, 'Bad Request')));
+
+    const result = await ThornodeAPI.getSwapQuoteProbe({
+      fromAsset: 'SOL.SOL',
+      toAsset: 'BTC.BTC',
+      amountBaseUnits: '100000000',
+    });
+
+    expect(result.status).toBe('ok');
+    expect(result.data).toMatchObject({
+      status: 'limited',
+      summary: 'THORNode says this route is currently limited.',
+      failure: {
+        code: 400,
+        message: 'trading is halted on SOL',
+      },
+    });
+  });
+
+  it('degrades malformed quote success instead of rendering missing numeric fields as zero', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(makeResponse(true, {
+      fees: {
+        total_bps: 0,
+      },
+    })));
+
+    const result = await ThornodeAPI.getSwapQuoteProbe({
+      fromAsset: 'BTC.BTC',
+      toAsset: 'ETH.ETH',
+      amountBaseUnits: '100000000',
+    });
+
+    expect(result.status).toBe('degraded');
+    expect(result.data).toBeUndefined();
+    expect(result.error).toContain('expected_amount_out');
+  });
+
+  it('rejects invalid quote requests before contacting THORNode providers', async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+
+    const result = await ThornodeAPI.getSwapQuoteProbe({
+      fromAsset: 'BTC.BTC',
+      toAsset: 'BTC.BTC',
+      amountBaseUnits: '0',
+    });
+
+    expect(result.status).toBe('degraded');
+    expect(result.error).toContain('two different assets');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
 });
