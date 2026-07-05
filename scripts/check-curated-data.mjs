@@ -27,6 +27,7 @@ const glossaryPath = join(root, 'src/lib/content/glossary.ts');
 const searchRegistryPath = join(root, 'src/lib/search/registry.ts');
 const generatedSearchPath = join(root, 'src/lib/search/mdx-documents.generated.ts');
 const ecosystemFilterPath = join(root, 'src/components/features/EcosystemFilterList.tsx');
+const glossaryExplorerPath = join(root, 'src/components/features/GlossaryExplorer.tsx');
 const appDir = join(root, 'src/app');
 const deepDiveContentDir = join(root, 'content/deep-dives');
 const staticSource = readFileSync(staticPath, 'utf8');
@@ -1639,6 +1640,7 @@ function validateSearchSurface(collections, contentEntries, taskGuides, glossary
   const governanceSource = readFileSync(routePathForHref('/governance'), 'utf8');
   const ecosystemSource = readFileSync(ecosystemFilterPath, 'utf8');
   const glossaryPageSource = readFileSync(routePathForHref('/glossary'), 'utf8');
+  const glossaryExplorerSource = readFileSync(glossaryExplorerPath, 'utf8');
 
   for (const prefix of ['governance', 'incident', 'research', 'milestone']) {
     if (!governanceSource.includes(`recordAnchor('${prefix}'`)) {
@@ -1648,7 +1650,7 @@ function validateSearchSurface(collections, contentEntries, taskGuides, glossary
   if (!ecosystemSource.includes("recordAnchor('ecosystem'")) {
     fail('src/components/features/EcosystemFilterList.tsx', 'missing ecosystem record anchors for search results');
   }
-  if (!glossaryPageSource.includes('term-${term.id}')) {
+  if (!glossaryPageSource.includes('GlossaryExplorer') || !glossaryExplorerSource.includes('term-${term.id}')) {
     fail('src/app/glossary/page.tsx', 'missing glossary term anchors for search results');
   }
 

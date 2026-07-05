@@ -598,6 +598,8 @@ test.describe('THORChain Wiki Smoke Tests', () => {
 
     await page.goto('/glossary');
     await expect(page.getByRole('heading', { name: /Glossary/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Term Finder/i })).toBeVisible();
+    await expect(page.getByRole('searchbox', { name: /Filter glossary terms/i })).toBeVisible();
     await expect(page.locator('#term-mimir')).toBeVisible();
     await expect(page.getByText(/Operational parameter storage/i)).toBeVisible();
     await expect(page.locator('#term-dynamic-l1-fee')).toBeVisible();
@@ -605,6 +607,16 @@ test.describe('THORChain Wiki Smoke Tests', () => {
     await expect(page.getByRole('link', { name: /Dynamic-fee live tracker/i }).first()).toHaveAttribute('href', '/dynamic-fees#dynamic-fees-live');
     await expect(page.getByRole('link', { name: /Current Protocol State/i }).first()).toHaveAttribute('href', '/docs#current-protocol-state');
     await expect(page.getByRole('link', { name: /Network diagnostics/i }).first()).toHaveAttribute('href', '/network#network-diagnostics');
+
+    await page.getByRole('searchbox', { name: /Filter glossary terms/i }).fill('gg20');
+    await expect(page.locator('#term-gg20')).toBeVisible();
+    await expect(page.locator('#term-mimir')).toHaveCount(0);
+    await page.getByRole('button', { name: /Reset/i }).click();
+    await expect(page.locator('#term-mimir')).toBeVisible();
+    await page.getByRole('button', { name: /Developer/i }).click();
+    await expect(page.getByText(/Showing 3 of/i)).toBeVisible();
+    await expect(page.locator('#term-cosmwasm')).toBeVisible();
+    await expect(page.locator('#term-gg20')).toHaveCount(0);
   });
 
   test('all deep-dive routes load', async ({ page }) => {

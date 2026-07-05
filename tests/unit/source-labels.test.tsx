@@ -6,6 +6,8 @@ import { FreshnessMeta } from '@/components/ui/FreshnessMeta';
 import { LiveSourceMeta } from '@/components/ui/LiveSourceMeta';
 import { RelatedChecks } from '@/components/features/RelatedChecks';
 import { RouteSourcePosture } from '@/components/features/RouteSourcePosture';
+import { GlossaryExplorer } from '@/components/features/GlossaryExplorer';
+import { GLOSSARY_TERMS } from '@/lib/content/glossary';
 import { CHAIN_RECORDS, ECOSYSTEM_PROJECT_RECORDS, SECURITY_INCIDENT_RECORDS } from '@/lib/data/static';
 import { getContentEntry } from '@/lib/content/registry';
 
@@ -51,6 +53,22 @@ describe('source and freshness labels', () => {
     expect(html).toContain('Source map');
     expect(html).toContain('Check live diagnostics');
     expect(html).toContain('Live inbound status must be checked before describing BTC swaps as open.');
+  });
+
+  it('renders the glossary term finder with source-aware term cards', () => {
+    const terms = GLOSSARY_TERMS.slice(0, 3).map((term) => ({
+      ...term,
+      relatedLinks: term.relatedHrefs.map((href) => ({ href, label: href })),
+    }));
+    const html = renderToStaticMarkup(<GlossaryExplorer terms={terms} />);
+
+    expect(html).toContain('Term Finder');
+    expect(html).toContain('Filter terms');
+    expect(html).toContain('All terms');
+    expect(html).toContain('Asgard vault');
+    expect(html).toContain('Bifrost');
+    expect(html).toContain('Checked');
+    expect(html).not.toContain('No glossary terms match');
   });
 
   it('renders source notes, retrieved timestamps, and reviewer metadata', () => {
