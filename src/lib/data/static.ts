@@ -588,13 +588,19 @@ export const TOKENOMICS_RECORDS: SourcedRecord<TokenomicsSnapshot>[] = [
   record({
     id: 'tcy-recovery-context',
     title: 'TCY Recovery Context',
-    summary: 'TCY is recovery-token context associated with the THORFi unwind; current claiming, staking, and recovery status must stay dated and source-linked.',
+    summary: 'TCY is recovery-token context associated with the THORFi unwind. Official docs describe 1 TCY per $1 of defaulted debt and 10% of system income to stakers, but full debt recovery is market dependent and not guaranteed.',
     figures: [
-      { label: 'Recovery framing', value: 'TCY', tone: 'source-backed' },
-      { label: 'Current claim state', value: 'Check THORNode/Mimir', tone: 'current-only' },
+      { label: 'Recovery mechanism', value: 'Claims token, not payout guarantee', tone: 'source-backed' },
+      { label: 'Debt conversion', value: '$1 debt = 1 TCY', tone: 'source-backed' },
+      { label: 'Revenue share', value: '10% system income to stakers', tone: 'source-backed' },
+      { label: 'Full recovery', value: 'Not guaranteed', tone: 'source-backed' },
+      { label: 'Current claim state', value: 'Check THORNode/Mimir + interface', tone: 'current-only' },
       { label: 'Savers/Lending state', value: 'Deprecated historical products', tone: 'historical' },
     ],
-  }, [tokenomicsSource, archivedFeaturesSource], 'needs-review'),
+  }, [tokenomicsSource, tcyGuideSource, thorfiUnwindSource, archivedFeaturesSource], 'needs-review', {
+    checkedAt: '2026-07-05',
+    nextReviewDue: '2026-08-05',
+  }),
 ];
 
 export const ECOSYSTEM_PROJECT_RECORDS: SourcedRecord<EcosystemProject>[] = [

@@ -50,6 +50,33 @@ const governanceRelatedChecks: RelatedCheck[] = [
   },
 ];
 
+const recoveryClaimChecks = [
+  {
+    claim: 'Savers or Lending are available now',
+    startWith: 'Archived feature sources',
+    verify: 'Official archived docs and any current interface/source claiming reactivation.',
+    avoid: 'Do not describe archived mechanics as current deposit or borrowing instructions.',
+  },
+  {
+    claim: 'A claimant can claim or stake TCY right now',
+    startWith: 'TCY page plus live network diagnostics',
+    verify: 'TCY guide, official claim interface, and TCY Mimir controls such as TCYCLAIMINGHALT or TCYSTAKINGHALT.',
+    avoid: 'Do not infer availability from historical TCY launch copy alone.',
+  },
+  {
+    claim: 'TCY restored the original debt value',
+    startWith: 'TCY source caveats',
+    verify: 'Market and distribution evidence outside this tracker; official developer docs say full recovery is not guaranteed.',
+    avoid: 'Do not state par recovery, redemption value, or investment outcome as fact.',
+  },
+  {
+    claim: 'Post-exploit recovery is complete',
+    startWith: 'Current recovery tracker records',
+    verify: 'Dated exploit reports, upgrade notes, ADR/proposal status, and live network diagnostics.',
+    avoid: 'Do not convert a restart, patch, or proposal into proof of final recovery completion.',
+  },
+];
+
 function incidentTrackerBadge(status: 'current' | 'needs-review') {
   return status === 'needs-review'
     ? { label: 'Needs current review', variant: 'danger' as const }
@@ -120,6 +147,28 @@ export default function GovernancePage() {
         <p className="mb-4 max-w-3xl text-sm text-slate-400">
           Conservative tracker for records explicitly tagged as current or needing current recovery review. Historical unresolved records remain in the incident archive below unless they are re-verified for current tracking.
         </p>
+        <div className="mb-4 grid grid-cols-1 gap-3 lg:grid-cols-2">
+          {recoveryClaimChecks.map((item) => (
+            <Card key={item.claim} padding="sm" className="border-amber-500/15">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Check Before Claiming</p>
+              <h3 className="mt-1 text-sm font-semibold text-slate-200">{item.claim}</h3>
+              <dl className="mt-3 space-y-2 text-xs leading-relaxed text-slate-400">
+                <div>
+                  <dt className="font-semibold text-slate-300">Start with</dt>
+                  <dd>{item.startWith}</dd>
+                </div>
+                <div>
+                  <dt className="font-semibold text-slate-300">Verify</dt>
+                  <dd>{item.verify}</dd>
+                </div>
+                <div>
+                  <dt className="font-semibold text-amber-300">Do not claim</dt>
+                  <dd>{item.avoid}</dd>
+                </div>
+              </dl>
+            </Card>
+          ))}
+        </div>
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           {currentRecoveryRecords.map((record) => (
               <Card key={`current:${record.id}`} className="border-amber-500/20 bg-amber-500/5">
