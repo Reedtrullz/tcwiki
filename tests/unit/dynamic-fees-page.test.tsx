@@ -135,6 +135,126 @@ describe('DynamicFeesView', () => {
     expect(html).not.toContain('$0.00');
   });
 
+  it('renders nonzero sub-cent TOR amounts as less than one cent instead of zero', () => {
+    const subCentStatus: DynamicL1FeeStatus = {
+      ...status,
+      records: [
+        {
+          ...status.records[0],
+          latestFeesTorBaseUnits: '1',
+        },
+      ],
+      currentEntries: [
+        {
+          ...status.currentEntries[0],
+          feesTorBaseUnits: '1',
+          volumeTorBaseUnits: '1',
+        },
+      ],
+      histories: [
+        {
+          ...status.histories[0],
+          pairs: [
+            {
+              ...status.histories[0].pairs[0],
+              history: [
+                {
+                  ...status.histories[0].pairs[0].history[0],
+                  feesTorBaseUnits: '1',
+                  volumeTorBaseUnits: '1',
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+    const html = renderToStaticMarkup(<DynamicFeesView result={{ ...liveResult, data: subCentStatus }} status={subCentStatus} />);
+
+    expect(html).toContain('&lt;$0.01');
+    expect(html).not.toContain('$0.00');
+  });
+
+  it('fails closed for malformed TOR amount strings instead of crashing or rendering zero', () => {
+    const malformedStatus: DynamicL1FeeStatus = {
+      ...status,
+      records: [
+        {
+          ...status.records[0],
+          latestFeesTorBaseUnits: 'not-a-decimal-amount',
+        },
+      ],
+      currentEntries: [
+        {
+          ...status.currentEntries[0],
+          feesTorBaseUnits: '1e6',
+          volumeTorBaseUnits: '1'.repeat(81),
+        },
+      ],
+      histories: [
+        {
+          ...status.histories[0],
+          pairs: [
+            {
+              ...status.histories[0].pairs[0],
+              history: [
+                {
+                  ...status.histories[0].pairs[0].history[0],
+                  feesTorBaseUnits: '1000000 ',
+                  volumeTorBaseUnits: '0x10',
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+    const html = renderToStaticMarkup(<DynamicFeesView result={{ ...liveResult, data: malformedStatus }} status={malformedStatus} />);
+
+    expect(html).toContain('Insufficient samples');
+    expect(html).not.toContain('$0.00');
+    expect(html).not.toContain('$NaN');
+    expect(html).not.toContain('Infinity');
+  });
+
+  it('fails closed for TOR totals too large for safe chart math', () => {
+    const tooLargeCents = BigInt(Number.MAX_SAFE_INTEGER) + BigInt(1);
+    const tooLargeTorBaseUnits = (tooLargeCents * BigInt(1000000)).toString();
+    const hugeStatus: DynamicL1FeeStatus = {
+      ...status,
+      currentEntries: [
+        {
+          ...status.currentEntries[0],
+          feesTorBaseUnits: tooLargeTorBaseUnits,
+          volumeTorBaseUnits: tooLargeTorBaseUnits,
+        },
+      ],
+      histories: [
+        {
+          ...status.histories[0],
+          pairs: [
+            {
+              ...status.histories[0].pairs[0],
+              history: [
+                {
+                  ...status.histories[0].pairs[0].history[0],
+                  feesTorBaseUnits: tooLargeTorBaseUnits,
+                  volumeTorBaseUnits: tooLargeTorBaseUnits,
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+    const html = renderToStaticMarkup(<DynamicFeesView result={{ ...liveResult, data: hugeStatus }} status={hugeStatus} />);
+
+    expect(html).toContain('Insufficient samples');
+    expect(html).not.toContain('$0.00');
+    expect(html).not.toContain('$NaN');
+    expect(html).not.toContain('Infinity');
+  });
+
   it('keeps caveat-resolution copy from overclaiming protocol or community evidence', () => {
     const html = renderToStaticMarkup(<DynamicFeesView result={liveResult} status={status} />);
 
