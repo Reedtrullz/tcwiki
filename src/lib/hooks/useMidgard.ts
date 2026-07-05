@@ -3,7 +3,17 @@
 import useSWR from 'swr';
 import MidgardAPI from '@/lib/api/midgard';
 import ThornodeAPI from '@/lib/api/thornode';
-import { DynamicL1FeeStatus, HistoryItem, LiveDataResult, MidgardHealth, NetworkStats, NetworkStatus, Pool } from '@/lib/types';
+import {
+  DynamicL1FeeStatus,
+  HistoryItem,
+  LiveDataResult,
+  MidgardHealth,
+  NetworkStats,
+  NetworkStatus,
+  Pool,
+  SwapQuoteProbeResult,
+  SwapQuoteRequest,
+} from '@/lib/types';
 import { liveDegraded } from '@/lib/trust';
 import { liveResultIsDegraded } from '@/lib/live-result';
 
@@ -78,6 +88,27 @@ export function useDynamicL1FeeStatus() {
     'thornode:dynamic-l1-fee-status',
     () => ThornodeAPI.getDynamicL1FeeStatus(),
     SWR_OPTIONS
+  );
+  return unwrapLiveResult(data, error, isLoading);
+}
+
+export function useSwapQuoteProbe(request: SwapQuoteRequest | null, enabled = Boolean(request), requestVersion = 0) {
+  const { data, error, isLoading } = useSWR<LiveDataResult<SwapQuoteProbeResult>>(
+    enabled && request
+      ? ['thornode:swap-quote-probe', request.fromAsset, request.toAsset, request.amountBaseUnits, requestVersion]
+      : null,
+    () => {
+      if (!request) {
+        throw new Error('Swap quote request is not set.');
+      }
+      return ThornodeAPI.getSwapQuoteProbe(request);
+    },
+    {
+      refreshInterval: 0,
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      dedupingInterval: 1000,
+    }
   );
   return unwrapLiveResult(data, error, isLoading);
 }

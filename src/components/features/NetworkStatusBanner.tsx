@@ -1,15 +1,27 @@
+'use client';
+
+import { FormEvent, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { AlertTriangle, CheckCircle2, RadioTower } from 'lucide-react';
 import {
-  ChainOperationalStatus,
   LiveDataResult,
   NetworkStatus,
   NetworkStatusSourceWarning,
   OperationalControlStatus,
+  Pool,
+  SwapQuoteRequest,
 } from '@/lib/types';
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import { LiveSourceMeta } from '@/components/ui/LiveSourceMeta';
+import { usePools, useSwapQuoteProbe } from '@/lib/hooks/useMidgard';
+import {
+  AvailabilityCell,
+  ChainAvailability,
+  deriveChainAvailability,
+  deriveNetworkWideControls,
+  deriveRouteAvailability,
+} from '@/lib/network-diagnostics';
 
 type NetworkStatusBannerVariant = 'compact' | 'diagnostic';
 
@@ -19,6 +31,7 @@ interface NetworkStatusBannerProps {
   result?: LiveDataResult<NetworkStatus>;
   isLoading?: boolean;
   variant?: NetworkStatusBannerVariant;
+  showQuoteChecker?: boolean;
 }
 
 interface EvidenceRow {
@@ -28,21 +41,6 @@ interface EvidenceRow {
   source: string;
   key: string;
   state: 'active' | 'scheduled' | 'warning-only';
-}
-
-interface ChainPresentation {
-  chain: ChainOperationalStatus;
-  labels: string[];
-  statusText: string;
-  swapLimited: boolean;
-  operationAffected: boolean;
-  directEvidenceCount: number;
-  inheritedEvidenceCount: number;
-  warningCount: number;
-  scheduledCount: number;
-  rank: number;
-  cardClassName: string;
-  iconClassName: string;
 }
 
 type SwapStatusTone = 'open' | 'limited' | 'paused' | 'unknown';
@@ -55,8 +53,6 @@ interface SwapStatusPresentation {
   detail: string;
 }
 
-const SWAP_LIMITING_CHAIN_LABELS = new Set(['Chain halted', 'Trading halted', 'Signing paused']);
-
 function uniqueStrings(values: string[]) {
   return Array.from(new Set(values));
 }
@@ -65,8 +61,8 @@ function formatKeyCount(count: number) {
   return `${count} ${count === 1 ? 'key' : 'keys'}`;
 }
 
-function formatEvidenceCount(count: number) {
-  return `${count} evidence ${count === 1 ? 'item' : 'items'}`;
+function formatSourceRowCount(count: number) {
+  return `${count} source ${count === 1 ? 'row' : 'rows'}`;
 }
 
 function formatWarningCount(count: number) {
@@ -312,105 +308,21 @@ function getDisclosureKeys(keys: string[] | undefined) {
   };
 }
 
-function getInheritedLabel(key: string) {
-  const upperKey = key.toUpperCase();
-  if (upperKey === 'HALTTRADING') {
-    return 'Global trading control';
-  }
-  if (upperKey === 'HALTSIGNING') {
-    return 'Global signing control';
-  }
-  if (upperKey === 'PAUSELP') {
-    return 'Global LP control';
-  }
-  if (upperKey === 'HALTCHAINGLOBAL' || upperKey === 'NODEPAUSECHAINGLOBAL') {
-    return 'Global chain control';
-  }
-  return 'Global control';
-}
-
-function chainHasActiveKey(chain: ChainOperationalStatus, pattern: RegExp) {
-  return chain.activeMimirKeys.some((key) => pattern.test(key.toUpperCase()));
-}
-
-function getChainPresentation(chain: ChainOperationalStatus): ChainPresentation {
-  const inheritedMimirKeys = chain.inheritedMimirKeys ?? [];
-  const directEvidenceKeys = uniqueStrings([
-    ...chain.activeMimirKeys,
-    ...chain.lpDepositPauseKeys,
-    ...(chain.securedAssetDepositPauseKeys ?? []),
-    ...(chain.securedAssetWithdrawPauseKeys ?? []),
-    ...(chain.asymWithdrawalPauseKeys ?? []),
-  ]);
-  const inboundFields = chain.inboundAddressEvidenceFields ?? [];
-  const unparseableKeys = chain.unparseableMimirKeys ?? [];
-  const chainSourceWarnings = chain.sourceWarnings ?? [];
-  const scheduledKeys = chain.scheduledMimirKeys ?? [];
-  const directLabels = [
-    chain.halted && (chainHasActiveKey(chain, /(?:CHAIN|SOLVENCY)/) || inboundFields.includes('halted')) ? 'Chain halted' : null,
-    chain.tradingPaused && (chainHasActiveKey(chain, /TRADING/) || inboundFields.includes('global_trading_paused') || inboundFields.includes('chain_trading_paused')) ? 'Trading halted' : null,
-    chain.signingPaused && chainHasActiveKey(chain, /SIGNING/) ? 'Signing paused' : null,
-    chain.lpActionsPaused && (chainHasActiveKey(chain, /^PAUSELP[A-Z0-9]+$/) || inboundFields.includes('chain_lp_actions_paused')) ? 'LP actions paused' : null,
-    chain.lpDepositPaused ? 'LP deposits paused' : null,
-    chain.securedAssetDepositPaused ? 'Secured deposits paused' : null,
-    chain.securedAssetWithdrawPaused ? 'Secured withdrawals paused' : null,
-    chain.asymWithdrawalPaused ? 'Asym withdrawals paused' : null,
-  ].filter((label): label is string => label !== null);
-  const inheritedLabels = uniqueStrings(inheritedMimirKeys.map(getInheritedLabel));
-  const labels = [
-    ...directLabels,
-    ...(directLabels.length === 0 ? inheritedLabels : []),
-    ...(scheduledKeys.length > 0 ? ['Scheduled control'] : []),
-    ...(unparseableKeys.length > 0 ? ['Mimir warning'] : []),
-    ...(chainSourceWarnings.length > 0 ? ['Source warning'] : []),
-  ];
-  const warningCount = unparseableKeys.length + chainSourceWarnings.length;
-  const directEvidenceCount = directEvidenceKeys.length + inboundFields.length;
-  const inheritedEvidenceCount = inheritedMimirKeys.length;
-  const operationAffected = directLabels.length > 0;
-  const swapLimited = directLabels.some((label) => SWAP_LIMITING_CHAIN_LABELS.has(label));
-  const hasDirectRisk = operationAffected || warningCount > 0;
-  const hasScheduled = scheduledKeys.length > 0;
-  const inheritedOnly = directLabels.length === 0 && inheritedMimirKeys.length > 0;
-
-  return {
-    chain,
-    labels,
-    statusText: labels.length > 0 ? labels.join(' / ') : 'Open',
-    swapLimited,
-    operationAffected,
-    directEvidenceCount,
-    inheritedEvidenceCount,
-    warningCount,
-    scheduledCount: scheduledKeys.length,
-    rank: swapLimited ? 0 : warningCount > 0 ? 1 : operationAffected ? 2 : hasScheduled ? 3 : inheritedOnly ? 4 : 5,
-    cardClassName: hasDirectRisk
-      ? 'border-amber-500/25 bg-amber-500/5'
-      : hasScheduled
-        ? 'border-sky-500/25 bg-sky-500/5'
-        : inheritedOnly
-          ? 'border-slate-700 bg-slate-900/50'
-          : 'border-border bg-surface/70',
-    iconClassName: hasDirectRisk
-      ? 'text-amber-400'
-      : hasScheduled
-        ? 'text-sky-400'
-        : inheritedOnly
-          ? 'text-slate-500'
-          : 'text-emerald-400',
-  };
-}
-
-function getActionSummary(status: NetworkStatus | undefined, chainPresentations: ChainPresentation[]) {
+function getActionSummary(status: NetworkStatus | undefined, chainAvailability: ChainAvailability[]) {
   if (!status) {
     return [];
   }
   const activeControls = status.monitoredControls
     .filter((control) => control.active)
     .map((control) => `${control.label}: ${getControlStateLabel(control.key, control.state)}`);
-  const directChainActions = chainPresentations
-    .filter((chain) => chain.operationAffected)
-    .flatMap((chain) => chain.labels.filter((label) => !label.includes('warning')));
+  const directChainActions = chainAvailability
+    .filter((chain) => chain.operationLimited)
+    .flatMap((chain) => [
+      ...chain.swapIn.reasons,
+      ...chain.swapOut.reasons,
+      ...chain.lpActions.reasons,
+      ...chain.poolDeposits.reasons,
+    ]);
   return uniqueStrings([...activeControls, ...directChainActions]);
 }
 
@@ -434,7 +346,7 @@ function getUpperKeySet(keys: string[] | undefined) {
 
 function getSwapStatusPresentation(
   status: NetworkStatus | undefined,
-  chainPresentations: ChainPresentation[]
+  chainAvailability: ChainAvailability[]
 ): SwapStatusPresentation {
   if (!status) {
     return {
@@ -468,9 +380,7 @@ function getSwapStatusPresentation(
     status.manualSwapsToSynthDisabled === true ? 'manual synth swaps' : null,
     status.tcyTradingPaused === true ? 'TCY trading' : null,
   ].filter((control): control is string => control !== null);
-  const routeLimitedChains = chainPresentations.filter((presentation) => (
-    presentation.swapLimited
-  ));
+  const routeLimitedChains = chainAvailability.filter((presentation) => presentation.swapLimited);
 
   if (blockingControls.length > 0) {
     const controls = formatList(blockingControls);
@@ -491,11 +401,11 @@ function getSwapStatusPresentation(
 
     return {
       tone: 'limited',
-      label: 'Some swaps limited',
+      label: 'Some routes limited',
       badge: 'limited',
       summary: `No global swap halt is active, but ${formatList(constraints)} should be reviewed before assuming a pair is available.`,
       detail: routeLimitedChains.length > 0
-        ? `${pluralize(routeLimitedChains.length, 'chain')} limited`
+        ? `${routeLimitedChains.map((chain) => chain.chain).join(', ')} limited`
         : formatList(limitedControls),
     };
   }
@@ -531,6 +441,337 @@ function renderControlChip(control: OperationalControlStatus) {
   );
 }
 
+function statusCellClassName(cell: AvailabilityCell) {
+  switch (cell.state) {
+    case 'available':
+      return 'border-emerald-500/20 bg-emerald-500/5 text-emerald-300';
+    case 'blocked':
+      return 'border-red-500/25 bg-red-500/10 text-red-200';
+    case 'limited':
+      return 'border-amber-500/25 bg-amber-500/10 text-amber-200';
+    case 'needs-review':
+      return 'border-sky-500/25 bg-sky-500/10 text-sky-200';
+    default:
+      return 'border-slate-700 bg-slate-900 text-slate-400';
+  }
+}
+
+function renderStatusCell(cell: AvailabilityCell) {
+  return (
+    <span className={`inline-flex rounded border px-2 py-1 text-[11px] font-medium ${statusCellClassName(cell)}`}>
+      {cell.label}
+    </span>
+  );
+}
+
+function firstReasonText(reasons: string[]) {
+  if (reasons.length === 0) {
+    return 'No active chain-specific swap blocker observed.';
+  }
+  return reasons.slice(0, 2).join(' / ');
+}
+
+function firstSwapReasonText(chain: ChainAvailability) {
+  return firstReasonText(chain.swapReasons);
+}
+
+const BASE_UNIT_DECIMALS = 8;
+const BASE_UNIT_SCALE = BigInt(100000000);
+
+function assetChain(asset: string) {
+  return asset.split('.')[0]?.toUpperCase() ?? 'Other';
+}
+
+function quoteAmountToBaseUnits(amount: string) {
+  const trimmed = amount.trim();
+  if (!/^\d+(?:\.\d{0,8})?$/.test(trimmed)) {
+    return null;
+  }
+  const [wholePart, fractionPart = ''] = trimmed.split('.');
+  const whole = BigInt(wholePart);
+  const fractional = BigInt(fractionPart.padEnd(BASE_UNIT_DECIMALS, '0'));
+  const units = whole * BASE_UNIT_SCALE + fractional;
+  return units > BigInt(0) ? units.toString() : null;
+}
+
+function formatBaseUnitAmount(baseUnits: string | undefined, asset: string) {
+  if (!baseUnits) {
+    return 'Unavailable';
+  }
+  try {
+    const value = BigInt(baseUnits);
+    const whole = value / BASE_UNIT_SCALE;
+    const fractional = value % BASE_UNIT_SCALE;
+    const fractionalText = fractional.toString().padStart(BASE_UNIT_DECIMALS, '0').replace(/0+$/, '');
+    return `${whole.toString()}${fractionalText ? `.${fractionalText}` : ''} ${asset}`;
+  } catch {
+    return baseUnits;
+  }
+}
+
+function formatQuoteDuration(seconds: number | undefined) {
+  if (seconds === undefined) {
+    return 'Unavailable';
+  }
+  if (seconds < 60) {
+    return `${seconds} sec`;
+  }
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  return remainingSeconds > 0 ? `${minutes} min ${remainingSeconds} sec` : `${minutes} min`;
+}
+
+function formatQuoteExpiry(expiry: number | undefined) {
+  if (expiry === undefined) {
+    return 'Unavailable';
+  }
+  return new Date(expiry * 1000).toLocaleTimeString();
+}
+
+function quoteStatusClassName(status: ReturnType<typeof deriveRouteAvailability>['status']) {
+  switch (status) {
+    case 'available':
+      return 'border-emerald-500/25 bg-emerald-500/10 text-emerald-200';
+    case 'blocked':
+      return 'border-red-500/25 bg-red-500/10 text-red-200';
+    case 'limited':
+      return 'border-amber-500/25 bg-amber-500/10 text-amber-200';
+    case 'needs-review':
+      return 'border-sky-500/25 bg-sky-500/10 text-sky-200';
+    default:
+      return 'border-slate-700 bg-slate-900 text-slate-300';
+  }
+}
+
+function groupPoolsByChain(pools: Pool[] | undefined) {
+  const groups = new Map<string, Pool[]>();
+  for (const pool of pools ?? []) {
+    if (!pool.asset || pool.status.toLowerCase() !== 'available') {
+      continue;
+    }
+    const chain = assetChain(pool.asset);
+    groups.set(chain, [...(groups.get(chain) ?? []), pool]);
+  }
+  return [...groups.entries()]
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([chain, chainPools]) => [
+      chain,
+      chainPools.sort((left, right) => left.asset.localeCompare(right.asset)),
+    ] as const);
+}
+
+function pickDefaultAsset(pools: Pool[] | undefined, preferred: string, fallbackIndex: number) {
+  const availablePools = (pools ?? []).filter((pool) => pool.status.toLowerCase() === 'available');
+  return availablePools.find((pool) => pool.asset === preferred)?.asset ?? availablePools[fallbackIndex]?.asset ?? '';
+}
+
+function routeFallbackStatusLabel(routeStatus: ReturnType<typeof deriveRouteAvailability>) {
+  return (
+    <div className={`rounded-md border px-3 py-2 text-xs ${quoteStatusClassName(routeStatus.status)}`}>
+      <p className="font-semibold">{routeStatus.label}</p>
+      {routeStatus.reasons.length > 0 && (
+        <p className="mt-1 text-slate-300/80">{routeStatus.reasons.slice(0, 2).join(' / ')}</p>
+      )}
+    </div>
+  );
+}
+
+function RouteQuoteChecker({ status }: { status: NetworkStatus | undefined }) {
+  const { data: pools, result: poolsResult, isLoading: poolsLoading } = usePools();
+  const poolGroups = useMemo(() => groupPoolsByChain(pools), [pools]);
+  const defaultFromAsset = useMemo(() => pickDefaultAsset(pools, 'BTC.BTC', 0), [pools]);
+  const defaultToAsset = useMemo(() => pickDefaultAsset(pools?.filter((pool) => pool.asset !== defaultFromAsset), 'ETH.ETH', 0), [pools, defaultFromAsset]);
+  const [fromAsset, setFromAsset] = useState('');
+  const [toAsset, setToAsset] = useState('');
+  const [amount, setAmount] = useState('0.01');
+  const [quoteRequest, setQuoteRequest] = useState<SwapQuoteRequest | null>(null);
+  const [quoteRequestVersion, setQuoteRequestVersion] = useState(0);
+  const [lastSubmittedAt, setLastSubmittedAt] = useState(0);
+  const [inputError, setInputError] = useState<string | null>(null);
+  const selectedFromAsset = fromAsset || defaultFromAsset;
+  const selectedToAsset = toAsset || defaultToAsset;
+  const amountBaseUnits = quoteAmountToBaseUnits(amount);
+  const quoteResult = useSwapQuoteProbe(quoteRequest, quoteRequest !== null, quoteRequestVersion);
+  const quoteData = quoteResult.result?.data;
+  const activeQuoteData = quoteData &&
+    quoteData.request.fromAsset === selectedFromAsset &&
+    quoteData.request.toAsset === selectedToAsset &&
+    quoteData.request.amountBaseUnits === amountBaseUnits
+    ? quoteData
+    : undefined;
+  const routeStatus = deriveRouteAvailability(
+    selectedFromAsset,
+    selectedToAsset,
+    status,
+    pools,
+    activeQuoteData
+  );
+  const canSubmit = Boolean(selectedFromAsset && selectedToAsset && selectedFromAsset !== selectedToAsset && amountBaseUnits && !quoteResult.isLoading);
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const now = Date.now();
+    if (now - lastSubmittedAt < 1000) {
+      setInputError('Quote checks are throttled to about one request per second.');
+      return;
+    }
+    if (!selectedFromAsset || !selectedToAsset) {
+      setInputError('Choose two assets before checking a route.');
+      return;
+    }
+    if (selectedFromAsset === selectedToAsset) {
+      setInputError('Choose two different assets.');
+      return;
+    }
+    if (!amountBaseUnits) {
+      setInputError('Enter a positive amount with up to 8 decimals.');
+      return;
+    }
+
+    setInputError(null);
+    setLastSubmittedAt(now);
+    setQuoteRequest({
+      fromAsset: selectedFromAsset,
+      toAsset: selectedToAsset,
+      amountBaseUnits,
+    });
+    setQuoteRequestVersion((version) => version + 1);
+  }
+
+  return (
+    <section className="mt-4 rounded-md border border-border bg-surface/60 p-3" aria-labelledby="route-check-heading">
+      <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+        <div>
+          <h3 id="route-check-heading" className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+            Check A Route
+          </h3>
+          <p className="mt-1 max-w-3xl text-[11px] leading-relaxed text-slate-400">
+            On-demand THORNode quote probe. It uses assets and amount only, does not collect a wallet address, and is not a send instruction.
+          </p>
+        </div>
+        <div className="min-w-52">
+          <LiveSourceMeta result={activeQuoteData ? quoteResult.result : poolsResult} />
+        </div>
+      </div>
+
+      <form className="mt-3 grid gap-2 lg:grid-cols-[1fr_1fr_0.8fr_auto]" onSubmit={handleSubmit}>
+        <label className="text-xs text-slate-300">
+          <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-slate-500">From asset</span>
+          <select
+            value={selectedFromAsset}
+            onChange={(event) => setFromAsset(event.target.value)}
+            className="w-full rounded-md border border-border bg-slate-950 px-3 py-2 text-sm text-slate-100 outline-none transition-colors focus:border-accent"
+            disabled={poolsLoading || poolGroups.length === 0}
+          >
+            {poolGroups.length === 0 ? (
+              <option value="">Pools unavailable</option>
+            ) : poolGroups.map(([chain, chainPools]) => (
+              <optgroup key={`from:${chain}`} label={chain}>
+                {chainPools.map((pool) => (
+                  <option key={`from:${pool.asset}`} value={pool.asset}>{pool.asset}</option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
+        </label>
+        <label className="text-xs text-slate-300">
+          <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-slate-500">To asset</span>
+          <select
+            value={selectedToAsset}
+            onChange={(event) => setToAsset(event.target.value)}
+            className="w-full rounded-md border border-border bg-slate-950 px-3 py-2 text-sm text-slate-100 outline-none transition-colors focus:border-accent"
+            disabled={poolsLoading || poolGroups.length === 0}
+          >
+            {poolGroups.length === 0 ? (
+              <option value="">Pools unavailable</option>
+            ) : poolGroups.map(([chain, chainPools]) => (
+              <optgroup key={`to:${chain}`} label={chain}>
+                {chainPools.map((pool) => (
+                  <option key={`to:${pool.asset}`} value={pool.asset}>{pool.asset}</option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
+        </label>
+        <label className="text-xs text-slate-300">
+          <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-slate-500">Amount</span>
+          <input
+            value={amount}
+            onChange={(event) => setAmount(event.target.value)}
+            inputMode="decimal"
+            className="w-full rounded-md border border-border bg-slate-950 px-3 py-2 text-sm text-slate-100 outline-none transition-colors focus:border-accent"
+            aria-invalid={Boolean(inputError || (amount && !amountBaseUnits))}
+          />
+        </label>
+        <div className="flex items-end">
+          <button
+            type="submit"
+            disabled={!canSubmit}
+            className="w-full rounded-md border border-accent/40 bg-accent/10 px-3 py-2 text-sm font-semibold text-accent transition-colors hover:border-rune hover:text-rune disabled:cursor-not-allowed disabled:border-slate-700 disabled:bg-slate-900 disabled:text-slate-500"
+          >
+            {quoteResult.isLoading ? 'Checking' : 'Check route'}
+          </button>
+        </div>
+      </form>
+
+      {(inputError || (amount && !amountBaseUnits)) && (
+        <p className="mt-2 text-xs text-amber-200">{inputError ?? 'Enter a positive amount with up to 8 decimals.'}</p>
+      )}
+
+      <div className="mt-3">
+        {routeFallbackStatusLabel(routeStatus)}
+      </div>
+
+      {activeQuoteData?.quote && (
+        <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          {[
+            ['Expected output', formatBaseUnitAmount(activeQuoteData.quote.expectedAmountOut, selectedToAsset)],
+            ['Total fee bps', activeQuoteData.quote.fees.totalBps?.toString() ?? 'Unavailable'],
+            ['Slippage bps', activeQuoteData.quote.fees.slippageBps?.toString() ?? 'Unavailable'],
+            ['Recommended min input', formatBaseUnitAmount(activeQuoteData.quote.recommendedMinAmountIn, selectedFromAsset)],
+            ['Estimated time', formatQuoteDuration(activeQuoteData.quote.totalSwapSeconds)],
+            ['Quote expiry', formatQuoteExpiry(activeQuoteData.quote.expiry)],
+          ].map(([label, value]) => (
+            <div key={label} className="rounded-md border border-border bg-slate-950/30 px-3 py-2">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">{label}</p>
+              <p className="mt-1 text-sm font-semibold text-slate-200">{value}</p>
+            </div>
+          ))}
+          {activeQuoteData.quote.warning && (
+            <div className="rounded-md border border-amber-500/25 bg-amber-500/10 px-3 py-2 sm:col-span-2 lg:col-span-3">
+              <p className="text-xs font-semibold text-amber-200">Quote warning</p>
+              <p className="mt-1 text-xs text-amber-100/80">{activeQuoteData.quote.warning}</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeQuoteData?.failure && (
+        <div className="mt-3 rounded-md border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-xs text-amber-100">
+          <p className="font-semibold">{activeQuoteData.failure.message}</p>
+          <p className="mt-1 text-amber-100/70">The route probe failed before wallet-specific send instructions were needed.</p>
+        </div>
+      )}
+
+      {activeQuoteData && (
+        <details className="mt-3 rounded-md border border-border bg-slate-950/30">
+          <summary className="cursor-pointer list-none px-3 py-2 text-xs font-semibold text-slate-300">
+            Raw quote response
+          </summary>
+          <div className="border-t border-border px-3 py-3">
+            <p className="mb-2 text-[11px] text-slate-400">
+              Diagnostic only. Do not use raw quote fields as wallet send instructions from this wiki.
+            </p>
+            <pre className="max-h-80 overflow-auto rounded border border-slate-800 bg-slate-950 p-2 text-[10px] leading-relaxed text-slate-300">
+              {JSON.stringify(activeQuoteData.quote?.raw ?? activeQuoteData.failure?.raw ?? activeQuoteData, null, 2)}
+            </pre>
+          </div>
+        </details>
+      )}
+    </section>
+  );
+}
+
 function chunkControlsByGroup(controls: OperationalControlStatus[]) {
   const groups = new Map<string, OperationalControlStatus[]>();
   for (const control of controls) {
@@ -540,7 +781,7 @@ function chunkControlsByGroup(controls: OperationalControlStatus[]) {
   return [...groups.entries()];
 }
 
-export function NetworkStatusBanner({ result, isLoading = false, variant = 'diagnostic' }: NetworkStatusBannerProps) {
+export function NetworkStatusBanner({ result, isLoading = false, variant = 'diagnostic', showQuoteChecker = false }: NetworkStatusBannerProps) {
   const status = result?.data;
   const isPaused = status?.state === 'paused';
   const isDegraded = result?.status === 'degraded' || status?.state === 'degraded';
@@ -557,14 +798,12 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
   const sourceMetaResult: LiveDataResult<NetworkStatus> | undefined = result && status && hasSourceWarnings && result.status === 'ok'
     ? { ...result, status: 'degraded' }
     : result;
-  const chainPresentations = (status?.chainStatuses ?? [])
-    .map(getChainPresentation)
-    .sort((left, right) => left.rank - right.rank || left.chain.chain.localeCompare(right.chain.chain));
-  const swapLimitedChains = chainPresentations.filter((chain) => chain.swapLimited);
-  const operationAffectedChains = chainPresentations.filter((chain) => chain.operationAffected);
-  const inheritedOnlyChains = chainPresentations.filter((chain) => !chain.operationAffected && chain.inheritedEvidenceCount > 0);
-  const activeActions = getActionSummary(status, chainPresentations);
-  const swapStatus = getSwapStatusPresentation(status, chainPresentations);
+  const chainAvailability = deriveChainAvailability(status);
+  const networkWideControls = deriveNetworkWideControls(status);
+  const swapLimitedChains = chainAvailability.filter((chain) => chain.swapLimited);
+  const operationAffectedChains = chainAvailability.filter((chain) => chain.operationLimited);
+  const activeActions = getActionSummary(status, chainAvailability);
+  const swapStatus = getSwapStatusPresentation(status, chainAvailability);
   const keyReviewCount = warningDetails
     .filter(hasKeyLikeWarning)
     .reduce((count, warning) => count + (warning.keys?.length ?? 0), 0);
@@ -655,15 +894,15 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
           : swapStatus.tone === 'paused'
             ? 'Swap controls are paused'
             : swapStatus.tone === 'limited' && hasSourceWarnings
-              ? 'Some swaps limited; source review needed'
+              ? 'Some routes limited; source review needed'
               : swapStatus.tone === 'limited'
-                ? 'Some swaps may be limited'
+                ? 'Some routes may be limited'
                 : isPaused && hasSourceWarnings
                   ? 'Swaps appear open; other operations need review'
                   : isPaused
                     ? 'Swaps appear open; other operations paused'
                     : isDegraded || hasSourceWarnings
-                      ? 'Swap status needs source review'
+                      ? 'Ordinary swap status needs source review'
                       : hasScheduledMimirKeys
                         ? 'Live sources show scheduled Mimir controls'
                         : 'Live sources show no global halt flags';
@@ -675,7 +914,7 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
     ? swapStatus.tone === 'paused'
       ? 'Global swap halt'
       : swapLimitedChains.length > 0
-        ? `${swapLimitedChains.length} swap-limited`
+        ? swapLimitedChains.map((chain) => chain.chain).join(', ')
         : 'No swap-limited chains'
     : 'Unavailable';
   const routeScopeDetail = status
@@ -683,11 +922,9 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
       ? operationAffectedChains.length > 0
         ? `${operationAffectedChains.length} chain status${operationAffectedChains.length === 1 ? '' : 'es'} with direct operation impacts`
         : 'Global control applies before per-chain routing'
-      : operationAffectedChains.length > swapLimitedChains.length
-        ? `${operationAffectedChains.length} operation-affected${inheritedOnlyChains.length > 0 ? ` / ${inheritedOnlyChains.length} inherited` : ''}`
-        : inheritedOnlyChains.length > 0
-          ? `${inheritedOnlyChains.length} inherited-only`
-          : 'No other chain operation impacts'
+      : swapLimitedChains.length > 0
+        ? swapLimitedChains.map((chain) => `${chain.chain}: ${firstSwapReasonText(chain)}`).join(' / ')
+        : 'No chain-specific swap blockers observed'
     : null;
 
   return (
@@ -727,6 +964,11 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
                 {formatKeyCount(keyReviewCount)} {keyReviewCount === 1 ? 'needs' : 'need'} Mimir review; exact raw keys stay in diagnostics, not the headline.
               </p>
             )}
+            {status && swapLimitedChains.length > 0 && (
+              <p className="mt-2 text-xs font-medium text-amber-200">
+                {formatList(swapLimitedChains.map((chain) => chain.chain))} {swapLimitedChains.length === 1 ? 'is' : 'are'} swap-limited.
+              </p>
+            )}
           </div>
         </div>
         <div className="min-w-52">
@@ -752,7 +994,7 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
         </p>
         <div className="grid gap-2 md:grid-cols-4" aria-label="Look here first">
           <div className="rounded-md border border-border bg-surface/50 px-3 py-2">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Swap status</p>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Ordinary swaps</p>
             <p className="mt-1 text-sm font-semibold">
               {isLoading ? 'Checking' : isUnavailable ? 'Unavailable' : swapStatus.label}
             </p>
@@ -761,17 +1003,24 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
             )}
           </div>
           <div className="rounded-md border border-border bg-surface/50 px-3 py-2">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Actions affected</p>
-            <p className="mt-1 text-sm font-semibold">{status ? activeActions.length > 0 ? activeActions.slice(0, 2).join(', ') : 'None observed' : 'Unavailable'}</p>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Limited chains</p>
+            <p className="mt-1 text-sm font-semibold">
+              {status ? swapLimitedChains.length > 0 ? swapLimitedChains.map((chain) => chain.chain).join(', ') : 'None observed' : 'Unavailable'}
+            </p>
+            {status && swapLimitedChains.length > 0 && (
+              <p className="mt-1 text-[11px] leading-relaxed text-slate-500">
+                {swapLimitedChains.map((chain) => `${chain.chain}: ${firstSwapReasonText(chain)}`).join(' / ')}
+              </p>
+            )}
           </div>
           <div className="rounded-md border border-border bg-surface/50 px-3 py-2">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Route scope</p>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Other operations</p>
             <p className="mt-1 text-sm font-semibold">
-              {routeScopeValue}
+              {status ? activeActions.length > 0 ? activeActions.slice(0, 2).join(', ') : 'None observed' : 'Unavailable'}
             </p>
-            {routeScopeDetail && (
+            {status && routeScopeDetail && (
               <p className="mt-1 text-[11px] leading-relaxed text-slate-500">
-                {routeScopeDetail}
+                {routeScopeValue}
               </p>
             )}
           </div>
@@ -784,6 +1033,11 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
 
       {status && activeActions.length > 0 && (
         <div className="mt-3 flex flex-wrap gap-2" aria-label="Top affected actions">
+          {swapLimitedChains.map((chain) => (
+            <span key={`limited:${chain.chain}`} className="rounded-md border border-amber-500/25 bg-amber-500/10 px-2 py-1 text-[11px] font-medium text-amber-100">
+              {chain.chain}: {firstSwapReasonText(chain)}
+            </span>
+          ))}
           {activeActions.slice(0, compact ? 4 : 8).map((action) => (
             <span key={action} className="rounded-md border border-amber-500/25 bg-amber-500/10 px-2 py-1 text-[11px] text-amber-200">
               {action}
@@ -853,93 +1107,110 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
         </details>
       )}
 
-      {!compact && status && chainPresentations.length > 0 && (
-        <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4" role="list" aria-label="Per-chain live operation state">
-          {chainPresentations.map((presentation) => {
-            const chain = presentation.chain;
-            const unparseableKeys = chain.unparseableMimirKeys ?? [];
-            const chainSourceWarnings = chain.sourceWarnings ?? [];
-            const scheduledKeys = chain.scheduledMimirKeys ?? [];
-            return (
-              <div
-                key={chain.chain}
-                role="listitem"
-                aria-label={`${chain.chain}: ${presentation.statusText}`}
-                className={`rounded-md border px-3 py-2 ${presentation.cardClassName}`}
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs font-semibold">{chain.chain}</span>
-                  <RadioTower aria-hidden="true" className={`h-3.5 w-3.5 ${presentation.iconClassName}`} />
+      {!compact && status && networkWideControls.length > 0 && (
+        <div className="mt-4 rounded-md border border-slate-700 bg-slate-900/40 p-3">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+            Network-wide controls
+          </p>
+          <div className="mt-2 grid gap-2 md:grid-cols-2">
+            {networkWideControls.map((control) => (
+              <div key={control.key} className="rounded border border-border bg-surface/50 px-3 py-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-xs font-semibold text-slate-200">{control.label}</span>
+                  <code className="rounded border border-slate-700 bg-slate-950 px-1.5 py-0.5 text-[10px] text-slate-400">{control.key}</code>
                 </div>
-                <p className="mt-1 min-h-8 text-[11px] leading-relaxed text-slate-400">
-                  {presentation.statusText}
-                </p>
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  {presentation.directEvidenceCount > 0 && (
-                    <span className="rounded border border-amber-500/20 bg-amber-500/10 px-1.5 py-0.5 text-[10px] text-amber-200" aria-label={`${chain.chain} direct source evidence count`}>
-                      Direct: {formatEvidenceCount(presentation.directEvidenceCount)}
-                    </span>
-                  )}
-                  {presentation.inheritedEvidenceCount > 0 && (
-                    <span className="rounded border border-slate-700 bg-slate-900 px-1.5 py-0.5 text-[10px] text-slate-400" aria-label={`${chain.chain} inherited global control count`}>
-                      Inherited: {formatKeyCount(presentation.inheritedEvidenceCount)}
-                    </span>
-                  )}
-                  {presentation.scheduledCount > 0 && (
-                    <span className="rounded border border-sky-500/20 bg-sky-500/10 px-1.5 py-0.5 text-[10px] text-sky-200" aria-label={`${chain.chain} scheduled Mimir key count`}>
-                      Scheduled: {formatKeyCount(presentation.scheduledCount)}
-                    </span>
-                  )}
-                  {presentation.warningCount > 0 && (
-                    <span className="rounded border border-amber-500/20 bg-amber-500/10 px-1.5 py-0.5 text-[10px] text-amber-200" aria-label={`${chain.chain} source warning count`}>
-                      Warning: {presentation.warningCount} issue{presentation.warningCount === 1 ? '' : 's'}
-                    </span>
-                  )}
-                </div>
-                {presentation.warningCount > 0 && (
-                  <details className="mt-2 rounded border border-amber-500/20 bg-slate-950/30" aria-label={`${chain.chain} source warnings`}>
-                    <summary className="cursor-pointer list-none px-2 py-1 text-[11px] font-semibold text-amber-200">
-                      Show chain warnings
-                    </summary>
-                    <div className="space-y-1 border-t border-amber-500/20 p-2">
-                      {unparseableKeys.map((key) => (
-                        <code key={key} className="block break-all rounded border border-amber-500/20 bg-slate-950/40 px-1.5 py-1 text-[10px] text-amber-200">
-                          {key}
-                        </code>
-                      ))}
-                      {chainSourceWarnings.map((warning) => (
-                        <p key={warning} className="text-[10px] leading-relaxed text-amber-200">
-                          {warning}
-                        </p>
-                      ))}
-                    </div>
-                  </details>
-                )}
-                {scheduledKeys.length > 0 && (
-                  <details className="mt-2 rounded border border-sky-500/20 bg-slate-950/30">
-                    <summary className="cursor-pointer list-none px-2 py-1 text-[11px] font-semibold text-sky-200">
-                      Show scheduled keys
-                    </summary>
-                    <div className="flex flex-wrap gap-1.5 border-t border-sky-500/20 p-2">
-                      {scheduledKeys.map((key) => (
-                        <code key={key} className="break-all rounded border border-sky-500/20 bg-slate-950/40 px-1.5 py-1 text-[10px] text-sky-100">
-                          {key}
-                        </code>
-                      ))}
-                    </div>
-                  </details>
-                )}
+                <p className="mt-1 text-[11px] leading-relaxed text-slate-400">{control.reason}</p>
               </div>
-            );
-          })}
+            ))}
+          </div>
         </div>
+      )}
+
+      {!compact && status && chainAvailability.length > 0 && (
+        <section className="mt-4" aria-labelledby="chain-availability-heading">
+          <div className="mb-2 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h3 id="chain-availability-heading" className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                Chain availability
+              </h3>
+              <p className="mt-1 text-[11px] leading-relaxed text-slate-400">
+                Swap columns show chain-level route blockers. LP columns are separate because LP pauses are not the same as an ordinary swap halt.
+              </p>
+            </div>
+          </div>
+          <div className="space-y-2 md:hidden" role="list" aria-label="Per-chain live operation state">
+            {chainAvailability.map((chain) => (
+              <div key={chain.chain} role="listitem" className={`rounded-md border p-3 ${chain.swapLimited ? 'border-amber-500/25 bg-amber-500/5' : 'border-border bg-surface/60'}`}>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm font-semibold">{chain.chain}</span>
+                  <RadioTower aria-hidden="true" className={`h-4 w-4 ${chain.swapLimited ? 'text-amber-400' : 'text-emerald-400'}`} />
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wider text-slate-500">Swap in</p>
+                    <div className="mt-1">{renderStatusCell(chain.swapIn)}</div>
+                  </div>
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wider text-slate-500">Swap out</p>
+                    <div className="mt-1">{renderStatusCell(chain.swapOut)}</div>
+                  </div>
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wider text-slate-500">LP actions</p>
+                    <div className="mt-1">{renderStatusCell(chain.lpActions)}</div>
+                  </div>
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wider text-slate-500">Pool deposits</p>
+                    <div className="mt-1">{renderStatusCell(chain.poolDeposits)}</div>
+                  </div>
+                </div>
+                <p className="mt-3 text-[11px] leading-relaxed text-slate-400">
+                  <span className="font-semibold text-slate-300">Why: </span>
+                  {firstReasonText(chain.reasons)}
+                </p>
+              </div>
+            ))}
+          </div>
+          <div className="hidden overflow-x-auto rounded-md border border-border md:block">
+            <table className="min-w-[900px] w-full text-left text-[11px]">
+              <caption className="sr-only">Per-chain live operation state</caption>
+              <thead className="bg-slate-950/30 text-slate-400">
+                <tr>
+                  <th scope="col" className="whitespace-nowrap px-3 py-2 font-semibold">Chain</th>
+                  <th scope="col" className="whitespace-nowrap px-3 py-2 font-semibold">Swap in</th>
+                  <th scope="col" className="whitespace-nowrap px-3 py-2 font-semibold">Swap out</th>
+                  <th scope="col" className="whitespace-nowrap px-3 py-2 font-semibold">LP actions</th>
+                  <th scope="col" className="whitespace-nowrap px-3 py-2 font-semibold">Pool deposits</th>
+                  <th scope="col" className="whitespace-nowrap px-3 py-2 font-semibold">Data quality</th>
+                  <th scope="col" className="px-3 py-2 font-semibold">Why</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {chainAvailability.map((chain) => (
+                  <tr key={chain.chain} className={chain.swapLimited ? 'bg-amber-500/5' : undefined}>
+                    <th scope="row" className="whitespace-nowrap px-3 py-2 text-sm font-semibold text-slate-200">{chain.chain}</th>
+                    <td className="whitespace-nowrap px-3 py-2">{renderStatusCell(chain.swapIn)}</td>
+                    <td className="whitespace-nowrap px-3 py-2">{renderStatusCell(chain.swapOut)}</td>
+                    <td className="whitespace-nowrap px-3 py-2">{renderStatusCell(chain.lpActions)}</td>
+                    <td className="whitespace-nowrap px-3 py-2">{renderStatusCell(chain.poolDeposits)}</td>
+                    <td className="whitespace-nowrap px-3 py-2">{renderStatusCell(chain.dataQuality)}</td>
+                    <td className="px-3 py-2 text-slate-400">{firstReasonText(chain.reasons)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+
+      {!compact && showQuoteChecker && (
+        <RouteQuoteChecker status={status} />
       )}
 
       {!compact && evidenceRows.length > 0 && (
         <details className="mt-4 rounded-md border border-border bg-surface/50">
           <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2 text-xs font-semibold text-slate-300">
             <span>Operational evidence</span>
-            <span className="shrink-0 text-[11px] font-normal text-slate-400">{formatEvidenceCount(evidenceCount)}</span>
+            <span className="shrink-0 text-[11px] font-normal text-slate-400">{formatSourceRowCount(evidenceCount)}</span>
           </summary>
           <div className="border-t border-border px-3 py-3">
             <p className="text-[11px] text-slate-400">
