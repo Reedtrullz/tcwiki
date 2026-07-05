@@ -7,6 +7,8 @@ import { NetworkStatusBanner } from '@/components/features/NetworkStatusBanner';
 import { StatCard } from '@/components/ui/StatCard';
 import { LiveSourceMeta } from '@/components/ui/LiveSourceMeta';
 import { Badge } from '@/components/ui/Badge';
+import { Card } from '@/components/ui/Card';
+import { SectionHeader } from '@/components/ui/SectionHeader';
 import {
   deriveStatsDecisionFacts,
   deriveStatsEarningsCoverage,
@@ -46,6 +48,19 @@ const statsRelatedChecks: RelatedCheck[] = [
 
 function toneToBadgeVariant(tone: StatsDecisionFact['tone']) {
   return tone === 'success' ? 'success' : tone === 'danger' ? 'danger' : tone === 'warning' ? 'warning' : 'info';
+}
+
+function toneToCardClass(tone: StatsDecisionFact['tone']) {
+  switch (tone) {
+    case 'success':
+      return 'border-emerald-500/20';
+    case 'danger':
+      return 'border-red-500/25 bg-red-500/5';
+    case 'warning':
+      return 'border-amber-500/25 bg-amber-500/5';
+    case 'info':
+      return 'border-sky-500/20';
+  }
 }
 
 function formatRuneMetric(value: number | null) {
@@ -120,22 +135,22 @@ export default function StatsPage() {
   return (
     <>
       {(networkHasError || earningsHasError) && (
-        <div className="mb-8 p-4 bg-amber-500/10 border border-amber-500/20 rounded-lg text-sm text-amber-400">
+        <Card padding="sm" className="mb-8 border-amber-500/20 bg-amber-500/5 text-sm text-amber-300">
           Live data is degraded. {networkError || earningsError || 'One or more sources did not respond.'}
-        </div>
+        </Card>
       )}
 
       <section id="stats-look-here-first" className="mb-8 scroll-mt-24">
-        <h2 className="mb-3 text-sm font-semibold uppercase tracking-wider text-slate-400">Look Here First</h2>
+        <SectionHeader className="mb-3">Look Here First</SectionHeader>
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           {decisionFacts.map((fact) => (
-            <div key={fact.label} className="rounded-lg border border-border bg-surface-elevated p-4">
+            <Card key={fact.label} padding="sm" className={toneToCardClass(fact.tone)}>
               <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">{fact.label}</p>
                 <Badge variant={toneToBadgeVariant(fact.tone)}>{fact.value}</Badge>
               </div>
               <p className="text-xs leading-relaxed text-slate-400">{fact.detail}</p>
-            </div>
+            </Card>
           ))}
         </div>
       </section>
@@ -146,45 +161,48 @@ export default function StatsPage() {
         <NetworkStatusBanner result={statusResult} isLoading={statusLoading} variant="compact" />
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-12">
-        {metricCards.map((metric) => (
-          <StatCard
-            key={metric.id}
-            icon={metricIcon(metric.id)}
-            label={metric.label}
-            value={metric.value}
-            unit={metric.unit}
-            description={metric.description}
-          />
-        ))}
-      </div>
-      <div className="mb-12">
-        <LiveSourceMeta result={networkResult} healthResult={midgardHealthResult} />
-      </div>
+      <section className="mb-12">
+        <SectionHeader>Live Metrics</SectionHeader>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {metricCards.map((metric) => (
+            <StatCard
+              key={metric.id}
+              icon={metricIcon(metric.id)}
+              label={metric.label}
+              value={metric.value}
+              unit={metric.unit}
+              description={metric.description}
+            />
+          ))}
+        </div>
+        <div className="mt-4">
+          <LiveSourceMeta result={networkResult} healthResult={midgardHealthResult} />
+        </div>
+      </section>
 
-      <div className="mb-12">
-        <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-5">Earnings History (30 days)</h2>
+      <section className="mb-12">
+        <SectionHeader>Earnings History (30 days)</SectionHeader>
         <p id="earnings-history-summary" className="mb-3 text-sm text-slate-400">
           {earningsSummary}
         </p>
         <div className="mb-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-md border border-border bg-surface-elevated px-3 py-2">
+          <Card padding="sm">
             <p className="text-[11px] uppercase tracking-wider text-slate-400">Usable intervals</p>
             <p className="mt-1 text-sm font-semibold text-slate-200">{availableIntervals}/{earningsChart.length}</p>
-          </div>
-          <div className="rounded-md border border-border bg-surface-elevated px-3 py-2">
+          </Card>
+          <Card padding="sm">
             <p className="text-[11px] uppercase tracking-wider text-slate-400">Unavailable intervals</p>
             <p className="mt-1 text-sm font-semibold text-slate-200">{earningsLoading && earningsChart.length === 0 ? 'Loading' : unavailableIntervals}</p>
-          </div>
-          <div className="rounded-md border border-border bg-surface-elevated px-3 py-2">
+          </Card>
+          <Card padding="sm">
             <p className="text-[11px] uppercase tracking-wider text-slate-400">Latest 7 interval total</p>
             <p className="mt-1 text-sm font-semibold text-slate-200">{formatRuneMetric(recentSevenEarnings)} RUNE</p>
             <p className="mt-1 text-[11px] text-slate-500">{recentWindowDetail}</p>
-          </div>
-          <div className="rounded-md border border-border bg-surface-elevated px-3 py-2">
+          </Card>
+          <Card padding="sm">
             <p className="text-[11px] uppercase tracking-wider text-slate-400">30-day valid total</p>
             <p className="mt-1 text-sm font-semibold text-slate-200">{formatRuneMetric(totalEarnings)} RUNE</p>
-          </div>
+          </Card>
         </div>
         <p className="mb-3 text-xs leading-relaxed text-slate-400">
           Earnings history is a Midgard-sourced current readback of available intervals. Use it to inspect recent distribution shape, not as durable revenue proof or protocol-attribution proof.
@@ -192,7 +210,7 @@ export default function StatsPage() {
         <div className="mb-3">
           <LiveSourceMeta result={earningsResult} healthResult={midgardHealthResult} />
         </div>
-        <div className="bg-surface-elevated border border-border rounded-lg p-6" aria-describedby="earnings-history-summary">
+        <Card padding="lg" aria-describedby="earnings-history-summary">
           {earningsLoading && earningsChart.length === 0 ? (
             <div role="status" aria-live="polite" className="flex min-h-[240px] items-center justify-center text-sm text-slate-400">
               Loading earnings history from Midgard...
@@ -265,8 +283,8 @@ export default function StatsPage() {
           ) : (
             <p className="text-slate-400 text-center py-20">Earnings history unavailable from live sources.</p>
           )}
-        </div>
-      </div>
+        </Card>
+      </section>
     </>
   );
 }
