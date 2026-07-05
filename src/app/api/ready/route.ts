@@ -181,6 +181,15 @@ function classifyReadinessWarning(
     });
   }
 
+  if (message.includes('Known operational-support Mimir key')) {
+    return sourceWarningDetail({
+      severity: 'review',
+      category: 'mimir-support',
+      message,
+      action: fallback.action,
+    });
+  }
+
   if (message.includes('Unknown chain-scoped Mimir key')) {
     return sourceWarningDetail({
       severity: 'review',
