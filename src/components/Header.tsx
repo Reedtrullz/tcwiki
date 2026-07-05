@@ -4,7 +4,68 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Search, Menu, X, ChevronDown } from 'lucide-react';
-import { JOURNEY_LINKS, NAV_ITEMS, TASK_INTENT_GUIDES } from '@/lib/content/registry';
+import { JOURNEY_LINKS, NAV_ITEMS, TASK_INTENT_GUIDES, type TaskIntentGuide } from '@/lib/content/registry';
+
+interface TaskGuideGroupDefinition {
+  id: string;
+  label: string;
+  guideIds: string[];
+}
+
+interface TaskGuideGroup {
+  id: string;
+  label: string;
+  guides: TaskIntentGuide[];
+}
+
+const TASK_GUIDE_GROUPS: TaskGuideGroupDefinition[] = [
+  {
+    id: 'use-now',
+    label: 'Use Now',
+    guideIds: ['swap-availability', 'why-paused', 'liquidity-actions', 'fees-and-adr026'],
+  },
+  {
+    id: 'learn',
+    label: 'Learn & Explain',
+    guideIds: ['learn-thorchain', 'swap-refund-lifecycle', 'app-layer-and-secured-assets'],
+  },
+  {
+    id: 'build',
+    label: 'Build & Inspect',
+    guideIds: ['build-query', 'choose-interface'],
+  },
+  {
+    id: 'trust',
+    label: 'Trust & Recovery',
+    guideIds: ['source-choice', 'tcy-recovery', 'tss-security-claims'],
+  },
+] satisfies TaskGuideGroupDefinition[];
+
+function groupedTaskGuides(guides: TaskIntentGuide[]): TaskGuideGroup[] {
+  const guideById = new Map(guides.map((guide) => [guide.id, guide]));
+  const groupedIds = new Set(TASK_GUIDE_GROUPS.flatMap((group) => group.guideIds));
+  const groups = TASK_GUIDE_GROUPS.map((group) => ({
+    id: group.id,
+    label: group.label,
+    guides: group.guideIds.flatMap((guideId) => {
+      const guide = guideById.get(guideId);
+      return guide ? [guide] : [];
+    }),
+  })).filter((group) => group.guides.length > 0);
+
+  const ungrouped = guides.filter((guide) => !groupedIds.has(guide.id));
+  if (ungrouped.length > 0) {
+    groups.push({
+      id: 'more',
+      label: 'More Checks',
+      guides: ungrouped,
+    });
+  }
+
+  return groups;
+}
+
+const TASK_GUIDE_GROUPED = groupedTaskGuides(TASK_INTENT_GUIDES);
 
 export default function Header() {
   const pathname = usePathname();
@@ -204,16 +265,25 @@ export default function Header() {
                 <Search className="h-4 w-4" />
               </button>
             </div>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {TASK_INTENT_GUIDES.map((guide) => (
-                <Link
-                  key={guide.id}
-                  href={guide.href}
-                  className="rounded-md border border-border px-2.5 py-1 text-xs text-slate-400 hover:border-accent/30 hover:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
-                  onClick={() => closePanels(false)}
-                >
-                  {guide.label}
-                </Link>
+            <div className="mt-3 grid gap-2 sm:grid-cols-2">
+              {TASK_GUIDE_GROUPED.map((group) => (
+                <section key={group.id} aria-labelledby={`search-task-group-${group.id}`}>
+                  <p id={`search-task-group-${group.id}`} className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                    {group.label}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {group.guides.map((guide) => (
+                      <Link
+                        key={guide.id}
+                        href={guide.href}
+                        className="rounded-md border border-border px-2.5 py-1 text-xs text-slate-400 hover:border-accent/30 hover:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
+                        onClick={() => closePanels(false)}
+                      >
+                        {guide.label}
+                      </Link>
+                    ))}
+                  </div>
+                </section>
               ))}
             </div>
           </form>
@@ -246,18 +316,27 @@ export default function Header() {
               <p id="desktop-common-tasks" className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
                 Common Tasks
               </p>
-              <div className="grid grid-cols-2 gap-2 xl:grid-cols-3">
-                {TASK_INTENT_GUIDES.map((guide) => (
-                  <Link
-                    key={guide.id}
-                    href={guide.href}
-                    aria-current={isCurrentLink(guide.href) ? 'page' : undefined}
-                    className={panelLinkClassName(guide.href)}
-                    onClick={() => closePanels(false)}
-                  >
-                    <span className={`text-xs font-semibold ${isCurrentLink(guide.href) ? 'text-accent' : 'text-slate-200'}`}>{guide.label}</span>
-                    <span className="mt-1 block text-[11px] leading-relaxed text-slate-400">{guide.description}</span>
-                  </Link>
+              <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+                {TASK_GUIDE_GROUPED.map((group) => (
+                  <section key={group.id} aria-labelledby={`desktop-task-group-${group.id}`}>
+                    <p id={`desktop-task-group-${group.id}`} className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                      {group.label}
+                    </p>
+                    <div className="grid gap-2">
+                      {group.guides.map((guide) => (
+                        <Link
+                          key={guide.id}
+                          href={guide.href}
+                          aria-current={isCurrentLink(guide.href) ? 'page' : undefined}
+                          className={panelLinkClassName(guide.href)}
+                          onClick={() => closePanels(false)}
+                        >
+                          <span className={`text-xs font-semibold ${isCurrentLink(guide.href) ? 'text-accent' : 'text-slate-200'}`}>{guide.label}</span>
+                          <span className="mt-1 block text-[11px] leading-relaxed text-slate-400">{guide.description}</span>
+                        </Link>
+                      ))}
+                    </div>
+                  </section>
                 ))}
               </div>
             </section>
@@ -301,16 +380,23 @@ export default function Header() {
             <p className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
               Common Tasks
             </p>
-            {TASK_INTENT_GUIDES.map((guide) => (
-              <Link
-                key={guide.id}
-                href={guide.href}
-                aria-current={isCurrentLink(guide.href) ? 'page' : undefined}
-                className={mobileLinkClassName(guide.href)}
-                onClick={() => closePanels(false)}
-              >
-                {guide.label}
-              </Link>
+            {TASK_GUIDE_GROUPED.map((group) => (
+              <section key={group.id} aria-labelledby={`mobile-task-group-${group.id}`}>
+                <p id={`mobile-task-group-${group.id}`} className="px-3 pb-1 pt-3 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                  {group.label}
+                </p>
+                {group.guides.map((guide) => (
+                  <Link
+                    key={guide.id}
+                    href={guide.href}
+                    aria-current={isCurrentLink(guide.href) ? 'page' : undefined}
+                    className={mobileLinkClassName(guide.href)}
+                    onClick={() => closePanels(false)}
+                  >
+                    {guide.label}
+                  </Link>
+                ))}
+              </section>
             ))}
           </nav>
         </div>

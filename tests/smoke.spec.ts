@@ -284,6 +284,10 @@ test.describe('THORChain Wiki Smoke Tests', () => {
       const guides = page.getByRole('navigation', { name: /Guide links/i });
       await expect(guides.getByText(/Reader Paths/i)).toBeVisible();
       await expect(guides.getByText(/Common Tasks/i)).toBeVisible();
+      await expect(guides.getByText('Use Now', { exact: true })).toBeVisible();
+      await expect(guides.getByText('Learn & Explain', { exact: true })).toBeVisible();
+      await expect(guides.getByText('Build & Inspect', { exact: true })).toBeVisible();
+      await expect(guides.getByText('Trust & Recovery', { exact: true })).toBeVisible();
       await expect(guides.getByRole('link', { name: /New to THORChain/i })).toHaveAttribute('href', '/deep-dives#deep-dive-path-new-to-thorchain');
       await expect(guides.getByRole('link', { name: /Can I swap right now/i })).toHaveAttribute('href', '/network#network-diagnostics');
       await expect(guides.getByRole('link', { name: /Learning paths/i })).toHaveAttribute('href', '/deep-dives#deep-dive-reader-paths');
@@ -960,6 +964,10 @@ test.describe('THORChain Wiki Smoke Tests', () => {
     await expect(page.locator('#mobile-navigation').getByText('Sections', { exact: true })).toBeVisible();
     await expect(page.locator('#mobile-navigation').getByText('Reader Paths', { exact: true })).toBeVisible();
     await expect(page.locator('#mobile-navigation').getByText('Common Tasks', { exact: true })).toBeVisible();
+    await expect(page.locator('#mobile-navigation').getByText('Use Now', { exact: true })).toBeVisible();
+    await expect(page.locator('#mobile-navigation').getByText('Learn & Explain', { exact: true })).toBeVisible();
+    await expect(page.locator('#mobile-navigation').getByText('Build & Inspect', { exact: true })).toBeVisible();
+    await expect(page.locator('#mobile-navigation').getByText('Trust & Recovery', { exact: true })).toBeVisible();
     await expect(page.locator('#mobile-navigation').getByRole('link', { name: 'Deep Dives' })).toBeVisible();
     await expect(page.locator('#mobile-navigation').getByRole('link', { name: 'Start here' })).toBeVisible();
     await expect(page.locator('#mobile-navigation').getByRole('link', { name: 'Learning paths' })).toHaveAttribute('href', '/deep-dives#deep-dive-reader-paths');
@@ -989,6 +997,10 @@ test.describe('THORChain Wiki Smoke Tests', () => {
     const searchInput = siteSearch.getByLabel(/Search the wiki/i);
     await expect(searchInput).toBeVisible();
     await expect(searchInput).toBeFocused();
+    await expect(siteSearch.getByText('Use Now', { exact: true })).toBeVisible();
+    await expect(siteSearch.getByText('Learn & Explain', { exact: true })).toBeVisible();
+    await expect(siteSearch.getByText('Build & Inspect', { exact: true })).toBeVisible();
+    await expect(siteSearch.getByText('Trust & Recovery', { exact: true })).toBeVisible();
     await expect(siteSearch.getByRole('link', { name: /New to THORChain/i })).toHaveAttribute('href', '/deep-dives#deep-dive-path-new-to-thorchain');
     await expect(siteSearch.getByRole('link', { name: /Why did my swap refund/i })).toHaveAttribute('href', '/deep-dives/clp#swap-lifecycle-and-refunds');
 
