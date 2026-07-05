@@ -97,7 +97,15 @@ export default function StatsPage() {
     recentSevenEarnings,
     summary: earningsSummary,
     recentRows,
+    recentIntervalCount,
+    recentAvailableIntervals,
+    recentUnavailableIntervals,
   } = earningsCoverage;
+  const recentWindowDetail = recentIntervalCount > 0
+    ? recentUnavailableIntervals > 0
+      ? `${recentAvailableIntervals}/${recentIntervalCount} intervals with values; ${recentUnavailableIntervals} unavailable`
+      : `${recentAvailableIntervals}/${recentIntervalCount} intervals with values`
+    : earningsLoading ? 'Loading intervals' : 'No intervals loaded';
   const decisionFacts = deriveStatsDecisionFacts({
     networkLoading,
     earningsLoading,
@@ -169,8 +177,9 @@ export default function StatsPage() {
             <p className="mt-1 text-sm font-semibold text-slate-200">{earningsLoading && earningsChart.length === 0 ? 'Loading' : unavailableIntervals}</p>
           </div>
           <div className="rounded-md border border-border bg-surface-elevated px-3 py-2">
-            <p className="text-[11px] uppercase tracking-wider text-slate-400">Last 7 valid days</p>
+            <p className="text-[11px] uppercase tracking-wider text-slate-400">Latest 7 interval total</p>
             <p className="mt-1 text-sm font-semibold text-slate-200">{formatRuneMetric(recentSevenEarnings)} RUNE</p>
+            <p className="mt-1 text-[11px] text-slate-500">{recentWindowDetail}</p>
           </div>
           <div className="rounded-md border border-border bg-surface-elevated px-3 py-2">
             <p className="text-[11px] uppercase tracking-wider text-slate-400">30-day valid total</p>

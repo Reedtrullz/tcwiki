@@ -211,10 +211,46 @@ describe('stats dashboard decision facts', () => {
     expect(coverage).toEqual(expect.objectContaining({
       availableIntervals: 2,
       unavailableIntervals: 1,
+      recentIntervalCount: 3,
+      recentAvailableIntervals: 2,
+      recentUnavailableIntervals: 1,
       totalEarnings: 4,
       recentSevenEarnings: 4,
       recentRows: rows,
       summary: expect.stringContaining('2 include a valid total earnings value'),
     }));
+  });
+
+  it('uses the newest seven intervals for recent earnings coverage', () => {
+    const intervals = Array.from({ length: 8 }, (_, index) => (
+      historyInterval(String(1_704_067_200 + index * 86_400), String(100_000_000 * (index + 1)))
+    ));
+
+    const rows = deriveStatsEarningsRows(intervals);
+    const coverage = deriveStatsEarningsCoverage(rows, false);
+
+    expect(rows.map((row) => row.earnings)).toEqual([8, 7, 6, 5, 4, 3, 2, 1]);
+    expect(coverage.recentRows.map((row) => row.earnings)).toEqual([8, 7, 6, 5, 4, 3, 2]);
+    expect(coverage.recentAvailableIntervals).toBe(7);
+    expect(coverage.recentUnavailableIntervals).toBe(0);
+    expect(coverage.recentSevenEarnings).toBe(35);
+  });
+
+  it('reports sparse newest-window coverage without filling missing values with zero', () => {
+    const intervals = Array.from({ length: 8 }, (_, index) => (
+      historyInterval(
+        String(1_704_067_200 + index * 86_400),
+        index === 7 ? '' : String(100_000_000 * (index + 1))
+      )
+    ));
+
+    const rows = deriveStatsEarningsRows(intervals);
+    const coverage = deriveStatsEarningsCoverage(rows, false);
+
+    expect(coverage.recentRows.map((row) => row.earnings)).toEqual([null, 7, 6, 5, 4, 3, 2]);
+    expect(coverage.recentIntervalCount).toBe(7);
+    expect(coverage.recentAvailableIntervals).toBe(6);
+    expect(coverage.recentUnavailableIntervals).toBe(1);
+    expect(coverage.recentSevenEarnings).toBe(27);
   });
 });

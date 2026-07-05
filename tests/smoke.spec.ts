@@ -290,8 +290,12 @@ test.describe('THORChain Wiki Smoke Tests', () => {
     await page.goto('/stats');
     await expect(page.getByRole('heading', { name: /Network Statistics/i })).toBeVisible();
     await expect(page.getByText(/Showing 8 Midgard daily earnings intervals/i)).toBeVisible();
+    await expect(page.getByText(/Latest 7 interval total/i)).toBeVisible();
+    await expect(page.getByText(/7\/7 intervals with values/i)).toBeVisible();
     await expect(page.getByRole('heading', { name: /Recent Daily Earnings Intervals/i })).toBeVisible();
-    await expect(page.getByRole('list', { name: /Recent daily earnings intervals/i })).toBeVisible();
+    const recentList = page.getByRole('list', { name: /Recent daily earnings intervals/i });
+    await expect(recentList).toBeVisible();
+    await expect(recentList.getByRole('listitem').first().getByText('8 RUNE', { exact: true })).toBeVisible();
     await expect(page.getByText(/Node operators/i).first()).toBeVisible();
     await expect(page.getByText('LPs', { exact: true }).first()).toBeVisible();
     await expect(page.locator('table').first()).toBeHidden();

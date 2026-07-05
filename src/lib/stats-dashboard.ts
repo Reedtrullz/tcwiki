@@ -39,6 +39,9 @@ export interface StatsEarningsRow {
 export interface StatsEarningsCoverage {
   availableIntervals: number;
   unavailableIntervals: number;
+  recentIntervalCount: number;
+  recentAvailableIntervals: number;
+  recentUnavailableIntervals: number;
   totalEarnings: number | null;
   recentSevenEarnings: number | null;
   summary: string;
@@ -231,7 +234,11 @@ export function deriveStatsEarningsCoverage(
   const totalEarnings = rows.reduce<number | null>((sum, row) => (
     row.earnings === null ? sum : (sum ?? 0) + row.earnings
   ), null);
-  const recentRows = rows.slice(-7);
+  // deriveStatsEarningsRows returns newest-first; keep this window anchored to the latest intervals.
+  const recentRows = rows.slice(0, 7);
+  const recentIntervalCount = recentRows.length;
+  const recentAvailableIntervals = recentRows.filter((row) => row.earnings !== null).length;
+  const recentUnavailableIntervals = Math.max(0, recentIntervalCount - recentAvailableIntervals);
   const recentSevenEarnings = recentRows.reduce<number | null>((sum, row) => (
     row.earnings === null ? sum : (sum ?? 0) + row.earnings
   ), null);
@@ -244,6 +251,9 @@ export function deriveStatsEarningsCoverage(
   return {
     availableIntervals,
     unavailableIntervals,
+    recentIntervalCount,
+    recentAvailableIntervals,
+    recentUnavailableIntervals,
     totalEarnings,
     recentSevenEarnings,
     summary,
