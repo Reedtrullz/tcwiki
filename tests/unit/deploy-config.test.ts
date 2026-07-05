@@ -7,6 +7,8 @@ const readme = readFileSync('README.md', 'utf8');
 const contributing = readFileSync('CONTRIBUTING.md', 'utf8');
 const maintenance = readFileSync('docs/maintenance.md', 'utf8');
 const operations = readFileSync('docs/operations.md', 'utf8');
+const standaloneSmoke = readFileSync('scripts/smoke-standalone.mjs', 'utf8');
+const runtimeProbe = readFileSync('scripts/check-runtime-url.mjs', 'utf8');
 
 describe('release CSP enforcement wiring', () => {
   it('defaults the Ansible production containers to enforced CSP with an explicit override', () => {
@@ -28,6 +30,15 @@ describe('release CSP enforcement wiring', () => {
     expect(workflow).toMatch(/CHECK_BASE_URL: https:\/\/wiki\.thorchain\.no[\s\S]*?CSP_ENFORCE: '1'/);
     expect(workflow).toMatch(/Run Ansible deploy[\s\S]*?CSP_ENFORCE: '1'/);
     expect(workflow).toMatch(/Verify public production readback[\s\S]*?CSP_ENFORCE: '1'/);
+  });
+
+  it('probes CSP report ingestion in standalone and runtime readbacks', () => {
+    for (const script of [standaloneSmoke, runtimeProbe]) {
+      expect(script).toContain("'/api/csp-report'");
+      expect(script).toContain("'content-type': 'application/csp-report'");
+      expect(script).toContain("body: '{}'");
+      expect(script).toContain("expectHeader(response.headers, 'cache-control', 'no-store')");
+    }
   });
 
   it('documents enforced production CSP without stale report-only rollout language', () => {
