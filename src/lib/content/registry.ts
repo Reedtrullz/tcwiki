@@ -96,6 +96,20 @@ const devDocsSource: SourceMeta = {
   url: 'https://dev.thorchain.org',
 };
 
+const runeDocsSource: SourceMeta = {
+  label: 'THORChain RUNE docs',
+  url: 'https://docs.thorchain.org/technical-documentation/understanding-thorchain/rune',
+  retrievedAt: '2026-07-05',
+  notes: 'Official RUNE role, settlement, liquidity, security, and incentive framing.',
+};
+
+const nativeSwapsSource: SourceMeta = {
+  label: 'Native cross-chain swaps',
+  url: 'https://docs.thorchain.org/native-cross-chain-swaps',
+  retrievedAt: '2026-07-05',
+  notes: 'Official user-facing explanation of cross-chain swaps routing through RUNE-paired pools.',
+};
+
 const adr026DynamicFeesSource: SourceMeta = {
   label: 'ADR-026 dynamic L1 fee model',
   url: 'https://gitlab.com/thorchain/thornode/-/raw/develop/docs/architecture/adr-026-dynamic-l1-min-fee-per-thorname.md',
@@ -535,12 +549,12 @@ export const CONTENT_ENTRIES: ContentEntry[] = [
     href: '/deep-dives/rune-settlement',
     category: 'deep-dive',
     confidence: 'curated',
-    description: 'Why every external-asset swap routes through RUNE liquidity.',
-    body: 'RUNE settlement universal settlement asset BTC RUNE ETH pool pairs unified liquidity price discovery security bond liquidity pair.',
+    description: 'Why RUNE-paired liquidity explains the base settlement model without proving current route health, value, or availability.',
+    body: 'RUNE settlement universal settlement asset BTC RUNE ETH pool pairs unified liquidity price discovery security bond liquidity pair common settlement intermediate asset route availability live pool depth quote quality non-claims current APY investment value.',
     tags: ['rune', 'settlement'],
-    reviewedAt: '2026-06-18',
-    nextReviewDue: '2026-07-18',
-    sources: [docsSource],
+    reviewedAt: '2026-07-05',
+    nextReviewDue: '2026-08-05',
+    sources: [runeDocsSource, nativeSwapsSource, tokenomicsSource, docsSource],
   },
   {
     id: 'deep-dive-savers',
@@ -1140,8 +1154,10 @@ export const DEEP_DIVE_TOC: Record<string, DeepDiveTocItem[]> = {
   ],
   'deep-dive-rune-settlement': [
     tocItem('The Settlement Layer'),
-    tocItem('Why This Architecture?'),
-    tocItem('Practical Effects'),
+    tocItem('Why RUNE Pairing Matters'),
+    tocItem('What The Settlement Model Proves'),
+    tocItem('What To Verify Before Claiming'),
+    tocItem('Non-Claims'),
   ],
   'deep-dive-savers': [
     tocItem('What Savers Were'),
