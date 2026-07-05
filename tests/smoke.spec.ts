@@ -580,6 +580,9 @@ test.describe('THORChain Wiki Smoke Tests', () => {
 
     await expect(page.getByText('THORChain Docs', { exact: true }).first()).toBeVisible();
     await expect(page.getByText('+4 sources', { exact: true }).first()).toBeVisible();
+    await expect(page.getByText(/Use This Article For/i)).toBeVisible();
+    await expect(page.getByText(/Curated explanation of Threshold Signatures \(TSS\) mechanics and terminology/i)).toBeVisible();
+    await expect(page.getByText(/Verify Elsewhere Before Claiming/i)).toBeVisible();
     await expect(page.getByRole('navigation', { name: /Table of contents/i })).toBeVisible();
     await expect(page.getByRole('main').getByRole('link', { name: 'Glossary' })).toBeVisible();
     const articlePaths = page.locator('section[aria-labelledby="article-reader-paths"]');
@@ -643,6 +646,12 @@ test.describe('THORChain Wiki Smoke Tests', () => {
     for (const [slug, heading] of routes) {
       await page.goto(`/deep-dives/${slug}`);
       await expect(page.getByRole('heading', { name: heading })).toBeVisible();
+      await expect(page.getByText(/Use This Article For/i)).toBeVisible();
+      await expect(page.getByText(/Verify Elsewhere Before Claiming/i)).toBeVisible();
+      if (slug === 'rune-settlement') {
+        await expect(page.getByRole('heading', { name: /What The Settlement Model Proves/i })).toBeVisible();
+        await expect(page.getByText(/Current RUNE price, fair value, or investment upside/i)).toBeVisible();
+      }
     }
   });
 

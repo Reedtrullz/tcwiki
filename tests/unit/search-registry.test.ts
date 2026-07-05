@@ -214,8 +214,15 @@ function docsMatching(term: string) {
 
 describe('SEARCH_DOCUMENTS', () => {
   it('includes deep-dive bodies and curated records', () => {
+    const runeSettlement = SEARCH_DOCUMENTS.find((doc) => doc.slug === '/deep-dives/rune-settlement');
+
     expect(docsMatching('self-correcting').some((doc) => doc.slug === '/deep-dives/incentive-pendulum')).toBe(true);
     expect(docsMatching('universal settlement').some((doc) => doc.slug === '/deep-dives/rune-settlement')).toBe(true);
+    expect(docsMatching('current rune price, fair value, or investment upside').some((doc) => doc.slug === '/deep-dives/rune-settlement')).toBe(true);
+    expect(runeSettlement?.reviewedAt).toBe('2026-07-05');
+    expect(runeSettlement?.nextReviewDue).toBe('2026-08-05');
+    expect(runeSettlement?.sources.map((source) => source.label)).toContain('THORChain RUNE docs');
+    expect(runeSettlement?.sources.map((source) => source.label)).toContain('Native cross-chain swaps');
     expect(docsMatching('traditional multisig').some((doc) => doc.slug === '/deep-dives/tss')).toBe(true);
     expect(docsMatching('WasmPermissionless').some((doc) => doc.slug === '/deep-dives/app-layer')).toBe(true);
     expect(docsMatching('HaltSecuredDeposit').some((doc) => doc.slug === '/deep-dives/app-layer')).toBe(true);

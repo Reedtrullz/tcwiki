@@ -127,17 +127,33 @@ export const MDX_SEARCH_DOCUMENTS: SearchDoc[] = [
     "href": "/deep-dives/rune-settlement",
     "type": "deep-dive",
     "title": "RUNE as the Universal Settlement Asset",
-    "description": "RUNE as the Universal Settlement Asset RUNE is not just a governance or security token — it is the backbone that makes THORChain’s cross chain AMM possible.",
+    "description": "RUNE as the Universal Settlement Asset RUNE is THORChain's native asset and the common pair for the protocol's liquidity pools.",
     "confidence": "curated",
-    "reviewedAt": "2026-06-18",
-    "nextReviewDue": "2026-07-18",
+    "reviewedAt": "2026-07-05",
+    "nextReviewDue": "2026-08-05",
     "sources": [
+      {
+        "label": "THORChain RUNE docs",
+        "url": "https://docs.thorchain.org/technical-documentation/understanding-thorchain/rune",
+        "retrievedAt": "2026-07-05",
+        "notes": "Official RUNE role, settlement, liquidity, security, and incentive framing."
+      },
+      {
+        "label": "Native cross-chain swaps",
+        "url": "https://docs.thorchain.org/native-cross-chain-swaps",
+        "retrievedAt": "2026-07-05",
+        "notes": "Official user-facing explanation of cross-chain swaps routing through RUNE-paired pools."
+      },
+      {
+        "label": "RUNE and TCY tokenomics",
+        "url": "https://docs.thorchain.org/tokenomics-rune-tcy"
+      },
       {
         "label": "THORChain Docs",
         "url": "https://docs.thorchain.org"
       }
     ],
-    "content": "RUNE as the Universal Settlement Asset RUNE is not just a governance or security token — it is the backbone that makes THORChain’s cross chain AMM possible. The Settlement Layer Every swap between two external assets on THORChain must route through RUNE: This design has profound implications: Every liquidity pool is paired against RUNE (BTC/RUNE, ETH/RUNE, etc.). RUNE provides deep, shared liquidity across all pools. Price discovery and slippage calculations are unified through a single asset. Why This Architecture? Traditional multi asset AMMs require every pair to have direct liquidity (BTC/ETH, BTC/USDT, etc.). This fragments liquidity and creates poor prices for exotic pairs. By forcing all trades through RUNE, THORChain achieves: Unified liquidity depth — capital in any RUNE pool helps every other pool. Simple pricing — only one price per asset needs to be tracked (asset/RUNE). Economic security — RUNE bonds and liquidity are tightly coupled. Practical Effects Large trades in one pool can affect pricing in seemingly unrelated pools because they all share the RUNE side. RUNE acts as the common settlement and intermediate asset for the liquidity layer. The Incentive Pendulum directly modulates how much RUNE flows into bonding vs. pooling. RUNE’s role as settlement asset is one of the most under appreciated but fundamental aspects of THORChain’s design. It is what allows the protocol to scale to many chains without liquidity fragmentation."
+    "content": "RUNE as the Universal Settlement Asset RUNE is THORChain's native asset and the common pair for the protocol's liquidity pools. This article explains the settlement model behind that design. It is not live proof of current pool depth, route availability, quote quality, chain support, or RUNE investment value. The Settlement Layer For an external asset swap, THORChain routes through RUNE paired pools. A BTC to ETH swap is modeled as: The important point is not that the user must hold RUNE manually. It is that the protocol can price and settle supported external assets through RUNE as the intermediate asset: Each normal liquidity pool pairs an external asset with RUNE. Cross pool swaps use the input asset's RUNE pool and the output asset's RUNE pool. Pool depth, current fees, slip, halts, and outbound conditions still determine whether a specific live swap is practical or available. Why RUNE Pairing Matters Without a common settlement pair, a network with many assets would need direct liquidity for every possible pair. The official docs describe this as the n (n 1)/2 scaling problem. RUNE pairing changes the shape: Instead of a BTC/ETH, BTC/AVAX, BTC/LTC, ETH/AVAX, and ETH/LTC pool graph, each asset can connect through its asset/RUNE pool. The protocol has one price relationship to track per external asset: asset against RUNE. Arbitrage and pool balancing can move prices through the shared RUNE side instead of relying on every pair having deep direct liquidity. This is the main architectural claim this article can support: RUNE is the common settlement and intermediate asset for the base liquidity layer. What The Settlement Model Proves The RUNE settlement model supports a few source backed claims: THORChain's base AMM design uses RUNE paired liquidity rather than direct pools for every external asset pair. A cross chain swap can be explained as two pool movements through RUNE, even when the user experience looks like one native asset swap. RUNE links liquidity, incentives, and security because it appears in pools, node bonding, fee payments, and reward flows. Those claims are architectural. They do not automatically tell you whether today's route is healthy, cheap, liquid, or safe to use. What To Verify Before Claiming Before turning this model into a current claim, verify: 1. The current /network network diagnostics state for trading, signing, chain availability, and relevant Mimir controls. 2. Current pool depth, fees, and earnings coverage from /stats, Midgard, or the exact quoting source being used. 3. Whether the route is an ordinary base layer swap, a streaming swap, a secured asset or trade account flow, or an app layer interaction. 4. Whether the interface has a fresh quote, valid inbound address, correct memo, current outbound fees, and enough output after fees. 5. Whether a security or liquidity statement is about static design, recent live data, or a dated historical incident. Non Claims This page does not prove: Current RUNE price, fair value, or investment upside. Current APY, LP profitability, route competitiveness, or revenue capture. That every listed chain, pool, or route is currently enabled. That a large swap will execute without refund, delay, or material price impact. That RUNE pairing alone makes the protocol safe; current vault, signing, observation, liquidity, and incident evidence still matter. Use this article as the map for the settlement design. Use live network diagnostics, current pool data, official docs, and interface specific quote evidence before making operational or financial claims."
   },
   {
     "id": "mdx:savers",

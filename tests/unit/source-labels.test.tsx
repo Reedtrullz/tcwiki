@@ -202,6 +202,9 @@ describe('source and freshness labels', () => {
     );
 
     expect(html).toContain('Reader Paths For This Article');
+    expect(html).toContain('Use This Article For');
+    expect(html).toContain('Curated explanation of Threshold Signatures (TSS) mechanics and terminology.');
+    expect(html).toContain('Verify Elsewhere Before Claiming');
     expect(html).toContain('Network Security');
     expect(html).toContain('Historical Recovery');
     expect(html).toContain('Verify Before Claiming');
@@ -209,6 +212,15 @@ describe('source and freshness labels', () => {
     expect(html).toContain('href="/deep-dives#deep-dive-path-network-security"');
     expect(html).toContain('href="/network#network-diagnostics"');
     expect(html).toContain('Reviewed 2026-07-04');
+
+    const historicalHtml = renderToStaticMarkup(
+      <DeepDiveShell entryId="deep-dive-savers" editPath="content/deep-dives/savers.mdx">
+        <h1>Savers and Lending</h1>
+      </DeepDiveShell>
+    );
+
+    expect(historicalHtml).toContain('Historical context for Savers and Lending (Historical); not current product instructions.');
+    expect(historicalHtml).toContain('Current product availability, user-action instructions, or recovery completion claims.');
   });
 
   it('preserves historical posture for TCY route metadata', () => {
