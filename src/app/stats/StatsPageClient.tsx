@@ -7,8 +7,14 @@ import { NetworkStatusBanner } from '@/components/features/NetworkStatusBanner';
 import { StatCard } from '@/components/ui/StatCard';
 import { LiveSourceMeta } from '@/components/ui/LiveSourceMeta';
 import { Badge } from '@/components/ui/Badge';
-import { runeBaseUnitsToNumber } from '@/lib/trust';
-import { deriveStatsDecisionFacts, deriveStatsMetricCards, type StatsDecisionFact, type StatsMetricCard } from '@/lib/stats-dashboard';
+import {
+  deriveStatsDecisionFacts,
+  deriveStatsEarningsCoverage,
+  deriveStatsEarningsRows,
+  deriveStatsMetricCards,
+  type StatsDecisionFact,
+  type StatsMetricCard,
+} from '@/lib/stats-dashboard';
 import { RelatedChecks, type RelatedCheck } from '@/components/features/RelatedChecks';
 
 const statsRelatedChecks: RelatedCheck[] = [
@@ -82,25 +88,16 @@ export default function StatsPage() {
 
   const networkFallbackValue = networkLoading ? 'Loading' : 'Unavailable';
   const metricCards = deriveStatsMetricCards(networkData, networkFallbackValue);
-  const earningsChart = (earningsData || []).map(d => ({
-    name: new Date(parseInt(d.startTime) * 1000).toLocaleDateString(),
-    earnings: runeBaseUnitsToNumber(d.earnings),
-    nodeOps: runeBaseUnitsToNumber(d.bondingEarnings),
-    lps: runeBaseUnitsToNumber(d.liquidityEarnings),
-  })).reverse();
-  const availableIntervals = earningsChart.filter((row) => row.earnings !== null).length;
-  const earningsSummary = earningsLoading && earningsChart.length === 0
-    ? 'Loading Midgard daily earnings intervals...'
-    : earningsChart.length > 0
-      ? `Showing ${earningsChart.length} Midgard daily earnings intervals; ${availableIntervals} include a valid total earnings value.`
-      : 'No Midgard daily earnings intervals are available.';
-  const unavailableIntervals = Math.max(0, earningsChart.length - availableIntervals);
-  const totalEarnings = earningsChart.reduce<number | null>((sum, row) => (
-    row.earnings === null ? sum : (sum ?? 0) + row.earnings
-  ), null);
-  const recentSevenEarnings = earningsChart.slice(-7).reduce<number | null>((sum, row) => (
-    row.earnings === null ? sum : (sum ?? 0) + row.earnings
-  ), null);
+  const earningsChart = deriveStatsEarningsRows(earningsData);
+  const earningsCoverage = deriveStatsEarningsCoverage(earningsChart, earningsLoading);
+  const {
+    availableIntervals,
+    unavailableIntervals,
+    totalEarnings,
+    recentSevenEarnings,
+    summary: earningsSummary,
+    recentRows,
+  } = earningsCoverage;
   const decisionFacts = deriveStatsDecisionFacts({
     networkLoading,
     earningsLoading,
@@ -193,19 +190,46 @@ export default function StatsPage() {
             </div>
           ) : earningsChart.length > 0 ? (
             <>
-              <ResponsiveContainer width="100%" height={400}>
-                <LineChart data={earningsChart}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Line type="monotone" dataKey="earnings" stroke="#3b82f6" strokeWidth={2} dot={false} name="Total Earnings (RUNE)" />
-                  <Line type="monotone" dataKey="nodeOps" stroke="#8b5cf6" strokeWidth={2} dot={false} name="Node Operator Earnings" />
-                  <Line type="monotone" dataKey="lps" stroke="#10b981" strokeWidth={2} dot={false} name="LP Earnings" />
-                </LineChart>
-              </ResponsiveContainer>
-              <div className="mt-6 overflow-x-auto">
+              <div className="h-[300px] md:h-[400px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={earningsChart}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Line type="monotone" dataKey="earnings" stroke="#3b82f6" strokeWidth={2} dot={false} name="Total Earnings (RUNE)" />
+                    <Line type="monotone" dataKey="nodeOps" stroke="#8b5cf6" strokeWidth={2} dot={false} name="Node Operator Earnings" />
+                    <Line type="monotone" dataKey="lps" stroke="#10b981" strokeWidth={2} dot={false} name="LP Earnings" />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="mt-6 md:hidden" aria-labelledby="recent-earnings-intervals">
+                <h3 id="recent-earnings-intervals" className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                  Recent Daily Earnings Intervals
+                </h3>
+                <div role="list" aria-label="Recent daily earnings intervals" className="mt-2 divide-y divide-border border-y border-border">
+                  {recentRows.map((row) => (
+                    <div role="listitem" key={row.id} className="py-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <p className="text-sm font-semibold text-slate-200">{row.name}</p>
+                        <p className="text-right text-sm font-semibold text-slate-100">{formatRuneMetric(row.earnings)} RUNE</p>
+                      </div>
+                      <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-slate-400">
+                        <div>
+                          <dt>Node operators</dt>
+                          <dd className="text-slate-200">{formatRuneMetric(row.nodeOps)} RUNE</dd>
+                        </div>
+                        <div>
+                          <dt>LPs</dt>
+                          <dd className="text-slate-200">{formatRuneMetric(row.lps)} RUNE</dd>
+                        </div>
+                      </dl>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="mt-6 hidden overflow-x-auto md:block">
                 <table className="w-full min-w-[520px] text-left text-xs text-slate-400">
                   <caption className="sr-only">Thirty day earnings history from Midgard</caption>
                   <thead className="text-[11px] uppercase tracking-wider text-slate-400">
@@ -218,7 +242,7 @@ export default function StatsPage() {
                   </thead>
                   <tbody>
                     {earningsChart.map((row) => (
-                      <tr key={row.name} className="border-t border-border">
+                      <tr key={row.id} className="border-t border-border">
                         <td className="py-2 pr-4">{row.name}</td>
                         <td className="py-2 pr-4">{row.earnings?.toLocaleString() ?? 'Unavailable'}</td>
                         <td className="py-2 pr-4">{row.nodeOps?.toLocaleString() ?? 'Unavailable'}</td>

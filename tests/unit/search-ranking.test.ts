@@ -29,6 +29,8 @@ describe('task-aware search ranking', () => {
     expect(rankedIds('wallet safety')[0]).toBe('task:choose-interface');
     expect(rankedIds('TCY recovery')[0]).toBe('task:tcy-recovery');
     expect(rankedIds('is trading halted')[0]).toBe('task:swap-availability');
+    expect(rankedIds('can i add liquidity')[0]).toBe('task:liquidity-actions');
+    expect(rankedIds('LP deposit')[0]).toBe('task:liquidity-actions');
     expect(rankedIds('Midgard API')[0]).toBe('task:build-query');
     expect(rankedIds('which source should i trust')[0]).toBe('task:source-choice');
   });

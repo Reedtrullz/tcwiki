@@ -6,7 +6,7 @@
 - Review curated static records at least monthly, or sooner when official docs, incident reports, ADRs, or tokenomics pages change.
 - Run `npm run check:content` after editing deep dives, curated records, glossary terms, or search metadata.
 - `npm run check:content` fails when `nextReviewDue` is before today's date. Use `CONTENT_CHECK_TODAY=YYYY-MM-DD` for deterministic local audits, and use `ALLOW_OVERDUE_CONTENT=1` only with explicit release evidence and non-claims.
-- Run `npm run check:live-snapshot` when reviewing supported-chain records. It compares curated supported chains with live THORNode `inbound_addresses`; CI runs it on the scheduled/manual live-source drift job rather than every PR.
+- Run `npm run check:live-snapshot` when reviewing supported-chain records. It compares curated supported chains with same-provider, height-pinned THORNode `inbound_addresses` snapshots and fails on duplicate chains, missing operation fields, or provider disagreement; CI runs it on the scheduled/manual live-source drift job rather than every PR.
 - Before merging content-shape changes, use the source-posture and reader-path checklist in `CONTRIBUTING.md`. It covers route `CONTENT_ENTRIES`, `RouteSourcePosture`, `TASK_INTENT_GUIDES`, `DEEP_DIVE_READER_PATHS`, source-map non-claims, ecosystem use/check fields, and the focused tests expected when journeys or anchors change.
 
 ## Confidence Labels

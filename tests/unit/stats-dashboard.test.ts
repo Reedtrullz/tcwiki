@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { deriveStatsDecisionFacts, deriveStatsMetricCards } from '@/lib/stats-dashboard';
-import type { LiveDataResult, MidgardHealth, NetworkStats, NetworkStatus } from '@/lib/types';
+import {
+  deriveStatsDecisionFacts,
+  deriveStatsEarningsCoverage,
+  deriveStatsEarningsRows,
+  deriveStatsMetricCards,
+} from '@/lib/stats-dashboard';
+import type { HistoryItem, LiveDataResult, MidgardHealth, NetworkStats, NetworkStatus } from '@/lib/types';
 
 const networkStats: NetworkStats = {
   totalPooledRune: '100000000',
@@ -47,6 +52,26 @@ function ok<T>(data: T): LiveDataResult<T> {
     status: 'ok',
     checkedAt: '2026-07-04T20:00:00.000Z',
     data,
+  };
+}
+
+function historyInterval(
+  startTime: string,
+  earnings: string,
+  bondingEarnings = earnings,
+  liquidityEarnings = '0'
+): HistoryItem {
+  return {
+    startTime,
+    endTime: String(Number(startTime) + 86_400),
+    liquidityFees: '0',
+    blockRewards: '0',
+    earnings,
+    bondingEarnings,
+    liquidityEarnings,
+    avgNodeCount: '100',
+    runePriceUSD: '5',
+    pools: [],
   };
 }
 
@@ -160,5 +185,36 @@ describe('stats dashboard decision facts', () => {
       expect.objectContaining({ id: 'activeNodes', value: 'Unavailable' }),
       expect.objectContaining({ id: 'reserveRune', value: 'Unavailable' }),
     ]);
+  });
+
+  it('derives earnings coverage without treating missing interval amounts as zero', () => {
+    const intervals = [
+      historyInterval('1704067200', '100000000', '60000000', '40000000'),
+      historyInterval('1704153600', '', '', ''),
+      historyInterval('1704240000', '300000000', '100000000', '200000000'),
+    ];
+
+    const rows = deriveStatsEarningsRows(intervals);
+    const coverage = deriveStatsEarningsCoverage(rows, false);
+
+    expect(rows).toHaveLength(3);
+    expect(rows[0]).toEqual(expect.objectContaining({
+      earnings: 3,
+      nodeOps: 1,
+      lps: 2,
+    }));
+    expect(rows[1]).toEqual(expect.objectContaining({
+      earnings: null,
+      nodeOps: null,
+      lps: null,
+    }));
+    expect(coverage).toEqual(expect.objectContaining({
+      availableIntervals: 2,
+      unavailableIntervals: 1,
+      totalEarnings: 4,
+      recentSevenEarnings: 4,
+      recentRows: rows,
+      summary: expect.stringContaining('2 include a valid total earnings value'),
+    }));
   });
 });

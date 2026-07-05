@@ -1,4 +1,4 @@
-import { test, expect, type Locator, type Page } from '@playwright/test';
+import { test, expect, type Locator, type Page, type Route } from '@playwright/test';
 
 function expectStrictCsp(headers: Record<string, string>) {
   const enforced = process.env.CSP_ENFORCE === '1';
@@ -61,6 +61,63 @@ function expectWarningDetails(value: unknown) {
       expectStringArray(detail.scopes);
     }
   }
+}
+
+async function fulfillJson(route: Route, value: unknown) {
+  await route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify(value),
+  });
+}
+
+function earningsInterval(index: number) {
+  const startTime = 1_704_067_200 + index * 86_400;
+  const earnings = (100_000_000 * (index + 1)).toString();
+  const bondingEarnings = (60_000_000 * (index + 1)).toString();
+  const liquidityEarnings = (40_000_000 * (index + 1)).toString();
+
+  return {
+    startTime: String(startTime),
+    endTime: String(startTime + 86_400),
+    liquidityFees: '0',
+    blockRewards: '0',
+    earnings,
+    bondingEarnings,
+    liquidityEarnings,
+    avgNodeCount: '100',
+    runePriceUSD: '5',
+    pools: [],
+  };
+}
+
+async function mockStatsMidgard(page: Page) {
+  await page.route(/gateway\.liquify\.com\/chain\/thorchain_midgard\/v2\/history\/earnings.*/, async (route) => {
+    await fulfillJson(route, {
+      intervals: Array.from({ length: 8 }, (_, index) => earningsInterval(index)),
+    });
+  });
+  await page.route(/gateway\.liquify\.com\/chain\/thorchain_midgard\/v2\/network$/, async (route) => {
+    await fulfillJson(route, {
+      totalPooledRune: '100000000000',
+      totalReserve: '200000000000',
+      activeNodeCount: 100,
+      standbyNodeCount: 20,
+      bondingAPY: '0.10',
+      liquidityAPY: '0.05',
+      nextChurnHeight: 123,
+      bondMetrics: {},
+    });
+  });
+  await page.route(/gateway\.liquify\.com\/chain\/thorchain_midgard\/v2\/health$/, async (route) => {
+    await fulfillJson(route, {
+      database: true,
+      inSync: true,
+      scannerHeight: 101,
+      lastAggregated: { height: 100, timestamp: 1_704_153_600 },
+      lastThorNode: { height: 101, timestamp: 1_704_153_605 },
+    });
+  });
 }
 
 const VISUAL_SAFETY_ROUTES: Array<{ path: string; heading: string | RegExp }> = [
@@ -223,6 +280,27 @@ test.describe('THORChain Wiki Smoke Tests', () => {
     await expect(page.getByText(/Usable intervals/i)).toBeVisible();
     await expect(page.getByText(/not as durable revenue proof/i)).toBeVisible();
     await expect(page.getByText(/Current-only|Source warning|Source degraded|Degraded|Loading live source/i).first()).toBeVisible();
+  });
+
+  test('stats earnings history uses mobile cards for loaded intervals', async ({ page, isMobile }) => {
+    test.skip(!isMobile, 'mobile cards are only rendered below the md breakpoint');
+
+    await mockStatsMidgard(page);
+    await page.goto('/stats');
+    await expect(page.getByRole('heading', { name: /Network Statistics/i })).toBeVisible();
+    await expect(page.getByText(/Showing 8 Midgard daily earnings intervals/i)).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Recent Daily Earnings Intervals/i })).toBeVisible();
+    await expect(page.getByRole('list', { name: /Recent daily earnings intervals/i })).toBeVisible();
+    await expect(page.getByText(/Node operators/i).first()).toBeVisible();
+    await expect(page.getByText('LPs', { exact: true }).first()).toBeVisible();
+    await expect(page.locator('table').first()).toBeHidden();
+
+    const layout = await readLayoutSafety(page);
+    expect(layout.hasFrameworkOverlay).toBe(false);
+    expect(
+      layout.pageWidth,
+      `mobile stats loaded state overflow ${JSON.stringify({ viewportWidth: layout.viewportWidth, overflowing: layout.overflowing })}`
+    ).toBeLessThanOrEqual(layout.viewportWidth + 2);
   });
 
   test('network status module has compact and diagnostic tiers', async ({ page, isMobile }) => {

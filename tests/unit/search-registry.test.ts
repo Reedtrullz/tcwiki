@@ -322,6 +322,9 @@ describe('SEARCH_DOCUMENTS', () => {
     expect(docsMatching('protocol messages').some((doc) => doc.id === 'glossary:memo')).toBe(true);
     expect(docsMatching('per-thorname, per-pair').some((doc) => doc.id === 'glossary:dynamic-l1-fee')).toBe(true);
     expect(docsMatching('protocol-owned liquidity').some((doc) => doc.id === 'glossary:protocol-owned-liquidity')).toBe(true);
+    expect(docsMatching('pool-share accounting').some((doc) => doc.id === 'glossary:liquidity-provider')).toBe(true);
+    expect(docsMatching('pool ownership share').some((doc) => doc.id === 'glossary:liquidity-units')).toBe(true);
+    expect(docsMatching('one side of a pool').some((doc) => doc.id === 'glossary:asymmetric-withdrawal')).toBe(true);
     expect(docsMatching('deployer, checksum').some((doc) => doc.id === 'glossary:cosmwasm')).toBe(true);
     expect(docsMatching('threshold-signature implementation').some((doc) => doc.id === 'glossary:gg20')).toBe(true);
   });
@@ -344,6 +347,8 @@ describe('SEARCH_DOCUMENTS', () => {
     expect(docsMatching('which source should i trust').some((doc) => doc.id === 'task:source-choice' && doc.href === '/docs#source-map-chooser' && doc.slug === '/docs')).toBe(true);
     expect(sourceChoiceDoc?.content).toContain('Static docs explain intended/design behavior, not proof');
     expect(sourceChoiceDoc?.content).toContain('Community material is useful context');
+    expect(docsMatching('add liquidity').some((doc) => doc.id === 'task:liquidity-actions' && doc.href === '/network#network-diagnostics' && doc.slug === '/network')).toBe(true);
+    expect(docsMatching('asymmetric withdrawal').some((doc) => doc.id === 'task:liquidity-actions')).toBe(true);
     expect(docsMatching('Midgard API').some((doc) => doc.id === 'task:build-query' && doc.href === '/docs#developer-integration' && doc.slug === '/docs')).toBe(true);
     expect(docsMatching('why paused').some((doc) => doc.id === 'task:why-paused' && doc.href === '/network#network-diagnostics' && doc.slug === '/network')).toBe(true);
     expect(docsMatching('ADR-026').some((doc) => doc.id === 'task:fees-and-adr026' && doc.href === '/dynamic-fees#dynamic-fees-live' && doc.slug === '/dynamic-fees')).toBe(true);
