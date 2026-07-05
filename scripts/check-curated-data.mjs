@@ -58,6 +58,7 @@ const routeSourcePostureEntryIds = new Set([
   'ecosystem',
   'governance',
   'network',
+  'dynamic-fees',
   'docs',
   'deep-dives',
   'glossary',
