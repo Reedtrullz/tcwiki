@@ -44,6 +44,8 @@ describe('source and freshness labels', () => {
       <EcosystemFilterList projectRecords={ECOSYSTEM_PROJECT_RECORDS.slice(0, 2)} chainRecords={CHAIN_RECORDS.slice(0, 2)} />
     );
 
+    expect(html).toContain('Directory filters');
+    expect(html).toContain('aria-atomic="true"');
     expect(html).toContain('Listed Active');
     expect(html).toContain('Use for');
     expect(html).toContain('Check before use');
@@ -53,6 +55,17 @@ describe('source and freshness labels', () => {
     expect(html).toContain('Source map');
     expect(html).toContain('Check live diagnostics');
     expect(html).toContain('Live inbound status must be checked before describing BTC swaps as open.');
+  });
+
+  it('keeps ecosystem filter controls and source disclosures keyboard-visible', () => {
+    const html = renderToStaticMarkup(
+      <EcosystemFilterList projectRecords={ECOSYSTEM_PROJECT_RECORDS.slice(0, 2)} chainRecords={CHAIN_RECORDS.slice(0, 2)} />
+    );
+
+    expect(html).toMatch(/<select[^>]+focus:ring-1 focus:ring-accent\/50/);
+    expect(html).toMatch(/Open project[\s\S]*focus-visible:ring-2 focus-visible:ring-accent\/60/);
+    expect(html).toMatch(/Live status[\s\S]*focus-visible:ring-2 focus-visible:ring-accent\/60/);
+    expect(html).toMatch(/Show 1 additional source[\s\S]*focus-visible:ring-2 focus-visible:ring-accent\/60/);
   });
 
   it('renders the glossary term finder with source-aware term cards', () => {

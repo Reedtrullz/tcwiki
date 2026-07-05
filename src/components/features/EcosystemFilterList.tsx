@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import type { Chain, EcosystemProject, SourcedRecord } from '@/lib/types';
+import { X } from 'lucide-react';
+import type { Chain, DataConfidence, EcosystemProject, SourcedRecord } from '@/lib/types';
 import { Badge } from '@/components/ui/Badge';
 import { FreshnessMeta } from '@/components/ui/FreshnessMeta';
 import { getConfidenceLabel, getConfidenceTone } from '@/lib/trust';
@@ -14,16 +15,24 @@ interface EcosystemFilterListProps {
 }
 
 const ALL = 'all';
+const selectControlClass = 'mt-1 w-full rounded-md border border-border bg-surface px-2 py-2 text-sm text-slate-200 transition-colors focus:border-accent/50 focus:outline-none focus:ring-1 focus:ring-accent/50';
+const actionLinkClass = 'text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60';
+const dataConfidenceValues: DataConfidence[] = ['official', 'curated', 'historical', 'needs-review'];
+type ConfidenceFilter = DataConfidence | typeof ALL;
 
 function uniqueSorted<T extends string>(values: T[]): T[] {
   return Array.from(new Set(values)).sort((a, b) => a.localeCompare(b));
+}
+
+function isDataConfidence(value: string): value is DataConfidence {
+  return dataConfidenceValues.includes(value as DataConfidence);
 }
 
 export function EcosystemFilterList({ projectRecords, chainRecords }: EcosystemFilterListProps) {
   const [category, setCategory] = useState(ALL);
   const [chain, setChain] = useState(ALL);
   const [status, setStatus] = useState(ALL);
-  const [confidence, setConfidence] = useState(ALL);
+  const [confidence, setConfidence] = useState<ConfidenceFilter>(ALL);
 
   const categories = useMemo(() => uniqueSorted(projectRecords.map((record) => record.data.category)), [projectRecords]);
   const chains = useMemo(() => uniqueSorted(projectRecords.flatMap((record) => record.data.chains)), [projectRecords]);
@@ -38,107 +47,171 @@ export function EcosystemFilterList({ projectRecords, chainRecords }: EcosystemF
       (confidence === ALL || record.freshness.confidence === confidence);
   });
 
+  const activeFilters = category !== ALL || chain !== ALL || status !== ALL || confidence !== ALL;
+  const activeFilterLabels = [
+    category !== ALL ? `Category: ${category}` : null,
+    chain !== ALL ? `Chain: ${chain}` : null,
+    status !== ALL ? `Status: ${status}` : null,
+    confidence !== ALL ? `Confidence: ${getConfidenceLabel(confidence)}` : null,
+  ].filter((label): label is string => label !== null);
+  const resetFilters = () => {
+    setCategory(ALL);
+    setChain(ALL);
+    setStatus(ALL);
+    setConfidence(ALL);
+  };
+
   return (
     <div>
-      <div className="mb-6 grid grid-cols-1 gap-3 rounded-lg border border-border bg-surface-elevated p-4 sm:grid-cols-2 lg:grid-cols-4">
-        <label className="text-xs text-slate-400">
-          Category
-          <select value={category} onChange={(event) => setCategory(event.target.value)} className="mt-1 w-full rounded-md border border-border bg-surface px-2 py-2 text-sm text-slate-200">
-            <option value={ALL}>All categories</option>
-            {categories.map((option) => <option key={option} value={option}>{option}</option>)}
-          </select>
-        </label>
-        <label className="text-xs text-slate-400">
-          Chain
-          <select value={chain} onChange={(event) => setChain(event.target.value)} className="mt-1 w-full rounded-md border border-border bg-surface px-2 py-2 text-sm text-slate-200">
-            <option value={ALL}>All chains</option>
-            {chains.map((option) => <option key={option} value={option}>{option}</option>)}
-          </select>
-        </label>
-        <label className="text-xs text-slate-400">
-          Status
-          <select value={status} onChange={(event) => setStatus(event.target.value)} className="mt-1 w-full rounded-md border border-border bg-surface px-2 py-2 text-sm text-slate-200">
-            <option value={ALL}>All statuses</option>
-            {statuses.map((option) => <option key={option} value={option}>{option}</option>)}
-          </select>
-        </label>
-        <label className="text-xs text-slate-400">
-          Confidence
-          <select value={confidence} onChange={(event) => setConfidence(event.target.value)} className="mt-1 w-full rounded-md border border-border bg-surface px-2 py-2 text-sm text-slate-200">
-            <option value={ALL}>All confidence levels</option>
-            {confidences.map((option) => <option key={option} value={option}>{getConfidenceLabel(option)}</option>)}
-          </select>
-        </label>
+      <div className="mb-6 rounded-lg border border-border bg-surface-elevated p-4">
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 id="ecosystem-filter-heading" className="text-sm font-semibold text-slate-100">Directory filters</h2>
+            <p aria-live="polite" aria-atomic="true" className="mt-1 text-xs text-slate-400">
+              Showing {filteredProjects.length} of {projectRecords.length} curated ecosystem entries.
+            </p>
+          </div>
+          {activeFilters && (
+            <button
+              type="button"
+              onClick={resetFilters}
+              className="inline-flex items-center gap-1 self-start rounded-md border border-border px-2.5 py-1.5 text-xs text-slate-400 transition-colors hover:border-accent/30 hover:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 sm:self-auto"
+            >
+              <X className="h-3.5 w-3.5" />
+              Reset
+            </button>
+          )}
+        </div>
+        <div role="group" aria-labelledby="ecosystem-filter-heading" className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <label className="text-xs text-slate-400">
+            Category
+            <select value={category} onChange={(event) => setCategory(event.target.value)} className={selectControlClass}>
+              <option value={ALL}>All categories</option>
+              {categories.map((option) => <option key={option} value={option}>{option}</option>)}
+            </select>
+          </label>
+          <label className="text-xs text-slate-400">
+            Chain
+            <select value={chain} onChange={(event) => setChain(event.target.value)} className={selectControlClass}>
+              <option value={ALL}>All chains</option>
+              {chains.map((option) => <option key={option} value={option}>{option}</option>)}
+            </select>
+          </label>
+          <label className="text-xs text-slate-400">
+            Status
+            <select value={status} onChange={(event) => setStatus(event.target.value)} className={selectControlClass}>
+              <option value={ALL}>All statuses</option>
+              {statuses.map((option) => <option key={option} value={option}>{option}</option>)}
+            </select>
+          </label>
+          <label className="text-xs text-slate-400">
+            Confidence
+            <select
+              value={confidence}
+              onChange={(event) => {
+                const nextConfidence = event.target.value;
+                setConfidence(isDataConfidence(nextConfidence) ? nextConfidence : ALL);
+              }}
+              className={selectControlClass}
+            >
+              <option value={ALL}>All confidence levels</option>
+              {confidences.map((option) => <option key={option} value={option}>{getConfidenceLabel(option)}</option>)}
+            </select>
+          </label>
+        </div>
+        {activeFilterLabels.length > 0 && (
+          <div className="mt-4 flex flex-wrap gap-1.5" aria-label="Active ecosystem filters">
+            {activeFilterLabels.map((label) => (
+              <span key={label} className="rounded-md border border-accent/20 bg-accent/10 px-2 py-1 text-[11px] text-accent">
+                {label}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       <p aria-live="polite" className="mb-4 text-sm text-slate-400">
-        Showing {filteredProjects.length} of {projectRecords.length} curated ecosystem entries. Listings are references, not endorsements or availability guarantees.
+        Listings are references, not endorsements or availability guarantees.
       </p>
 
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-        {filteredProjects.map((record) => {
-          const project = record.data;
-          return (
-            <div
-              key={project.id}
-              id={recordAnchor('ecosystem', project.id)}
-              className="scroll-mt-24 p-4 rounded-lg bg-surface-elevated border border-border transition-colors"
-            >
-              <div className="flex items-center justify-between gap-3 mb-1">
-                <h3 className="text-sm font-medium">{project.name}</h3>
-                <div className="flex flex-wrap justify-end gap-1">
-                  <Badge variant="info">Listed {project.status}</Badge>
-                  <Badge variant={getConfidenceTone(record.freshness.confidence)}>{getConfidenceLabel(record.freshness.confidence)}</Badge>
+      {filteredProjects.length > 0 ? (
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          {filteredProjects.map((record) => {
+            const project = record.data;
+            return (
+              <div
+                key={project.id}
+                id={recordAnchor('ecosystem', project.id)}
+                className="scroll-mt-24 p-4 rounded-lg bg-surface-elevated border border-border transition-colors"
+              >
+                <div className="flex items-center justify-between gap-3 mb-1">
+                  <h3 className="text-sm font-medium">{project.name}</h3>
+                  <div className="flex flex-wrap justify-end gap-1">
+                    <Badge variant="info">Listed {project.status}</Badge>
+                    <Badge variant={getConfidenceTone(record.freshness.confidence)}>{getConfidenceLabel(record.freshness.confidence)}</Badge>
+                  </div>
+                </div>
+                <p className="text-xs text-slate-400 leading-relaxed mb-3">{project.description}</p>
+                <div className="mb-3 grid gap-3 border-t border-border pt-3 md:grid-cols-2">
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-emerald-300">Use for</p>
+                    <ul className="mt-1 list-disc space-y-1 pl-4 text-xs leading-relaxed text-slate-400">
+                      {project.useFor.map((item) => <li key={item}>{item}</li>)}
+                    </ul>
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-amber-300">Check before use</p>
+                    <ul className="mt-1 list-disc space-y-1 pl-4 text-xs leading-relaxed text-slate-400">
+                      {project.verifyBeforeUse.map((item) => <li key={item}>{item}</li>)}
+                    </ul>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-1 mb-3">
+                  {project.chains.slice(0, 8).map((chainCode) => (
+                    <span key={chainCode} className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">{chainCode}</span>
+                  ))}
+                  {project.chains.length > 8 && <span className="text-[10px] text-slate-400">+{project.chains.length - 8}</span>}
+                </div>
+                <div className="flex flex-wrap items-center gap-3">
+                  <a
+                    href={project.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`${actionLinkClass} text-accent hover:text-accent/80`}
+                  >
+                    Open project
+                  </a>
+                  <Link href="/network#network-diagnostics" className={`${actionLinkClass} text-slate-400 hover:text-slate-200`}>
+                    Live status
+                  </Link>
+                  <Link href="/docs#third-party-interfaces-wallets" className={`${actionLinkClass} text-slate-400 hover:text-slate-200`}>
+                    Source map
+                  </Link>
+                  <FreshnessMeta freshness={record.freshness} sources={record.sources} compact />
                 </div>
               </div>
-              <p className="text-xs text-slate-400 leading-relaxed mb-3">{project.description}</p>
-              <div className="mb-3 grid gap-3 border-t border-border pt-3 md:grid-cols-2">
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-wider text-emerald-300">Use for</p>
-                  <ul className="mt-1 list-disc space-y-1 pl-4 text-xs leading-relaxed text-slate-400">
-                    {project.useFor.map((item) => <li key={item}>{item}</li>)}
-                  </ul>
-                </div>
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-wider text-amber-300">Check before use</p>
-                  <ul className="mt-1 list-disc space-y-1 pl-4 text-xs leading-relaxed text-slate-400">
-                    {project.verifyBeforeUse.map((item) => <li key={item}>{item}</li>)}
-                  </ul>
-                </div>
-              </div>
-              <div className="flex flex-wrap gap-1 mb-3">
-                {project.chains.slice(0, 8).map((chainCode) => (
-                  <span key={chainCode} className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-400">{chainCode}</span>
-                ))}
-                {project.chains.length > 8 && <span className="text-[10px] text-slate-400">+{project.chains.length - 8}</span>}
-              </div>
-              <div className="flex flex-wrap items-center gap-3">
-                <a
-                  href={project.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-accent hover:text-accent/80 transition-colors"
-                >
-                  Open project
-                </a>
-                <Link href="/network#network-diagnostics" className="text-xs text-slate-400 transition-colors hover:text-slate-200">
-                  Live status
-                </Link>
-                <Link href="/docs#third-party-interfaces-wallets" className="text-xs text-slate-400 transition-colors hover:text-slate-200">
-                  Source map
-                </Link>
-                <FreshnessMeta freshness={record.freshness} sources={record.sources} compact />
-              </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="rounded-lg border border-border bg-surface-elevated p-6 text-sm text-slate-400">
+          No ecosystem entries match the current filters. These filters only narrow the curated directory; they do not prove an interface is unavailable.
+          <button
+            type="button"
+            onClick={resetFilters}
+            className="ml-1 text-accent underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
+          >
+            Reset filters
+          </button>
+          .
+        </div>
+      )}
 
       <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4 mt-12">Curated Chain List ({chainRecords.length})</h2>
       <p className="text-sm text-slate-400 mb-4">
         Use this list as a source-backed index, not as proof that swaps or LP actions are currently open.
         {' '}
-        <Link href="/network#network-diagnostics" className="text-accent transition-colors hover:text-accent/80">
+        <Link href="/network#network-diagnostics" className="text-accent transition-colors hover:text-accent/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60">
           Check live diagnostics
         </Link>
         {' '}for current availability.
