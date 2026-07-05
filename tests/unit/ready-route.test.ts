@@ -4,6 +4,10 @@ import ThornodeAPI from '@/lib/api/thornode';
 import { GET } from '@/app/api/ready/route';
 import type { DynamicL1FeeStatus, HistoryItem, LiveDataResult, MidgardHealth, NetworkStats, NetworkStatus, Pool, SourceHealthSeverity } from '@/lib/types';
 
+type DynamicFeeStatusWithOptionalWarnings = Omit<DynamicL1FeeStatus, 'sourceWarningDetails'> & {
+  sourceWarningDetails?: DynamicL1FeeStatus['sourceWarningDetails'];
+};
+
 vi.mock('@/lib/api/midgard', () => ({
   default: {
     getHealth: vi.fn(),
@@ -428,6 +432,34 @@ describe('/api/ready', () => {
     expect(body.status).toBe('degraded');
     expect(body.ready).toBe(false);
     expect(body.sources.thornode.dynamicFees.status).toBe('ok');
+    expect(body.sources.thornode.dynamicFees.sourceWarnings).toEqual([warning]);
+    expect(body.sources.thornode.dynamicFees.sourceWarningDetails).toEqual([
+      {
+        severity: 'critical',
+        category: 'freshness',
+        message: warning,
+        action: 'Treat dynamic-fee readiness as degraded until THORNode returns a complete, pinned, warning-free dynamic-fee snapshot.',
+      },
+    ]);
+    expect(body.reasons).toEqual([warning]);
+  });
+
+  it('dedupes duplicate dynamic fee warning strings before exposing readiness reasons and details', async () => {
+    const warning = 'THORNode latest block timestamp is 1 minute old; dynamic fee state is stale.';
+    const status = dynamicFeeStatus({
+      sourceWarnings: [warning, warning],
+    });
+    if (status.data) {
+      delete (status.data as DynamicFeeStatusWithOptionalWarnings).sourceWarningDetails;
+    }
+    vi.mocked(ThornodeAPI.getDynamicL1FeeStatus).mockResolvedValue(status);
+
+    const response = await GET();
+    const body = await response.json();
+
+    expect(response.status).toBe(503);
+    expect(body.status).toBe('degraded');
+    expect(body.ready).toBe(false);
     expect(body.sources.thornode.dynamicFees.sourceWarnings).toEqual([warning]);
     expect(body.sources.thornode.dynamicFees.sourceWarningDetails).toEqual([
       {

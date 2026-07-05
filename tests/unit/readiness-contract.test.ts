@@ -105,7 +105,7 @@ describe('readiness runtime contract helper', () => {
     const response = readinessResponse();
     delete (response.sources.thornode as { dynamicFees?: unknown }).dynamicFees;
 
-    expect(() => assertReadinessContract(response)).toThrow(/dynamicFees/);
+    expect(() => assertReadinessContract(response)).toThrow(/sources\.thornode\.dynamicFees must be an object/);
   });
 
   it('rejects contradictory ready status flags', () => {
@@ -120,6 +120,13 @@ describe('readiness runtime contract helper', () => {
     response.sources.midgard.visibleData.earnings.status = 'degraded';
 
     expect(() => assertReadinessContract(response)).toThrow(/visibleData\.earnings\.status/);
+  });
+
+  it('rejects ready responses that omit visible source subsections with a clear path', () => {
+    const response = readyResponse();
+    delete (response.sources.midgard.visibleData as { earnings?: unknown }).earnings;
+
+    expect(() => assertReadinessContract(response)).toThrow(/sources\.midgard\.visibleData\.earnings must be an object/);
   });
 
   it('rejects ready responses with dynamic-fee warning details', () => {

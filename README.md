@@ -62,7 +62,7 @@ Recommended local release-shaped gate:
 nvm use
 df -h /System/Volumes/Data # stop if free space is below 50 GiB
 npm run check:content
-npm run check:live-snapshot # pinned same-provider THORNode supported-chain drift check
+npm run check:live-snapshot # pinned same-provider THORNode supported-chain drift check with stale/future block guardrails
 npm run audit:prod
 npm run audit:all
 npm run typecheck

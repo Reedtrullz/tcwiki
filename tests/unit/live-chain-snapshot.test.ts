@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 const {
   checkLiveChainSnapshot,
   getConservativeSnapshotHeight,
+  getBlockAgeWarnings,
   validateInboundAddresses,
 } = await import('../../scripts/lib/live-chain-snapshot.mjs') as {
   checkLiveChainSnapshot: (input: {
@@ -20,6 +21,7 @@ const {
     warnings: string[];
   }>;
   getConservativeSnapshotHeight: (latestHeight: number) => number;
+  getBlockAgeWarnings: (blockTime: string, nowMs?: number) => { ageSeconds: number; warnings: string[] };
   validateInboundAddresses: (value: unknown) => Set<string>;
 };
 
@@ -169,6 +171,37 @@ describe('live chain snapshot helper', () => {
     expect(result.providerErrors).toEqual([
       'A THORNode: latest block timestamp is stale by 65 seconds.',
     ]);
+  });
+
+  it('falls back to a later provider when the first provider has far-future block evidence', async () => {
+    const fetchImpl = fetchFor({
+      'https://a.example/cosmos/base/tendermint/v1beta1/blocks/latest': latestBlock(11, '2026-07-05T00:02:00.000Z'),
+      'https://b.example/cosmos/base/tendermint/v1beta1/blocks/latest': latestBlock(12, '2026-07-05T00:01:00.000Z'),
+      'https://b.example/thorchain/inbound_addresses?height=11': [inboundRow('BTC')],
+    });
+
+    const result = await checkLiveChainSnapshot({
+      chainRecords: [chainRecord('BTC')],
+      sources,
+      fetchImpl,
+      nowMs: Date.parse('2026-07-05T00:01:05.000Z'),
+    });
+
+    expect(result.source.label).toBe('B THORNode');
+    expect(result.providerErrors).toEqual([
+      'A THORNode: latest block timestamp is 55 seconds in the future.',
+    ]);
+  });
+
+  it('keeps warning-band stale and future block timestamps usable with warnings', () => {
+    expect(getBlockAgeWarnings('2026-07-05T00:00:00.000Z', Date.parse('2026-07-05T00:00:20.000Z'))).toEqual({
+      ageSeconds: 20,
+      warnings: ['latest block timestamp is 20 seconds old.'],
+    });
+    expect(getBlockAgeWarnings('2026-07-05T00:00:20.000Z', Date.parse('2026-07-05T00:00:00.000Z'))).toEqual({
+      ageSeconds: -20,
+      warnings: ['latest block timestamp is 20 seconds in the future.'],
+    });
   });
 
   it('uses latest height zero as a pinned genesis snapshot', () => {

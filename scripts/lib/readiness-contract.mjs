@@ -89,6 +89,7 @@ function assertEmptyArray(value, path) {
 }
 
 function assertReadySource(value, path) {
+  assert(value && typeof value === 'object', `${path} must be an object`);
   assert(value.status === 'ok', `${path}.status must be ok when readiness is ready`);
 }
 
