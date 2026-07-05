@@ -382,6 +382,8 @@ describe('SEARCH_DOCUMENTS', () => {
     const sourceChoiceDoc = SEARCH_DOCUMENTS.find((doc) => doc.id === 'task:source-choice');
 
     expect(taskDocs).toHaveLength(TASK_INTENT_GUIDES.length);
+    expect(docsMatching('how does thorchain work').some((doc) => doc.id === 'task:learn-thorchain' && doc.href === '/deep-dives#deep-dive-path-new-to-thorchain' && doc.slug === '/deep-dives')).toBe(true);
+    expect(docsMatching('getting started').some((doc) => doc.id === 'task:learn-thorchain')).toBe(true);
     expect(docsMatching('can i swap right now').some((doc) => doc.id === 'task:swap-availability' && doc.href === '/network#network-diagnostics' && doc.slug === '/network')).toBe(true);
     expect(docsMatching('which source should i trust').some((doc) => doc.id === 'task:source-choice' && doc.href === '/docs#source-map-chooser' && doc.slug === '/docs')).toBe(true);
     expect(sourceChoiceDoc?.content).toContain('Static docs explain intended/design behavior, not proof');

@@ -846,6 +846,18 @@ export const SOURCE_CHOICE_DECISIONS: SourceChoiceDecision[] = [
 
 export const TASK_INTENT_GUIDES: TaskIntentGuide[] = [
   {
+    id: 'learn-thorchain',
+    label: 'New to THORChain',
+    question: 'How does THORChain work, and where should a beginner start?',
+    href: '/deep-dives#deep-dive-path-new-to-thorchain',
+    description: 'Start with the curated reader path for settlement, pools, Bifrost, and vault signing before opening the dashboards.',
+    searchTerms: ['how does thorchain work', 'getting started', 'beginner', 'start here', 'protocol basics', 'new to thorchain', 'learn thorchain', 'how thorchain works', 'native swaps'],
+    confidence: 'curated',
+    reviewedAt: '2026-07-05',
+    nextReviewDue: '2026-08-05',
+    sources: [docsSource, devDocsSource],
+  },
+  {
     id: 'swap-availability',
     label: 'Can I swap right now?',
     question: 'Is trading, signing, observation, or a specific chain paused?',

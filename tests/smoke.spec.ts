@@ -253,6 +253,10 @@ test.describe('THORChain Wiki Smoke Tests', () => {
     if (!isMobile) {
       await page.getByRole('button', { name: /Guides/i }).click();
       const guides = page.getByRole('navigation', { name: /Guide links/i });
+      await expect(guides.getByText(/Reader Paths/i)).toBeVisible();
+      await expect(guides.getByText(/Common Tasks/i)).toBeVisible();
+      await expect(guides.getByRole('link', { name: /New to THORChain/i })).toHaveAttribute('href', '/deep-dives#deep-dive-path-new-to-thorchain');
+      await expect(guides.getByRole('link', { name: /Can I swap right now/i })).toHaveAttribute('href', '/network#network-diagnostics');
       await expect(guides.getByRole('link', { name: /Learning paths/i })).toHaveAttribute('href', '/deep-dives#deep-dive-reader-paths');
       await expect(guides.getByRole('link', { name: /Live metrics/i })).toHaveAttribute('href', '/stats#stats-look-here-first');
       await expect(guides.getByRole('link', { name: /Build\/query/i })).toHaveAttribute('href', '/docs#developer-integration');
@@ -532,7 +536,9 @@ test.describe('THORChain Wiki Smoke Tests', () => {
       tssCard.click(),
     ]);
     await expect(page.getByRole('heading', { name: /The Problem with Traditional Multisig/i })).toBeVisible();
-    await expect(page.locator('nav[aria-label="Primary navigation"] a[href="/deep-dives"]')).toHaveAttribute('aria-current', 'page');
+    const deepDivesNavLink = page.locator('nav[aria-label="Primary navigation"] a[href="/deep-dives"]');
+    await expect(deepDivesNavLink).toHaveAttribute('aria-current', 'page');
+    await expect(deepDivesNavLink).toHaveClass(/text-accent/);
     await expect(page.getByText('Curated', { exact: true }).first()).toBeVisible();
 
     await expect(page.getByText('THORChain Docs', { exact: true }).first()).toBeVisible();
@@ -823,9 +829,13 @@ test.describe('THORChain Wiki Smoke Tests', () => {
     await page.setViewportSize({ width: 375, height: 320 });
     await page.goto('/');
     await page.getByRole('button', { name: /open navigation menu/i }).click();
+    await expect(page.locator('#mobile-navigation').getByText('Sections', { exact: true })).toBeVisible();
+    await expect(page.locator('#mobile-navigation').getByText('Reader Paths', { exact: true })).toBeVisible();
+    await expect(page.locator('#mobile-navigation').getByText('Common Tasks', { exact: true })).toBeVisible();
     await expect(page.locator('#mobile-navigation').getByRole('link', { name: 'Deep Dives' })).toBeVisible();
     await expect(page.locator('#mobile-navigation').getByRole('link', { name: 'Start here' })).toBeVisible();
     await expect(page.locator('#mobile-navigation').getByRole('link', { name: 'Learning paths' })).toHaveAttribute('href', '/deep-dives#deep-dive-reader-paths');
+    await expect(page.locator('#mobile-navigation').getByRole('link', { name: 'New to THORChain' })).toHaveAttribute('href', '/deep-dives#deep-dive-path-new-to-thorchain');
     await expect(page.locator('#mobile-navigation')).toHaveCSS('overflow-y', 'auto');
     const navBox = await page.locator('#mobile-navigation').boundingBox();
     expect(navBox?.height ?? 0).toBeLessThanOrEqual(268);
@@ -851,6 +861,7 @@ test.describe('THORChain Wiki Smoke Tests', () => {
     const searchInput = siteSearch.getByLabel(/Search the wiki/i);
     await expect(searchInput).toBeVisible();
     await expect(searchInput).toBeFocused();
+    await expect(siteSearch.getByRole('link', { name: /New to THORChain/i })).toHaveAttribute('href', '/deep-dives#deep-dive-path-new-to-thorchain');
     await expect(siteSearch.getByRole('link', { name: /Why did my swap refund/i })).toHaveAttribute('href', '/deep-dives/clp#swap-lifecycle-and-refunds');
 
     await searchInput.fill('why did my swap refund');

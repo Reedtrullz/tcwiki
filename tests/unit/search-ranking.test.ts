@@ -24,6 +24,8 @@ function rankedIds(query: string) {
 
 describe('task-aware search ranking', () => {
   it('promotes task journeys for reader-job queries', () => {
+    expect(rankedIds('how does thorchain work')[0]).toBe('task:learn-thorchain');
+    expect(rankedIds('getting started')[0]).toBe('task:learn-thorchain');
     expect(rankedIds('dynamic L1 fee')[0]).toBe('task:fees-and-adr026');
     expect(rankedIds('Mimir halt')[0]).toBe('task:why-paused');
     expect(rankedIds('wallet safety')[0]).toBe('task:choose-interface');
