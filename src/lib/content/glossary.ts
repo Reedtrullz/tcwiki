@@ -283,7 +283,7 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     reviewedAt: '2026-07-04',
     nextReviewDue: '2026-08-04',
     sources: [assetNotationSource, networkHaltsSource],
-    relatedHrefs: ['/economics', '/network#network-diagnostics'],
+    relatedHrefs: ['/deep-dives/app-layer', '/economics', '/network#network-diagnostics'],
   },
   {
     id: slugifyFragment('Trade asset'),
@@ -294,7 +294,7 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     reviewedAt: '2026-07-04',
     nextReviewDue: '2026-08-04',
     sources: [assetNotationSource, networkHaltsSource],
-    relatedHrefs: ['/economics', '/network#network-diagnostics'],
+    relatedHrefs: ['/deep-dives/app-layer', '/economics', '/network#network-diagnostics'],
   },
   {
     id: slugifyFragment('Synthetic asset'),
@@ -316,7 +316,7 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     reviewedAt: '2026-07-04',
     nextReviewDue: '2026-08-04',
     sources: [cosmwasmSource, networkHaltsSource],
-    relatedHrefs: ['/protocol', '/network#network-diagnostics'],
+    relatedHrefs: ['/deep-dives/app-layer', '/protocol', '/network#network-diagnostics'],
   },
   {
     id: slugifyFragment('CosmWasm'),
@@ -327,7 +327,7 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     reviewedAt: '2026-07-04',
     nextReviewDue: '2026-08-04',
     sources: [cosmwasmSource, networkHaltsSource],
-    relatedHrefs: ['/protocol', '/docs#official-protocol-documentation'],
+    relatedHrefs: ['/deep-dives/app-layer', '/protocol', '/docs#official-protocol-documentation'],
   },
   {
     id: slugifyFragment('Savers'),

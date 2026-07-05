@@ -627,6 +627,7 @@ test.describe('THORChain Wiki Smoke Tests', () => {
       ['churning', /Churning and Node Lifecycle/i],
       ['slashing', /Slashing and Economic Security/i],
       ['bifrost', /Bifrost Bridge/i],
+      ['app-layer', /App Layer, CosmWasm, and Secured Assets/i],
       ['rune-settlement', /RUNE as the Universal Settlement Asset/i],
       ['savers', /Savers and Lending/i],
     ] as const;

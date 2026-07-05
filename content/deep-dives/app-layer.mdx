@@ -1,0 +1,94 @@
+# App Layer, CosmWasm, and Secured Assets
+
+THORChain's App Layer is the smart-contract surface built around CosmWasm. It extends the base protocol from native cross-chain swaps into contract-driven applications, while keeping live availability, contract permissions, and asset movement behind explicit source checks.
+
+## What Changed From The Base Layer
+
+The base layer is still the part of THORChain that secures vaults, observes external chains, signs outbound transactions, and prices swaps through RUNE-paired liquidity pools.
+
+The App Layer adds a contract environment on top of that foundation:
+
+- CosmWasm runs inside THORNode through the Cosmos SDK `x/wasm` module.
+- Contracts can build application behavior such as orderbooks, lending, perps, launchpads, liquidations, and other DeFi workflows.
+- Contracts can use THORChain liquidity and normal THORChain account capabilities, but they should not be described as having privileged access to vault logic.
+- Mainnet contract deployment is permissioned unless live Mimir says otherwise. Approved deployers, code checksums, and contract instances are the relevant control surfaces.
+
+The practical reader takeaway: App Layer claims need two layers of evidence. Static docs explain the intended design. Live THORNode/Mimir evidence explains whether the relevant action, contract family, or asset flow is currently enabled.
+
+## CosmWasm Permission Model
+
+CosmWasm contracts are WebAssembly contracts, commonly written in Rust. On THORChain, the important operational difference is permissioning and emergency control.
+
+The source-backed control families to know are:
+
+- `WasmPermissionless`: whether permissionless contract deployment is enabled.
+- `WasmMinGasPrice`: minimum gas price for CosmWasm transactions.
+- `HaltWasmGlobal`: global App Layer contract execution halt.
+- `HaltWasmDeployer-<address>`: halt contracts deployed by a specific deployer.
+- `HaltWasmCs-<checksum>`: halt a contract code checksum.
+- `HaltWasmContract-<suffix>`: halt a specific contract by address suffix.
+- `HaltOracle`: halt oracle price feeds used by app-layer products.
+
+Do not reduce those controls to a single "App Layer is up" claim. A global contract halt, a scoped deployer halt, a code-checksum halt, and a specific contract halt affect different scopes.
+
+## Secured Assets
+
+Secured Assets are native THORChain assets minted from deposited L1 assets. They are designed for account transfers, IBC-compatible movement, and CosmWasm integration using normal Cosmos SDK messages.
+
+They are not the same as pooled L1 assets, synthetic assets, or historical trade assets:
+
+- A user deposits an L1 asset and receives a secured-asset balance representing a share claim on that deposited asset.
+- Secured assets can be swapped, sent, used by smart contracts, and redeemed back out to the represented L1 asset.
+- Official developer docs describe secured assets as replacing trade accounts for fast professional-trader and arbitrage flows.
+- RUNE, synthetics, and trade assets should not be described as convertible into secured assets.
+
+The security caveat is important. Because secured assets are not simply the pool balance itself, official docs tie them to network security budget checks and the broader Layer1-asset-versus-bond framing. A wiki page should not infer current capacity, live limits, or safety margins without checking current protocol state.
+
+## Trade Accounts And Non-Contract Assets
+
+Trade accounts remain a useful search term because older integrations and control names still mention them. They should not be blurred into CosmWasm contract tokens.
+
+The clean distinction:
+
+- Trade assets/accounts are accounting and execution concepts for fast THORChain trading flows.
+- Secured assets are App Layer-compatible assets backed by L1 deposits.
+- CosmWasm docs explicitly warn that trade assets are not supported as contract-moved tokens.
+- Current trade-account enablement is a live-control question, not a static docs claim.
+
+If a reader asks whether a bot, interface, or contract can use a specific asset today, send them to live network diagnostics and the current protocol source map before answering.
+
+## Operational Controls
+
+The App Layer shares the wiki's current-only trust boundary. Source-backed controls include secured-asset halts, smart-contract halts, oracle halts, and trade-account enablement.
+
+Use the exact control family when describing risk:
+
+- `HaltSecuredGlobal`: deposits and withdrawals of all secured assets across base and App Layers.
+- `HaltSecuredDeposit-<CHAIN>`: deposits for secured assets scoped to a chain.
+- `HaltSecuredWithdraw-<CHAIN>`: withdrawals for secured assets scoped to a chain.
+- `TradeAccountsEnabled` and related trade-account deposit controls: whether trade-account behavior is available.
+- `HaltWasm*` controls: whether all contracts, deployer-scoped contracts, checksum-scoped contracts, or one contract instance is halted.
+
+These controls can also be malformed, stale, scheduled, or absent from a source snapshot. Absence is not the same as proof of health unless the dashboard has a fresh, pinned, source-labeled THORNode result.
+
+## What To Verify Before Claiming
+
+Before saying an App Layer or secured-asset action is available, verify:
+
+1. The current `/network#network-diagnostics` state for App Layer, secured-asset, trade-account, oracle, signing, trading, and chain-specific controls.
+2. The exact Mimir keys involved, especially scoped `HaltWasm*` and `HaltSecured*` keys.
+3. The destination and asset notation in official developer docs before giving memo or integration guidance.
+4. The interface-specific implementation, because a listed wallet or app is not an endorsement or proof of current support.
+5. The source freshness date. Static docs explain design; live endpoint evidence explains current availability.
+
+## Non-Claims
+
+This page does not prove:
+
+- Any specific app, contract, deployer, checksum, or wallet is safe.
+- App Layer revenue, RUJI economics, or fee-share amounts are current.
+- Secured-asset capacity, liquidity, or redemption timing is currently available.
+- Every interface supports secured assets, IBC movement, or App Layer contracts correctly.
+- A missing halt key is enough evidence to claim the feature is healthy.
+
+Use this article as the map. Use live THORNode/Mimir evidence as the current-state proof.

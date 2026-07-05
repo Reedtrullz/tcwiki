@@ -210,6 +210,36 @@ const archivedSource: SourceMeta = {
   url: 'https://docs.thorchain.org/thornodes/archived',
 };
 
+const appLayerSource: SourceMeta = {
+  label: 'THORChain Application Layer docs',
+  url: 'https://docs.thorchain.org/application-layer',
+  retrievedAt: '2026-07-05',
+};
+
+const cosmWasmSource: SourceMeta = {
+  label: 'THORChain CosmWasm docs',
+  url: 'https://docs.thorchain.org/technical-documentation/technology/cosmwasm',
+  retrievedAt: '2026-07-05',
+};
+
+const securedAssetsSource: SourceMeta = {
+  label: 'THORChain Secured Assets docs',
+  url: 'https://docs.thorchain.org/technical-documentation/thorchain-finance/secured-assets',
+  retrievedAt: '2026-07-05',
+};
+
+const securedAssetsDevSource: SourceMeta = {
+  label: 'THORChain secured assets developer docs',
+  url: 'https://dev.thorchain.org/concepts/secured-assets.html',
+  retrievedAt: '2026-07-05',
+};
+
+const constantsMimirSource: SourceMeta = {
+  label: 'THORChain constants and Mimirs',
+  url: 'https://dev.thorchain.org/mimir.html',
+  retrievedAt: '2026-07-05',
+};
+
 export const CONTENT_ENTRIES: ContentEntry[] = [
   {
     id: 'protocol',
@@ -359,11 +389,11 @@ export const CONTENT_ENTRIES: ContentEntry[] = [
     category: 'section',
     confidence: 'curated',
     description: 'Long-form explainers for core THORChain concepts.',
-    body: 'Deep dives CLP Bifrost TSS churning slashing incentive pendulum RUNE settlement Savers historical halt Mimir swap lifecycle.',
+    body: 'Deep dives CLP Bifrost TSS churning slashing incentive pendulum RUNE settlement App Layer CosmWasm secured assets WASM controls Savers historical halt Mimir swap lifecycle.',
     tags: ['deep-dives', 'education'],
     reviewedAt: '2026-07-05',
     nextReviewDue: '2026-08-05',
-    sources: [docsSource, devDocsSource, archivedSource, asgardTssChurnSource, exploitReport2Source],
+    sources: [docsSource, devDocsSource, archivedSource, asgardTssChurnSource, exploitReport2Source, appLayerSource],
     nav: true,
     footer: true,
     featured: true,
@@ -477,6 +507,20 @@ export const CONTENT_ENTRIES: ContentEntry[] = [
     reviewedAt: '2026-06-18',
     nextReviewDue: '2026-07-18',
     sources: [docsSource],
+  },
+  {
+    id: 'deep-dive-app-layer',
+    title: 'App Layer, CosmWasm, and Secured Assets',
+    href: '/deep-dives/app-layer',
+    category: 'deep-dive',
+    confidence: 'curated',
+    description: 'How THORChain App Layer contracts, secured assets, trade-account boundaries, and WASM halt controls fit together.',
+    body: 'App Layer CosmWasm WASM x/wasm Rujira secured assets trade accounts TokenFactory X assets IBC SECURE+ SECURE- HaltSecuredGlobal HaltSecuredDeposit HaltSecuredWithdraw HaltWasmGlobal HaltWasmDeployer HaltWasmCs HaltWasmContract HaltOracle WasmPermissionless WasmMinGasPrice current-only Mimir network diagnostics.',
+    tags: ['app-layer', 'cosmwasm', 'secured-assets', 'mimir'],
+    reviewedAt: '2026-07-05',
+    nextReviewDue: '2026-08-05',
+    sources: [appLayerSource, cosmWasmSource, securedAssetsSource, securedAssetsDevSource, networkHaltsSource, constantsMimirSource],
+    featured: true,
   },
   {
     id: 'deep-dive-rune-settlement',
@@ -610,6 +654,34 @@ export const DEEP_DIVE_READER_PATHS: DeepDiveReaderPath[] = [
     reviewedAt: '2026-07-04',
     nextReviewDue: '2026-08-04',
     sources: [docsSource, asgardTssChurnSource, exploitReport2Source, protocolUpgradeV319Source, networkHaltsSource],
+  },
+  {
+    id: 'app-layer-integrations',
+    title: 'App Layer And Integrations',
+    audience: 'Readers trying to separate base-layer swaps, CosmWasm contracts, secured assets, trade accounts, and live halt controls.',
+    description: 'Start with the App Layer model, then connect it back to pools, observation, and current network diagnostics before making availability claims.',
+    entryIds: ['deep-dive-app-layer', 'deep-dive-clp', 'deep-dive-bifrost'],
+    verifyBeforeClaiming: [
+      'Current secured-asset, trade-account, oracle, WASM, signing, trading, and chain-specific Mimir state.',
+      'That a specific interface, contract, deployer, checksum, or asset flow is safe, supported, or currently available.',
+    ],
+    followUpLinks: [
+      {
+        label: 'Network diagnostics',
+        href: '/network#network-diagnostics',
+        description: 'Check live secured-asset, trade-account, app-layer, and chain halt evidence.',
+      },
+      {
+        label: 'Developer integration',
+        href: '/docs#developer-integration',
+        description: 'Use official docs before giving memo, endpoint, or asset-notation guidance.',
+      },
+    ],
+    searchTerms: ['app layer integrations', 'app layer', 'CosmWasm', 'secured assets', 'trade accounts', 'WASM halt', 'HaltWasm', 'HaltSecured'],
+    confidence: 'curated',
+    reviewedAt: '2026-07-05',
+    nextReviewDue: '2026-08-05',
+    sources: [appLayerSource, cosmWasmSource, securedAssetsDevSource, networkHaltsSource, constantsMimirSource],
   },
   {
     id: 'historical-recovery',
@@ -918,6 +990,18 @@ export const TASK_INTENT_GUIDES: TaskIntentGuide[] = [
     sources: [docsSource, devDocsSource, thornodeMimirSource],
   },
   {
+    id: 'app-layer-and-secured-assets',
+    label: 'App Layer and secured assets',
+    question: 'Can this app, contract, secured asset, or trade-account flow be used right now?',
+    href: '/deep-dives/app-layer#what-to-verify-before-claiming',
+    description: 'Start with the App Layer explainer, then verify live WASM, secured-asset, trade-account, oracle, signing, trading, and chain controls.',
+    searchTerms: ['app layer', 'CosmWasm', 'secured asset', 'secured assets', 'trade account', 'WASM contract', 'HaltWasmGlobal', 'HaltSecuredDeposit', 'HaltSecuredWithdraw', 'WasmPermissionless', 'SECURE+', 'SECURE-'],
+    confidence: 'curated',
+    reviewedAt: '2026-07-05',
+    nextReviewDue: '2026-08-05',
+    sources: [appLayerSource, cosmWasmSource, securedAssetsDevSource, networkHaltsSource, constantsMimirSource],
+  },
+  {
     id: 'why-paused',
     label: 'Why is something paused?',
     question: 'Which Mimir key or source warning explains the user-facing pause?',
@@ -979,6 +1063,15 @@ export const DEEP_DIVE_TOC: Record<string, DeepDiveTocItem[]> = {
     tocItem('What Bifrost Does'),
     tocItem('How Observation Works'),
     tocItem('Why It Matters'),
+  ],
+  'deep-dive-app-layer': [
+    tocItem('What Changed From The Base Layer'),
+    tocItem('CosmWasm Permission Model'),
+    tocItem('Secured Assets'),
+    tocItem('Trade Accounts And Non-Contract Assets'),
+    tocItem('Operational Controls'),
+    tocItem('What To Verify Before Claiming'),
+    tocItem('Non-Claims'),
   ],
   'deep-dive-churning': [
     tocItem('What is Churning?'),

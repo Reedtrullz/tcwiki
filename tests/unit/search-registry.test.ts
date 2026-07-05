@@ -200,6 +200,8 @@ describe('SEARCH_DOCUMENTS', () => {
     expect(docsMatching('self-correcting').some((doc) => doc.slug === '/deep-dives/incentive-pendulum')).toBe(true);
     expect(docsMatching('universal settlement').some((doc) => doc.slug === '/deep-dives/rune-settlement')).toBe(true);
     expect(docsMatching('traditional multisig').some((doc) => doc.slug === '/deep-dives/tss')).toBe(true);
+    expect(docsMatching('WasmPermissionless').some((doc) => doc.slug === '/deep-dives/app-layer')).toBe(true);
+    expect(docsMatching('HaltSecuredDeposit').some((doc) => doc.slug === '/deep-dives/app-layer')).toBe(true);
     expect(docsMatching('GG20 Vault Exploit').some((doc) => doc.slug === '/governance')).toBe(true);
     expect(docsMatching('multi-prime modulus').some((doc) => doc.slug === '/deep-dives/tss')).toBe(true);
     expect(docsMatching('key-sign failures').some((doc) => doc.slug === '/governance')).toBe(true);
@@ -397,6 +399,7 @@ describe('SEARCH_DOCUMENTS', () => {
     expect(docsMatching('ADR-026').some((doc) => doc.id === 'task:fees-and-adr026' && doc.href === '/dynamic-fees#dynamic-fees-live' && doc.slug === '/dynamic-fees')).toBe(true);
     expect(docsMatching('TCY recovery').some((doc) => doc.id === 'task:tcy-recovery' && doc.href === '/governance#current-recovery' && doc.slug === '/governance')).toBe(true);
     expect(docsMatching('choose wallet').some((doc) => doc.id === 'task:choose-interface' && doc.href === '/ecosystem#interface-use-checklist' && doc.slug === '/ecosystem')).toBe(true);
+    expect(docsMatching('WASM contract').some((doc) => doc.id === 'task:app-layer-and-secured-assets' && doc.href === '/deep-dives/app-layer#what-to-verify-before-claiming' && doc.slug === '/deep-dives/app-layer')).toBe(true);
 
     for (const guide of TASK_INTENT_GUIDES) {
       expect(guide.sources.length, `${guide.id} sources`).toBeGreaterThan(0);
@@ -505,6 +508,7 @@ describe('SEARCH_DOCUMENTS', () => {
     expect(docsMatching('new to thorchain').some((doc) => doc.id === 'deep-dive-path:new-to-thorchain' && doc.href === '/deep-dives#deep-dive-path-new-to-thorchain')).toBe(true);
     expect(docsMatching('swap economics').some((doc) => doc.id === 'deep-dive-path:swap-economics')).toBe(true);
     expect(docsMatching('vault safety').some((doc) => doc.id === 'deep-dive-path:network-security')).toBe(true);
+    expect(docsMatching('app layer integrations').some((doc) => doc.id === 'deep-dive-path:app-layer-integrations')).toBe(true);
     expect(docsMatching('historical recovery').some((doc) => doc.id === 'deep-dive-path:historical-recovery')).toBe(true);
 
     for (const path of DEEP_DIVE_READER_PATHS) {
