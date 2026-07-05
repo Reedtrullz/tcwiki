@@ -6,6 +6,7 @@ import { rankSearchResults } from '@/lib/search/ranking';
 import {
   buildSearchFilterOptions,
   classifySearchDoc,
+  excludeSearchStartingPoints,
   filterSearchResults,
   getSearchStartingPoints,
   normalizeSearchFilter,
@@ -62,12 +63,14 @@ describe('search presentation helpers', () => {
 
   it('selects deduped task and source-map starting points', () => {
     const startingPoints = getSearchStartingPoints(rankedResults('which source should I trust'));
+    const remainingResults = excludeSearchStartingPoints(rankedResults('which source should I trust'), startingPoints);
 
     expect(startingPoints.length).toBeGreaterThan(0);
     expect(startingPoints[0].id).toBe('task:source-choice');
     expect(startingPoints.map((result) => result.id)).toContain('task:source-choice');
     expect(new Set(startingPoints.map((result) => result.href)).size).toBe(startingPoints.length);
     expect(startingPoints.every((result) => result.type === 'task' || result.type === 'source-map')).toBe(true);
+    expect(remainingResults.some((result) => result.id === startingPoints[0]?.id)).toBe(false);
   });
 
   it('normalizes unsupported filters back to all', () => {

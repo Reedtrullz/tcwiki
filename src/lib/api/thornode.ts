@@ -1149,9 +1149,22 @@ type DynamicL1FeeProviderSnapshot = {
   sources: SourceMeta[];
 };
 
+type DynamicL1FeeWarningCandidate = {
+  endpointIndex: number;
+  status: DynamicL1FeeStatus;
+  sources: SourceMeta[];
+  snapshot?: DynamicL1FeeProviderSnapshot;
+};
+
+function shouldTryNextDynamicFeeProvider(status: DynamicL1FeeStatus) {
+  return status.sourceWarnings.some((warning) => (
+    !warning.startsWith('Dynamic fee history fetch capped at ')
+  ));
+}
+
 async function finalizeDynamicL1FeeProviderSnapshot(
   snapshot: DynamicL1FeeProviderSnapshot
-): Promise<{ status: DynamicL1FeeStatus; sources: SourceMeta[] }> {
+): Promise<DynamicL1FeeWarningCandidate> {
   const historyResult = await requestDynamicL1FeeHistories(
     snapshot.endpoint,
     snapshot.sourceFreshness.thorchainHeight,
@@ -1176,6 +1189,7 @@ async function finalizeDynamicL1FeeProviderSnapshot(
   ]);
 
   return {
+    endpointIndex: snapshot.endpointIndex,
     status: {
       ...status,
       sourceWarnings: uniqueWarnings,
@@ -2403,7 +2417,7 @@ export class ThornodeAPI {
   static async getDynamicL1FeeStatus(): Promise<LiveDataResult<DynamicL1FeeStatus>> {
     const checkedAt = new Date().toISOString();
     const errors: string[] = [];
-    const warningSnapshots: DynamicL1FeeProviderSnapshot[] = [];
+    const warningSnapshots: DynamicL1FeeWarningCandidate[] = [];
 
     for (let i = 0; i < THORNODE_ENDPOINTS.length; i += 1) {
       const endpointIndex = (activeEndpoint + i) % THORNODE_ENDPOINTS.length;
@@ -2465,12 +2479,22 @@ export class ThornodeAPI {
         };
 
         if (snapshot.status.sourceWarnings.length === 0) {
-          activeEndpoint = endpointIndex;
           const finalized = await finalizeDynamicL1FeeProviderSnapshot(snapshot);
-          return liveOk(finalized.status, finalized.sources, checkedAt);
+          if (finalized.status.sourceWarnings.length === 0 || !shouldTryNextDynamicFeeProvider(finalized.status)) {
+            activeEndpoint = endpointIndex;
+            return liveOk(finalized.status, finalized.sources, checkedAt);
+          }
+
+          warningSnapshots.push(finalized);
+          continue;
         }
 
-        warningSnapshots.push(snapshot);
+        warningSnapshots.push({
+          endpointIndex,
+          status: snapshot.status,
+          sources: snapshot.sources,
+          snapshot,
+        });
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Unknown THORNode dynamic fee status error';
         errors.push(`${endpoint.label}: ${message}`);
@@ -2485,8 +2509,11 @@ export class ThornodeAPI {
       ));
     if (bestWarningSnapshot) {
       activeEndpoint = bestWarningSnapshot.endpointIndex;
-      const finalized = await finalizeDynamicL1FeeProviderSnapshot(bestWarningSnapshot);
-      return liveOk(finalized.status, finalized.sources, checkedAt);
+      if (bestWarningSnapshot.snapshot) {
+        const finalized = await finalizeDynamicL1FeeProviderSnapshot(bestWarningSnapshot.snapshot);
+        return liveOk(finalized.status, finalized.sources, checkedAt);
+      }
+      return liveOk(bestWarningSnapshot.status, bestWarningSnapshot.sources, checkedAt);
     }
 
     return liveDegraded<DynamicL1FeeStatus>(

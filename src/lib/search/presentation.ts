@@ -163,3 +163,12 @@ export function getSearchStartingPoints<T extends SearchDoc>(results: T[], limit
 
   return startingPoints;
 }
+
+export function excludeSearchStartingPoints<T extends SearchDoc>(results: T[], startingPoints: T[]): T[] {
+  if (startingPoints.length === 0) {
+    return results;
+  }
+
+  const startingPointIds = new Set(startingPoints.map((result) => result.id));
+  return results.filter((result) => !startingPointIds.has(result.id));
+}

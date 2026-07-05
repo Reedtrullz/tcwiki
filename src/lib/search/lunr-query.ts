@@ -8,6 +8,7 @@ interface LunrSearchIndex {
 }
 
 const SAFE_SEARCH_TERM = /^[a-z0-9]+$/i;
+const LUNR_QUERY_SYNTAX_CHARS = /[^a-z0-9\s]/i;
 
 export function getSearchQueryTerms(query: string) {
   const normalizedQuery = query.trim().toLowerCase();
@@ -24,7 +25,7 @@ export function getSearchQueryTerms(query: string) {
 function getSafeFallbackQuery(query: string) {
   return getSearchQueryTerms(query)
     .filter((term) => SAFE_SEARCH_TERM.test(term))
-    .map((term) => `${term}*`)
+    .flatMap((term) => [term, `${term}*`])
     .join(' ');
 }
 
@@ -34,10 +35,15 @@ export function runSafeLunrSearch(index: LunrSearchIndex, query: string): LunrSe
     return [];
   }
 
+  const fallbackQuery = getSafeFallbackQuery(trimmedQuery);
+
   try {
-    return index.search(trimmedQuery);
+    const results = index.search(trimmedQuery);
+    if (results.length > 0 || !LUNR_QUERY_SYNTAX_CHARS.test(trimmedQuery) || !fallbackQuery) {
+      return results;
+    }
+    return index.search(fallbackQuery);
   } catch {
-    const fallbackQuery = getSafeFallbackQuery(trimmedQuery);
     if (!fallbackQuery) {
       return [];
     }

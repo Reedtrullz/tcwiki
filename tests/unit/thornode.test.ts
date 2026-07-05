@@ -1723,6 +1723,24 @@ describe('deriveNetworkStatus', () => {
     expect(urls).toContain('https://gateway.liquify.com/chain/thorchain_api/thorchain/dynamic_l1_fees_current?height=100');
   });
 
+  it('prefers fallback dynamic fee provider when first provider history is unavailable', async () => {
+    stubDynamicFeeSnapshots(
+      dynamicFeeFixture({ histories: {} }),
+      dynamicFeeFixture()
+    );
+
+    const result = await ThornodeAPI.getDynamicL1FeeStatus();
+    const fetchMock = vi.mocked(fetch);
+    const urls = fetchMock.mock.calls.map(([input]) => String(input));
+
+    expect(result.status).toBe('ok');
+    expect(result.source?.label).toBe('THORChain THORNode');
+    expect(result.data?.sourceWarnings).toEqual([]);
+    expect(result.data?.histories.map((history) => history.thorname)).toEqual(['ss']);
+    expect(urls).toContain('https://gateway.liquify.com/chain/thorchain_api/thorchain/dynamic_l1_fees/ss?height=100');
+    expect(urls).toContain('https://thornode.thorchain.network/thorchain/dynamic_l1_fees/ss?height=100');
+  });
+
   it('caps and concurrency-limits dynamic fee history fan-out', async () => {
     const thornames = Array.from({ length: 20 }, (_, index) => `partner${index.toString().padStart(2, '0')}`);
     const fixture = dynamicFeeFixture({

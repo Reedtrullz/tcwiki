@@ -37,12 +37,14 @@ describe('task-aware search ranking', () => {
     expect(rankedIds('LP deposit')[0]).toBe('task:liquidity-actions');
     expect(rankedIds('Midgard API')[0]).toBe('task:build-query');
     expect(rankedIds('which source should i trust')[0]).toBe('task:source-choice');
+    expect(rankedIds('SECURE+')[0]).toBe('task:app-layer-and-secured-assets');
   });
 
   it('routes supported-chain queries to exact chain anchors', () => {
     expect(rankedIds('SOL supported chain')[0]).toBe('chain:sol');
     expect(rankedIds('XRP Ledger')[0]).toBe('chain:xrp');
     expect(rankedIds('BTC supported chain')[0]).toBe('chain:btc');
+    expect(rankedIds('BTC.BTC')[0]).toBe('chain:btc');
   });
 
   it('routes glossary concept queries to source-aware definitions', () => {
