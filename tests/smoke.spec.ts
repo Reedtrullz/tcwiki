@@ -818,6 +818,36 @@ test.describe('THORChain Wiki Smoke Tests', () => {
     expect(twitter.headers()['content-type']).toContain('image/png');
   });
 
+  test('robots and sitemap expose canonical public wiki routes', async ({ request }) => {
+    const robotsResponse = await request.get('/robots.txt');
+    const sitemapResponse = await request.get('/sitemap.xml');
+
+    expect(robotsResponse.ok()).toBeTruthy();
+    expect(sitemapResponse.ok()).toBeTruthy();
+
+    const robotsText = await robotsResponse.text();
+    const sitemapText = await sitemapResponse.text();
+
+    expect(robotsText).toContain('Allow: /');
+    expect(robotsText).toContain('Disallow: /api/');
+    expect(robotsText).toContain('Disallow: /search?*');
+    expect(robotsText).toContain('Sitemap: https://wiki.thorchain.no/sitemap.xml');
+
+    for (const url of [
+      'https://wiki.thorchain.no',
+      'https://wiki.thorchain.no/search',
+      'https://wiki.thorchain.no/network',
+      'https://wiki.thorchain.no/dynamic-fees',
+      'https://wiki.thorchain.no/deep-dives/tss',
+    ]) {
+      expect(sitemapText).toContain(`<loc>${url}</loc>`);
+    }
+
+    expect(sitemapText).not.toContain('/api/');
+    expect(sitemapText).not.toContain('/opengraph-image');
+    expect(sitemapText).not.toContain('/twitter-image');
+  });
+
   test('top-level and deep-dive routes expose route-specific metadata', async ({ page }) => {
     const cases = [
       {
