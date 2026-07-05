@@ -4,6 +4,32 @@ import type { SearchDoc } from '@/lib/search/registry';
 export type SearchResultWithScore = SearchDoc & { score: number };
 
 const taskGuidesBySearchId = new Map(TASK_INTENT_GUIDES.map((guide) => [`task:${guide.id}`, guide]));
+const TASK_QUERY_STOPWORDS = new Set([
+  'a',
+  'an',
+  'are',
+  'can',
+  'did',
+  'do',
+  'does',
+  'for',
+  'how',
+  'i',
+  'is',
+  'me',
+  'my',
+  'of',
+  'should',
+  'the',
+  'to',
+  'use',
+  'what',
+  'when',
+  'where',
+  'which',
+  'who',
+  'why',
+]);
 
 function normalizeSearchText(value: string) {
   return value
@@ -48,13 +74,39 @@ function taskQueryBoost(query: string, doc: SearchDoc) {
     return 750;
   }
 
-  const words = normalizedWords(query);
+  const words = normalizedWords(query).filter((word) => !TASK_QUERY_STOPWORDS.has(word));
   const combined = candidateTexts.join(' ');
-  if (words.length > 0 && words.every((word) => combined.includes(word))) {
+  if (words.length > 1 && words.every((word) => combined.includes(word))) {
     return 500;
   }
 
   return 0;
+}
+
+function glossaryDefinitionBoost(query: string, doc: SearchDoc) {
+  if (doc.type !== 'glossary') {
+    return 0;
+  }
+
+  const normalizedQuery = normalizeSearchText(query);
+  const normalizedTitle = normalizeSearchText(doc.title);
+  if (!normalizedQuery || !normalizedTitle) {
+    return 0;
+  }
+
+  const definitionQueries = [
+    `what is ${normalizedTitle}`,
+    `what are ${normalizedTitle}`,
+    `define ${normalizedTitle}`,
+    `${normalizedTitle} definition`,
+    `definition of ${normalizedTitle}`,
+  ];
+
+  if (definitionQueries.includes(normalizedQuery)) {
+    return 1000;
+  }
+
+  return normalizedQuery === normalizedTitle && normalizedWords(normalizedTitle).length > 1 ? 750 : 0;
 }
 
 export function rankSearchResults<T extends SearchResultWithScore>(query: string, results: T[]): T[] {
@@ -62,7 +114,7 @@ export function rankSearchResults<T extends SearchResultWithScore>(query: string
     .map((result, index) => ({
       result,
       index,
-      adjustedScore: result.score + taskQueryBoost(query, result),
+      adjustedScore: result.score + taskQueryBoost(query, result) + glossaryDefinitionBoost(query, result),
     }))
     .sort((a, b) => {
       if (b.adjustedScore !== a.adjustedScore) {
