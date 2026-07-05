@@ -120,6 +120,7 @@ const UNKNOWN_OPERATION_REVIEW_MIMIR_PREFIXES = [
   'MIMIRUPGRADECONTRACT',
 ] as const;
 const DYNAMIC_L1_FEE_WHITELIST_PREFIX = 'DYNAMICFEE-WHITELIST-';
+const TOR_BASE_UNIT_MAX_DIGITS = 80;
 const TOR_BASE_UNIT_PATTERN = /^\d+$/;
 
 type MimirActivationMode = 'positive' | 'at-or-after-height' | 'after-height' | 'until-height';
@@ -713,10 +714,10 @@ function toTorBaseUnits(value: unknown, field: string): string | null {
   if (value === '') {
     return null;
   }
-  if (typeof value === 'string' && TOR_BASE_UNIT_PATTERN.test(value)) {
+  if (typeof value === 'string' && value.length <= TOR_BASE_UNIT_MAX_DIGITS && TOR_BASE_UNIT_PATTERN.test(value)) {
     return value;
   }
-  throw new Error(`Invalid ${field}; expected a TOR base-unit integer string or empty string.`);
+  throw new Error(`Invalid ${field}; expected a TOR base-unit integer string with at most ${TOR_BASE_UNIT_MAX_DIGITS} digits or empty string.`);
 }
 
 function dynamicMimirFlag(mimir: Record<string, unknown>, key: string): DynamicL1FeeMimirFlag {

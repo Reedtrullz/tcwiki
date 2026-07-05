@@ -36,6 +36,9 @@ import type {
 
 const CENT_SCALE = BigInt(1000000);
 const MAX_SAFE_INTEGER_BIGINT = BigInt(Number.MAX_SAFE_INTEGER);
+const ZERO_BIGINT = BigInt(0);
+const TOR_BASE_UNIT_MAX_DIGITS = 80;
+const TOR_BASE_UNIT_PATTERN = /^\d+$/;
 
 const staticSources: SourceMeta[] = [
   {
@@ -138,28 +141,49 @@ function formatBlockAge(seconds: number | undefined) {
 }
 
 function formatTorUsd(baseUnits: string | null | undefined) {
-  if (!baseUnits) {
-    return 'Insufficient samples';
-  }
+  return formatUsdFromTorBaseUnits(torBaseUnitsToBigInt(baseUnits));
+}
 
-  const units = BigInt(baseUnits);
-  const cents = (units + CENT_SCALE / BigInt(2)) / CENT_SCALE;
+function formatUsdFromCents(cents: bigint) {
   const whole = cents / BigInt(100);
   const fractional = cents % BigInt(100);
   const wholeText = whole <= MAX_SAFE_INTEGER_BIGINT
     ? Number(whole).toLocaleString()
-    : whole.toString();
+    : whole.toLocaleString('en-US');
 
   return `$${wholeText}.${fractional.toString().padStart(2, '0')}`;
 }
 
-function torBaseUnitsToUsdNumber(baseUnits: string | null | undefined) {
-  if (!baseUnits) {
+function formatUsdFromTorBaseUnits(units: bigint | null) {
+  if (units === null) {
+    return 'Insufficient samples';
+  }
+
+  const cents = torBaseUnitsToUsdCents(units);
+  if (units > ZERO_BIGINT && cents === ZERO_BIGINT) {
+    return '<$0.01';
+  }
+
+  return formatUsdFromCents(cents);
+}
+
+function torBaseUnitsToBigInt(baseUnits: string | null | undefined) {
+  if (!baseUnits || baseUnits.length > TOR_BASE_UNIT_MAX_DIGITS || !TOR_BASE_UNIT_PATTERN.test(baseUnits)) {
     return null;
   }
 
-  const units = BigInt(baseUnits);
-  const cents = (units + CENT_SCALE / BigInt(2)) / CENT_SCALE;
+  return BigInt(baseUnits);
+}
+
+function torBaseUnitsToUsdCents(units: bigint) {
+  return (units + CENT_SCALE / BigInt(2)) / CENT_SCALE;
+}
+
+function centsToUsdNumber(cents: bigint | null) {
+  if (cents === null) {
+    return null;
+  }
+
   if (cents > MAX_SAFE_INTEGER_BIGINT) {
     return null;
   }
@@ -189,24 +213,40 @@ function formatUsdCompact(value: number | null | undefined) {
   })}`;
 }
 
-function sumTorUsd(values: Array<string | null | undefined>) {
-  let total = 0;
+function sumTorBaseUnits(values: Array<string | null | undefined>) {
+  let totalBaseUnits = ZERO_BIGINT;
   let hasValue = false;
 
   for (const value of values) {
-    const usd = torBaseUnitsToUsdNumber(value);
-    if (usd !== null) {
-      total += usd;
+    const units = torBaseUnitsToBigInt(value);
+    if (units !== null) {
+      totalBaseUnits += units;
       hasValue = true;
     }
   }
 
-  return hasValue ? total : null;
+  return hasValue ? totalBaseUnits : null;
+}
+
+function formatUsdCompactFromTorBaseUnits(units: bigint | null | undefined) {
+  if (units === null || units === undefined) {
+    return 'Insufficient samples';
+  }
+
+  const cents = torBaseUnitsToUsdCents(units);
+  if (units > ZERO_BIGINT && cents === ZERO_BIGINT) {
+    return '<$0.01';
+  }
+
+  const usdNumber = centsToUsdNumber(cents);
+  return usdNumber === null ? formatUsdFromCents(cents) : formatUsdCompact(usdNumber);
 }
 
 type HistoryEpochRow = {
   epoch: number;
+  feesTorBaseUnits: bigint | null;
   feesUsd: number | null;
+  volumeTorBaseUnits: bigint | null;
   volumeUsd: number | null;
   averageBps: number | null;
   samples: number;
@@ -228,9 +268,9 @@ function historyPairCount(status: DynamicL1FeeStatus | undefined) {
 
 function historyEpochRows(status: DynamicL1FeeStatus | undefined): HistoryEpochRow[] {
   const byEpoch = new Map<number, {
-    feesUsd: number;
+    feesTorBaseUnits: bigint;
     hasFees: boolean;
-    volumeUsd: number;
+    volumeTorBaseUnits: bigint;
     hasVolume: boolean;
     bpsTotal: number;
     samples: number;
@@ -240,21 +280,21 @@ function historyEpochRows(status: DynamicL1FeeStatus | undefined): HistoryEpochR
     for (const pairHistory of thornameHistory.pairs) {
       for (const entry of pairHistory.history) {
         const row = byEpoch.get(entry.epoch) ?? {
-          feesUsd: 0,
+          feesTorBaseUnits: ZERO_BIGINT,
           hasFees: false,
-          volumeUsd: 0,
+          volumeTorBaseUnits: ZERO_BIGINT,
           hasVolume: false,
           bpsTotal: 0,
           samples: 0,
         };
-        const feesUsd = torBaseUnitsToUsdNumber(entry.feesTorBaseUnits);
-        const volumeUsd = torBaseUnitsToUsdNumber(entry.volumeTorBaseUnits);
-        if (feesUsd !== null) {
-          row.feesUsd += feesUsd;
+        const feeUnits = torBaseUnitsToBigInt(entry.feesTorBaseUnits);
+        const volumeUnits = torBaseUnitsToBigInt(entry.volumeTorBaseUnits);
+        if (feeUnits !== null) {
+          row.feesTorBaseUnits += feeUnits;
           row.hasFees = true;
         }
-        if (volumeUsd !== null) {
-          row.volumeUsd += volumeUsd;
+        if (volumeUnits !== null) {
+          row.volumeTorBaseUnits += volumeUnits;
           row.hasVolume = true;
         }
         row.bpsTotal += entry.bpsAtClose;
@@ -267,8 +307,10 @@ function historyEpochRows(status: DynamicL1FeeStatus | undefined): HistoryEpochR
   return [...byEpoch.entries()]
     .map(([epoch, row]) => ({
       epoch,
-      feesUsd: row.hasFees ? row.feesUsd : null,
-      volumeUsd: row.hasVolume ? row.volumeUsd : null,
+      feesTorBaseUnits: row.hasFees ? row.feesTorBaseUnits : null,
+      feesUsd: row.hasFees ? centsToUsdNumber(torBaseUnitsToUsdCents(row.feesTorBaseUnits)) : null,
+      volumeTorBaseUnits: row.hasVolume ? row.volumeTorBaseUnits : null,
+      volumeUsd: row.hasVolume ? centsToUsdNumber(torBaseUnitsToUsdCents(row.volumeTorBaseUnits)) : null,
       averageBps: row.samples > 0 ? row.bpsTotal / row.samples : null,
       samples: row.samples,
     }))
@@ -418,9 +460,9 @@ function LookFirstPanel({
   floorPinnedCount?: number;
   ceilingPinnedCount?: number;
 }) {
-  const currentFeesUsd = sumTorUsd((status?.currentEntries ?? []).map((entry) => entry.feesTorBaseUnits));
-  const currentVolumeUsd = sumTorUsd((status?.currentEntries ?? []).map((entry) => entry.volumeTorBaseUnits));
-  const sealedHistoryFeesUsd = sumTorUsd((status?.histories ?? []).flatMap((thornameHistory) => (
+  const currentFeesBaseUnits = sumTorBaseUnits((status?.currentEntries ?? []).map((entry) => entry.feesTorBaseUnits));
+  const currentVolumeBaseUnits = sumTorBaseUnits((status?.currentEntries ?? []).map((entry) => entry.volumeTorBaseUnits));
+  const sealedHistoryFeesBaseUnits = sumTorBaseUnits((status?.histories ?? []).flatMap((thornameHistory) => (
     thornameHistory.pairs.flatMap((pair) => pair.history.map((entry) => entry.feesTorBaseUnits))
   )));
   const sealedSamples = historySampleCount(status);
@@ -454,14 +496,14 @@ function LookFirstPanel({
         <PriorityMetric
           icon={<WalletCards className="h-4 w-4" />}
           title="1. Revenue signal"
-          value={formatUsdCompact(currentFeesUsd)}
-          detail={`Current epoch fees_tor; sealed history total ${formatUsdCompact(sealedHistoryFeesUsd)}`}
+          value={formatUsdCompactFromTorBaseUnits(currentFeesBaseUnits)}
+          detail={`Current epoch fees_tor; sealed history total ${formatUsdCompactFromTorBaseUnits(sealedHistoryFeesBaseUnits)}`}
           why="fees_tor is the objective. Without sealed-epoch improvement, lower bps has not shown revenue lift."
         />
         <PriorityMetric
           icon={<TrendingUp className="h-4 w-4" />}
           title="2. Demand signal"
-          value={formatUsdCompact(currentVolumeUsd)}
+          value={formatUsdCompactFromTorBaseUnits(currentVolumeBaseUnits)}
           detail="Current epoch volume_tor across tracked pairs"
           why="Volume is demand context, not proof that the lower floor won routing flow."
         />
@@ -584,7 +626,7 @@ function HistoricalResultsChart({ status }: { status?: DynamicL1FeeStatus }) {
                       fill="rgb(52 211 153)"
                       opacity="0.75"
                     >
-                      <title>{`Epoch ${row.epoch}: ${formatUsdCompact(row.feesUsd)} fees_tor, ${formatUsdCompact(row.volumeUsd)} volume_tor, ${row.averageBps?.toFixed(1) ?? 'Unavailable'} bps`}</title>
+                      <title>{`Epoch ${row.epoch}: ${formatUsdCompactFromTorBaseUnits(row.feesTorBaseUnits)} fees_tor, ${formatUsdCompactFromTorBaseUnits(row.volumeTorBaseUnits)} volume_tor, ${row.averageBps?.toFixed(1) ?? 'Unavailable'} bps`}</title>
                     </rect>
                     {(chartRows.length <= 8 || index % 2 === 0 || index === chartRows.length - 1) && (
                       <text
@@ -631,11 +673,11 @@ function HistoricalResultsChart({ status }: { status?: DynamicL1FeeStatus }) {
                 <dl className="grid grid-cols-2 gap-2">
                   <div>
                     <dt className="text-slate-400">Sealed fees_tor</dt>
-                    <dd>{formatUsdCompact(row.feesUsd)}</dd>
+                    <dd>{formatUsdCompactFromTorBaseUnits(row.feesTorBaseUnits)}</dd>
                   </div>
                   <div>
                     <dt className="text-slate-400">Sealed volume_tor</dt>
-                    <dd>{formatUsdCompact(row.volumeUsd)}</dd>
+                    <dd>{formatUsdCompactFromTorBaseUnits(row.volumeTorBaseUnits)}</dd>
                   </div>
                   <div>
                     <dt className="text-slate-400">Avg bps close</dt>
@@ -661,8 +703,8 @@ function HistoricalResultsChart({ status }: { status?: DynamicL1FeeStatus }) {
                 {rows.slice(-8).map((row) => (
                   <tr key={row.epoch} className="border-t border-border">
                     <td className="px-3 py-2 font-mono text-accent">{row.epoch.toLocaleString()}</td>
-                    <td className="px-3 py-2">{formatUsdCompact(row.feesUsd)}</td>
-                    <td className="px-3 py-2">{formatUsdCompact(row.volumeUsd)}</td>
+                    <td className="px-3 py-2">{formatUsdCompactFromTorBaseUnits(row.feesTorBaseUnits)}</td>
+                    <td className="px-3 py-2">{formatUsdCompactFromTorBaseUnits(row.volumeTorBaseUnits)}</td>
                     <td className="px-3 py-2">{row.averageBps === null ? 'Unavailable' : `${row.averageBps.toFixed(1)} bps`}</td>
                     <td className="px-3 py-2">{row.samples.toLocaleString()}</td>
                   </tr>
@@ -744,11 +786,11 @@ function PairLearningDetails({ status }: { status?: DynamicL1FeeStatus }) {
                 </div>
                 <div>
                   <dt className="text-slate-400">Latest fees_tor</dt>
-                  <dd>{formatUsdCompact(torBaseUnitsToUsdNumber(latest?.feesTorBaseUnits))}</dd>
+                  <dd>{formatUsdCompactFromTorBaseUnits(torBaseUnitsToBigInt(latest?.feesTorBaseUnits))}</dd>
                 </div>
                 <div>
                   <dt className="text-slate-400">Latest volume_tor</dt>
-                  <dd>{formatUsdCompact(torBaseUnitsToUsdNumber(latest?.volumeTorBaseUnits))}</dd>
+                  <dd>{formatUsdCompactFromTorBaseUnits(torBaseUnitsToBigInt(latest?.volumeTorBaseUnits))}</dd>
                 </div>
                 <div>
                   <dt className="text-slate-400">Bps at close</dt>

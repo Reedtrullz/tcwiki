@@ -14,6 +14,7 @@
 /coverage
 /test-results/
 /playwright-report/
+/.playwright-cli/
 /playwright/.cache/
 
 # next.js

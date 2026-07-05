@@ -1651,6 +1651,30 @@ describe('deriveNetworkStatus', () => {
     )).toThrow(/duplicate record/);
   });
 
+  it('rejects pathologically long dynamic fee TOR amount strings', () => {
+    const fixture = dynamicFeeFixture({
+      currentDynamicFees: {
+        epoch: '1864',
+        entries: [
+          {
+            thorname: 'ss',
+            pair: 'THOR.RUNE|THOR.TCY',
+            volume_tor: '1'.repeat(81),
+            fees_tor: '123938141',
+            epoch: '1864',
+          },
+        ],
+      },
+    });
+
+    expect(() => deriveDynamicL1FeeStatus(
+      fixture.mimir as Record<string, unknown>,
+      fixture.dynamicFees,
+      fixture.currentDynamicFees,
+      dynamicFreshness
+    )).toThrow(/expected a TOR base-unit integer string with at most 80 digits/);
+  });
+
   it('warns when a current accumulator has no sealed dynamic fee record', () => {
     const fixture = dynamicFeeFixture({
       currentDynamicFees: {
