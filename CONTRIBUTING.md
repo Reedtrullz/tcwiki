@@ -23,14 +23,15 @@ npm run lint
 npm run build
 npm run smoke:standalone
 CSP_ENFORCE=1 npm run smoke:standalone
+npm run test:e2e:csp
 npm run test:e2e
-CHECK_BASE_URL=https://wiki.thorchain.no REQUIRE_RUNTIME_METADATA=1 npm run check:runtime-url # public runtime/header drift probe
+CHECK_BASE_URL=https://wiki.thorchain.no REQUIRE_RUNTIME_METADATA=1 CSP_ENFORCE=1 npm run check:runtime-url # public runtime/header drift probe
 IMAGE_REF=ghcr.io/example/tcwiki@sha256:1111111111111111111111111111111111111111111111111111111111111111 APP_VERSION=1111111111111111111111111111111111111111 ansible-playbook -i inventory/hosts.yml ansible-playbook.yml --syntax-check
 ```
 
 `npm run test:e2e` starts a fresh standalone server by default. Set `PLAYWRIGHT_BASE_URL` only when you intentionally want to test an existing local standalone server or a remote deployment.
 
-CI will run audits, content checks, lint, typecheck, unit tests, build, standalone smoke in report-only and enforced CSP modes, Playwright, and PR-only Docker image build/scan/runtime plus Ansible syntax checks. Scheduled/manual drift checks also verify live-source snapshots and public runtime headers.
+CI will run audits, content checks, lint, typecheck, unit tests, build, standalone smoke in report-only and enforced CSP modes, Playwright, enforced CSP browser smoke, and PR-only Docker image build/scan/runtime plus Ansible syntax checks. Scheduled/manual drift checks also verify live-source snapshots and public runtime headers with enforced CSP expected for production.
 
 ## How Content Works Today
 

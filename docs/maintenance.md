@@ -28,15 +28,16 @@
 - Local Playwright runs start a fresh standalone server by default. Use `PLAYWRIGHT_BASE_URL` only when deliberately proving an existing standalone server or remote deployment.
 - PR CI builds, scans, and runs the Docker image before deploy code can publish; the `main` publish job scans the locally built image before pushing it to GHCR.
 
-## CSP Promotion
+## CSP Enforcement
 
-- Keep production in report-only mode until browser validation shows normal pages emit no `/api/csp-report` events.
-- Local standalone smoke runs report-only by default and enforced mode when `CSP_ENFORCE=1` is set.
+- Production deploys set `CSP_ENFORCE=1` and should emit `Content-Security-Policy`, not `Content-Security-Policy-Report-Only`.
+- `CSP_ENFORCE=0` is an explicit rollback/diagnostic escape hatch only. Record the exception, reason, and follow-up evidence if it is used.
+- Local standalone smoke runs report-only by default and enforced mode when `CSP_ENFORCE=1` is set, so both comparison modes remain easy to test before release.
 - Review structured `/api/csp-report` logs for blocked directive, blocked origin/path, document path, and source file.
 - Production and standalone CSP must not include `unsafe-eval` or `unsafe-inline`; the Next proxy generates a per-request nonce and the root layout intentionally renders dynamically so framework scripts receive it.
 - Use `CSP_ENFORCE=1 npm run smoke:standalone` for a local enforced-policy header smoke, then `npm run test:e2e:csp` to confirm CSP-sensitive browser paths do not emit `/api/csp-report` reports under enforced headers.
-- Do not promote production while report-only browser runs still show `style-src-elem` or other normal-page violations.
-- Use `CHECK_BASE_URL=https://wiki.thorchain.no REQUIRE_RUNTIME_METADATA=1 npm run check:runtime-url` for a public runtime/header drift probe. Leave `REQUIRE_READY=1` unset unless deliberately auditing upstream readiness.
+- Do not ship CSP-affecting changes while report-only browser runs still show `style-src-elem` or other normal-page violations.
+- Use `CHECK_BASE_URL=https://wiki.thorchain.no REQUIRE_RUNTIME_METADATA=1 CSP_ENFORCE=1 npm run check:runtime-url` for a public runtime/header drift probe. Leave `REQUIRE_READY=1` unset unless deliberately auditing upstream readiness.
 
 ## Standard Local Gate
 
@@ -57,6 +58,6 @@ npm run smoke:standalone
 CSP_ENFORCE=1 npm run smoke:standalone
 npm run test:e2e:visual # focused route overflow / first-viewport smoke
 npm run test:e2e
-CHECK_BASE_URL=https://wiki.thorchain.no REQUIRE_RUNTIME_METADATA=1 npm run check:runtime-url # public runtime/header drift probe
+CHECK_BASE_URL=https://wiki.thorchain.no REQUIRE_RUNTIME_METADATA=1 CSP_ENFORCE=1 npm run check:runtime-url # public runtime/header drift probe
 IMAGE_REF=ghcr.io/example/tcwiki@sha256:1111111111111111111111111111111111111111111111111111111111111111 APP_VERSION=1111111111111111111111111111111111111111 ansible-playbook -i inventory/hosts.yml ansible-playbook.yml --syntax-check
 ```

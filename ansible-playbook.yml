@@ -6,6 +6,7 @@
     candidate_container_name: "tcwiki-candidate"
     image_ref: "{{ lookup('env', 'IMAGE_REF') }}"
     app_version: "{{ lookup('env', 'APP_VERSION') }}"
+    csp_enforce: "{{ lookup('env', 'CSP_ENFORCE') | default('1', true) }}"
 
   pre_tasks:
     - name: Require immutable image ref
@@ -16,7 +17,8 @@
           - "'@sha256:' in image_ref"
           - app_version is defined
           - app_version | length > 0
-        fail_msg: "IMAGE_REF must be a digest ref and APP_VERSION must be set."
+          - csp_enforce in ['0', '1']
+        fail_msg: "IMAGE_REF must be a digest ref, APP_VERSION must be set, and CSP_ENFORCE must be 0 or 1."
 
     - name: Get current container image
       community.docker.docker_container_info:
@@ -54,6 +56,8 @@
           {{ (previous_env | select('match', '^COMMIT_SHA=') | list | first | default('COMMIT_SHA=unknown')) | regex_replace('^COMMIT_SHA=', '') }}
         previous_env_image_ref: >-
           {{ (previous_env | select('match', '^IMAGE_REF=') | list | first | default('IMAGE_REF=' ~ previous_image)) | regex_replace('^IMAGE_REF=', '') }}
+        previous_env_csp_enforce: >-
+          {{ (previous_env | select('match', '^CSP_ENFORCE=') | list | first | default('CSP_ENFORCE=0')) | regex_replace('^CSP_ENFORCE=', '') }}
       set_fact:
         previous_app_version: >-
           {{ previous_endpoint_version if previous_endpoint_version not in ['', 'unknown', 'development'] else previous_env_app_version }}
@@ -63,6 +67,7 @@
           {{ previous_endpoint_commit if previous_endpoint_commit not in ['', 'unknown'] else previous_env_commit_sha }}
         previous_image_ref: >-
           {{ previous_endpoint_image if previous_endpoint_image not in ['', 'unknown'] else previous_env_image_ref }}
+        previous_csp_enforce: "{{ previous_env_csp_enforce if previous_env_csp_enforce in ['0', '1'] else '0' }}"
 
   tasks:
     - block:
@@ -109,6 +114,7 @@
               COMMIT_SHA: "{{ app_version }}"
               IMAGE_REF: "{{ image_ref }}"
               RUNTIME_METADATA_REQUIRED: "1"
+              CSP_ENFORCE: "{{ csp_enforce }}"
 
         - name: Wait for candidate health
           uri:
@@ -131,6 +137,35 @@
             and candidate_version_check.json.version == app_version
             and candidate_version_check.json.commit == app_version
             and candidate_version_check.json.image == image_ref
+          retries: 6
+          delay: 5
+
+        - name: Verify candidate CSP header
+          uri:
+            url: "http://localhost:3004/"
+            return_content: no
+            timeout: 5
+          register: candidate_csp_check
+          until: >-
+            candidate_csp_check is succeeded
+            and (
+              (
+                csp_enforce == '1'
+                and (candidate_csp_check.content_security_policy | default('')) | length > 0
+                and (candidate_csp_check.content_security_policy_report_only | default('')) | length == 0
+                and 'report-uri /api/csp-report' in (candidate_csp_check.content_security_policy | default(''))
+                and 'unsafe-inline' not in (candidate_csp_check.content_security_policy | default(''))
+                and 'unsafe-eval' not in (candidate_csp_check.content_security_policy | default(''))
+              )
+              or (
+                csp_enforce == '0'
+                and (candidate_csp_check.content_security_policy_report_only | default('')) | length > 0
+                and (candidate_csp_check.content_security_policy | default('')) | length == 0
+                and 'report-uri /api/csp-report' in (candidate_csp_check.content_security_policy_report_only | default(''))
+                and 'unsafe-inline' not in (candidate_csp_check.content_security_policy_report_only | default(''))
+                and 'unsafe-eval' not in (candidate_csp_check.content_security_policy_report_only | default(''))
+              )
+            )
           retries: 6
           delay: 5
 
@@ -200,6 +235,7 @@
               COMMIT_SHA: "{{ app_version }}"
               IMAGE_REF: "{{ image_ref }}"
               RUNTIME_METADATA_REQUIRED: "1"
+              CSP_ENFORCE: "{{ csp_enforce }}"
 
         - name: Wait for application health
           uri:
@@ -227,6 +263,35 @@
               - version_check.json.image == image_ref
               - version_check.json.commit == app_version
             fail_msg: "Version endpoint returned image {{ version_check.json.image | default('missing') }}, expected {{ image_ref }}."
+
+        - name: Verify deployed CSP header
+          uri:
+            url: "http://localhost:3003/"
+            return_content: no
+            timeout: 5
+          register: deployed_csp_check
+          until: >-
+            deployed_csp_check is succeeded
+            and (
+              (
+                csp_enforce == '1'
+                and (deployed_csp_check.content_security_policy | default('')) | length > 0
+                and (deployed_csp_check.content_security_policy_report_only | default('')) | length == 0
+                and 'report-uri /api/csp-report' in (deployed_csp_check.content_security_policy | default(''))
+                and 'unsafe-inline' not in (deployed_csp_check.content_security_policy | default(''))
+                and 'unsafe-eval' not in (deployed_csp_check.content_security_policy | default(''))
+              )
+              or (
+                csp_enforce == '0'
+                and (deployed_csp_check.content_security_policy_report_only | default('')) | length > 0
+                and (deployed_csp_check.content_security_policy | default('')) | length == 0
+                and 'report-uri /api/csp-report' in (deployed_csp_check.content_security_policy_report_only | default(''))
+                and 'unsafe-inline' not in (deployed_csp_check.content_security_policy_report_only | default(''))
+                and 'unsafe-eval' not in (deployed_csp_check.content_security_policy_report_only | default(''))
+              )
+            )
+          retries: 6
+          delay: 5
 
         - name: Verify deployed readiness
           uri:
@@ -287,6 +352,7 @@
               COMMIT_SHA: "{{ previous_commit_sha }}"
               IMAGE_REF: "{{ previous_image_ref }}"
               RUNTIME_METADATA_REQUIRED: "1"
+              CSP_ENFORCE: "{{ previous_csp_enforce }}"
           when: previous_image != "none" and deployment_replaced | default(false)
 
         - name: Verify rollback health when previous image exists
@@ -329,6 +395,7 @@
               - "('VERSION=' ~ previous_version) in rollback_container_info.container.Config.Env"
               - "('COMMIT_SHA=' ~ previous_commit_sha) in rollback_container_info.container.Config.Env"
               - "('IMAGE_REF=' ~ previous_image_ref) in rollback_container_info.container.Config.Env"
+              - "('CSP_ENFORCE=' ~ previous_csp_enforce) in rollback_container_info.container.Config.Env"
             fail_msg: "Rollback container did not restore image/version/runtime metadata for {{ previous_image }}."
           when: previous_image != "none" and deployment_replaced | default(false)
 
@@ -345,7 +412,8 @@
       assert:
         that:
           - container_info.container.Config.Image == image_ref
-        fail_msg: "Running container image {{ container_info.container.Config.Image | default('missing') }} does not match {{ image_ref }}."
+          - "('CSP_ENFORCE=' ~ csp_enforce) in container_info.container.Config.Env"
+        fail_msg: "Running container image/CSP posture does not match requested image {{ image_ref }} with CSP_ENFORCE={{ csp_enforce }}."
 
     - name: Report deployment status
       debug:
