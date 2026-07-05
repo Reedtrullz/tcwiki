@@ -221,7 +221,7 @@ function SourceList({ sources, resultTitle }: { sources: SearchDoc['sources']; r
   return (
     <>
       {visibleSources.map((source, index) => (
-        <span key={`${source.url}-${index}`}>
+        <span key={source.url}>
           {index > 0 ? ', ' : ''}
           <a
             href={source.url}
@@ -242,9 +242,9 @@ function SourceList({ sources, resultTitle }: { sources: SearchDoc['sources']; r
             +{remainingSources.length} source{remainingSources.length === 1 ? '' : 's'}
           </summary>
           <div className="mt-1 flex max-w-full flex-wrap gap-x-2 gap-y-1 rounded border border-border bg-surface px-2 py-1 sm:max-w-xs">
-            {remainingSources.map((source, index) => (
+            {remainingSources.map((source) => (
               <a
-                key={`${source.url}-${index}`}
+                key={source.url}
                 href={source.url}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -265,8 +265,8 @@ function SourceList({ sources, resultTitle }: { sources: SearchDoc['sources']; r
             source details
           </summary>
           <div className="mt-1 grid max-w-full gap-2 rounded border border-border bg-surface px-2 py-2 text-xs sm:max-w-lg">
-            {disclosureRows.map((source, index) => (
-              <div key={`${source.url}-${index}`} className="min-w-0">
+            {disclosureRows.map((source) => (
+              <div key={source.url} className="min-w-0">
                 <a
                   href={source.url}
                   target="_blank"
