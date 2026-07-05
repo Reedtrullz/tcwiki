@@ -85,12 +85,12 @@ async function fetchUntilReady(path) {
   return fetchUntilStatus(path, (response) => response.ok);
 }
 
-async function fetchUntilStatus(path, isExpectedStatus) {
+async function fetchUntilStatus(path, isExpectedStatus, init = undefined) {
   let lastError;
   for (let attempt = 0; attempt < 60; attempt += 1) {
     assertChildAlive();
     try {
-      const response = await fetch(`${baseUrl}${path}`, { cache: 'no-store' });
+      const response = await fetch(`${baseUrl}${path}`, { cache: 'no-store', ...init });
       if (isExpectedStatus(response)) {
         assertChildAlive();
         return response;
@@ -133,6 +133,17 @@ function expectHeaderDirectives(headers, key, expectedDirectives) {
   if (missing.length > 0) {
     throw new Error(`Expected ${key} to include ${missing.join(', ')}; got ${value}`);
   }
+}
+
+async function expectCspReportEndpoint() {
+  const response = await fetchUntilStatus('/api/csp-report', (candidate) => candidate.status === 204, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/csp-report',
+    },
+    body: '{}',
+  });
+  expectHeader(response.headers, 'cache-control', 'no-store');
 }
 
 try {
@@ -191,6 +202,8 @@ try {
   if (csp.includes('unsafe-inline')) {
     throw new Error('Production CSP policy must not include unsafe-inline.');
   }
+
+  await expectCspReportEndpoint();
 
   console.log(`Standalone smoke passed${enforcedCsp ? ' with enforced CSP' : ''}.`);
 } catch (error) {

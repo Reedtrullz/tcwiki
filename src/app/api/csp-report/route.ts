@@ -1,17 +1,29 @@
 const MAX_REPORT_BYTES = 16 * 1024;
 const REPORT_LOG_WINDOW_MS = 60_000;
 const MAX_UNIQUE_REPORT_LOGS_PER_WINDOW = 20;
+const ACCEPTED_CONTENT_TYPES = new Set([
+  'application/csp-report',
+  'application/json',
+  'application/reports+json',
+]);
 
 let reportWindowStartedAt = 0;
 let reportWindowLogCount = 0;
 const reportFingerprints = new Set<string>();
 
-function noStoreResponse(status: number) {
+function noStoreResponse(status: number, headers: HeadersInit = {}) {
   return new Response(null, {
     status,
     headers: {
       'Cache-Control': 'no-store',
+      ...headers,
     },
+  });
+}
+
+function methodNotAllowedResponse() {
+  return noStoreResponse(405, {
+    Allow: 'POST',
   });
 }
 
@@ -66,6 +78,10 @@ function safeUrlField(value: unknown) {
 
 function firstString(...values: unknown[]) {
   return values.find((value): value is string => typeof value === 'string' && value.length > 0);
+}
+
+function contentMediaType(value: string) {
+  return value.split(';', 1)[0]?.trim().toLowerCase() ?? '';
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -158,12 +174,7 @@ export async function POST(request: Request) {
   }
 
   const contentType = request.headers.get('content-type') ?? '';
-  if (
-    contentType &&
-    !contentType.includes('application/csp-report') &&
-    !contentType.includes('application/reports+json') &&
-    !contentType.includes('application/json')
-  ) {
+  if (contentType && !ACCEPTED_CONTENT_TYPES.has(contentMediaType(contentType))) {
     return noStoreResponse(415);
   }
 
@@ -183,4 +194,12 @@ export async function POST(request: Request) {
   }
 
   return noStoreResponse(204);
+}
+
+export function GET() {
+  return methodNotAllowedResponse();
+}
+
+export function HEAD() {
+  return methodNotAllowedResponse();
 }

@@ -25,11 +25,11 @@ function shouldRequireRuntimeMetadata(value) {
   }
 }
 
-async function fetchUntil(path, isExpectedStatus) {
+async function fetchUntil(path, isExpectedStatus, init = undefined) {
   let lastError;
   for (let attempt = 0; attempt < 60; attempt += 1) {
     try {
-      const response = await fetch(`${baseUrl}${path}`, { cache: 'no-store' });
+      const response = await fetch(`${baseUrl}${path}`, { cache: 'no-store', ...init });
       if (isExpectedStatus(response)) {
         return response;
       }
@@ -65,6 +65,17 @@ function expectNoHeaderSubstring(headers, key, forbidden) {
   if (value?.toLowerCase().includes(forbidden.toLowerCase())) {
     throw new Error(`Expected ${key} not to include ${forbidden}; got ${value}`);
   }
+}
+
+async function expectCspReportEndpoint() {
+  const response = await fetchUntil('/api/csp-report', (candidate) => candidate.status === 204, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/csp-report',
+    },
+    body: '{}',
+  });
+  expectHeader(response.headers, 'cache-control', 'no-store');
 }
 
 function expectRuntimeMetadata(json) {
@@ -137,5 +148,6 @@ if (rootResponse.headers.has(unexpectedCspHeader)) {
 }
 expectNoHeaderSubstring(rootResponse.headers, cspHeader, 'unsafe-eval');
 expectNoHeaderSubstring(rootResponse.headers, cspHeader, 'unsafe-inline');
+await expectCspReportEndpoint();
 
 console.log(`Runtime probe passed for ${baseUrl}.`);
