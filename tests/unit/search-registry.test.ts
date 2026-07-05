@@ -10,6 +10,7 @@ import {
   SECURITY_INCIDENT_RECORDS,
   SOURCE_MAP_SECTION_RECORDS,
   STATIC_DATA_LAST_UPDATED,
+  TOKENOMICS_RECORDS,
 } from '@/lib/data/static';
 import { GLOSSARY_TERMS } from '@/lib/content/glossary';
 import {
@@ -42,6 +43,10 @@ function splitInternalHref(href: string) {
   };
 }
 
+function tokenomicsRecordRoute(id: string) {
+  return id === 'tcy-recovery-context' ? '/tcy' : '/rune';
+}
+
 function routePathForHref(href: string) {
   const { path } = splitInternalHref(href);
   if (path === '/') {
@@ -58,6 +63,11 @@ function addAnchor(anchorsByRoute: Map<string, Set<string>>, route: string, anch
 
 function anchoredSearchExpectations(): AnchoredSearchExpectation[] {
   return [
+    {
+      id: 'mimir:official-halt-controls',
+      href: '/network#network-diagnostics',
+      type: 'mimir' as const,
+    },
     ...SECURITY_INCIDENT_RECORDS.map((record) => ({
       id: `incident:${record.data.id}`,
       href: `/governance#${recordAnchor('incident', record.data.id)}`,
@@ -104,6 +114,13 @@ function anchoredSearchExpectations(): AnchoredSearchExpectation[] {
       id: `milestone:${record.data.date}:${record.data.title}`,
       href: `/governance#${recordAnchor('milestone', `${record.data.date}-${record.data.title}`)}`,
       type: 'milestone' as const,
+      reviewedAt: record.freshness.checkedAt,
+      nextReviewDue: record.freshness.nextReviewDue,
+    })),
+    ...TOKENOMICS_RECORDS.map((record) => ({
+      id: `tokenomics:${record.data.id}`,
+      href: `${tokenomicsRecordRoute(record.data.id)}#${recordAnchor('tokenomics', record.data.id)}`,
+      type: 'tokenomics' as const,
       reviewedAt: record.freshness.checkedAt,
       nextReviewDue: record.freshness.nextReviewDue,
     })),
@@ -239,6 +256,23 @@ describe('SEARCH_DOCUMENTS', () => {
     expect(docsMatching('Base chain support').some((doc) => doc.id === 'chain:base')).toBe(true);
   });
 
+  it('indexes tokenomics snapshots at exact source-labeled anchors', () => {
+    const tokenomicsDocs = SEARCH_DOCUMENTS.filter((doc) => doc.type === 'tokenomics');
+    const runeSupply = SEARCH_DOCUMENTS.find((doc) => doc.id === 'tokenomics:rune-supply-framing');
+    const tcyRecovery = SEARCH_DOCUMENTS.find((doc) => doc.id === 'tokenomics:tcy-recovery-context');
+
+    expect(tokenomicsDocs).toHaveLength(TOKENOMICS_RECORDS.length);
+    expect(runeSupply?.href).toBe('/rune#tokenomics-rune-supply-framing');
+    expect(runeSupply?.content).toContain('~425M and burning');
+    expect(runeSupply?.content).toContain('Bond Requirement');
+    expect(runeSupply?.sources.map((source) => source.label)).toContain('RUNE and TCY tokenomics');
+    expect(tcyRecovery?.href).toBe('/tcy#tokenomics-tcy-recovery-context');
+    expect(tcyRecovery?.confidence).toBe('needs-review');
+    expect(tcyRecovery?.content).toContain('Deprecated historical products');
+    expect(docsMatching('reduced supply near 425M').some((doc) => doc.id === 'tokenomics:rune-supply-framing')).toBe(true);
+    expect(docsMatching('recovery-token context associated with').some((doc) => doc.id === 'tokenomics:tcy-recovery-context')).toBe(true);
+  });
+
   it('uses stable ids even when multiple records share a slug', () => {
     const ids = new Set(SEARCH_DOCUMENTS.map((doc) => doc.id));
     expect(ids.size).toBe(SEARCH_DOCUMENTS.length);
@@ -312,6 +346,8 @@ describe('SEARCH_DOCUMENTS', () => {
     expect(gg20Incident?.nextReviewDue).toBe('2026-08-04');
     expect(dynamicFeeSourceMap?.reviewedAt).toBe('2026-07-04');
     expect(dynamicFeeSourceMap?.nextReviewDue).toBe('2026-08-04');
+    expect(SEARCH_DOCUMENTS.find((doc) => doc.id === 'tokenomics:rune-supply-framing')?.reviewedAt).toBe(STATIC_DATA_LAST_UPDATED);
+    expect(SEARCH_DOCUMENTS.find((doc) => doc.id === 'tokenomics:tcy-recovery-context')?.nextReviewDue).toBe('2026-07-18');
     expect(olderIncident?.reviewedAt).toBe(STATIC_DATA_LAST_UPDATED);
     expect(olderIncident?.nextReviewDue).toBe('2026-07-18');
   });
@@ -371,6 +407,7 @@ describe('SEARCH_DOCUMENTS', () => {
   });
 
   it('indexes runtime providers and monitored Mimir control families', () => {
+    expect(SEARCH_DOCUMENTS.find((doc) => doc.id === 'mimir:official-halt-controls')?.href).toBe('/network#network-diagnostics');
     expect(docsMatching('Liquify').some((doc) => doc.slug === '/docs')).toBe(true);
     expect(docsMatching('gateway').some((doc) => doc.slug === '/docs')).toBe(true);
     expect(docsMatching('current-only snapshots').some((doc) => doc.id === 'source-map:current-protocol-state')).toBe(true);

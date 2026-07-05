@@ -7,6 +7,7 @@ import { RelatedChecks, type RelatedCheck } from '@/components/features/RelatedC
 import { TOKENOMICS_RECORDS } from '@/lib/data/static';
 import { getContentEntry } from '@/lib/content/registry';
 import { createRouteMetadata } from '@/lib/metadata';
+import { recordAnchor } from '@/lib/utils';
 
 export const metadata = createRouteMetadata({
   title: 'TCY And THORFi History | THORChain Wiki',
@@ -16,6 +17,7 @@ export const metadata = createRouteMetadata({
 
 const entry = getContentEntry('tcy');
 const tcyRecord = TOKENOMICS_RECORDS.find((record) => record.data.id === 'tcy-recovery-context') ?? TOKENOMICS_RECORDS[0];
+const tcyAnchor = recordAnchor('tokenomics', tcyRecord.data.id);
 
 const tcyRelatedChecks: RelatedCheck[] = [
   {
@@ -72,7 +74,7 @@ export default function TCYPage() {
         badgeLabel="claim path"
       />
 
-      <div className="mb-12 rounded-lg border border-amber-500/20 bg-amber-500/5 p-5">
+      <div id={tcyAnchor} className="mb-12 scroll-mt-24 rounded-lg border border-amber-500/20 bg-amber-500/5 p-5">
         <div className="flex flex-wrap items-center gap-2 mb-2">
           <Badge variant="warning">Historical</Badge>
           <Badge variant="danger">Deprecated products</Badge>

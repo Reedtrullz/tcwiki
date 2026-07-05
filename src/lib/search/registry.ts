@@ -6,6 +6,7 @@ import {
   RESEARCH_REPORT_RECORDS,
   SECURITY_INCIDENT_RECORDS,
   SOURCE_MAP_SECTION_RECORDS,
+  TOKENOMICS_RECORDS,
 } from '@/lib/data/static';
 import { CONTENT_ENTRIES, DEEP_DIVE_READER_PATHS, SOURCE_CHOICE_DECISIONS, TASK_INTENT_GUIDES } from '@/lib/content/registry';
 import { GLOSSARY_TERMS } from '@/lib/content/glossary';
@@ -22,6 +23,7 @@ export type SearchDocType =
   | 'research'
   | 'governance'
   | 'milestone'
+  | 'tokenomics'
   | 'mimir'
   | 'chain'
   | 'glossary'
@@ -48,7 +50,8 @@ const OPERATIONAL_HALT_SEARCH_DOCUMENTS: SearchDoc[] = [
   {
     id: 'mimir:official-halt-controls',
     slug: '/network',
-    href: '/network',
+    href: '/network#network-diagnostics',
+    anchor: 'network-diagnostics',
     type: 'mimir',
     title: 'Official Mimir halt and enablement controls',
     confidence: 'official',
@@ -85,6 +88,10 @@ function withAnchor(slug: string, anchor?: string) {
 function splitInternalHref(href: string) {
   const [path, anchor] = href.split('#');
   return { path, anchor };
+}
+
+function tokenomicsRecordRoute(id: string) {
+  return id === 'tcy-recovery-context' ? '/tcy' : '/rune';
 }
 
 function searchMeta<T>(record: SourcedRecord<T>) {
@@ -319,6 +326,26 @@ export const SEARCH_DOCUMENTS: SearchDoc[] = [
       description: record.data.description,
       ...searchMeta(record),
       content: `Date: ${record.data.date}. Title: ${record.data.title}. ${record.data.description} ${record.sources.map((source) => source.label).join(' ')}`,
+    };
+  }),
+  ...TOKENOMICS_RECORDS.map((record) => {
+    const anchor = recordAnchor('tokenomics', record.data.id);
+    const slug = tokenomicsRecordRoute(record.data.id);
+    return {
+      id: `tokenomics:${record.data.id}`,
+      slug,
+      href: withAnchor(slug, anchor),
+      anchor,
+      type: 'tokenomics' as const,
+      title: record.data.title,
+      description: record.data.summary,
+      ...searchMeta(record),
+      content: [
+        record.data.title,
+        record.data.summary,
+        record.data.figures.map((figure) => `${figure.label} ${figure.value} ${figure.tone}`).join(' '),
+        record.sources.map((source) => `${source.label} ${source.notes ?? ''}`).join(' '),
+      ].join(' '),
     };
   }),
   ...GLOSSARY_TERMS.map((term) => {

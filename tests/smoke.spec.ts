@@ -496,6 +496,14 @@ test.describe('THORChain Wiki Smoke Tests', () => {
     await page.goto('/governance#incident-gg20-vault-exploit-2026');
     await expect(page).toHaveURL(/\/governance#incident-gg20-vault-exploit-2026$/);
     await expect(page.locator('#incident-gg20-vault-exploit-2026')).toBeVisible();
+
+    await page.goto('/search?q=reduced%20supply%20near%20425M');
+    const tokenomicsLink = page.locator('a[href="/rune#tokenomics-rune-supply-framing"]').first();
+    await expect(tokenomicsLink).toBeVisible();
+    await expect(tokenomicsLink.locator('span').filter({ hasText: /^tokenomics$/ })).toBeVisible();
+    await tokenomicsLink.click();
+    await expect(page).toHaveURL(/\/rune#tokenomics-rune-supply-framing$/);
+    await expect(page.locator('#tokenomics-rune-supply-framing')).toBeVisible();
   });
 
   test('ecosystem page avoids nested-anchor hydration errors', async ({ page }) => {
