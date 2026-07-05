@@ -1,11 +1,7 @@
 import type { Metadata } from 'next';
+import { routeUrl } from '@/lib/site';
 
-const siteOrigin = 'https://wiki.thorchain.no';
 const defaultImageAlt = 'THORChain Wiki source-backed protocol encyclopedia';
-
-function routeUrl(path: string) {
-  return path === '/' ? siteOrigin : `${siteOrigin}${path}`;
-}
 
 export function createRouteMetadata({
   title,
