@@ -1209,6 +1209,9 @@ function collectKnownRouteAnchors(collections, glossaryTerms, deepDiveReaderPath
   for (const record of collections.PROTOCOL_MILESTONE_RECORDS) {
     addRouteAnchor(anchorsByRoute, '/governance', recordAnchor('milestone', `${record.data.date}-${record.data.title}`));
   }
+  for (const record of collections.TOKENOMICS_RECORDS) {
+    addRouteAnchor(anchorsByRoute, tokenomicsRecordRoute(record.data.id), recordAnchor('tokenomics', record.data.id));
+  }
   for (const record of collections.ECOSYSTEM_PROJECT_RECORDS) {
     addRouteAnchor(anchorsByRoute, '/ecosystem', recordAnchor('ecosystem', record.data.id));
   }
@@ -1232,6 +1235,10 @@ function collectKnownRouteAnchors(collections, glossaryTerms, deepDiveReaderPath
   }
 
   return anchorsByRoute;
+}
+
+function tokenomicsRecordRoute(id) {
+  return id === 'tcy-recovery-context' ? '/tcy' : '/rune';
 }
 
 const routeAnchorCache = new Map();
@@ -1419,6 +1426,18 @@ function buildExpectedAnchoredSearchDocuments(collections, glossaryTerms, deepDi
         id: `milestone:${record.data.date}:${record.data.title}`,
         href: `/governance#${anchor}`,
         type: 'milestone',
+        anchor,
+        confidence: record.freshness.confidence,
+        reviewedAt: record.freshness.checkedAt,
+        nextReviewDue: record.freshness.nextReviewDue,
+      };
+    }),
+    ...collections.TOKENOMICS_RECORDS.map((record) => {
+      const anchor = recordAnchor('tokenomics', record.data.id);
+      return {
+        id: `tokenomics:${record.data.id}`,
+        href: `${tokenomicsRecordRoute(record.data.id)}#${anchor}`,
+        type: 'tokenomics',
         anchor,
         confidence: record.freshness.confidence,
         reviewedAt: record.freshness.checkedAt,

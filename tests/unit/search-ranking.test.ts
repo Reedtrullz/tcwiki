@@ -33,11 +33,19 @@ describe('task-aware search ranking', () => {
     expect(rankedIds('is trading halted')[0]).toBe('task:swap-availability');
     expect(rankedIds('why did my swap refund')[0]).toBe('task:swap-refund-lifecycle');
     expect(rankedIds('quote failed')[0]).toBe('task:swap-refund-lifecycle');
+    expect(rankedIds('streaming swaps')[0]).toBe('task:swap-refund-lifecycle');
     expect(rankedIds('can i add liquidity')[0]).toBe('task:liquidity-actions');
     expect(rankedIds('LP deposit')[0]).toBe('task:liquidity-actions');
     expect(rankedIds('Midgard API')[0]).toBe('task:build-query');
     expect(rankedIds('which source should i trust')[0]).toBe('task:source-choice');
     expect(rankedIds('SECURE+')[0]).toBe('task:app-layer-and-secured-assets');
+  });
+
+  it('promotes live diagnostics for literal Mimir pause keys', () => {
+    expect(rankedIds('StreamingSwapPause')[0]).toBe('task:why-paused');
+    expect(rankedIds('streaming swap pause')[0]).toBe('task:why-paused');
+    expect(rankedIds('HaltMemoless')[0]).toBe('task:why-paused');
+    expect(rankedIds('RUNEPoolHaltDeposit')[0]).toBe('task:why-paused');
   });
 
   it('routes supported-chain queries to exact chain anchors', () => {

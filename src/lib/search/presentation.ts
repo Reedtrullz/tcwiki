@@ -73,7 +73,7 @@ const searchFilterIds = new Set<SearchFilterId>(SEARCH_FILTER_SPECS.map((filter)
 
 const liveRoutePrefixes = ['/network', '/stats', '/dynamic-fees'];
 const governanceTypes = new Set<SearchDoc['type']>(['governance', 'incident', 'research', 'milestone']);
-const pageTypes = new Set<SearchDoc['type']>(['section', 'resource']);
+const pageTypes = new Set<SearchDoc['type']>(['section', 'resource', 'tokenomics']);
 
 export function normalizeSearchFilter(filter: string | null): SearchFilterId {
   return filter && searchFilterIds.has(filter as SearchFilterId) ? filter as SearchFilterId : 'all';

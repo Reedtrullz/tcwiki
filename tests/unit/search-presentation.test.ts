@@ -38,6 +38,7 @@ describe('search presentation helpers', () => {
     const chain = SEARCH_DOCUMENTS.find((doc) => doc.id === 'chain:sol');
     const deepDivePath = SEARCH_DOCUMENTS.find((doc) => doc.id === 'deep-dive-path:network-security');
     const incident = SEARCH_DOCUMENTS.find((doc) => doc.id === 'incident:gg20-vault-exploit-2026');
+    const tokenomics = SEARCH_DOCUMENTS.find((doc) => doc.id === 'tokenomics:rune-supply-framing');
 
     expect(dynamicFeesSection && classifySearchDoc(dynamicFeesSection)).toBe('live');
     expect(sourceMap && classifySearchDoc(sourceMap)).toBe('source-map');
@@ -45,6 +46,7 @@ describe('search presentation helpers', () => {
     expect(chain && classifySearchDoc(chain)).toBe('live');
     expect(deepDivePath && classifySearchDoc(deepDivePath)).toBe('deep-dive');
     expect(incident && classifySearchDoc(incident)).toBe('governance');
+    expect(tokenomics && classifySearchDoc(tokenomics)).toBe('pages');
   });
 
   it('builds count-bearing filter options and filters without inventing zero-result groups', () => {

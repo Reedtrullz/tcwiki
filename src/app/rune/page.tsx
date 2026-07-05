@@ -8,6 +8,7 @@ import { TOKENOMICS_RECORDS } from '@/lib/data/static';
 import { getContentEntry } from '@/lib/content/registry';
 import { createRouteMetadata } from '@/lib/metadata';
 import { getTokenomicsToneBadgeVariant, getTokenomicsToneLabel } from '@/lib/trust';
+import { recordAnchor } from '@/lib/utils';
 
 export const metadata = createRouteMetadata({
   title: 'RUNE | THORChain Wiki',
@@ -17,6 +18,7 @@ export const metadata = createRouteMetadata({
 
 const entry = getContentEntry('rune');
 const supplyRecord = TOKENOMICS_RECORDS.find((record) => record.data.id === 'rune-supply-framing') ?? TOKENOMICS_RECORDS[0];
+const supplyAnchor = recordAnchor('tokenomics', supplyRecord.data.id);
 
 const runeRelatedChecks: RelatedCheck[] = [
   {
@@ -87,7 +89,7 @@ export default function RunePage() {
         ))}
       </div>
 
-      <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-5">Token Economics</h2>
+      <h2 id={supplyAnchor} className="scroll-mt-24 text-sm font-semibold text-slate-400 uppercase tracking-wider mb-5">Token Economics</h2>
       <p className="mb-4 text-sm text-slate-400">
         {supplyRecord.data.summary} Recheck live/source data before quoting exact balances.
       </p>
