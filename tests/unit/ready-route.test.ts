@@ -24,6 +24,23 @@ vi.mock('@/lib/api/thornode', () => ({
   },
 }));
 
+const thornodeSource = { label: 'THORNode', url: 'https://thornode.thorchain.network/thorchain' };
+const thornodeSources = [
+  thornodeSource,
+  { label: 'THORNode latest block', url: 'https://thornode.thorchain.network/cosmos/base/tendermint/v1beta1/blocks/latest' },
+  { label: 'THORNode Mimir', url: 'https://thornode.thorchain.network/thorchain/mimir?height=100' },
+  { label: 'THORNode inbound addresses', url: 'https://thornode.thorchain.network/thorchain/inbound_addresses?height=100' },
+  { label: 'THORNode version', url: 'https://thornode.thorchain.network/thorchain/version?height=100' },
+  { label: 'THORNode lastblock', url: 'https://thornode.thorchain.network/thorchain/lastblock?height=100' },
+];
+const dynamicFeeSources = [
+  thornodeSource,
+  { label: 'THORNode latest block', url: 'https://thornode.thorchain.network/cosmos/base/tendermint/v1beta1/blocks/latest' },
+  { label: 'THORNode Mimir', url: 'https://thornode.thorchain.network/thorchain/mimir?height=100' },
+  { label: 'THORNode dynamic L1 fee records', url: 'https://thornode.thorchain.network/thorchain/dynamic_l1_fees?height=100' },
+  { label: 'THORNode dynamic L1 fee current epoch', url: 'https://thornode.thorchain.network/thorchain/dynamic_l1_fees_current?height=100' },
+];
+
 function midgardHealth(severity: SourceHealthSeverity, reasons: string[] = []): LiveDataResult<MidgardHealth> {
   return {
     status: 'ok',
@@ -87,7 +104,8 @@ function thornodeStatus(overrides: Partial<NetworkStatus> = {}): LiveDataResult<
   return {
     status: 'ok',
     checkedAt: '2026-07-02T00:00:00.000Z',
-    source: { label: 'THORNode', url: 'https://thornode.thorchain.network/thorchain' },
+    source: thornodeSource,
+    sources: thornodeSources,
     data: networkStatus(overrides),
   };
 }
@@ -96,7 +114,8 @@ function dynamicFeeStatus(overrides: Partial<DynamicL1FeeStatus> = {}): LiveData
   return {
     status: 'ok',
     checkedAt: '2026-07-02T00:00:00.000Z',
-    source: { label: 'THORNode', url: 'https://thornode.thorchain.network/thorchain' },
+    source: thornodeSource,
+    sources: dynamicFeeSources,
     data: {
       mimir: {
         enabled: { key: 'L1DynamicFeeEnabled', value: 0, defaultValue: 0, effectiveValue: 0, state: 'inactive' },
@@ -218,12 +237,14 @@ describe('/api/ready', () => {
     expect(body.sources.midgard.healthWarnings).toEqual([]);
     expect(body.sources.midgard.sourceWarnings).toEqual([]);
     expect(body.sources.midgard.sourceWarningDetails).toEqual([]);
-    expect(body.sources.thornode.sourceCount).toBe(1);
+    expect(body.sources.thornode.sourceCount).toBe(thornodeSources.length);
+    expect(body.sources.thornode.sources.map((source: { url: string }) => source.url)).toEqual(thornodeSources.map((source) => source.url));
     expect(body.sources.thornode.checkedAt).toBe('2026-07-02T00:00:00.000Z');
     expect(body.sources.thornode.chainStatuses).toHaveLength(1);
     expect(body.sources.thornode.sourceWarnings).toEqual([]);
     expect(body.sources.thornode.sourceWarningDetails).toEqual([]);
     expect(body.sources.thornode.dynamicFees.status).toBe('ok');
+    expect(body.sources.thornode.dynamicFees.sources.map((source: { url: string }) => source.url)).toEqual(dynamicFeeSources.map((source) => source.url));
     expect(body.sources.thornode.dynamicFees.enabledState).toBe('inactive');
     expect(body.sources.thornode.dynamicFees.enabledValue).toBe(0);
     expect(body.sources.thornode.dynamicFees.currentEpoch).toBe(1);
@@ -438,6 +459,32 @@ describe('/api/ready', () => {
     expect(body.reasons).toEqual(['1 monitored Mimir key could not be parsed.']);
   });
 
+  it('returns degraded when THORNode status omits exact pinned source evidence', async () => {
+    vi.mocked(ThornodeAPI.getNetworkStatus).mockResolvedValue({
+      ...thornodeStatus(),
+      sources: [thornodeSource],
+    });
+
+    const response = await GET();
+    const body = await response.json();
+
+    expect(response.status).toBe(503);
+    expect(body.sources.thornode.sourceWarnings).toEqual([
+      'THORNode network status sources do not include exact pinned endpoint evidence.',
+    ]);
+    expect(body.sources.thornode.sourceWarningDetails).toEqual([
+      {
+        severity: 'warning',
+        category: 'source-shape',
+        message: 'THORNode network status sources do not include exact pinned endpoint evidence.',
+        action: 'Treat THORNode readiness as degraded until the live operation snapshot is complete and height-consistent.',
+      },
+    ]);
+    expect(body.reasons).toEqual([
+      'THORNode network status sources do not include exact pinned endpoint evidence.',
+    ]);
+  });
+
   it('returns degraded when dynamic fee status is unavailable', async () => {
     vi.mocked(ThornodeAPI.getDynamicL1FeeStatus).mockResolvedValue({
       status: 'degraded',
@@ -461,6 +508,32 @@ describe('/api/ready', () => {
     expect(body.sources.thornode.dynamicFees.sourceWarnings).toEqual([]);
     expect(body.sources.thornode.dynamicFees.sourceWarningDetails).toEqual([]);
     expect(body.reasons).toEqual(['THORNode dynamic fee sources did not provide a usable snapshot']);
+  });
+
+  it('returns degraded when dynamic fee status omits exact pinned source evidence', async () => {
+    vi.mocked(ThornodeAPI.getDynamicL1FeeStatus).mockResolvedValue({
+      ...dynamicFeeStatus(),
+      sources: dynamicFeeSources.filter((source) => !source.url.includes('/dynamic_l1_fees_current')),
+    });
+
+    const response = await GET();
+    const body = await response.json();
+
+    expect(response.status).toBe(503);
+    expect(body.sources.thornode.dynamicFees.sourceWarnings).toEqual([
+      'THORNode dynamic fee sources do not include exact pinned endpoint evidence.',
+    ]);
+    expect(body.sources.thornode.dynamicFees.sourceWarningDetails).toEqual([
+      {
+        severity: 'warning',
+        category: 'source-shape',
+        message: 'THORNode dynamic fee sources do not include exact pinned endpoint evidence.',
+        action: 'Treat dynamic-fee readiness as degraded until THORNode returns a complete, pinned, warning-free dynamic-fee snapshot.',
+      },
+    ]);
+    expect(body.reasons).toEqual([
+      'THORNode dynamic fee sources do not include exact pinned endpoint evidence.',
+    ]);
   });
 
   it('returns degraded when dynamic fee source warnings are present', async () => {

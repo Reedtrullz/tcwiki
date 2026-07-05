@@ -63,6 +63,35 @@ function expectWarningDetails(value: unknown) {
   }
 }
 
+function sourceUrls(value: unknown) {
+  expect(Array.isArray(value)).toBe(true);
+  return (value as Array<{ url?: unknown }>).map((source, index) => {
+    expect(typeof source.url, `sources[${index}].url`).toBe('string');
+    return source.url as string;
+  });
+}
+
+function hasLatestBlockSource(urls: string[]) {
+  return urls.some((url) => {
+    try {
+      return new URL(url).pathname.endsWith('/base/tendermint/v1beta1/blocks/latest');
+    } catch {
+      return false;
+    }
+  });
+}
+
+function hasPinnedSource(urls: string[], suffix: string) {
+  return urls.some((url) => {
+    try {
+      const parsed = new URL(url);
+      return parsed.pathname.endsWith(suffix) && parsed.searchParams.has('height');
+    } catch {
+      return false;
+    }
+  });
+}
+
 async function fulfillJson(route: Route, value: unknown) {
   await route.fulfill({
     status: 200,
@@ -715,6 +744,21 @@ test.describe('THORChain Wiki Smoke Tests', () => {
     expect(['ok', 'degraded']).toContain(json.sources.thornode.dynamicFees.status);
     expectStringArray(json.sources.thornode.dynamicFees.sourceWarnings);
     expectWarningDetails(json.sources.thornode.dynamicFees.sourceWarningDetails);
+    if (json.sources.thornode.status === 'ok') {
+      const urls = sourceUrls(json.sources.thornode.sources);
+      expect(hasLatestBlockSource(urls)).toBe(true);
+      expect(hasPinnedSource(urls, '/mimir')).toBe(true);
+      expect(hasPinnedSource(urls, '/inbound_addresses')).toBe(true);
+      expect(hasPinnedSource(urls, '/version')).toBe(true);
+      expect(hasPinnedSource(urls, '/lastblock')).toBe(true);
+    }
+    if (json.sources.thornode.dynamicFees.status === 'ok') {
+      const urls = sourceUrls(json.sources.thornode.dynamicFees.sources);
+      expect(hasLatestBlockSource(urls)).toBe(true);
+      expect(hasPinnedSource(urls, '/mimir')).toBe(true);
+      expect(hasPinnedSource(urls, '/dynamic_l1_fees')).toBe(true);
+      expect(hasPinnedSource(urls, '/dynamic_l1_fees_current')).toBe(true);
+    }
   });
 
   test('security headers are present', async ({ request }) => {

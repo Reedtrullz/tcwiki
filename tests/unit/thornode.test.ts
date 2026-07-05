@@ -1131,6 +1131,15 @@ describe('deriveNetworkStatus', () => {
     expect(result.data?.tradingPaused).toBe(true);
     expect(result.data?.thorchainHeight).toBe(99);
     expect(result.data?.thorchainSnapshotPinned).toBe(true);
+    expect(result.source?.label).toBe('Liquify THORNode');
+    expect(result.sources?.map((source) => source.url)).toEqual([
+      'https://gateway.liquify.com/chain/thorchain_api/thorchain',
+      'https://gateway.liquify.com/chain/thorchain_api/cosmos/base/tendermint/v1beta1/blocks/latest',
+      'https://gateway.liquify.com/chain/thorchain_api/thorchain/mimir?height=99',
+      'https://gateway.liquify.com/chain/thorchain_api/thorchain/inbound_addresses?height=99',
+      'https://gateway.liquify.com/chain/thorchain_api/thorchain/version?height=99',
+      'https://gateway.liquify.com/chain/thorchain_api/thorchain/lastblock?height=99',
+    ]);
     expect(requestedUrls).toContain('https://gateway.liquify.com/chain/thorchain_api/thorchain/mimir?height=99');
     expect(requestedUrls).toContain('https://gateway.liquify.com/chain/thorchain_api/thorchain/inbound_addresses?height=99');
     expect(requestedUrls).toContain('https://gateway.liquify.com/chain/thorchain_api/thorchain/version?height=99');
@@ -1699,11 +1708,226 @@ describe('deriveNetworkStatus', () => {
     expect(result.source?.label).toBe('Liquify THORNode');
     expect(result.data?.records.map((record) => record.thorname)).toEqual(['ss']);
     expect(result.data?.histories.map((history) => history.thorname)).toEqual(['ss']);
+    expect(result.sources?.map((source) => source.url)).toEqual([
+      'https://gateway.liquify.com/chain/thorchain_api/thorchain',
+      'https://gateway.liquify.com/chain/thorchain_api/cosmos/base/tendermint/v1beta1/blocks/latest',
+      'https://gateway.liquify.com/chain/thorchain_api/thorchain/mimir?height=100',
+      'https://gateway.liquify.com/chain/thorchain_api/thorchain/dynamic_l1_fees?height=100',
+      'https://gateway.liquify.com/chain/thorchain_api/thorchain/dynamic_l1_fees_current?height=100',
+      'https://gateway.liquify.com/chain/thorchain_api/thorchain/dynamic_l1_fees/ss?height=100',
+    ]);
     expect(urls.filter((url) => url.includes('dynamic_l1_fees')).every((url) => url.includes('gateway.liquify.com'))).toBe(true);
     expect(urls).toContain('https://gateway.liquify.com/chain/thorchain_api/thorchain/mimir?height=100');
     expect(urls).toContain('https://gateway.liquify.com/chain/thorchain_api/thorchain/dynamic_l1_fees?height=100');
     expect(urls).toContain('https://gateway.liquify.com/chain/thorchain_api/thorchain/dynamic_l1_fees/ss?height=100');
     expect(urls).toContain('https://gateway.liquify.com/chain/thorchain_api/thorchain/dynamic_l1_fees_current?height=100');
+  });
+
+  it('caps and concurrency-limits dynamic fee history fan-out', async () => {
+    const thornames = Array.from({ length: 20 }, (_, index) => `partner${index.toString().padStart(2, '0')}`);
+    const fixture = dynamicFeeFixture({
+      mimir: {
+        L1DYNAMICFEEENABLED: 1,
+        L1SLIPMINBPS: 10,
+        ...Object.fromEntries(thornames.map((thorname) => [`DYNAMICFEE-WHITELIST-${thorname.toUpperCase()}`, 1])),
+      },
+      dynamicFees: {
+        entries: thornames.map((thorname) => ({
+          thorname,
+          pair: 'THOR.RUNE|THOR.TCY',
+          dynamic_bps: '1',
+          whitelist_state: '1',
+          last_active_epoch: '1864',
+          latest_fees_tor: '',
+        })),
+      },
+      currentDynamicFees: { epoch: '1864', entries: [] },
+      histories: Object.fromEntries(thornames.map((thorname) => [thorname, {
+        thorname,
+        whitelist_state: '1',
+        pairs: [
+          {
+            pair: 'THOR.RUNE|THOR.TCY',
+            dynamic_bps: '1',
+            last_active_epoch: '1864',
+            history: [],
+          },
+        ],
+      }])),
+    });
+    const historyUrls: string[] = [];
+    let activeHistoryRequests = 0;
+    let maxActiveHistoryRequests = 0;
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      const pathname = new URL(url).pathname;
+      if (!url.includes('gateway.liquify.com')) {
+        return makeResponse(false, {}, 500, 'Fallback disabled');
+      }
+
+      if (pathname.endsWith('/base/tendermint/v1beta1/blocks/latest')) {
+        return makeResponse(true, fixture.latestBlock);
+      }
+      if (pathname.endsWith('/mimir')) {
+        return makeResponse(true, fixture.mimir);
+      }
+      if (pathname.endsWith('/dynamic_l1_fees')) {
+        return makeResponse(true, fixture.dynamicFees);
+      }
+      if (pathname.endsWith('/dynamic_l1_fees_current')) {
+        return makeResponse(true, fixture.currentDynamicFees);
+      }
+      const historyMatch = pathname.match(/\/dynamic_l1_fees\/([^/]+)$/);
+      if (historyMatch) {
+        const thorname = decodeURIComponent(historyMatch[1] ?? '').toLowerCase();
+        historyUrls.push(url);
+        activeHistoryRequests += 1;
+        maxActiveHistoryRequests = Math.max(maxActiveHistoryRequests, activeHistoryRequests);
+        await new Promise((resolve) => {
+          globalThis.setTimeout(resolve, 0);
+        });
+        activeHistoryRequests -= 1;
+        return makeResponse(true, fixture.histories[thorname]);
+      }
+
+      return makeResponse(false, {}, 404, 'Not Found');
+    }));
+
+    const result = await ThornodeAPI.getDynamicL1FeeStatus();
+
+    expect(result.status).toBe('ok');
+    expect(historyUrls).toHaveLength(16);
+    expect(maxActiveHistoryRequests).toBeLessThanOrEqual(4);
+    expect(result.data?.histories).toHaveLength(16);
+    expect(result.data?.sourceWarnings).toEqual([
+      'Dynamic fee history fetch capped at 16 thornames; 4 additional thorname histories were not requested.',
+    ]);
+    expect(result.sources?.filter((source) => new URL(source.url).pathname.match(/\/dynamic_l1_fees\/[^/]+$/))).toHaveLength(16);
+  });
+
+  it('prioritizes sealed dynamic fee record histories before whitelist-only histories when capped', async () => {
+    const whitelistOnlyThornames = Array.from({ length: 18 }, (_, index) => `aaa${index.toString().padStart(2, '0')}`);
+    const recordThornames = ['zzrecord0', 'zzrecord1'];
+    const allThornames = [...whitelistOnlyThornames, ...recordThornames];
+    const fixture = dynamicFeeFixture({
+      mimir: {
+        L1DYNAMICFEEENABLED: 1,
+        L1SLIPMINBPS: 10,
+        ...Object.fromEntries(allThornames.map((thorname) => [`DYNAMICFEE-WHITELIST-${thorname.toUpperCase()}`, 1])),
+      },
+      dynamicFees: {
+        entries: recordThornames.map((thorname) => ({
+          thorname,
+          pair: 'THOR.RUNE|THOR.TCY',
+          dynamic_bps: '1',
+          whitelist_state: '1',
+          last_active_epoch: '1864',
+          latest_fees_tor: '',
+        })),
+      },
+      currentDynamicFees: { epoch: '1864', entries: [] },
+      histories: Object.fromEntries(allThornames.map((thorname) => [thorname, {
+        thorname,
+        whitelist_state: '1',
+        pairs: recordThornames.includes(thorname)
+          ? [
+            {
+              pair: 'THOR.RUNE|THOR.TCY',
+              dynamic_bps: '1',
+              last_active_epoch: '1864',
+              history: [],
+            },
+          ]
+          : [],
+      }])),
+    });
+    const historyUrls: string[] = [];
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      const pathname = new URL(url).pathname;
+
+      if (pathname.endsWith('/base/tendermint/v1beta1/blocks/latest')) {
+        return makeResponse(true, fixture.latestBlock);
+      }
+      if (pathname.endsWith('/mimir')) {
+        return makeResponse(true, fixture.mimir);
+      }
+      if (pathname.endsWith('/dynamic_l1_fees')) {
+        return makeResponse(true, fixture.dynamicFees);
+      }
+      if (pathname.endsWith('/dynamic_l1_fees_current')) {
+        return makeResponse(true, fixture.currentDynamicFees);
+      }
+      const historyMatch = pathname.match(/\/dynamic_l1_fees\/([^/]+)$/);
+      if (historyMatch) {
+        const thorname = decodeURIComponent(historyMatch[1] ?? '').toLowerCase();
+        historyUrls.push(url);
+        return makeResponse(true, fixture.histories[thorname]);
+      }
+
+      return makeResponse(false, {}, 404, 'Not Found');
+    }));
+
+    const result = await ThornodeAPI.getDynamicL1FeeStatus();
+
+    expect(result.status).toBe('ok');
+    expect(historyUrls).toHaveLength(16);
+    expect(historyUrls).toEqual(expect.arrayContaining([
+      'https://gateway.liquify.com/chain/thorchain_api/thorchain/dynamic_l1_fees/zzrecord0?height=100',
+      'https://gateway.liquify.com/chain/thorchain_api/thorchain/dynamic_l1_fees/zzrecord1?height=100',
+    ]));
+    expect(result.data?.histories.map((history) => history.thorname)).toEqual(expect.arrayContaining(recordThornames));
+    expect(result.data?.sourceWarnings).toEqual([
+      'Dynamic fee history fetch capped at 16 thornames; 4 additional thorname histories were not requested.',
+    ]);
+  });
+
+  it('does not repeat capped dynamic fee history fan-out across fallback providers', async () => {
+    const thornames = Array.from({ length: 20 }, (_, index) => `partner${index.toString().padStart(2, '0')}`);
+    const fixture = dynamicFeeFixture({
+      mimir: {
+        L1DYNAMICFEEENABLED: 1,
+        L1SLIPMINBPS: 10,
+        ...Object.fromEntries(thornames.map((thorname) => [`DYNAMICFEE-WHITELIST-${thorname.toUpperCase()}`, 1])),
+      },
+      dynamicFees: {
+        entries: thornames.map((thorname) => ({
+          thorname,
+          pair: 'THOR.RUNE|THOR.TCY',
+          dynamic_bps: '1',
+          whitelist_state: '1',
+          last_active_epoch: '1864',
+          latest_fees_tor: '',
+        })),
+      },
+      currentDynamicFees: { epoch: '1864', entries: [] },
+      histories: Object.fromEntries(thornames.map((thorname) => [thorname, {
+        thorname,
+        whitelist_state: '1',
+        pairs: [
+          {
+            pair: 'THOR.RUNE|THOR.TCY',
+            dynamic_bps: '1',
+            last_active_epoch: '1864',
+            history: [],
+          },
+        ],
+      }])),
+    });
+    stubDynamicFeeSnapshots(fixture, fixture);
+
+    const result = await ThornodeAPI.getDynamicL1FeeStatus();
+    const fetchMock = vi.mocked(fetch);
+    const historyUrls = fetchMock.mock.calls
+      .map(([input]) => String(input))
+      .filter((url) => new URL(url).pathname.match(/\/dynamic_l1_fees\/[^/]+$/));
+
+    expect(result.status).toBe('ok');
+    expect(historyUrls).toHaveLength(16);
+    expect(historyUrls.every((url) => url.includes('gateway.liquify.com'))).toBe(true);
+    expect(result.data?.sourceWarnings).toEqual([
+      'Dynamic fee history fetch capped at 16 thornames; 4 additional thorname histories were not requested.',
+    ]);
   });
 
   it('includes per-thorname sealed dynamic fee history when THORNode exposes samples', async () => {

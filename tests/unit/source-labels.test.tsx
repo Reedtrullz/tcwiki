@@ -238,6 +238,32 @@ describe('source and freshness labels', () => {
     expect(degraded).toContain('Degraded');
   });
 
+  it('keeps secondary live endpoint sources behind a compact disclosure', () => {
+    const html = renderToStaticMarkup(
+      <LiveSourceMeta
+        result={{
+          status: 'ok',
+          checkedAt: '2026-06-18T00:00:00.000Z',
+          source: { label: 'THORNode', url: 'https://thornode.thorchain.network/thorchain' },
+          sources: [
+            { label: 'THORNode', url: 'https://thornode.thorchain.network/thorchain' },
+            { label: 'THORNode Mimir', url: 'https://thornode.thorchain.network/thorchain/mimir?height=100' },
+            { label: 'THORNode lastblock', url: 'https://thornode.thorchain.network/thorchain/lastblock?height=100' },
+          ],
+        }}
+      />
+    );
+
+    expect(html).toContain('THORNode');
+    expect(html).toContain('+2 endpoint reads');
+    expect(html).toContain('THORNode Mimir');
+    expect(html).toContain('height=100');
+    expect(html).toContain('<details');
+    expect(html).toContain('break-words');
+    expect(html).not.toContain('role="list"');
+    expect(html).not.toContain('whitespace-nowrap');
+  });
+
   it('renders source-warning badge for warning-bearing live payloads without dumping raw warnings', () => {
     const html = renderToStaticMarkup(
       <LiveSourceMeta

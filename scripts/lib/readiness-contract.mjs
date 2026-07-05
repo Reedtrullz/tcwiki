@@ -64,6 +64,14 @@ function assertSourceMeta(value, path) {
   assertString(value.url, `${path}.url`);
 }
 
+function assertSourceMetaArray(value, path) {
+  assert(Array.isArray(value), `${path} must be an array`);
+  value.forEach((source, index) => {
+    assert(source !== undefined, `${path}[${index}] must be present`);
+    assertSourceMeta(source, `${path}[${index}]`);
+  });
+}
+
 function assertRequiredSourceMeta(value, path) {
   assert(value !== undefined, `${path} must be present when readiness is ready`);
   assertSourceMeta(value, path);
@@ -126,6 +134,54 @@ function sameSourceGroup(leftUrl, rightUrl) {
     return new URL(leftUrl).origin === new URL(rightUrl).origin;
   } catch {
     return leftUrl === rightUrl;
+  }
+}
+
+function sourceUrlMatches(sources, predicate) {
+  return sources.some((source) => {
+    try {
+      return predicate(new URL(source.url));
+    } catch {
+      return false;
+    }
+  });
+}
+
+function sourcePathEndsWith(pathname, suffix) {
+  return pathname.toLowerCase().endsWith(suffix.toLowerCase());
+}
+
+function isHeightPinnedSource(url, suffix) {
+  const height = url.searchParams.get('height');
+  return sourcePathEndsWith(url.pathname, suffix) && height !== null && /^\d+$/.test(height);
+}
+
+function assertExactThornodeNetworkSources(sources, path) {
+  assertSourceMetaArray(sources, path);
+  const requiredSources = [
+    ['latest Cosmos block', (url) => sourcePathEndsWith(url.pathname, '/base/tendermint/v1beta1/blocks/latest')],
+    ['height-pinned /mimir', (url) => isHeightPinnedSource(url, '/mimir')],
+    ['height-pinned /inbound_addresses', (url) => isHeightPinnedSource(url, '/inbound_addresses')],
+    ['height-pinned /version', (url) => isHeightPinnedSource(url, '/version')],
+    ['height-pinned /lastblock', (url) => isHeightPinnedSource(url, '/lastblock')],
+  ];
+
+  for (const [label, predicate] of requiredSources) {
+    assert(sourceUrlMatches(sources, predicate), `${path} must include ${label}`);
+  }
+}
+
+function assertExactDynamicFeeSources(sources, path) {
+  assertSourceMetaArray(sources, path);
+  const requiredSources = [
+    ['latest Cosmos block', (url) => sourcePathEndsWith(url.pathname, '/base/tendermint/v1beta1/blocks/latest')],
+    ['height-pinned /mimir', (url) => isHeightPinnedSource(url, '/mimir')],
+    ['height-pinned /dynamic_l1_fees', (url) => isHeightPinnedSource(url, '/dynamic_l1_fees')],
+    ['height-pinned /dynamic_l1_fees_current', (url) => isHeightPinnedSource(url, '/dynamic_l1_fees_current')],
+  ];
+
+  for (const [label, predicate] of requiredSources) {
+    assert(sourceUrlMatches(sources, predicate), `${path} must include ${label}`);
   }
 }
 
@@ -214,9 +270,11 @@ export function assertReadinessContract(json) {
     assertEmptyArray(midgard.sourceWarnings, 'sources.midgard.sourceWarnings');
     assertEmptyArray(midgard.sourceWarningDetails, 'sources.midgard.sourceWarningDetails');
     assertReadySource(thornode, 'sources.thornode');
+    assertExactThornodeNetworkSources(thornode.sources, 'sources.thornode.sources');
     assertEmptyArray(thornode.sourceWarnings, 'sources.thornode.sourceWarnings');
     assertEmptyArray(thornode.sourceWarningDetails, 'sources.thornode.sourceWarningDetails');
     assertSameReadySourceGroup(thornode.source, dynamicFees, 'sources.thornode.dynamicFees', 'sources.thornode.source');
+    assertExactDynamicFeeSources(dynamicFees.sources, 'sources.thornode.dynamicFees.sources');
     assertEmptyArray(dynamicFees.sourceWarnings, 'sources.thornode.dynamicFees.sourceWarnings');
     assertEmptyArray(dynamicFees.sourceWarningDetails, 'sources.thornode.dynamicFees.sourceWarningDetails');
     if (json.runtime.strict) {

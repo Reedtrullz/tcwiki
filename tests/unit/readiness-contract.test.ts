@@ -4,6 +4,24 @@ const { assertReadinessContract } = await import('../../scripts/lib/readiness-co
   assertReadinessContract: (json: unknown) => void;
 };
 
+const thornodeSources = [
+  { label: 'THORNode', url: 'https://thornode.thorchain.network/thorchain' },
+  { label: 'THORNode latest block', url: 'https://thornode.thorchain.network/cosmos/base/tendermint/v1beta1/blocks/latest' },
+  { label: 'THORNode Mimir', url: 'https://thornode.thorchain.network/thorchain/mimir?height=26799999' },
+  { label: 'THORNode inbound addresses', url: 'https://thornode.thorchain.network/thorchain/inbound_addresses?height=26799999' },
+  { label: 'THORNode version', url: 'https://thornode.thorchain.network/thorchain/version?height=26799999' },
+  { label: 'THORNode lastblock', url: 'https://thornode.thorchain.network/thorchain/lastblock?height=26799999' },
+];
+
+const dynamicFeeSources = [
+  { label: 'THORNode', url: 'https://thornode.thorchain.network/thorchain' },
+  { label: 'THORNode latest block', url: 'https://thornode.thorchain.network/cosmos/base/tendermint/v1beta1/blocks/latest' },
+  { label: 'THORNode Mimir', url: 'https://thornode.thorchain.network/thorchain/mimir?height=26799999' },
+  { label: 'THORNode dynamic L1 fee records', url: 'https://thornode.thorchain.network/thorchain/dynamic_l1_fees?height=26799999' },
+  { label: 'THORNode dynamic L1 fee current epoch', url: 'https://thornode.thorchain.network/thorchain/dynamic_l1_fees_current?height=26799999' },
+  { label: 'THORNode dynamic L1 fee history ss', url: 'https://thornode.thorchain.network/thorchain/dynamic_l1_fees/ss?height=26799999' },
+];
+
 function readinessResponse() {
   return {
     status: 'degraded',
@@ -54,7 +72,8 @@ function readinessResponse() {
       thornode: {
         status: 'ok',
         source: { label: 'THORNode', url: 'https://thornode.thorchain.network/thorchain' },
-        sourceCount: 1,
+        sources: thornodeSources,
+        sourceCount: thornodeSources.length,
         activeControlKeys: [],
         activeChainKeys: [],
         activeEvidenceKeys: [],
@@ -68,6 +87,7 @@ function readinessResponse() {
           status: 'ok',
           checkedAt: '2026-07-04T00:00:00.000Z',
           source: { label: 'THORNode', url: 'https://thornode.thorchain.network/thorchain' },
+          sources: dynamicFeeSources,
           enabledState: 'active',
           enabledValue: 1,
           currentEpoch: 1864,
@@ -212,5 +232,21 @@ describe('readiness runtime contract helper', () => {
     };
 
     expect(() => assertReadinessContract(response)).toThrow(/dynamicFees\.source must share provider origin/);
+  });
+
+  it('rejects ready responses without exact THORNode network endpoint evidence', () => {
+    const response = readyResponse();
+    response.sources.thornode.sources = [
+      { label: 'THORNode', url: 'https://thornode.thorchain.network/thorchain' },
+    ];
+
+    expect(() => assertReadinessContract(response)).toThrow(/sources\.thornode\.sources must include latest Cosmos block/);
+  });
+
+  it('rejects ready responses without exact dynamic-fee endpoint evidence', () => {
+    const response = readyResponse();
+    response.sources.thornode.dynamicFees.sources = dynamicFeeSources.filter((source) => !source.url.includes('/dynamic_l1_fees_current'));
+
+    expect(() => assertReadinessContract(response)).toThrow(/dynamicFees\.sources must include height-pinned \/dynamic_l1_fees_current/);
   });
 });
