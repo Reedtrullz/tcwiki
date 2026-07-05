@@ -224,6 +224,8 @@ describe('SEARCH_DOCUMENTS', () => {
     expect(docsMatching('key-sign failures').some((doc) => doc.slug === '/governance')).toBe(true);
     expect(docsMatching('Keyverify').some((doc) => doc.slug === '/deep-dives/tss')).toBe(true);
     expect(docsMatching('compromised vault exclusion').some((doc) => doc.slug === '/deep-dives/tss')).toBe(true);
+    expect(docsMatching('DKLS').some((doc) => doc.id === 'task:tss-security-claims' && doc.href === '/deep-dives/tss')).toBe(true);
+    expect(docsMatching('Schnorr').some((doc) => doc.id === 'deep-dive-path:network-security')).toBe(true);
   });
 
   it('does not slice curated incidents or ecosystem records', () => {
