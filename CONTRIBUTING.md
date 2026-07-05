@@ -24,8 +24,8 @@ npm run build
 npm run smoke:standalone
 CSP_ENFORCE=1 npm run smoke:standalone
 npm run test:e2e
-CHECK_BASE_URL=https://wiki.thorchain.no npm run check:runtime-url # public runtime/header drift probe
-IMAGE_REF=ghcr.io/example/tcwiki@sha256:0000000000000000000000000000000000000000000000000000000000000000 APP_VERSION=local ansible-playbook -i inventory/hosts.yml ansible-playbook.yml --syntax-check
+CHECK_BASE_URL=https://wiki.thorchain.no REQUIRE_RUNTIME_METADATA=1 npm run check:runtime-url # public runtime/header drift probe
+IMAGE_REF=ghcr.io/example/tcwiki@sha256:1111111111111111111111111111111111111111111111111111111111111111 APP_VERSION=1111111111111111111111111111111111111111 ansible-playbook -i inventory/hosts.yml ansible-playbook.yml --syntax-check
 ```
 
 `npm run test:e2e` starts a fresh standalone server by default. Set `PLAYWRIGHT_BASE_URL` only when you intentionally want to test an existing local standalone server or a remote deployment.

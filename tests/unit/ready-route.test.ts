@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import MidgardAPI from '@/lib/api/midgard';
 import ThornodeAPI from '@/lib/api/thornode';
 import { GET } from '@/app/api/ready/route';
@@ -181,6 +181,10 @@ function earningsData(): LiveDataResult<HistoryItem[]> {
 }
 
 describe('/api/ready', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
   beforeEach(() => {
     vi.mocked(MidgardAPI.getHealth).mockReset();
     vi.mocked(MidgardAPI.getNetworkData).mockReset();
@@ -204,8 +208,11 @@ describe('/api/ready', () => {
     expect(response.headers.get('cache-control')).toBe('no-store');
     expect(body.status).toBe('ready');
     expect(body.ready).toBe(true);
+    expect(body.runtime.strict).toBe(false);
+    expect(body.runtime.verified).toBe(false);
     expect(body.warnings).toEqual([]);
     expect(body.sources.midgard.visibleData.network.status).toBe('ok');
+    expect(body.sources.midgard.visibleData.network.source).toEqual({ label: 'Midgard', url: 'https://midgard.thorchain.network/v2' });
     expect(body.sources.midgard.visibleData.pools.status).toBe('ok');
     expect(body.sources.midgard.visibleData.earnings.status).toBe('ok');
     expect(body.sources.midgard.healthWarnings).toEqual([]);
@@ -229,6 +236,43 @@ describe('/api/ready', () => {
     expect(body.sources.thornode.dynamicFees.snapshotPinned).toBe(true);
     expect(body.sources.thornode.dynamicFees.sourceWarnings).toEqual([]);
     expect(body.sources.thornode.dynamicFees.sourceWarningDetails).toEqual([]);
+  });
+
+  it('keeps readiness healthy when strict runtime metadata is verified', async () => {
+    vi.stubEnv('APP_VERSION', '811531ee677b4a5958d5ace6597fcaaabd4ac4e6');
+    vi.stubEnv('COMMIT_SHA', '811531ee677b4a5958d5ace6597fcaaabd4ac4e6');
+    vi.stubEnv('IMAGE_REF', `ghcr.io/reedtrullz/tcwiki@sha256:${'a'.repeat(64)}`);
+    vi.stubEnv('RUNTIME_METADATA_REQUIRED', '1');
+
+    const response = await GET();
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.ready).toBe(true);
+    expect(body.runtime.strict).toBe(true);
+    expect(body.runtime.verified).toBe(true);
+    expect(body.runtime.warnings).toEqual([]);
+  });
+
+  it('degrades readiness when strict runtime metadata is missing or placeholder', async () => {
+    vi.stubEnv('APP_VERSION', 'development');
+    vi.stubEnv('COMMIT_SHA', 'unknown');
+    vi.stubEnv('IMAGE_REF', 'unknown');
+    vi.stubEnv('RUNTIME_METADATA_REQUIRED', '1');
+
+    const response = await GET();
+    const body = await response.json();
+
+    expect(response.status).toBe(503);
+    expect(body.status).toBe('degraded');
+    expect(body.ready).toBe(false);
+    expect(body.runtime.strict).toBe(true);
+    expect(body.runtime.verified).toBe(false);
+    expect(body.reasons).toEqual([
+      'Runtime version metadata is missing or still using a local placeholder.',
+      'Runtime commit metadata is missing or not a git SHA.',
+      'Runtime image metadata is missing or not an immutable sha256 digest ref.',
+    ]);
   });
 
   it('returns degraded when a source is unavailable', async () => {

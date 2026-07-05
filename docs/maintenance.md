@@ -20,7 +20,8 @@
 
 - Local proof is not deploy proof. Keep local checks, CI checks, image publication, deployment, and live readback separate.
 - Before claiming production readiness, verify the immutable image ref and read back `/api/health`, `/api/version`, and `/api/ready`.
-- `/api/health` is liveness-only. `/api/ready` is the upstream readiness and source-confidence endpoint for visible Midgard datasets, THORNode operation state, and the dynamic L1 fee tracker.
+- `/api/health` is liveness-only. `/api/ready` is the upstream readiness and source-confidence endpoint for visible Midgard datasets, THORNode operation state, the dynamic L1 fee tracker, and strict runtime metadata when `RUNTIME_METADATA_REQUIRED=1`.
+- `/api/health`, `/api/version`, and `/api/ready` include `runtime` diagnostics. Production evidence should show `runtime.verified: true`, commit metadata shaped like a git SHA, and image metadata shaped like an immutable `@sha256:` ref.
 - `/api/ready` `reasons` and `sourceWarnings` remain string-compatible for simple monitors; top-level `warnings` carries non-blocking source caveats, and `sourceWarningDetails` carries structured category/action/key context for diagnostics.
 - Release-shaped smoke and deploy checks should validate `/api/ready` shape, metadata, and reasons, but source-confidence degradation is non-blocking unless `REQUIRE_READY=1` is set for a deliberate upstream-readiness audit.
 - Do not reintroduce mutable `latest` deploys; deploys must use digest image refs.
@@ -35,7 +36,7 @@
 - Production and standalone CSP must not include `unsafe-eval` or `unsafe-inline`; the Next proxy generates a per-request nonce and the root layout intentionally renders dynamically so framework scripts receive it.
 - Use `CSP_ENFORCE=1 npm run smoke:standalone` for a local enforced-policy header smoke, then `npm run test:e2e:csp` to confirm CSP-sensitive browser paths do not emit `/api/csp-report` reports under enforced headers.
 - Do not promote production while report-only browser runs still show `style-src-elem` or other normal-page violations.
-- Use `CHECK_BASE_URL=https://wiki.thorchain.no npm run check:runtime-url` for a public runtime/header drift probe. Leave `REQUIRE_READY=1` unset unless deliberately auditing upstream readiness.
+- Use `CHECK_BASE_URL=https://wiki.thorchain.no REQUIRE_RUNTIME_METADATA=1 npm run check:runtime-url` for a public runtime/header drift probe. Leave `REQUIRE_READY=1` unset unless deliberately auditing upstream readiness.
 
 ## Standard Local Gate
 
@@ -56,6 +57,6 @@ npm run smoke:standalone
 CSP_ENFORCE=1 npm run smoke:standalone
 npm run test:e2e:visual # focused route overflow / first-viewport smoke
 npm run test:e2e
-CHECK_BASE_URL=https://wiki.thorchain.no npm run check:runtime-url # public runtime/header drift probe
-IMAGE_REF=ghcr.io/example/tcwiki@sha256:0000000000000000000000000000000000000000000000000000000000000000 APP_VERSION=local ansible-playbook -i inventory/hosts.yml ansible-playbook.yml --syntax-check
+CHECK_BASE_URL=https://wiki.thorchain.no REQUIRE_RUNTIME_METADATA=1 npm run check:runtime-url # public runtime/header drift probe
+IMAGE_REF=ghcr.io/example/tcwiki@sha256:1111111111111111111111111111111111111111111111111111111111111111 APP_VERSION=1111111111111111111111111111111111111111 ansible-playbook -i inventory/hosts.yml ansible-playbook.yml --syntax-check
 ```

@@ -1,5 +1,6 @@
 import MidgardAPI from '@/lib/api/midgard';
 import ThornodeAPI from '@/lib/api/thornode';
+import { getRuntimeMetadata } from '@/lib/runtime-metadata';
 import type {
   DynamicL1FeeStatus,
   LiveDataResult,
@@ -14,10 +15,13 @@ import type {
 export const dynamic = 'force-dynamic';
 
 function runtimeMetadata() {
+  const runtime = getRuntimeMetadata();
+
   return {
-    version: process.env.APP_VERSION ?? process.env.VERSION ?? 'development',
-    commit: process.env.COMMIT_SHA ?? 'unknown',
-    image: process.env.IMAGE_REF ?? 'unknown',
+    version: runtime.version,
+    commit: runtime.commit,
+    image: runtime.image,
+    runtime,
   };
 }
 
@@ -379,8 +383,12 @@ export async function GET() {
     reasons.push(...dynamicFeeSourceWarnings);
   }
 
-  const ready = midgardReady && visibleMidgardReady && thornodeReady && dynamicFeesReady;
   const metadata = runtimeMetadata();
+  if (metadata.runtime.strict && !metadata.runtime.verified) {
+    reasons.push(...metadata.runtime.warnings);
+  }
+  const runtimeReady = !metadata.runtime.strict || metadata.runtime.verified;
+  const ready = midgardReady && visibleMidgardReady && thornodeReady && dynamicFeesReady && runtimeReady;
   const body: ReadinessResponse = {
     status: ready ? 'ready' : 'degraded',
     ready,

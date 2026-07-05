@@ -41,10 +41,13 @@ Expected:
 
 - `status` is `healthy`.
 - `version` matches the deployed commit SHA.
-- `image` is a digest ref when set by deployment.
+- `commit` matches the deployed commit SHA.
+- `image` is an immutable `@sha256:` digest ref when set by deployment.
+- `runtime.verified` is `true` and `runtime.warnings` is empty for deployed production checks.
 - `/api/ready` returns `ready: true` and `status: ready` before claiming upstream readiness.
 - `/api/ready` can intentionally return `503 degraded`; use a body-preserving command so the JSON diagnostics are still visible.
 - `/api/ready` checks visible Midgard datasets, THORNode operation state, and the dynamic L1 fee tracker source contract.
+- `/api/ready` degrades on runtime identity problems only when `RUNTIME_METADATA_REQUIRED=1`; production containers set this so missing commit/image provenance is not treated as clean readiness.
 - `/api/ready` keeps `reasons` and `sourceWarnings` as simple strings for probes, exposes top-level `warnings` for non-blocking source caveats, and includes `sourceWarningDetails` with severity, category, action, keys, and scopes when warnings need operator review.
 
 ## Rollback Behavior
@@ -86,5 +89,5 @@ Expected response headers include:
 The default CSP is nonce-based report-only and must not include `unsafe-inline` or `unsafe-eval`. The root layout is intentionally dynamic so Next can attach the per-request nonce to framework scripts. Set `CSP_ENFORCE=1` for local enforced-policy header smoke, run `npm run test:e2e:csp` for enforced browser coverage, and keep Playwright’s no-report CSP check passing before considering production enforcement. For public drift checks, run:
 
 ```bash
-CHECK_BASE_URL=https://wiki.thorchain.no npm run check:runtime-url
+CHECK_BASE_URL=https://wiki.thorchain.no REQUIRE_RUNTIME_METADATA=1 npm run check:runtime-url
 ```

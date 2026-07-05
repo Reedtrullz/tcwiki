@@ -672,6 +672,8 @@ test.describe('THORChain Wiki Smoke Tests', () => {
     expect(response.headers()['cache-control']).toContain('no-store');
     const json = await response.json();
     expect(json.status).toBe('healthy');
+    expect(json.runtime).toBeTruthy();
+    expect(typeof json.runtime.verified).toBe('boolean');
   });
 
   test('version API endpoint responds', async ({ request }) => {
@@ -680,6 +682,8 @@ test.describe('THORChain Wiki Smoke Tests', () => {
     expect(response.headers()['cache-control']).toContain('no-store');
     const json = await response.json();
     expect(json.version).toBeTruthy();
+    expect(json.runtime).toBeTruthy();
+    expect(json.runtime.version).toBe(json.version);
   });
 
   test('readiness API endpoint responds with readiness metadata', async ({ request }) => {
@@ -690,6 +694,8 @@ test.describe('THORChain Wiki Smoke Tests', () => {
     const json = await response.json();
     expect(['ready', 'degraded']).toContain(json.status);
     expect(json.version).toBeTruthy();
+    expect(json.runtime).toBeTruthy();
+    expect(typeof json.runtime.strict).toBe('boolean');
     expectStringArray(json.reasons);
     expectStringArray(json.warnings);
     expect(json.sources.midgard).toBeTruthy();

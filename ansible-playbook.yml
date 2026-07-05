@@ -108,6 +108,7 @@
               VERSION: "{{ app_version }}"
               COMMIT_SHA: "{{ app_version }}"
               IMAGE_REF: "{{ image_ref }}"
+              RUNTIME_METADATA_REQUIRED: "1"
 
         - name: Wait for candidate health
           uri:
@@ -198,6 +199,7 @@
               VERSION: "{{ app_version }}"
               COMMIT_SHA: "{{ app_version }}"
               IMAGE_REF: "{{ image_ref }}"
+              RUNTIME_METADATA_REQUIRED: "1"
 
         - name: Wait for application health
           uri:
@@ -284,6 +286,7 @@
               VERSION: "{{ previous_version }}"
               COMMIT_SHA: "{{ previous_commit_sha }}"
               IMAGE_REF: "{{ previous_image_ref }}"
+              RUNTIME_METADATA_REQUIRED: "1"
           when: previous_image != "none" and deployment_replaced | default(false)
 
         - name: Verify rollback health when previous image exists

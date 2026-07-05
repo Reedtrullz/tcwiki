@@ -12,6 +12,18 @@ function readinessResponse() {
     version: 'development',
     commit: 'unknown',
     image: 'unknown',
+    runtime: {
+      version: 'development',
+      commit: 'unknown',
+      image: 'unknown',
+      strict: false,
+      verified: false,
+      warnings: [
+        'Runtime version metadata is missing or still using a local placeholder.',
+        'Runtime commit metadata is missing or not a git SHA.',
+        'Runtime image metadata is missing or not an immutable sha256 digest ref.',
+      ],
+    },
     warnings: [],
     reasons: ['THORNode dynamic fee state is stale.'],
     sources: {
@@ -41,6 +53,7 @@ function readinessResponse() {
       },
       thornode: {
         status: 'ok',
+        source: { label: 'THORNode', url: 'https://thornode.thorchain.network/thorchain' },
         sourceCount: 1,
         activeControlKeys: [],
         activeChainKeys: [],
@@ -101,6 +114,35 @@ describe('readiness runtime contract helper', () => {
     expect(() => assertReadinessContract(readyResponse())).not.toThrow();
   });
 
+  it('rejects readiness responses that omit runtime diagnostics', () => {
+    const response = readinessResponse();
+    delete (response as { runtime?: unknown }).runtime;
+
+    expect(() => assertReadinessContract(response)).toThrow(/runtime must be an object/);
+  });
+
+  it('rejects mismatched runtime diagnostics', () => {
+    const response = readinessResponse();
+    response.runtime.commit = 'deadbeef';
+
+    expect(() => assertReadinessContract(response)).toThrow(/runtime\.commit must match/);
+  });
+
+  it('rejects claimed runtime verification that contradicts metadata values', () => {
+    const response = readinessResponse();
+    response.runtime.verified = true;
+    response.runtime.warnings = [];
+
+    expect(() => assertReadinessContract(response)).toThrow(/runtime\.verified must match runtime metadata validation/);
+  });
+
+  it('rejects ready responses with strict unverified runtime metadata', () => {
+    const response = readyResponse();
+    response.runtime.strict = true;
+
+    expect(() => assertReadinessContract(response)).toThrow(/strict runtime metadata/);
+  });
+
   it('rejects readiness responses that omit dynamic-fee diagnostics', () => {
     const response = readinessResponse();
     delete (response.sources.thornode as { dynamicFees?: unknown }).dynamicFees;
@@ -120,6 +162,13 @@ describe('readiness runtime contract helper', () => {
     response.sources.midgard.visibleData.earnings.status = 'degraded';
 
     expect(() => assertReadinessContract(response)).toThrow(/visibleData\.earnings\.status/);
+  });
+
+  it('rejects ready responses without source metadata on ready source checks', () => {
+    const response = readyResponse();
+    delete (response.sources.midgard.visibleData.earnings as { source?: unknown }).source;
+
+    expect(() => assertReadinessContract(response)).toThrow(/visibleData\.earnings\.source must be present/);
   });
 
   it('rejects ready responses that omit visible source subsections with a clear path', () => {

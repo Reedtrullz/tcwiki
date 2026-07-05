@@ -1,3 +1,5 @@
+import { runtimeMetadataWarnings } from './runtime-metadata-contract.mjs';
+
 const allowedReadinessStatuses = new Set(['ready', 'degraded']);
 const allowedSourceStatuses = new Set(['ok', 'degraded']);
 const allowedWarningSeverities = new Set(['critical', 'warning', 'review']);
@@ -62,6 +64,31 @@ function assertSourceMeta(value, path) {
   assertString(value.url, `${path}.url`);
 }
 
+function assertRequiredSourceMeta(value, path) {
+  assert(value !== undefined, `${path} must be present when readiness is ready`);
+  assertSourceMeta(value, path);
+}
+
+function assertRuntimeMetadata(json) {
+  const runtime = json.runtime;
+  assert(runtime && typeof runtime === 'object', 'runtime must be an object');
+  assertString(runtime.version, 'runtime.version');
+  assertString(runtime.commit, 'runtime.commit');
+  assertString(runtime.image, 'runtime.image');
+  assert(typeof runtime.strict === 'boolean', 'runtime.strict must be boolean');
+  assert(typeof runtime.verified === 'boolean', 'runtime.verified must be boolean');
+  assertStringArray(runtime.warnings, 'runtime.warnings');
+  assert(runtime.version === json.version, 'runtime.version must match top-level version');
+  assert(runtime.commit === json.commit, 'runtime.commit must match top-level commit');
+  assert(runtime.image === json.image, 'runtime.image must match top-level image');
+  const computedWarnings = runtimeMetadataWarnings(json);
+  assert(runtime.verified === (computedWarnings.length === 0), 'runtime.verified must match runtime metadata validation');
+  assert(runtime.warnings.length === computedWarnings.length, 'runtime.warnings must match runtime metadata validation');
+  for (const warning of computedWarnings) {
+    assert(runtime.warnings.includes(warning), `runtime.warnings must include ${warning}`);
+  }
+}
+
 function assertSourceCheck(value, path) {
   assert(value && typeof value === 'object', `${path} must be an object`);
   assert(allowedSourceStatuses.has(value.status), `${path}.status must be ok or degraded`);
@@ -91,6 +118,7 @@ function assertEmptyArray(value, path) {
 function assertReadySource(value, path) {
   assert(value && typeof value === 'object', `${path} must be an object`);
   assert(value.status === 'ok', `${path}.status must be ok when readiness is ready`);
+  assertRequiredSourceMeta(value.source, `${path}.source`);
 }
 
 export function assertReadinessContract(json) {
@@ -101,6 +129,7 @@ export function assertReadinessContract(json) {
   assertString(json.version, 'version');
   assertString(json.commit, 'commit');
   assertString(json.image, 'image');
+  assertRuntimeMetadata(json);
   assertStringArray(json.reasons, 'reasons');
   assertStringArray(json.warnings, 'warnings');
   assert(json.sources && typeof json.sources === 'object', 'sources must be an object');
@@ -173,5 +202,9 @@ export function assertReadinessContract(json) {
     assertReadySource(dynamicFees, 'sources.thornode.dynamicFees');
     assertEmptyArray(dynamicFees.sourceWarnings, 'sources.thornode.dynamicFees.sourceWarnings');
     assertEmptyArray(dynamicFees.sourceWarningDetails, 'sources.thornode.dynamicFees.sourceWarningDetails');
+    if (json.runtime.strict) {
+      assert(json.runtime.verified, 'ready responses with strict runtime metadata must be verified');
+      assertEmptyArray(json.runtime.warnings, 'runtime.warnings');
+    }
   }
 }

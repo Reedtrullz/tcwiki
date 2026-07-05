@@ -5,12 +5,15 @@ import { setTimeout as wait } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
 import { prepareStandaloneAssets } from './prepare-standalone-assets.mjs';
 import { assertReadinessContract } from './lib/readiness-contract.mjs';
+import { assertRuntimeMetadataContract } from './lib/runtime-metadata-contract.mjs';
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const serverPath = join(root, '.next/standalone/server.js');
-const expectedVersion = process.env.APP_VERSION ?? 'standalone-smoke';
-const expectedCommit = process.env.COMMIT_SHA ?? 'standalone-smoke';
-const expectedImage = process.env.IMAGE_REF ?? 'standalone-smoke';
+const localSmokeCommit = '1111111111111111111111111111111111111111';
+const localSmokeImage = `ghcr.io/reedtrullz/tcwiki@sha256:${'1'.repeat(64)}`;
+const expectedVersion = process.env.APP_VERSION ?? localSmokeCommit;
+const expectedCommit = process.env.COMMIT_SHA ?? localSmokeCommit;
+const expectedImage = process.env.IMAGE_REF ?? localSmokeImage;
 const requireReady = process.env.REQUIRE_READY === '1';
 const enforcedCsp = process.env.CSP_ENFORCE === '1';
 
@@ -55,6 +58,7 @@ const child = spawn(process.execPath, [serverPath], {
     APP_VERSION: expectedVersion,
     COMMIT_SHA: expectedCommit,
     IMAGE_REF: expectedImage,
+    RUNTIME_METADATA_REQUIRED: process.env.RUNTIME_METADATA_REQUIRED ?? '1',
   },
   stdio: ['ignore', 'pipe', 'pipe'],
 });
@@ -110,6 +114,7 @@ function expectRuntimeMetadata(json) {
   if (json.image !== expectedImage) {
     throw new Error(`Expected image ${expectedImage}; got ${json.image ?? 'missing'}`);
   }
+  assertRuntimeMetadataContract(json, { requireVerified: true, requireStrict: true });
 }
 
 function expectHeader(headers, key, expected) {
