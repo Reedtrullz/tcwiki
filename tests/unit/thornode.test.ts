@@ -1185,6 +1185,9 @@ describe('deriveNetworkStatus', () => {
   });
 
   it('pins THORNode status reads to the conservative snapshot height before deriving Mimir state', async () => {
+    const cacheBust = Date.parse('2026-07-03T12:00:00.000Z');
+    vi.useFakeTimers();
+    vi.setSystemTime(cacheBust);
     const fetchSpy = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       const pathname = new URL(url).pathname;
@@ -1225,6 +1228,9 @@ describe('deriveNetworkStatus', () => {
       'https://gateway.liquify.com/chain/thorchain_api/thorchain/version?height=99',
       'https://gateway.liquify.com/chain/thorchain_api/thorchain/lastblock?height=99',
     ]);
+    expect(requestedUrls).toContain(
+      `https://gateway.liquify.com/chain/thorchain_api/cosmos/base/tendermint/v1beta1/blocks/latest?tcwiki_cache_bust=${cacheBust}`
+    );
     expect(requestedUrls).toContain('https://gateway.liquify.com/chain/thorchain_api/thorchain/mimir?height=99');
     expect(requestedUrls).toContain('https://gateway.liquify.com/chain/thorchain_api/thorchain/inbound_addresses?height=99');
     expect(requestedUrls).toContain('https://gateway.liquify.com/chain/thorchain_api/thorchain/version?height=99');

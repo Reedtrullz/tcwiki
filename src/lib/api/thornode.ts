@@ -61,6 +61,7 @@ const THORNODE_BLOCK_STALE_DEGRADED_SECONDS = 30;
 const THORNODE_BLOCK_FUTURE_WARNING_SECONDS = 12;
 const THORNODE_BLOCK_FUTURE_DEGRADED_SECONDS = 30;
 const THORNODE_LASTBLOCK_SPREAD_WARNING_BLOCKS = 3;
+const THORNODE_LATEST_BLOCK_PATH = '/base/tendermint/v1beta1/blocks/latest';
 const DYNAMIC_L1_FEE_HISTORY_THORNAME_LIMIT = 16;
 const DYNAMIC_L1_FEE_HISTORY_CONCURRENCY = 4;
 
@@ -407,8 +408,13 @@ async function requestFromEndpoint<T>(endpoint: SourceMeta, path: string, height
   return requestJson<T>(thornodePathUrl(endpoint, path, height));
 }
 
-async function requestCosmosFromEndpoint<T>(endpoint: ThornodeEndpoint, path: string): Promise<T> {
-  return requestJson<T>(`${endpoint.cosmosUrl}${path}`);
+async function requestLatestBlockFromEndpoint<T>(endpoint: ThornodeEndpoint): Promise<T> {
+  const requestUrl = new URL(`${endpoint.cosmosUrl}${THORNODE_LATEST_BLOCK_PATH}`);
+  // Liquify's geo-routed gateway can cache the bare latest-block path. A unique
+  // request key refreshes discovery without changing the canonical source URL
+  // or the height-pinned reads derived from this response.
+  requestUrl.searchParams.set('tcwiki_cache_bust', String(Date.now()));
+  return requestJson<T>(requestUrl.toString());
 }
 
 async function forEachWithConcurrency<T>(
@@ -2790,7 +2796,7 @@ export class ThornodeAPI {
       const endpoint = THORNODE_ENDPOINTS[endpointIndex];
 
       try {
-        const latestBlock = await requestCosmosFromEndpoint<unknown>(endpoint, '/base/tendermint/v1beta1/blocks/latest');
+        const latestBlock = await requestLatestBlockFromEndpoint<unknown>(endpoint);
         const latestBlockInfo = getTendermintLatestBlockInfo(latestBlock);
         if (latestBlockInfo === null) {
           throw new Error('THORNode latest block response did not include a usable height and timestamp.');
@@ -2920,7 +2926,7 @@ export class ThornodeAPI {
       const endpoint = THORNODE_ENDPOINTS[endpointIndex];
 
       try {
-        const latestBlock = await requestCosmosFromEndpoint<unknown>(endpoint, '/base/tendermint/v1beta1/blocks/latest');
+        const latestBlock = await requestLatestBlockFromEndpoint<unknown>(endpoint);
         const latestBlockInfo = getTendermintLatestBlockInfo(latestBlock);
         if (latestBlockInfo === null) {
           throw new Error('THORNode latest block response did not include a usable height and timestamp.');
@@ -2995,7 +3001,7 @@ export class ThornodeAPI {
       const endpoint = THORNODE_ENDPOINTS[endpointIndex];
 
       try {
-        const latestBlock = await requestCosmosFromEndpoint<unknown>(endpoint, '/base/tendermint/v1beta1/blocks/latest');
+        const latestBlock = await requestLatestBlockFromEndpoint<unknown>(endpoint);
         const latestBlockInfo = getTendermintLatestBlockInfo(latestBlock);
         if (latestBlockInfo === null) {
           throw new Error('THORNode latest block response did not include a usable height and timestamp.');

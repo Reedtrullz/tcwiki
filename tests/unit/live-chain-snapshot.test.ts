@@ -125,7 +125,9 @@ function failingResponse(status = 503, statusText = 'Unavailable') {
 function fetchFor(responses: Record<string, unknown>) {
   return vi.fn(async (input: RequestInfo | URL) => {
     const url = String(input);
-    const value = responses[url];
+    const fixtureUrl = new URL(url);
+    fixtureUrl.searchParams.delete('tcwiki_cache_bust');
+    const value = responses[fixtureUrl.toString()];
     if (value === undefined) {
       return failingResponse(404, 'Not Found') as unknown as Response;
     }
@@ -154,6 +156,14 @@ describe('live chain snapshot helper', () => {
     expect(result.latestHeight).toBe(11);
     expect(result.snapshotHeight).toBe(10);
     expect(result.blockAgeSeconds).toBe(5);
+    expect(fetchImpl).toHaveBeenCalledWith(
+      `https://a.example/cosmos/base/tendermint/v1beta1/blocks/latest?tcwiki_cache_bust=${nowMs}`,
+      expect.objectContaining({ cache: 'no-store' })
+    );
+    expect(fetchImpl).toHaveBeenCalledWith(
+      `https://b.example/cosmos/base/tendermint/v1beta1/blocks/latest?tcwiki_cache_bust=${nowMs}`,
+      expect.objectContaining({ cache: 'no-store' })
+    );
     expect(fetchImpl).toHaveBeenCalledWith(
       'https://a.example/thorchain/inbound_addresses?height=10',
       expect.objectContaining({ cache: 'no-store' })

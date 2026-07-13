@@ -56,7 +56,7 @@ async function mockDynamicFeesThornode(page: Page) {
     },
   };
 
-  await page.route(/\/base\/tendermint\/v1beta1\/blocks\/latest$/, async (route) => {
+  await page.route(/\/base\/tendermint\/v1beta1\/blocks\/latest(?:\?.*)?$/, async (route) => {
     await fulfillJson(route, {
       block: {
         header: {
