@@ -9,8 +9,8 @@ import { RouteSourcePosture } from '@/components/features/RouteSourcePosture';
 import { GlossaryExplorer } from '@/components/features/GlossaryExplorer';
 import { ProtocolChainFinder } from '@/components/features/ProtocolChainFinder';
 import { GLOSSARY_TERMS } from '@/lib/content/glossary';
-import { CHAIN_RECORDS, ECOSYSTEM_PROJECT_RECORDS, getTokenomicsRecord, GOVERNANCE_PROPOSAL_RECORDS, PROTOCOL_MILESTONE_RECORDS, SECURITY_INCIDENT_RECORDS } from '@/lib/data/static';
-import { CONTENT_ENTRIES, SEARCH_PAGE_ENTRY, getContentEntry } from '@/lib/content/registry';
+import { CHAIN_RECORDS, ECOSYSTEM_PROJECT_RECORDS, getTokenomicsRecord, GOVERNANCE_PROPOSAL_RECORDS, PROTOCOL_MILESTONE_RECORDS, SECURITY_INCIDENT_RECORDS, SOURCE_MAP_SECTION_RECORDS } from '@/lib/data/static';
+import { CONTENT_ENTRIES, DEEP_DIVE_READER_PATHS, SEARCH_PAGE_ENTRY, TASK_INTENT_GUIDES, getContentEntry } from '@/lib/content/registry';
 import { continuousLiquidityPoolsSource, cosmWasmSource, liquidityProvidersSource, liveInboundSource } from '@/lib/sources';
 
 vi.mock('next/navigation', () => ({
@@ -22,10 +22,10 @@ vi.mock('next/navigation', () => ({
 }));
 
 describe('source and freshness labels', () => {
-  it('keeps the shared live inbound source date aligned with the current-state refresh', () => {
+  it('keeps source retrieval and governance review freshness independently dated', () => {
     expect(liveInboundSource.retrievedAt).toBe('2026-07-04');
     expect(GOVERNANCE_PROPOSAL_RECORDS.find((record) => record.data.id === 'mimir-operational-halts')?.freshness).toEqual(
-      expect.objectContaining({ checkedAt: '2026-07-04', nextReviewDue: '2026-08-04' })
+      expect.objectContaining({ checkedAt: '2026-07-13', nextReviewDue: '2026-08-13' })
     );
   });
 
@@ -281,6 +281,74 @@ describe('source and freshness labels', () => {
     }
   });
 
+  it('refreshes the August 4 review batch from claim-specific primary evidence', () => {
+    const glossaryTerms = [
+      'Affiliate fee',
+      'App Layer',
+      'CosmWasm',
+      'Dynamic L1 fee',
+      'GG20',
+      'KeyVerify',
+      'Outbound fee',
+      'Secured asset',
+      'Trade asset',
+    ];
+
+    for (const termName of glossaryTerms) {
+      const term = GLOSSARY_TERMS.find(({ term }) => term === termName);
+      expect(term?.reviewedAt, termName).toBe('2026-07-13');
+      expect(term?.nextReviewDue, termName).toBe('2026-08-13');
+    }
+
+    const securedAsset = GLOSSARY_TERMS.find(({ term }) => term === 'Secured asset');
+    expect(securedAsset?.sources.some(({ url }) => url === 'https://dev.thorchain.org/concepts/secured-assets.html')).toBe(true);
+
+    const tradeAsset = GLOSSARY_TERMS.find(({ term }) => term === 'Trade asset');
+    expect(tradeAsset?.sources.some(({ url }) => url === 'https://docs.thorchain.org/technical-documentation/thorchain-finance/trade-assets')).toBe(true);
+
+    const keyVerify = GLOSSARY_TERMS.find(({ term }) => term === 'KeyVerify');
+    expect(keyVerify?.definition).toContain('temporary recovery check');
+    expect(keyVerify?.definition).toContain('before trading resumed');
+    expect(keyVerify?.sources.map(({ url }) => url)).toEqual(['https://blog.thorchain.org/protocol-upgrade-v3-19-0']);
+
+    const appLayer = GLOSSARY_TERMS.find(({ term }) => term === 'App Layer');
+    expect(appLayer?.definition).toContain('Mimir-governed deployment permissioning');
+    expect(appLayer?.sources.some(({ url }) => url === 'https://dev.thorchain.org/mimir.html')).toBe(true);
+
+    expect(GOVERNANCE_PROPOSAL_RECORDS.find(({ data }) => data.id === 'mimir-operational-halts')?.freshness).toEqual(
+      expect.objectContaining({ checkedAt: '2026-07-13', nextReviewDue: '2026-08-13' })
+    );
+
+    for (const id of ['dynamic-fee-experiment', 'runtime-live-data-failover', 'third-party-interfaces-wallets']) {
+      expect(SOURCE_MAP_SECTION_RECORDS.find(({ data }) => data.id === id)?.freshness, id).toEqual(
+        expect.objectContaining({ checkedAt: '2026-07-13', nextReviewDue: '2026-08-13' })
+      );
+    }
+
+    const beginnerPath = DEEP_DIVE_READER_PATHS.find(({ id }) => id === 'new-to-thorchain');
+    expect(beginnerPath).toEqual(expect.objectContaining({ reviewedAt: '2026-07-13', nextReviewDue: '2026-08-13' }));
+    expect(beginnerPath?.sources.map(({ url }) => url)).toEqual([
+      'https://docs.thorchain.org/native-cross-chain-swaps',
+      'https://docs.thorchain.org/technical-documentation/understanding-thorchain/rune',
+      'https://docs.thorchain.org/technical-documentation/thorchain-finance/continuous-liquidity-pools',
+      'https://docs.thorchain.org/technical-documentation/technology/bifrost-tss-and-vaults',
+      'https://dev.thorchain.org/concepts/querying-thorchain.html',
+    ]);
+
+    const swapAvailability = TASK_INTENT_GUIDES.find(({ id }) => id === 'swap-availability');
+    expect(swapAvailability?.sources.map(({ url }) => url)).toEqual([
+      'https://dev.thorchain.org/swap-guide/quickstart-guide.html',
+      'https://dev.thorchain.org/concepts/network-halts.html',
+      'https://thornode.thorchain.network/thorchain/inbound_addresses',
+    ]);
+
+    for (const id of ['fees-and-adr026', 'swap-availability', 'why-paused']) {
+      expect(TASK_INTENT_GUIDES.find((guide) => guide.id === id), id).toEqual(
+        expect.objectContaining({ reviewedAt: '2026-07-13', nextReviewDue: '2026-08-13' })
+      );
+    }
+  });
+
   it('backs SwapKit and XChainJS listings with their maintained project sources', () => {
     const expectedSources = new Map([
       ['swapkit', 'https://swapkit.github.io/SwapKit/'],
@@ -420,8 +488,8 @@ describe('source and freshness labels', () => {
     expect(html).toContain('href="/deep-dives#deep-dive-path-network-security"');
     expect(html).toContain('href="/network#network-diagnostics"');
     expect(html).toContain('href="/docs#current-protocol-state"');
-    expect(html).toContain('Wiki reviewed 2026-07-04');
-    expect(html).toContain('Review due 2026-08-04');
+    expect(html).toContain('Wiki reviewed 2026-07-13');
+    expect(html).toContain('Review due 2026-08-13');
 
     const historicalHtml = renderToStaticMarkup(
       <DeepDiveShell entryId="deep-dive-savers" editPath="content/deep-dives/savers.mdx">

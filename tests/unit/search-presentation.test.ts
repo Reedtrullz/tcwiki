@@ -285,8 +285,8 @@ describe('search presentation helpers', () => {
 
     const availabilityTask = SEARCH_DOCUMENTS.find((doc) => doc.id === 'task:swap-availability');
     expect(getSearchSourceRetrievalSummary(availabilityTask?.sources ?? [])).toEqual({
-      label: '2026-07-02',
-      datedSourceCount: 2,
+      label: '2026-07-02 to 2026-07-05',
+      datedSourceCount: 3,
       hasUndatedSources: false,
     });
 

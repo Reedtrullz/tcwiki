@@ -287,6 +287,13 @@ export const securedAssetsDevSource: SourceMeta = {
   notes: 'Developer reference for secured-asset mechanics and integration boundaries.',
 };
 
+export const tradeAssetsSource: SourceMeta = {
+  label: 'THORChain Trade Assets docs',
+  url: 'https://docs.thorchain.org/technical-documentation/thorchain-finance/trade-assets',
+  retrievedAt: '2026-07-13',
+  notes: 'Official trade-asset design reference; current enablement and route availability still require live controls.',
+};
+
 export const archivedSaversLendingSource: SourceMeta = {
   label: 'Archived Savers and Lending docs',
   url: 'https://docs.thorchain.org/thornodes/archived',

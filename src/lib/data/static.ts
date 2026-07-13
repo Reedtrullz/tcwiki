@@ -462,8 +462,8 @@ export const SOURCE_MAP_SECTION_RECORDS: SourcedRecord<SourceMapSection>[] = [
     ],
     links: [liquifyMidgardHealthSource, midgardHealthSource, liquifyThornodeVersionSource, thornodeVersionSource],
   }, [liquifyMidgardHealthSource, midgardHealthSource, liquifyThornodeVersionSource, thornodeVersionSource], 'curated', {
-    checkedAt: '2026-07-04',
-    nextReviewDue: '2026-08-04',
+    checkedAt: '2026-07-13',
+    nextReviewDue: '2026-08-13',
   }),
   record({
     id: 'runepool-pol-evidence',
@@ -550,8 +550,8 @@ export const SOURCE_MAP_SECTION_RECORDS: SourcedRecord<SourceMapSection>[] = [
     ],
     links: [sourceMapEcosystemSource, developerDocs, sourceMapLiveInboundSource, networkHaltsSource],
   }, [sourceMapEcosystemSource, developerDocs, sourceMapLiveInboundSource, networkHaltsSource], 'curated', {
-    checkedAt: '2026-07-04',
-    nextReviewDue: '2026-08-04',
+    checkedAt: '2026-07-13',
+    nextReviewDue: '2026-08-13',
   }),
   record({
     id: 'dynamic-fee-experiment',
@@ -571,8 +571,8 @@ export const SOURCE_MAP_SECTION_RECORDS: SourcedRecord<SourceMapSection>[] = [
     ],
     links: [adr026DynamicFeesSource, thornodeMimirSource, dynamicL1FeesSource, dynamicL1FeesCurrentSource, thornameGuideSource, feesSource],
   }, [adr026DynamicFeesSource, thornodeMimirSource, dynamicL1FeesSource, dynamicL1FeesCurrentSource, thornameGuideSource, feesSource], 'curated', {
-    checkedAt: '2026-07-04',
-    nextReviewDue: '2026-08-04',
+    checkedAt: '2026-07-13',
+    nextReviewDue: '2026-08-13',
   }),
   record({
     id: 'official-protocol-documentation',
@@ -1137,8 +1137,8 @@ export const GOVERNANCE_PROPOSAL_RECORDS: SourcedRecord<GovernanceProposal>[] = 
     expiryDate: 'Check current THORNode Mimir state',
     sourceUrl: 'https://dev.thorchain.org/concepts/network-halts.html',
   }, [networkHaltsSource, liveInboundSource], 'official', {
-    checkedAt: '2026-07-04',
-    nextReviewDue: '2026-08-04',
+    checkedAt: '2026-07-13',
+    nextReviewDue: '2026-08-13',
   }),
   record({
     id: 'adr-026-dynamic-l1-fees',
