@@ -24,6 +24,11 @@ const platformArtifactCleaner = readFileSync('scripts/clean-platform-artifacts.m
 const standaloneAssetPreparer = readFileSync('scripts/prepare-standalone-assets.mjs', 'utf8');
 const rootLayout = readFileSync('src/app/layout.tsx', 'utf8');
 const globalStyles = readFileSync('src/app/globals.css', 'utf8');
+const hostReadinessMonitor = readFileSync('scripts/check-production-readiness-host.sh', 'utf8');
+const hostReadinessServicePath = 'deploy/systemd/tcwiki-readiness-monitor.service';
+const hostReadinessTimerPath = 'deploy/systemd/tcwiki-readiness-monitor.timer';
+const hostReadinessService = existsSync(hostReadinessServicePath) ? readFileSync(hostReadinessServicePath, 'utf8') : '';
+const hostReadinessTimer = existsSync(hostReadinessTimerPath) ? readFileSync(hostReadinessTimerPath, 'utf8') : '';
 
 interface PackageManifest {
   scripts: Record<string, string>;
@@ -136,6 +141,73 @@ describe('release and browser test wiring', () => {
     expect(operationsWorkflow).toContain('npm run report:content-reviews');
     expect(operationsWorkflow).toContain('--horizon-days 30');
     expect(releaseTrackedLib).toContain("'.github/workflows/operations.yml'");
+  });
+
+  it('installs a credential-free hardened readiness timer before container mutation', () => {
+    const dependencyIndex = playbook.indexOf('name: Verify readiness monitor host dependencies');
+    const installIndex = playbook.indexOf('name: Install tcwiki readiness monitor executable');
+    const enableIndex = playbook.indexOf('name: Enable tcwiki readiness monitor timer');
+    const pullIndex = playbook.indexOf('name: Pull immutable image from GHCR');
+    const assets = [hostReadinessMonitor, hostReadinessService, hostReadinessTimer].join('\n');
+
+    expect(dependencyIndex).toBeGreaterThan(-1);
+    expect(installIndex).toBeGreaterThan(dependencyIndex);
+    expect(enableIndex).toBeGreaterThan(installIndex);
+    expect(enableIndex).toBeLessThan(pullIndex);
+    expect(playbook.match(/become: true/g)?.length).toBeGreaterThanOrEqual(7);
+    for (const text of [
+      'name: tcwiki-readiness',
+      'system: true',
+      'shell: /usr/sbin/nologin',
+      'groups: ""',
+      'append: false',
+      'dest: /usr/local/libexec/tcwiki-readiness-monitor',
+      'owner: root',
+      'mode: "0755"',
+    ]) {
+      expect(playbook).toContain(text);
+    }
+    for (const text of [
+      'User=tcwiki-readiness',
+      'Group=tcwiki-readiness',
+      'NoNewPrivileges=true',
+      'PrivateTmp=true',
+      'ProtectHome=true',
+      'ProtectSystem=strict',
+      'StateDirectory=tcwiki-readiness-monitor',
+      'RuntimeDirectory=tcwiki-readiness-monitor',
+      'CapabilityBoundingSet=',
+      'LockPersonality=true',
+      'MemoryDenyWriteExecute=true',
+      'ProtectControlGroups=true',
+      'ProtectKernelModules=true',
+      'ProtectKernelTunables=true',
+      'RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6',
+      'RestrictSUIDSGID=true',
+      'InaccessiblePaths=-/run/docker.sock',
+      'TimeoutStartSec=4min',
+    ]) {
+      expect(hostReadinessService).toContain(text);
+    }
+    expect(hostReadinessTimer).toContain('OnCalendar=*-*-* *:08,38:00');
+    expect(hostReadinessTimer).toContain('RandomizedDelaySec=2min');
+    expect(hostReadinessTimer).toContain('Persistent=true');
+    expect(assets).not.toMatch(/GITHUB_TOKEN|github_pat_|SupplementaryGroups=docker/);
+  });
+
+  it('documents host readiness evidence, manual checks, and removal', () => {
+    expect(operations).toContain('tcwiki-readiness-monitor.timer');
+    expect(operations).toContain('/var/lib/tcwiki-readiness-monitor/latest.json');
+    expect(operations).toContain('journalctl -u tcwiki-readiness-monitor.service');
+    expect(operations).toContain('at least one valid sample is ready');
+    expect(operations).toContain('does not open or close GitHub issues');
+    expect(maintenance).toContain('systemctl start tcwiki-readiness-monitor.service');
+    expect(maintenance).toContain('systemctl disable --now tcwiki-readiness-monitor.timer');
+    expect(maintenance).toContain('systemctl stop tcwiki-readiness-monitor.service');
+    expect(maintenance).toContain('systemctl is-active tcwiki-readiness-monitor.service');
+    expect(maintenance).toContain('rm -f /etc/systemd/system/tcwiki-readiness-monitor.service');
+    expect(maintenance).toContain('rm -f /usr/local/libexec/tcwiki-readiness-monitor');
+    expect(maintenance).toContain('systemctl daemon-reload');
   });
 
   it('defaults the Ansible production containers to enforced CSP with an explicit override', () => {

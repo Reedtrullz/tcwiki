@@ -1,0 +1,29 @@
+[Unit]
+Description=Sample THORChain Wiki production readiness independently of GitHub Actions
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=tcwiki-readiness
+Group=tcwiki-readiness
+Environment=TCWIKI_READINESS_BASE_URL=https://wiki.thorchain.no
+ExecStart=/usr/local/libexec/tcwiki-readiness-monitor
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+StateDirectory=tcwiki-readiness-monitor
+StateDirectoryMode=0750
+RuntimeDirectory=tcwiki-readiness-monitor
+RuntimeDirectoryMode=0750
+CapabilityBoundingSet=
+LockPersonality=true
+MemoryDenyWriteExecute=true
+ProtectControlGroups=true
+ProtectKernelModules=true
+ProtectKernelTunables=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+RestrictSUIDSGID=true
+InaccessiblePaths=-/run/docker.sock
+TimeoutStartSec=4min

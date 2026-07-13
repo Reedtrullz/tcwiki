@@ -66,6 +66,23 @@ For a local one-sample diagnostic without waiting:
 npm run check:production-readiness -- --samples 1 --interval-ms 0 --artifact .artifacts/readiness-monitor/local.json
 ```
 
+### Independent VPS readiness timer
+
+The VPS also runs `tcwiki-readiness-monitor.timer` at minutes 08 and 38 with up to two minutes of randomized delay. It uses the same three-observation rule: the window passes when at least one valid sample is ready and fails when no sample is ready. The host monitor validates monitor-critical fields; GitHub Actions retains full JavaScript contract validation, direct-provider comparison, and issue lifecycle.
+
+The service runs as non-login account `tcwiki-readiness` with no Docker access or GitHub credential. It writes only latest bounded evidence and transition state. It does not open or close GitHub issues.
+
+```bash
+sudo systemctl status tcwiki-readiness-monitor.timer --no-pager
+sudo systemctl list-timers tcwiki-readiness-monitor.timer --all --no-pager
+sudo systemctl show tcwiki-readiness-monitor.service -p Result -p ExecMainStatus -p Environment
+sudo jq . /var/lib/tcwiki-readiness-monitor/latest.json
+sudo stat -c '%U:%G %a %n' /var/lib/tcwiki-readiness-monitor/latest.json /var/lib/tcwiki-readiness-monitor/state.json
+sudo journalctl -u tcwiki-readiness-monitor.service -n 100 --no-pager
+```
+
+`latest.json` uses `kind: tcwiki-host-readiness-monitor`. A valid degraded HTTP `503` is a degraded sample, not a transport failure. A failed window leaves the timer active, exits the one-shot service nonzero, and records `persistent-degraded-readiness` or `no-valid-readiness-samples`. Journald markers distinguish `initial`, `steady`, `degraded`, `recovered`, and skipped `overlap` runs.
+
 VPS SSH is a separate evidence path. If port 22 refuses before authentication, report that boundary and use the public readiness plus direct-provider artifact; do not claim a container-side provider readback.
 
 ## Rollback Behavior

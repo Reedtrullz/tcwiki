@@ -10,11 +10,12 @@ export const RELEASE_TRACKED_SOURCE_FILES = [
   'CONTRIBUTING.md',
   'docs/maintenance.md',
   'docs/operations.md',
+  'ansible-playbook.yml',
   'Dockerfile',
   'playwright.config.ts',
 ];
 
-const releaseFilePattern = /\b(?:scripts\/[A-Za-z0-9._/-]+\.mjs|tests\/[A-Za-z0-9._/-]+\.spec\.ts)\b/g;
+const releaseFilePattern = /\b(?:scripts\/[A-Za-z0-9._/-]+\.(?:mjs|sh)|tests\/[A-Za-z0-9._/-]+\.spec\.ts|deploy\/systemd\/[A-Za-z0-9._-]+\.(?:service|timer))\b/g;
 const localScriptImportPattern = /(?:import\s+(?:[^'"]+\s+from\s+)?|await\s+import\()\s*['"](\.{1,2}\/[^'"]+\.mjs)['"]/g;
 const localProofImportPattern = /(?:import\s+(?:type\s+)?(?:[^'"]+\s+from\s+)?|export\s+(?:type\s+)?(?:[^'"]+\s+from\s+)?|import\()\s*['"](\.{1,2}\/[^'"]+)['"]/g;
 

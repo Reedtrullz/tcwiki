@@ -56,6 +56,16 @@ describe('release proof trackedness audit', () => {
       'tests/home.spec.ts',
       'tests/runtime.spec.ts',
     ]);
+
+    expect(collectReleaseReferencedFilesFromText(`
+      scripts/check-production-readiness-host.sh
+      deploy/systemd/tcwiki-readiness-monitor.service
+      deploy/systemd/tcwiki-readiness-monitor.timer
+    `)).toEqual([
+      'deploy/systemd/tcwiki-readiness-monitor.service',
+      'deploy/systemd/tcwiki-readiness-monitor.timer',
+      'scripts/check-production-readiness-host.sh',
+    ]);
   });
 
   it('extracts local script dependencies from ESM imports', () => {
