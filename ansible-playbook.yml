@@ -58,6 +58,8 @@
         create_home: false
         home: /nonexistent
         shell: /usr/sbin/nologin
+        groups: ""
+        append: false
         state: present
 
     - name: Ensure local libexec directory exists

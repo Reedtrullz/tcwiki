@@ -25,4 +25,5 @@ ProtectKernelModules=true
 ProtectKernelTunables=true
 RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
 RestrictSUIDSGID=true
+InaccessiblePaths=-/run/docker.sock
 TimeoutStartSec=4min

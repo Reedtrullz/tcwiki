@@ -262,7 +262,9 @@ if ! "$FLOCK_BIN" -n 9; then
   exit 0
 fi
 
-run_dir=$(mktemp -d "$STATE_DIR/.run.XXXXXX")
+rm -rf "$RUNTIME_DIR"/.run.*
+rm -f "$STATE_DIR"/.latest.*.json "$STATE_DIR"/.state.*.json
+run_dir=$(mktemp -d "$RUNTIME_DIR/.run.XXXXXX")
 evidence_tmp=''
 state_tmp=''
 cleanup() {
@@ -337,7 +339,7 @@ state_tmp="$STATE_DIR/.state.$$.json"
       startedAt: $startedAt, completedAt: $completedAt, baseUrl: $baseUrl,
       status: (if $failed then "fail" else "pass" end), exitCode: (if $failed then 1 else 0 end),
       failureReason: (if $persistent then "persistent-degraded-readiness" elif $failed then "no-valid-readiness-samples" else "none" end),
-      summary: (if $persistent then "Production readiness remained degraded for all 3 samples." elif $failed then "No production readiness sample was usable; \($degraded) degraded and \($errors) errored." else "Production readiness was usable in \($ready) of 3 samples; \($degraded) degraded and \($errors) errored." end),
+      summary: (if $persistent then "Production readiness had no ready samples; \($degraded) degraded and \($errors) errored." elif $failed then "No production readiness sample was usable; \($degraded) degraded and \($errors) errored." else "Production readiness was usable in \($ready) of 3 samples; \($degraded) degraded and \($errors) errored." end),
       counts: {total: 3, ready: $ready, degraded: $degraded, errors: $errors}, samples: $samples
     }
 ' "$run_dir"/sample-*.json > "$evidence_tmp"
@@ -374,7 +376,7 @@ git add scripts/check-production-readiness-host.sh tests/unit/host-readiness-mon
 git commit -m "feat: add credential-free host readiness monitor"
 ```
 
-Expected: 7 focused tests pass, syntax/diff checks exit `0`, and one monitor commit is created.
+Expected: focused tests pass, syntax/diff checks exit `0`, and one monitor commit is created.
 
 ---
 
@@ -486,6 +488,7 @@ ProtectKernelModules=true
 ProtectKernelTunables=true
 RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
 RestrictSUIDSGID=true
+InaccessiblePaths=-/run/docker.sock
 TimeoutStartSec=4min
 ```
 
@@ -548,6 +551,8 @@ Insert immediately after `Require immutable image ref` and before `Get current c
         create_home: false
         home: /nonexistent
         shell: /usr/sbin/nologin
+        groups: ""
+        append: false
         state: present
 
     - name: Ensure local libexec directory exists
@@ -716,6 +721,8 @@ For complete removal, preserve required evidence first, then run:
 
 ```bash
 sudo systemctl disable --now tcwiki-readiness-monitor.timer
+sudo systemctl stop tcwiki-readiness-monitor.service
+test "$(sudo systemctl is-active tcwiki-readiness-monitor.service || true)" = inactive
 sudo rm -f /etc/systemd/system/tcwiki-readiness-monitor.timer
 sudo rm -f /etc/systemd/system/tcwiki-readiness-monitor.service
 sudo rm -f /usr/local/libexec/tcwiki-readiness-monitor

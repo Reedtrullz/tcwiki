@@ -119,6 +119,7 @@ function evidence(path: string) {
     kind: string;
     status: string;
     failureReason: string;
+    summary: string;
     counts: { total: number; ready: number; degraded: number; errors: number };
     samples: Array<{ error?: string }>;
   };
@@ -163,6 +164,21 @@ describe('host readiness monitor', () => {
       status: 'fail',
       failureReason: 'persistent-degraded-readiness',
       counts: { total: 3, ready: 0, degraded: 3, errors: 0 },
+    });
+  });
+
+  it('reports mixed failed windows without claiming every sample was degraded', () => {
+    const path = root();
+    expect(run(path, [
+      { body: readiness(false), status: 503 },
+      { exitCode: 28, stderr: 'operation timed out' },
+      { exitCode: 63, stderr: 'Maximum file size exceeded' },
+    ]).status).toBe(1);
+    expect(evidence(path)).toMatchObject({
+      status: 'fail',
+      failureReason: 'persistent-degraded-readiness',
+      summary: 'Production readiness had no ready samples; 1 degraded and 2 errored.',
+      counts: { total: 3, ready: 0, degraded: 1, errors: 2 },
     });
   });
 
@@ -213,6 +229,21 @@ describe('host readiness monitor', () => {
     ).status).toBe(70);
     expect(readFileSync(join(path, 'state/latest.json'), 'utf8')).toBe('{"sentinel":true}\n');
     expect(readdirSync(join(path, 'state')).filter((name) => /^\.(?:run|latest|state)\./.test(name))).toEqual([]);
+  });
+
+  it('reclaims stale monitor scratch without replacing prior evidence early', () => {
+    const path = root();
+    mkdirSync(join(path, 'state'), { recursive: true });
+    mkdirSync(join(path, 'run/.run.stale'), { recursive: true });
+    writeFileSync(join(path, 'state/latest.json'), '{"sentinel":true}\n');
+    writeFileSync(join(path, 'state/.latest.stale.json'), 'stale\n');
+    writeFileSync(join(path, 'state/.state.stale.json'), 'stale\n');
+    writeFileSync(join(path, 'run/.run.stale/response.json'), 'stale\n');
+
+    expect(run(path, [1, 2, 3].map(() => ({ body: readiness(true), status: 200 }))).status).toBe(0);
+    expect(readdirSync(join(path, 'state')).filter((name) => /^\.(?:latest|state)\./.test(name))).toEqual([]);
+    expect(readdirSync(join(path, 'run')).filter((name) => /^\.run\./.test(name))).toEqual([]);
+    expect(evidence(path).status).toBe('pass');
   });
 
   it('skips overlap without replacing evidence', () => {

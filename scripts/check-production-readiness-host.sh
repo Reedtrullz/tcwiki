@@ -20,7 +20,12 @@ if ! "$FLOCK_BIN" -n 9; then
   exit 0
 fi
 
-run_dir=$(mktemp -d "$STATE_DIR/.run.XXXXXX")
+# A hard stop cannot run traps, so reclaim only monitor-owned scratch after the
+# lock proves no earlier invocation is still using it.
+rm -rf "$RUNTIME_DIR"/.run.*
+rm -f "$STATE_DIR"/.latest.*.json "$STATE_DIR"/.state.*.json
+
+run_dir=$(mktemp -d "$RUNTIME_DIR/.run.XXXXXX")
 evidence_tmp=''
 state_tmp=''
 
@@ -180,7 +185,7 @@ state_tmp="$STATE_DIR/.state.$$.json"
         ),
         summary: (
           if $persistent then
-            "Production readiness remained degraded for all 3 samples."
+            "Production readiness had no ready samples; \($degraded) degraded and \($errors) errored."
           elif $failed then
             "No production readiness sample was usable; \($degraded) degraded and \($errors) errored."
           else

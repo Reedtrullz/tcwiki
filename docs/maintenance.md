@@ -56,6 +56,8 @@ For complete removal, preserve required evidence first, then run:
 
 ```bash
 sudo systemctl disable --now tcwiki-readiness-monitor.timer
+sudo systemctl stop tcwiki-readiness-monitor.service
+test "$(sudo systemctl is-active tcwiki-readiness-monitor.service || true)" = inactive
 sudo rm -f /etc/systemd/system/tcwiki-readiness-monitor.timer
 sudo rm -f /etc/systemd/system/tcwiki-readiness-monitor.service
 sudo rm -f /usr/local/libexec/tcwiki-readiness-monitor

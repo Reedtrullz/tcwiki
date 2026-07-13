@@ -159,6 +159,8 @@ describe('release and browser test wiring', () => {
       'name: tcwiki-readiness',
       'system: true',
       'shell: /usr/sbin/nologin',
+      'groups: ""',
+      'append: false',
       'dest: /usr/local/libexec/tcwiki-readiness-monitor',
       'owner: root',
       'mode: "0755"',
@@ -182,6 +184,7 @@ describe('release and browser test wiring', () => {
       'ProtectKernelTunables=true',
       'RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6',
       'RestrictSUIDSGID=true',
+      'InaccessiblePaths=-/run/docker.sock',
       'TimeoutStartSec=4min',
     ]) {
       expect(hostReadinessService).toContain(text);
@@ -189,7 +192,7 @@ describe('release and browser test wiring', () => {
     expect(hostReadinessTimer).toContain('OnCalendar=*-*-* *:08,38:00');
     expect(hostReadinessTimer).toContain('RandomizedDelaySec=2min');
     expect(hostReadinessTimer).toContain('Persistent=true');
-    expect(assets).not.toMatch(/GITHUB_TOKEN|github_pat_|docker\.sock|SupplementaryGroups=docker/);
+    expect(assets).not.toMatch(/GITHUB_TOKEN|github_pat_|SupplementaryGroups=docker/);
   });
 
   it('documents host readiness evidence, manual checks, and removal', () => {
@@ -200,6 +203,8 @@ describe('release and browser test wiring', () => {
     expect(operations).toContain('does not open or close GitHub issues');
     expect(maintenance).toContain('systemctl start tcwiki-readiness-monitor.service');
     expect(maintenance).toContain('systemctl disable --now tcwiki-readiness-monitor.timer');
+    expect(maintenance).toContain('systemctl stop tcwiki-readiness-monitor.service');
+    expect(maintenance).toContain('systemctl is-active tcwiki-readiness-monitor.service');
     expect(maintenance).toContain('rm -f /etc/systemd/system/tcwiki-readiness-monitor.service');
     expect(maintenance).toContain('rm -f /usr/local/libexec/tcwiki-readiness-monitor');
     expect(maintenance).toContain('systemctl daemon-reload');
