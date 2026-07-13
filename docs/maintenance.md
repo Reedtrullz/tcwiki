@@ -31,6 +31,43 @@
 - App and release-proof npm scripts fail fast through `scripts/require-node22.mjs`; run `nvm use` before interpreting local smoke, build, lint, typecheck, audit, content, unit, or Playwright output.
 - PR CI builds, scans, and runs the Docker image before deploy code can publish; the `main` publish job scans the locally built image before pushing it to GHCR, then a separate `Smoke published image` job pulls and smokes the immutable digest before deploy can start.
 
+## VPS Readiness Timer
+
+Run the service through systemd so a manual check uses the production account, sandbox, timeout, and writable-directory boundaries:
+
+```bash
+status=0
+sudo systemctl start tcwiki-readiness-monitor.service || status=$?
+sudo systemctl show tcwiki-readiness-monitor.service -p Result -p ExecMainStatus --no-pager
+sudo jq . /var/lib/tcwiki-readiness-monitor/latest.json
+sudo journalctl -u tcwiki-readiness-monitor.service -n 20 --no-pager
+printf 'systemctl start exit: %s\n' "$status"
+```
+
+Exit `0` means at least one sample was ready. A nonzero result is acceptable proof only when `latest.json` reports `status: fail`, its failure reason matches the samples, and the timer remains enabled and active. It is not proof of an application outage.
+
+Stop scheduling without changing the application:
+
+```bash
+sudo systemctl disable --now tcwiki-readiness-monitor.timer
+```
+
+For complete removal, preserve required evidence first, then run:
+
+```bash
+sudo systemctl disable --now tcwiki-readiness-monitor.timer
+sudo rm -f /etc/systemd/system/tcwiki-readiness-monitor.timer
+sudo rm -f /etc/systemd/system/tcwiki-readiness-monitor.service
+sudo rm -f /usr/local/libexec/tcwiki-readiness-monitor
+sudo systemctl daemon-reload
+sudo systemctl reset-failed tcwiki-readiness-monitor.service
+sudo rm -rf /var/lib/tcwiki-readiness-monitor
+sudo userdel tcwiki-readiness
+sudo groupdel tcwiki-readiness 2>/dev/null || true
+```
+
+Removing the timer does not stop, restart, or roll back the `tcwiki` container.
+
 ## CSP Enforcement
 
 - Production deploys set `CSP_ENFORCE=1` and should emit `Content-Security-Policy`, not `Content-Security-Policy-Report-Only`.

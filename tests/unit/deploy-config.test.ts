@@ -192,6 +192,19 @@ describe('release and browser test wiring', () => {
     expect(assets).not.toMatch(/GITHUB_TOKEN|github_pat_|docker\.sock|SupplementaryGroups=docker/);
   });
 
+  it('documents host readiness evidence, manual checks, and removal', () => {
+    expect(operations).toContain('tcwiki-readiness-monitor.timer');
+    expect(operations).toContain('/var/lib/tcwiki-readiness-monitor/latest.json');
+    expect(operations).toContain('journalctl -u tcwiki-readiness-monitor.service');
+    expect(operations).toContain('at least one valid sample is ready');
+    expect(operations).toContain('does not open or close GitHub issues');
+    expect(maintenance).toContain('systemctl start tcwiki-readiness-monitor.service');
+    expect(maintenance).toContain('systemctl disable --now tcwiki-readiness-monitor.timer');
+    expect(maintenance).toContain('rm -f /etc/systemd/system/tcwiki-readiness-monitor.service');
+    expect(maintenance).toContain('rm -f /usr/local/libexec/tcwiki-readiness-monitor');
+    expect(maintenance).toContain('systemctl daemon-reload');
+  });
+
   it('defaults the Ansible production containers to enforced CSP with an explicit override', () => {
     expect(playbook).toContain("csp_enforce: \"{{ lookup('env', 'CSP_ENFORCE') | default('1', true) }}\"");
     expect(playbook).toContain("csp_enforce in ['0', '1']");
