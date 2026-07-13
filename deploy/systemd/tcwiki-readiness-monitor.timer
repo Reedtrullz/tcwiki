@@ -1,0 +1,11 @@
+[Unit]
+Description=Run THORChain Wiki readiness monitoring twice hourly
+
+[Timer]
+OnCalendar=*-*-* *:08,38:00
+RandomizedDelaySec=2min
+Persistent=true
+Unit=tcwiki-readiness-monitor.service
+
+[Install]
+WantedBy=timers.target

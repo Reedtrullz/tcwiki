@@ -22,6 +22,88 @@
           - require_ready in ['0', '1']
         fail_msg: "IMAGE_REF must be a digest ref, APP_VERSION must be set, CSP_ENFORCE and REQUIRE_READY must be 0 or 1."
 
+    - name: Inspect readiness monitor host dependencies
+      ansible.builtin.stat:
+        path: "{{ item }}"
+      loop:
+        - /usr/bin/curl
+        - /usr/bin/jq
+        - /usr/bin/flock
+      register: readiness_monitor_dependencies
+      changed_when: false
+
+    - name: Verify readiness monitor host dependencies
+      ansible.builtin.assert:
+        that:
+          - item.stat.exists
+          - item.stat.executable
+        fail_msg: "Required readiness monitor executable {{ item.item }} is unavailable."
+      loop: "{{ readiness_monitor_dependencies.results }}"
+      loop_control:
+        label: "{{ item.item }}"
+
+    - name: Create tcwiki readiness monitor group
+      become: true
+      ansible.builtin.group:
+        name: tcwiki-readiness
+        system: true
+        state: present
+
+    - name: Create tcwiki readiness monitor user
+      become: true
+      ansible.builtin.user:
+        name: tcwiki-readiness
+        group: tcwiki-readiness
+        system: true
+        create_home: false
+        home: /nonexistent
+        shell: /usr/sbin/nologin
+        state: present
+
+    - name: Ensure local libexec directory exists
+      become: true
+      ansible.builtin.file:
+        path: /usr/local/libexec
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Install tcwiki readiness monitor executable
+      become: true
+      ansible.builtin.copy:
+        src: scripts/check-production-readiness-host.sh
+        dest: /usr/local/libexec/tcwiki-readiness-monitor
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Install tcwiki readiness monitor service
+      become: true
+      ansible.builtin.copy:
+        src: deploy/systemd/tcwiki-readiness-monitor.service
+        dest: /etc/systemd/system/tcwiki-readiness-monitor.service
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Install tcwiki readiness monitor timer
+      become: true
+      ansible.builtin.copy:
+        src: deploy/systemd/tcwiki-readiness-monitor.timer
+        dest: /etc/systemd/system/tcwiki-readiness-monitor.timer
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: Enable tcwiki readiness monitor timer
+      become: true
+      ansible.builtin.systemd_service:
+        name: tcwiki-readiness-monitor.timer
+        daemon_reload: true
+        enabled: true
+        state: started
+
     - name: Get current container image
       community.docker.docker_container_info:
         name: "{{ container_name }}"
