@@ -404,8 +404,8 @@ export const MDX_SEARCH_DOCUMENTS: SearchDoc[] = [
     "title": "Mimir And Halt Controls",
     "description": "Mimir And Halt Controls Mimir values are THORChain operational controls.",
     "confidence": "curated",
-    "reviewedAt": "2026-07-05",
-    "nextReviewDue": "2026-08-05",
+    "reviewedAt": "2026-07-13",
+    "nextReviewDue": "2026-08-13",
     "sources": [
       {
         "label": "THORChain Network Halts",
@@ -420,16 +420,16 @@ export const MDX_SEARCH_DOCUMENTS: SearchDoc[] = [
         "notes": "Official constants and Mimir reference; live Mimir reads still own current override state."
       },
       {
-        "label": "THORNode Mimir endpoint",
-        "url": "https://thornode.thorchain.network/thorchain/mimir",
-        "retrievedAt": "2026-07-05",
-        "notes": "Current-only operational controls; malformed values must not be treated as inactive."
+        "label": "Liquify THORNode Mimir endpoint",
+        "url": "https://gateway.liquify.com/chain/thorchain_api/thorchain/mimir",
+        "retrievedAt": "2026-07-13",
+        "notes": "Current-only Liquify operational controls; malformed or regionally stale values must not be treated as inactive."
       },
       {
-        "label": "THORNode inbound_addresses",
-        "url": "https://thornode.thorchain.network/thorchain/inbound_addresses",
-        "retrievedAt": "2026-07-05",
-        "notes": "Current-only chain availability, router, halt, and inbound-address snapshot; not durable uptime proof."
+        "label": "Liquify THORNode inbound_addresses",
+        "url": "https://gateway.liquify.com/chain/thorchain_api/thorchain/inbound_addresses",
+        "retrievedAt": "2026-07-13",
+        "notes": "Current-only Liquify chain availability, router, halt, and inbound-address snapshot; not durable uptime or cross-region freshness proof."
       },
       {
         "label": "THORChain Dev Docs",
@@ -618,8 +618,8 @@ export const MDX_SEARCH_DOCUMENTS: SearchDoc[] = [
     "title": "Streaming Swaps And Refunds",
     "description": "Streaming Swaps And Refunds THORChain swaps are not just a formula.",
     "confidence": "curated",
-    "reviewedAt": "2026-07-05",
-    "nextReviewDue": "2026-08-05",
+    "reviewedAt": "2026-07-13",
+    "nextReviewDue": "2026-08-13",
     "sources": [
       {
         "label": "THORChain Swap Guide",
@@ -646,10 +646,10 @@ export const MDX_SEARCH_DOCUMENTS: SearchDoc[] = [
         "notes": "Official halt-control reference; live Mimir and inbound-address reads still own current availability."
       },
       {
-        "label": "THORNode inbound_addresses",
-        "url": "https://thornode.thorchain.network/thorchain/inbound_addresses",
-        "retrievedAt": "2026-07-05",
-        "notes": "Current-only chain availability, router, halt, and inbound-address snapshot; not durable uptime proof."
+        "label": "Liquify THORNode inbound_addresses",
+        "url": "https://gateway.liquify.com/chain/thorchain_api/thorchain/inbound_addresses",
+        "retrievedAt": "2026-07-13",
+        "notes": "Current-only Liquify chain availability, router, halt, and inbound-address snapshot; not durable uptime or cross-region freshness proof."
       }
     ],
     "content": "Streaming Swaps And Refunds THORChain swaps are not just a formula. A real swap depends on a fresh quote, a current inbound address, a valid memo, enough amount to clear dust and fee thresholds, live chain/trading/signing state, pool availability, and the outbound path. This article explains how to reason about streaming swaps and refunds without turning the wiki into a wallet, quote aggregator, or transaction builder. What To Check First When a user asks \"why did my swap refund?\", start with the most current evidence: 1. Check /network network diagnostics for route level halts, chain blockers, source warnings, and quote probe behavior. 2. Check the latest THORNode quote response for the route, amount, expected output, fees, recommended minimum input, expiry, and warning text. 3. Check whether the inbound address, router, memo, and quote expiry came from the same fresh quote flow. 4. Check whether the amount was above recommended min amount in and above the inbound chain dust threshold. 5. Check the transaction hash, memo, source chain, destination chain, and any refund transaction before assigning a reason. The Network diagnostics route checker now includes a refund/failed swap triage panel that separates current quote evidence from missing transaction evidence. Use it as a checklist, not as a wallet instruction or support verdict. If those pieces are missing, the honest answer is \"insufficient evidence\", not a guessed refund cause. Swap Lifecycle A normal base layer swap moves through a few evidence points: The interface requests a THORNode swap quote for a route and amount. The quote returns route context such as expected output, fee fields, expiry, inbound timing, outbound timing, warning text, recommended minimum input, and a memo. The user signs an inbound transaction on the source chain. Bifrost observers report that inbound transaction to THORChain. THORChain validates the memo, chain state, pool state, price limits, halt controls, and fee economics. If execution is valid and signing is available, nodes sign the outbound transaction. If execution is invalid or impossible, the protocol can refund according to the available source chain path. The CLP formula explains pricing. It does not prove that the specific route, memo, amount, quote, or outbound path is currently executable. Streaming Swaps Streaming swaps split a trade into sub swaps over THORChain blocks. The goal is to reduce slip fees by letting arbitrage and pool rebalancing happen between slices. The important fields are: streaming interval: how many THORChain blocks sit between sub swaps. streaming quantity: how many sub swaps to execute; when omitted or set to 0, THORNode can calculate the quantity. max streaming quantity, streaming swap blocks, streaming swap seconds, and total swap seconds: quote fields that explain how long the route may take. StreamingSwapPause: a live Mimir control that can make streaming behavior unavailable even when ordinary swap concepts still exist. Streaming is usually a price quality tool, not a guarantee of execution. A longer streaming path can reduce slip but also creates more time for live state, halts, pools, gas, and quote assumptions to change. Why Refunds Happen Refunds are a symptom, not one root cause. Common evidence families include: Stale quote or inbound address: the quote expired, the inbound address changed, or the transaction used stale route data. Memo problem: malformed memo, memo too long for the source chain, wrong function, wrong asset notation, invalid destination, invalid affiliate fields, or unsupported shortened fields. Price limit problem: the trade output would violate the memo limit or quote tolerance. Amount problem: amount below dust threshold, below recommended min amount in, or too small after fees. Route or pool problem: pool unavailable, asset not found, halted trading, halted signing, halted chain, or source warning state that prevents a clean claim. Fee economics: inbound, liquidity, affiliate, or outbound costs make the practical output invalid or uneconomic. Outbound problem: the destination path cannot be signed or delivered under current state. Do not describe every refund as \"slippage\" or \"the pool formula failed\". Most refund investigations need the exact quote, memo, transaction, and current network state. Memos, Limits, And Refund Addresses Memos are user intent. They tell THORChain what action to attempt and include route specific fields such as target asset, destination, limits, streaming parameters, affiliates, and optional refund address. The risk surface is bigger than the visible route: Memos have size limits, and UTXO chains have tighter practical constraints. Dust thresholds can cause tiny inbound transactions to be ignored. A custom refund address must be valid for the inbound asset. liquidity tolerance bps is preferred for user facing price protection because it accounts for swap and outbound fees; older or narrower tolerance fields can cause avoidable failures. Multiple affiliates and affiliate bps values must be aligned with protocol rules and memo length constraints. For real transactions, use a fresh official quote flow or interface implementation. Do not copy a memo example from the wiki into a wallet. Evidence Ladder Use the strongest evidence available: 1. Current THORNode quote result for the exact route and amount. 2. Exact quote error body, especially errors for price tolerance, destination address, memo length, missing asset, minimum amount, or dust threshold. 3. Current /network network diagnostics state for route halts, signing/trading controls, and source quality. 4. The actual inbound transaction hash, memo, source chain, destination chain, and any refund transaction hash. 5. Current pool availability and fee fields from source labeled endpoints. 6. Static docs for design meaning only. Static docs explain what a valid swap can look like. They do not prove that a past refund had one specific cause or that a future swap will succeed. Non Claims This page does not prove: A current route is quoteable, cheap, or available. A specific refund cause without transaction level evidence. That an interface generated a correct memo or used the latest quote. That a copied inbound address or memo is safe to use. That streaming swaps remove all slip, refund, delay, or execution risk. That wallet, frontend, or signing behavior is safe. Use this page as a triage map. Use live diagnostics, current quotes, transaction evidence, and official integration docs before telling a user why a swap refunded."

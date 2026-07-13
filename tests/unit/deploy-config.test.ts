@@ -125,7 +125,9 @@ describe('release and browser test wiring', () => {
 
   it('samples persistent production readiness separately from weekly content review reporting', () => {
     expect(operationsWorkflow).toContain("cron: '23 * * * *'");
+    expect(operationsWorkflow).toContain("cron: '53 * * * *'");
     expect(operationsWorkflow).toContain("cron: '41 6 * * 1'");
+    expect(operationsWorkflow).toContain("github.event.schedule == '23 * * * *' || github.event.schedule == '53 * * * *'");
     expect(operationsWorkflow).toContain('npm run check:production-readiness');
     expect(operationsWorkflow).toContain('--samples 3');
     expect(operationsWorkflow).toContain('--interval-ms 60000');

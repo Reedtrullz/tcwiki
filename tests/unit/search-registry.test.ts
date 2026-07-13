@@ -496,8 +496,8 @@ describe('SEARCH_DOCUMENTS', () => {
       const entry = CONTENT_ENTRIES.find((candidate) => candidate.id === id);
       const doc = SEARCH_DOCUMENTS.find((candidate) => candidate.id === id);
 
-      expect(entry?.reviewedAt, `${id} entry reviewedAt`).toMatch(/^2026-07-(05|06|08|09)$/);
-      expect(entry?.nextReviewDue, `${id} entry nextReviewDue`).toMatch(/^2026-08-(05|06|08|09)$/);
+      expect(entry?.reviewedAt, `${id} entry reviewedAt`).toMatch(/^2026-07-(05|06|08|09|13)$/);
+      expect(entry?.nextReviewDue, `${id} entry nextReviewDue`).toMatch(/^2026-08-(05|06|08|09|13)$/);
       expect(doc?.reviewedAt, `${id} search reviewedAt`).toBe(entry?.reviewedAt);
       expect(doc?.nextReviewDue, `${id} search nextReviewDue`).toBe(entry?.nextReviewDue);
       expect(doc?.sources.map((source) => source.label), `${id} search sources`).toEqual(entry?.sources.map((source) => source.label));
@@ -516,10 +516,10 @@ describe('SEARCH_DOCUMENTS', () => {
     expect(docsMatching('developer integration claim').some((doc) => doc.id === 'protocol')).toBe(true);
     expect(docsMatching('Check a route route quoteability').some((doc) => doc.id === 'protocol')).toBe(true);
     expect(SEARCH_DOCUMENTS.find((doc) => doc.id === 'stats')?.sources.map((source) => source.label)).toEqual(
-      expect.arrayContaining(['Midgard v2 Health', 'Midgard v2 Network', 'Midgard v2 Pools', 'Midgard v2 Earnings', 'THORNode Mimir endpoint'])
+      expect.arrayContaining(['Liquify Midgard v2 Health', 'Liquify Midgard v2 Network', 'Liquify Midgard v2 Pools', 'Liquify Midgard v2 Earnings', 'Liquify THORNode Mimir endpoint'])
     );
     expect(SEARCH_DOCUMENTS.find((doc) => doc.id === 'ecosystem')?.sources.map((source) => source.label)).toEqual(
-      expect.arrayContaining(['THORChain Ecosystem', 'THORNode inbound_addresses', 'THORChain Network Halts'])
+      expect.arrayContaining(['THORChain Ecosystem', 'Liquify THORNode inbound_addresses', 'THORChain Network Halts'])
     );
     expect(docsMatching('economic claim checks').some((doc) => doc.id === 'economics')).toBe(true);
     expect(docsMatching('current metric claim').some((doc) => doc.id === 'economics')).toBe(true);
