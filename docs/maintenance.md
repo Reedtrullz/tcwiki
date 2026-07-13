@@ -20,13 +20,15 @@
 
 - Local proof is not deploy proof. Keep local checks, CI checks, image publication, deployment, and live readback separate.
 - Before claiming production readiness, verify the immutable image ref and read back `/api/health`, `/api/version`, and `/api/ready`.
-- `/api/health` is liveness-only. `/api/ready` is the upstream readiness and source-confidence endpoint for visible Midgard datasets, THORNode operation state, the dynamic L1 fee tracker, and strict runtime metadata when `RUNTIME_METADATA_REQUIRED=1`.
+- `/api/health` is liveness-only. `/api/ready` is the upstream readiness and source-confidence endpoint for visible Midgard datasets, THORNode operation state, the dynamic L1 fee tracker, RUNEPool/POL status, RUNEPool/POL source posture at `sources.thornode.runePoolPol`, and strict runtime metadata when `RUNTIME_METADATA_REQUIRED=1`.
 - `/api/health`, `/api/version`, and `/api/ready` include `runtime` diagnostics. Production evidence should show `runtime.verified: true`, commit metadata shaped like a git SHA, and image metadata shaped like an immutable `@sha256:` ref.
 - `/api/ready` `reasons` and `sourceWarnings` remain string-compatible for simple monitors; top-level `warnings` carries non-blocking source caveats, and `sourceWarningDetails` carries structured category/action/key context for diagnostics.
-- Release-shaped smoke and deploy checks should validate `/api/ready` shape, metadata, and reasons, but source-confidence degradation is non-blocking unless `REQUIRE_READY=1` is set for a deliberate upstream-readiness audit.
+- Readiness responses remain `Cache-Control: no-store`; the server deduplicates concurrent probes and reuses the seven-check upstream snapshot for at most 10 seconds. Compare `checkedAt` before treating two responses as independent source reads.
+- Release-shaped smoke and deploy checks should validate `/api/ready` shape, metadata, and reasons. Ansible accepts degraded source confidence by default (`REQUIRE_READY=0`), while `REQUIRE_READY=1` makes degraded candidate or deployed readiness fail closed and trigger the existing rollback path.
 - Do not reintroduce mutable `latest` deploys; deploys must use digest image refs.
 - Local Playwright runs start a fresh standalone server by default. Use `PLAYWRIGHT_BASE_URL` only when deliberately proving an existing standalone server or remote deployment.
-- PR CI builds, scans, and runs the Docker image before deploy code can publish; the `main` publish job scans the locally built image before pushing it to GHCR.
+- App and release-proof npm scripts fail fast through `scripts/require-node22.mjs`; run `nvm use` before interpreting local smoke, build, lint, typecheck, audit, content, unit, or Playwright output.
+- PR CI builds, scans, and runs the Docker image before deploy code can publish; the `main` publish job scans the locally built image before pushing it to GHCR, then a separate `Smoke published image` job pulls and smokes the immutable digest before deploy can start.
 
 ## CSP Enforcement
 
@@ -46,6 +48,7 @@ Use Node 22, then run:
 ```bash
 nvm use
 df -h /System/Volumes/Data # stop if free space is below 50 GiB
+npm run check:release-tracked # fails if release proof commands point at local-only proof files
 npm run check:content
 npm run check:live-snapshot # live-source drift audit, optional for ordinary copy-only edits
 npm run check:live-snapshot -- --artifact .artifacts/live-source-drift/local.json # optional bounded JSON evidence
@@ -57,8 +60,11 @@ npm run lint
 npm run build
 npm run smoke:standalone
 CSP_ENFORCE=1 npm run smoke:standalone
-npm run test:e2e:visual # focused route overflow / first-viewport smoke
+npm run smoke:docker # local Docker candidate with strict runtime metadata and enforced CSP
+npm run test:e2e:visual # focused route overflow / first-viewport visual safety smoke
+npm run test:e2e:links # rendered internal links, anchors, and hydration/runtime console crawl
 npm run test:e2e
+npm run test:e2e:csp
 CHECK_BASE_URL=https://wiki.thorchain.no REQUIRE_RUNTIME_METADATA=1 CSP_ENFORCE=1 npm run check:runtime-url # public runtime/header drift probe
 IMAGE_REF=ghcr.io/example/tcwiki@sha256:1111111111111111111111111111111111111111111111111111111111111111 APP_VERSION=1111111111111111111111111111111111111111 ansible-playbook -i inventory/hosts.yml ansible-playbook.yml --syntax-check
 ```

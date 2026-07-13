@@ -2,6 +2,8 @@
 
 Bifrost is the component responsible for making THORChain aware of activity on external blockchains.
 
+It is both a design concept and an operational surface. The design explains how nodes observe chains and coordinate inbound/outbound activity; live route availability still depends on current chain sync, Mimir controls, inbound-address state, signing state, and source freshness.
+
 ## What Bifrost Does
 
 Bifrost is a network of observers (the active THORChain nodes) that continuously monitor supported chains for relevant events:
@@ -9,6 +11,7 @@ Bifrost is a network of observers (the active THORChain nodes) that continuously
 - Inbound transactions (users sending assets into vaults)
 - Outbound transaction confirmations
 - Chain reorganizations and finality
+- Chain-specific gas, confirmation, and broadcast conditions
 
 Every active node runs Bifrost observers for the chains it supports.
 
@@ -20,8 +23,42 @@ Every active node runs Bifrost observers for the chains it supports.
 
 This multi-observer model reduces reliance on any single node's report, while final safety still depends on the active validator set, chain finality, and current protocol controls.
 
+Observation is not the same thing as execution. A transaction can be observed while the relevant route is still constrained by halted trading, halted signing, chain-specific controls, dust or fee thresholds, memo validity, pool status, or outbound delivery conditions.
+
+## Chain Clients And Finality
+
+Bifrost is implemented through chain clients that understand the behavior of each connected chain. The source chain's block time, reorg risk, finality model, gas rules, memo support, and transaction format all matter.
+
+That is why "Bifrost observed it" is an incomplete user-facing answer. For an inbound, outbound, or refund investigation, pair observation evidence with:
+
+- the exact transaction hash and source chain,
+- the current inbound-address and router data for that chain,
+- current network diagnostics for trading, signing, and chain halt controls,
+- quote or memo evidence for the intended action,
+- any chain-specific confirmation or gas behavior that affects timing.
+
 ## Why It Matters
 
 Without reliable cross-chain observability, THORChain could not process inbound deposits or confirm outbound withdrawals with source-backed confidence. Bifrost is the subsystem that lets the protocol coordinate cross-chain activity rather than only internal pool accounting.
 
 The design has been stress-tested through multiple chain upgrades, hard forks, and high-volume periods. Continuous improvements to observation reliability and finality detection remain a core focus of the protocol.
+
+## What To Verify Before Claiming
+
+Before making a current Bifrost or route-health claim, verify:
+
+1. `/network#network-diagnostics` for current chain, trading, signing, and source-warning state.
+2. The relevant THORNode `inbound_addresses` entry for the chain being discussed.
+3. The current quote or transaction evidence when the claim is about one swap, deposit, outbound, or refund.
+4. Whether the issue is observation, memo/intent validation, pool execution, signing, gas, outbound delivery, or interface behavior.
+5. Whether an incident or upgrade source is dated historical context rather than proof of current safety.
+
+## Non-Claims
+
+This page does not prove:
+
+- A chain, route, inbound address, router, or outbound path is currently available.
+- A specific transaction was observed, executed, refunded, or delayed for one cause.
+- That all connected chains have identical finality, gas, or memo behavior.
+- That current chain-client health is clean across providers.
+- That Bifrost design alone proves current vault, signing, or route safety.

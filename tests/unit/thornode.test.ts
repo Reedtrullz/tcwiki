@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import ThornodeAPI, { deriveDynamicL1FeeStatus, deriveNetworkStatus, resetThornodeEndpointForTests } from '@/lib/api/thornode';
-import type { DynamicL1FeeSourceFreshness, ThornodeInboundAddress } from '@/lib/types';
+import ThornodeAPI, { deriveDynamicL1FeeStatus, deriveNetworkStatus, deriveRunePoolPolStatus, resetThornodeEndpointForTests } from '@/lib/api/thornode';
+import type { DynamicL1FeeSourceFreshness, RunePoolSourceFreshness, ThornodeInboundAddress } from '@/lib/types';
 
 const makeResponse = (ok: boolean, data: unknown, status = 200, statusText = 'OK') => ({
   ok,
@@ -154,9 +154,87 @@ function stubDynamicFeeSnapshots(liquify: DynamicFeeFixture, publicThornode: Dyn
   }));
 }
 
+interface RunePoolFixture {
+  mimir: unknown;
+  runepool: unknown;
+  latestBlock: unknown;
+}
+
+function runePoolFixture(overrides: Partial<RunePoolFixture> = {}): RunePoolFixture {
+  return {
+    mimir: {
+      'POL-BTC': 1,
+      'POL-ETH': 0,
+      RUNEPoolDepositMaturityBlocks: '14400',
+      RUNEPoolMaxReserveBackstop: '2500000000000',
+      MINRUNEPOOLDEPTH: '1000000000000',
+    },
+    runepool: {
+      pol: {
+        rune_deposited: '1250313135142376',
+        rune_withdrawn: '690803512821382',
+        value: '374089371198518',
+        pnl: '-185420251122476',
+        current_deposit: '559509622320994',
+      },
+      providers: {
+        units: '244190152445550',
+        pending_units: '0',
+        pending_rune: '0',
+        value: '179737127677024',
+        pnl: '-105713323488637',
+        current_deposit: '285450451165661',
+      },
+      reserve: {
+        units: '264046191162734',
+        value: '194352243521494',
+        pnl: '-79706927633839',
+        current_deposit: '274059171155333',
+      },
+    },
+    latestBlock: { block: { header: { height: '101', time: new Date().toISOString() } } },
+    ...overrides,
+  };
+}
+
+function runePoolRunepoolRecord() {
+  const runepool = runePoolFixture().runepool;
+  if (typeof runepool !== 'object' || runepool === null || Array.isArray(runepool)) {
+    throw new Error('Test RUNEPool fixture must be a plain object.');
+  }
+  return runepool as Record<string, unknown>;
+}
+
+function stubRunePoolSnapshots(liquify: RunePoolFixture, publicThornode: RunePoolFixture) {
+  vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+    const url = String(input);
+    const pathname = new URL(url).pathname;
+    const snapshot = url.includes('gateway.liquify.com') ? liquify : publicThornode;
+
+    if (pathname.endsWith('/mimir')) {
+      return makeResponse(true, snapshot.mimir);
+    }
+    if (pathname.endsWith('/runepool')) {
+      return makeResponse(true, snapshot.runepool);
+    }
+    if (pathname.endsWith('/base/tendermint/v1beta1/blocks/latest')) {
+      return makeResponse(true, snapshot.latestBlock);
+    }
+
+    return makeResponse(false, {}, 404, 'Not Found');
+  }));
+}
+
 const dynamicFreshness: DynamicL1FeeSourceFreshness = {
   thorchainHeight: 100,
   thorchainBlockTime: '2026-07-03T00:00:00.000Z',
+  thorchainBlockAgeSeconds: 6,
+  snapshotPinned: true,
+};
+
+const runePoolFreshness: RunePoolSourceFreshness = {
+  thorchainHeight: 100,
+  thorchainBlockTime: '2026-07-06T00:00:00.000Z',
   thorchainBlockAgeSeconds: 6,
   snapshotPinned: true,
 };
@@ -1026,32 +1104,32 @@ describe('deriveNetworkStatus', () => {
       [completeInbound('BTC'), completeInbound('AVAX')]
     );
 
-    expect(status.state).toBe('degraded');
-    expect(status.sourceWarnings).toEqual([
-      'Known operational-support Mimir keys present: BURNSYNTHS, COMPROMISEDVAULT-thor1vault, ENABLESWITCH-BTC, FUNDMIGRATIONINTERVAL, MimirRecallFundFoo, MimirUpgradeContractBar, SCHEDULEDMIGRATION.',
-      'Unknown operation-like Mimir keys need review: EVMDISABLECONTRACTWHITELIST, RAGNAROK-BTC, STOPSOLVENCYCHECK.',
-    ]);
-    expect(status.sourceWarningDetails?.[0]).toMatchObject({
-      severity: 'review',
-      category: 'mimir-support',
-      keys: [
-        'BURNSYNTHS',
-        'COMPROMISEDVAULT-thor1vault',
-        'ENABLESWITCH-BTC',
-        'FUNDMIGRATIONINTERVAL',
-        'MimirRecallFundFoo',
-        'MimirUpgradeContractBar',
+	    expect(status.state).toBe('degraded');
+	    expect(status.sourceWarnings).toEqual([
+	      'Known operational-support Mimir keys present: BURNSYNTHS, COMPROMISEDVAULT-thor1vault, ENABLESWITCH-BTC, EVMDISABLECONTRACTWHITELIST, FUNDMIGRATIONINTERVAL, MimirRecallFundFoo, MimirUpgradeContractBar, SCHEDULEDMIGRATION.',
+	      'Unknown operation-like Mimir keys need review: RAGNAROK-BTC, STOPSOLVENCYCHECK.',
+	    ]);
+	    expect(status.sourceWarningDetails?.[0]).toMatchObject({
+	      severity: 'review',
+	      category: 'mimir-support',
+	      keys: [
+	        'BURNSYNTHS',
+	        'COMPROMISEDVAULT-thor1vault',
+	        'ENABLESWITCH-BTC',
+	        'EVMDISABLECONTRACTWHITELIST',
+	        'FUNDMIGRATIONINTERVAL',
+	        'MimirRecallFundFoo',
+	        'MimirUpgradeContractBar',
         'SCHEDULEDMIGRATION',
       ],
     });
     expect(status.sourceWarningDetails?.[1]).toMatchObject({
-      severity: 'review',
-      category: 'unknown-operation',
-      keys: [
-        'EVMDISABLECONTRACTWHITELIST',
-        'RAGNAROK-BTC',
-        'STOPSOLVENCYCHECK',
-      ],
+	      severity: 'review',
+	      category: 'unknown-operation',
+	      keys: [
+	        'RAGNAROK-BTC',
+	        'STOPSOLVENCYCHECK',
+	      ],
     });
   });
 
@@ -2074,6 +2152,150 @@ describe('deriveNetworkStatus', () => {
     expect(result.sources?.map((source) => source.label)).toEqual(['Liquify THORNode', 'THORChain THORNode']);
   });
 
+  it('derives RUNEPool accounting, signed PnL, POL scope, and config caveats', () => {
+    const status = deriveRunePoolPolStatus(
+      runePoolFixture().mimir,
+      runePoolFixture().runepool,
+      runePoolFreshness
+    );
+
+    expect(status.pol.valueRuneBaseUnits).toBe('374089371198518');
+    expect(status.pol.pnlRuneBaseUnits).toBe('-185420251122476');
+    expect(status.providers.pendingRuneBaseUnits).toBe('0');
+    expect(status.reserve.currentDepositRuneBaseUnits).toBe('274059171155333');
+    expect(status.polPools).toEqual([
+      { key: 'POL-BTC', asset: 'BTC', value: 1, state: 'active' },
+      { key: 'POL-ETH', asset: 'ETH', value: 0, state: 'inactive' },
+    ]);
+    expect(status.activePolPoolCount).toBe(1);
+    expect(status.depositMaturityBlocks).toEqual({ key: 'RUNEPoolDepositMaturityBlocks', value: 14400, state: 'present' });
+    expect(status.maxReserveBackstop).toEqual({ key: 'RUNEPoolMaxReserveBackstop', value: 2500000000000, state: 'present' });
+    expect(status.minRunePoolDepth).toEqual({ key: 'MINRUNEPOOLDEPTH', value: 1000000000000, state: 'present' });
+    expect(status.sourceWarnings).toEqual([]);
+    expect(status.caveats).toEqual(['current-only', 'not-yield-proof', 'availability-separate']);
+  });
+
+  it('keeps malformed RUNEPool accounting unavailable instead of zero', () => {
+    const malformed = runePoolFixture({
+      mimir: {
+        'POL-BTC': 'not-a-number',
+        RUNEPoolDepositMaturityBlocks: 'oops',
+      },
+      runepool: {
+        pol: {
+          rune_deposited: '',
+          rune_withdrawn: '0x10',
+          value: '100000000 ',
+          pnl: 'not-a-rune-amount',
+          current_deposit: '1'.repeat(81),
+        },
+        providers: {
+          units: 'abc',
+          pending_units: '0',
+          pending_rune: '0',
+          value: '179737127677024',
+          pnl: '-105713323488637',
+          current_deposit: '285450451165661',
+        },
+        reserve: {
+          units: '264046191162734',
+          value: '194352243521494',
+          pnl: '-79706927633839',
+          current_deposit: '274059171155333',
+        },
+      },
+    });
+
+    const status = deriveRunePoolPolStatus(malformed.mimir, malformed.runepool, runePoolFreshness);
+
+    expect(status.pol.runeDepositedBaseUnits).toBeNull();
+    expect(status.pol.runeWithdrawnBaseUnits).toBeNull();
+    expect(status.pol.valueRuneBaseUnits).toBeNull();
+    expect(status.pol.pnlRuneBaseUnits).toBeNull();
+    expect(status.pol.currentDepositRuneBaseUnits).toBeNull();
+    expect(status.providers.units).toBeNull();
+    expect(status.polPools[0]).toEqual({ key: 'POL-BTC', asset: 'BTC', value: null, state: 'unparseable' });
+    expect(status.depositMaturityBlocks).toEqual({ key: 'RUNEPoolDepositMaturityBlocks', value: null, state: 'unparseable' });
+    expect(status.sourceWarnings).toEqual(expect.arrayContaining([
+      'THORNode Mimir POL-BTC was unparseable for RUNEPool POL scope.',
+      'THORNode Mimir RUNEPoolDepositMaturityBlocks was unparseable for RUNEPool availability caveats.',
+      'THORNode runepool.pol.rune_deposited did not include a usable RUNE base-unit string.',
+      'THORNode runepool.pol.rune_withdrawn included an invalid RUNE base-unit value.',
+      'THORNode runepool.pol.value included an invalid RUNE base-unit value.',
+      'THORNode runepool.pol.pnl included an invalid RUNE base-unit value.',
+      'THORNode runepool.pol.current_deposit is too large to display safely.',
+      'THORNode runepool.providers.units included an invalid unit value.',
+    ]));
+    expect(status.sourceWarningDetails.some((detail) => detail.category === 'source-shape')).toBe(true);
+    expect(status.sourceWarningDetails.some((detail) => detail.category === 'mimir-parse')).toBe(true);
+  });
+
+  it('fetches RUNEPool accounting and Mimir from the same pinned provider', async () => {
+    const liquify = runePoolFixture();
+    const publicThornode = runePoolFixture({
+      mimir: { 'POL-SOL': 1 },
+      runepool: {
+        ...runePoolRunepoolRecord(),
+        pol: {
+          rune_deposited: '1',
+          rune_withdrawn: '1',
+          value: '1',
+          pnl: '1',
+          current_deposit: '1',
+        },
+      },
+    });
+    stubRunePoolSnapshots(liquify, publicThornode);
+
+    const result = await ThornodeAPI.getRunePoolPolStatus();
+    const fetchMock = vi.mocked(fetch);
+    const urls = fetchMock.mock.calls.map(([input]) => String(input));
+
+    expect(result.status).toBe('ok');
+    expect(result.data?.pol.valueRuneBaseUnits).toBe('374089371198518');
+    expect(result.data?.polPools.map((pool) => pool.key)).toContain('POL-BTC');
+    expect(urls.some((url) => url.includes('/runepool?height=100'))).toBe(true);
+    expect(urls.some((url) => url.includes('/mimir?height=100'))).toBe(true);
+    expect(urls.filter((url) => url.includes('/runepool') || url.includes('/mimir')).every((url) => url.includes('gateway.liquify.com'))).toBe(true);
+    expect(result.sources?.map((source) => source.label)).toEqual([
+      'Liquify THORNode',
+      'Liquify THORNode latest block',
+      'Liquify THORNode Mimir',
+      'Liquify THORNode RUNEPool accounting',
+    ]);
+  });
+
+  it('returns the least-warning RUNEPool provider when all providers have parser warnings', async () => {
+    const warningFixture = runePoolFixture({
+      mimir: {
+        'POL-BTC': 1,
+      },
+      runepool: {
+        ...runePoolRunepoolRecord(),
+        pol: {
+          rune_deposited: '',
+          rune_withdrawn: '690803512821382',
+          value: '374089371198518',
+          pnl: '-185420251122476',
+          current_deposit: '559509622320994',
+        },
+      },
+    });
+    stubRunePoolSnapshots(warningFixture, warningFixture);
+
+    const result = await ThornodeAPI.getRunePoolPolStatus();
+
+    expect(result.status).toBe('ok');
+    expect(result.data?.pol.runeDepositedBaseUnits).toBeNull();
+    expect(result.data?.sourceWarnings).toContain('THORNode runepool.pol.rune_deposited did not include a usable RUNE base-unit string.');
+    expect(result.data?.sourceWarningDetails).toEqual([
+      expect.objectContaining({
+        category: 'source-shape',
+        message: 'THORNode runepool.pol.rune_deposited did not include a usable RUNE base-unit string.',
+      }),
+    ]);
+  });
+
   it('parses swap quote success without destination-address inputs', async () => {
     const fetchMock = vi.fn().mockResolvedValue(makeResponse(true, {
       expected_amount_out: '99000000',
@@ -2131,6 +2353,35 @@ describe('deriveNetworkStatus', () => {
     expect(result.source?.notes).toContain('Do not cache or treat as transaction instructions.');
   });
 
+  it('fails over transient quote-provider failures before returning a usable quote', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes('gateway.liquify.com')) {
+        return makeResponse(false, { message: 'service unavailable' }, 503, 'Service Unavailable');
+      }
+
+      return makeResponse(true, {
+        expected_amount_out: '99000000',
+        fees: { total_bps: '25' },
+      });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const result = await ThornodeAPI.getSwapQuoteProbe({
+      fromAsset: 'BTC.BTC',
+      toAsset: 'ETH.ETH',
+      amountBaseUnits: '100000000',
+    });
+
+    expect(result.status).toBe('ok');
+    expect(result.data?.status).toBe('available');
+    expect(result.data?.quote?.expectedAmountOut).toBe('99000000');
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(String(fetchMock.mock.calls[0]?.[0])).toContain('gateway.liquify.com');
+    expect(String(fetchMock.mock.calls[1]?.[0])).toContain('thornode.thorchain.network');
+    expect(result.source?.label).toBe('THORChain THORNode swap quote');
+  });
+
   it('parses halted-trading quote errors as limited routes', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(makeResponse(false, {
       code: 400,
@@ -2149,10 +2400,91 @@ describe('deriveNetworkStatus', () => {
       status: 'limited',
       summary: 'THORNode says this route is currently limited.',
       failure: {
+        kind: 'halt',
         code: 400,
         message: 'trading is halted on SOL',
       },
     });
+  });
+
+  it('keeps explicit halted-trading errors limited even when THORNode uses a 5xx response', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(makeResponse(false, {
+      code: 503,
+      message: 'trading is halted on BSC',
+    }, 503, 'Service Unavailable'));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const result = await ThornodeAPI.getSwapQuoteProbe({
+      fromAsset: 'BSC.BNB',
+      toAsset: 'ETH.ETH',
+      amountBaseUnits: '100000000',
+    });
+
+    expect(result.status).toBe('ok');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(result.data).toMatchObject({
+      status: 'limited',
+      failure: {
+        kind: 'halt',
+        httpStatus: 503,
+        message: 'trading is halted on BSC',
+      },
+    });
+  });
+
+  it('classifies rate-limited quote responses as review-only, not route halts', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(makeResponse(false, {
+      code: 429,
+      message: 'too many requests',
+    }, 429, 'Too Many Requests'));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const result = await ThornodeAPI.getSwapQuoteProbe({
+      fromAsset: 'BTC.BTC',
+      toAsset: 'ETH.ETH',
+      amountBaseUnits: '100000000',
+    });
+
+    expect(result.status).toBe('degraded');
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(result.sources).toHaveLength(2);
+    expect(result.data).toMatchObject({
+      status: 'failed',
+      summary: 'THORNode could not quote this route.',
+      failure: {
+        kind: 'rate-limit',
+        code: 429,
+        httpStatus: 429,
+        message: 'too many requests',
+      },
+      sourceWarnings: ['THORNode quote probe rate-limit response needs review: too many requests'],
+    });
+    expect(result.error).toContain('quote providers did not return a usable route response');
+  });
+
+  it('classifies malformed quote error objects as review-only, not route halts', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(makeResponse(false, {
+      error: 'unexpected response shape',
+    }, 500, 'Internal Server Error'));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const result = await ThornodeAPI.getSwapQuoteProbe({
+      fromAsset: 'BTC.BTC',
+      toAsset: 'ETH.ETH',
+      amountBaseUnits: '100000000',
+    });
+
+    expect(result.status).toBe('degraded');
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(result.data).toMatchObject({
+      status: 'failed',
+      failure: {
+        kind: 'malformed',
+        httpStatus: 500,
+        message: 'THORNode did not return a usable quote error.',
+      },
+    });
+    expect(result.error).toContain('quote providers did not return a usable route response');
   });
 
   it('degrades malformed quote success instead of rendering missing numeric fields as zero', async () => {
@@ -2171,6 +2503,23 @@ describe('deriveNetworkStatus', () => {
     expect(result.status).toBe('degraded');
     expect(result.data).toBeUndefined();
     expect(result.error).toContain('expected_amount_out');
+  });
+
+  it('rejects quote expiries outside the browser Date range', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(makeResponse(true, {
+      expected_amount_out: '99000000',
+      expiry: Number.MAX_SAFE_INTEGER,
+    })));
+
+    const result = await ThornodeAPI.getSwapQuoteProbe({
+      fromAsset: 'BTC.BTC',
+      toAsset: 'ETH.ETH',
+      amountBaseUnits: '100000000',
+    });
+
+    expect(result.status).toBe('degraded');
+    expect(result.data).toBeUndefined();
+    expect(result.error).toContain('invalid expiry');
   });
 
   it('rejects invalid quote requests before contacting THORNode providers', async () => {

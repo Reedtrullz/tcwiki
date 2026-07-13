@@ -2,6 +2,65 @@
 
 THORChain's App Layer is the smart-contract surface built around CosmWasm. It extends the base protocol from native cross-chain swaps into contract-driven applications, while keeping live availability, contract permissions, and asset movement behind explicit source checks.
 
+## App Layer Claim Checks
+
+App Layer language gets risky when one sentence tries to cover contracts, secured assets, trade accounts, and wallets at the same time. Start by naming the claim type:
+
+### Contract or app availability
+
+- **Use:** Explain the CosmWasm model, permissioned deployers, code checksums, contract instances, and oracle dependencies.
+- **Verify:** Check live `/network#network-diagnostics` evidence for `HaltWasmGlobal`, scoped `HaltWasm*` controls, `WasmPermissionless`, oracle controls, signing, and the relevant chain.
+- **Do not claim:** A contract, deployer, checksum, or app is safe, executable, or unpaused from static docs alone.
+
+### Secured asset movement
+
+- **Use:** Explain that secured assets are THORChain-native assets minted from deposited L1 assets and can be used by accounts, IBC, and contracts.
+- **Verify:** Check live secured-asset controls, chain-scoped deposit and withdrawal flags, route availability, and official asset-notation docs.
+- **Do not claim:** Current capacity, redemption timing, liquidity, or safety margin without fresh protocol evidence.
+
+### Trade-account or arbitrage flow
+
+- **Use:** Separate older trade-account terminology from secured assets and contract-moved tokens.
+- **Verify:** Check `TradeAccountsEnabled`, trade-account deposit controls, pool state, quote output, and route-specific halts.
+- **Do not claim:** That an arbitrage bot, professional-trader path, or trade-account flow is available just because the design exists.
+
+### Interface or wallet support
+
+- **Use:** Treat ecosystem listings as places to inspect for support.
+- **Verify:** Check the interface implementation, quote recipient, memo, wallet permissions, source integrity, and live protocol state.
+- **Do not claim:** Wallet safety, download integrity, support quality, or transaction suitability from this article.
+
+## What This Page Can Prove
+
+This article can support a few narrow claims:
+
+- THORChain App Layer contracts are CosmWasm contracts running in THORNode's Cosmos SDK environment.
+- App Layer availability is controlled by scoped live controls, not by one broad "contracts are live" switch.
+- Secured assets, trade accounts, and contract-moved tokens are separate concepts with different evidence needs.
+- Static docs can explain design and notation, while current use needs THORNode/Mimir, route, source-freshness, and interface-specific evidence.
+
+It cannot prove that a specific contract, interface, secured asset, wallet path, or arbitrage flow works right now. For that, use the evidence ladder below.
+
+## Evidence Ladder
+
+Use the strongest evidence available for the claim being made:
+
+1. **Specific app or contract action:** current Network diagnostics for `HaltWasm*`, `HaltOracle`, signing, trading, and source warnings; then app-specific contract/deployer/checksum evidence.
+2. **Secured asset deposit or withdrawal:** `HaltSecuredGlobal`, chain-scoped `HaltSecuredDeposit-*` and `HaltSecuredWithdraw-*`, asset notation, current route/chain state, and the interface path.
+3. **Trade-account or arbitrage flow:** `TradeAccountsEnabled`, trade-account deposit controls, pool state, quote output, route halts, and current app-layer controls if contracts are involved.
+4. **Wallet or interface support:** the interface implementation, quote/memo construction, recipient behavior, wallet permission surface, source integrity, and current protocol diagnostics.
+5. **Design-only explanation:** official App Layer, CosmWasm, secured-asset, and Mimir docs. Use this only for architecture, not current execution claims.
+
+If a claim jumps from "this feature exists in docs" to "a user can use it now," it is missing live evidence.
+
+## Common Misreadings
+
+- **"No global WASM halt means every contract is usable."** Scoped deployer, checksum, contract, oracle, signing, chain, and source-warning evidence can still limit a path.
+- **"Secured assets are just pooled assets."** They are native THORChain asset balances backed by deposited L1 assets, with their own controls and security-budget caveats.
+- **"Trade assets, trade accounts, and secured assets are interchangeable."** Older terminology appears in integrations and controls, but contract movement and secured-asset redemption need separate checks.
+- **"A wallet or app listing is a safety review."** Ecosystem listings and docs are starting points; they do not prove implementation quality, download integrity, memo construction, or current route availability.
+- **"Absent halt keys prove health."** Absence is only useful when the source is fresh, pinned, source-labeled, and the relevant scoped control family is known.
+
 ## What Changed From The Base Layer
 
 The base layer is still the part of THORChain that secures vaults, observes external chains, signs outbound transactions, and prices swaps through RUNE-paired liquidity pools.

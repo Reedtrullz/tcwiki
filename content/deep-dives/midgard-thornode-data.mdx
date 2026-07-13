@@ -1,0 +1,155 @@
+# Midgard And THORNode Data
+
+The wiki uses live data in two different ways. THORNode is closest to raw protocol state: Mimirs, inbound addresses, quotes, dynamic-fee records, node/version data, and block-height evidence. Midgard is an indexed consumer API: pool lists, network totals, earnings intervals, and dashboard-friendly time series.
+
+Both are useful. They are not interchangeable. This article explains which source should answer which question, and how to avoid turning a convenient dashboard number into stronger proof than it really is.
+
+## What This Guide Can Prove
+
+This guide can support source-selection claims:
+
+- THORNode is the stronger starting point for current protocol-state evidence such as Mimirs, inbound fields, quotes, versions, block heights, and route errors.
+- Midgard is the stronger starting point for indexed dashboard context such as available pools, network totals, earnings intervals, APY-style views, and consumer-normalized history.
+- A source label, provider, checked time, and warning state are part of the claim, not decorations around the claim.
+- A value can be useful and current while still being too narrow to prove uptime, protocol health, route execution, revenue lift, or wallet safety.
+- Mixed-provider or warning-backed reads should be described as degraded or source-warning-backed until the mismatch is resolved.
+
+It cannot prove that the latest live data is clean on its own. Use the page that rendered the number, its live source metadata, and the relevant THORNode or Midgard endpoint evidence before making present-tense claims.
+
+## Source Roles
+
+Use THORNode when the claim is about current protocol state:
+
+- Whether an action is halted, enabled, scheduled, or needs review.
+- Whether a chain has an inbound address, router, gas rate, or halt field in the checked snapshot.
+- Whether a concrete swap route returns a quote or an error right now.
+- Whether ADR-026 dynamic-fee records are present for a whitelisted thorname and pair.
+- Which block height, version, and provider produced the evidence.
+
+Use Midgard when the claim is about indexed, dashboard-friendly data:
+
+- Pool lists and pool status.
+- Network totals such as bond, liquidity, active nodes, or reserve context.
+- Recent earnings intervals and APY-style views.
+- Historical-looking series as exposed by the current Midgard provider.
+- Consumer-facing data where API normalization is the point.
+
+If the question is "can I do this right now?", THORNode usually starts the proof. If the question is "what does the dashboard metric say?", Midgard is usually the right source, with freshness and provider health beside the number.
+
+## Claim-To-Source Matrix
+
+Use the narrowest source that can actually prove the claim:
+
+| Claim type | Start with | Useful wiki surface | Do not claim from this alone |
+| --- | --- | --- | --- |
+| Swap route availability | THORNode quote and inbound-address evidence | `/network#network-diagnostics` | Pool presence, 24h volume, or a healthy Midgard metrics call proves a route will quote or settle. |
+| Halt, pause, or operation state | THORNode Mimirs, inbound fields, version, and checked block | `/network#network-diagnostics` and `/deep-dives/mimir-halt-controls` | A dated incident report or missing halt mention proves current availability. |
+| Pool depth or available-pool context | Midgard available pools plus Midgard health | `/stats` | A listed pool proves swap execution, LP action availability, or future yield. |
+| Earnings or APY-style dashboard history | Midgard earnings intervals plus source coverage | `/stats` | A 30-day chart proves durable protocol revenue, user yield, or partner attribution. |
+| ADR-026 dynamic-fee experiment state | THORNode dynamic-fee endpoints and Mimirs | `/dynamic-fees#dynamic-fees-live` | Current accumulators prove revenue lift, route competitiveness, or attribution quality. |
+| Incident, recovery, or deprecated-product history | Dated official reports, upgrade notes, and curated records | `/governance`, `/tcy`, and recovery deep dives | A historical source proves present-day safety, solvency, or recovery completion. |
+
+When a claim crosses rows, carry both proof paths. For example, "BTC has a deep available pool and BTC swaps are available" needs Midgard pool context and THORNode route or operation evidence.
+
+## Current State Versus Indexed State
+
+Current-state claims should be narrow and dated to the checked source.
+
+Stronger wording:
+
+- "This THORNode snapshot shows BSC trading halted at the checked height."
+- "The Stats page shows Midgard-provided 30-day earnings intervals from the selected provider."
+- "The dynamic-fee page shows current-only THORNode records, not a historical revenue study."
+
+Risky wording:
+
+- "THORChain is healthy" because one Midgard metrics call responded.
+- "Swaps are available" because pool data exists.
+- "Revenue increased" because a current dynamic-fee record has a latest fee amount.
+- "This provider agrees with the network" without comparing source freshness, height, and warnings.
+
+Midgard can be perfectly suitable for a dashboard metric while still being too indirect for a route-availability claim. THORNode can be the strongest current protocol source while still being incomplete for historical trend or UX-performance questions.
+
+## Provider Failover And Same-Source Evidence
+
+The wiki should not silently mix unrelated provider reads into one confident snapshot.
+
+When a view needs several live endpoints, the safest pattern is:
+
+1. Pick a provider.
+2. Fetch related endpoints from that same provider.
+3. Attach source metadata to the rendered values.
+4. Fail over only when the provider response is unusable.
+5. Show degraded or unavailable copy instead of inventing zeros.
+
+Same-provider evidence matters because one endpoint can be fresh while another provider is stale, lagging, malformed, or missing fields. If the page combines a Midgard pool count from one provider with a health check from another, the source label should say so or the source should degrade.
+
+THORNode pinned snapshots are even stricter. If a dashboard needs `/mimir`, `/inbound_addresses`, `/dynamic_l1_fees`, and `/dynamic_l1_fees_current` for one checked block, it should avoid mixing providers or heights in a way that makes the evidence look more coherent than it is.
+
+## What Source Warnings Mean
+
+Warnings are part of the data, not a nuisance to hide.
+
+High-priority warnings include:
+
+- Stale, unpinned, or missing block/height evidence.
+- Missing fields that are required for a displayed claim.
+- Malformed base-unit amounts, Mimir values, or duplicate scoped records.
+- Provider mismatch between health and visible data.
+- Unknown operation-like keys that the dashboard cannot classify yet.
+
+Warnings should not always erase the visible facts. For example, a THORNode snapshot can clearly show "BSC trading halted" while also saying "some Mimir keys need review". The correct posture is to show both truths: the known blocker and the source-quality caveat.
+
+## Dashboard Evidence Rules
+
+A live dashboard should follow a few boring rules because boring is good for trust:
+
+- Never render missing money, RUNE, bps, APY, or fee fields as `0`.
+- Parse base-unit amounts as strings, not floating point numbers.
+- Keep `null`, `unavailable`, and `insufficient samples` distinct.
+- Show source provider, checked time, and freshness close to the numbers.
+- Prefer exact endpoint labels in disclosures over vague "API data" wording.
+- Let malformed provider data fail that provider instead of poisoning the page.
+- Treat source warnings as a degraded source posture until reviewed.
+
+This is why the wiki often uses "current-only" labels. A value can be fresh and useful without being a permanent governance record, an uptime proof, or a historical attribution model.
+
+## Which Wiki Surface Uses Which Source
+
+The main live surfaces use the sources differently:
+
+- `/network#network-diagnostics` should lead with THORNode operational evidence: Mimirs, inbound fields, quote probes, and exact blockers.
+- `/stats` should use Midgard for dashboard metrics, with source health and coverage labels before interpreting liquidity, earnings, APY, or node-count figures.
+- `/dynamic-fees` should use THORNode dynamic-fee endpoints and Mimirs for current ADR-026 experiment state, while avoiding claims about durable revenue lift.
+- `/docs` should help readers choose the right source family before making a claim.
+- `/api/ready` can say whether live sources are usable for this app, but a degraded readiness response is not the same thing as "the protocol is down".
+
+Those surfaces should agree on source posture. If one page says data is degraded, another page should not quietly convert the same condition into a healthy dashboard number.
+
+## Evidence Checklist
+
+Before making a live-data claim, ask:
+
+1. Is the claim about current protocol state, indexed dashboard metrics, historical context, or community interpretation?
+2. Which endpoint family is strongest for that claim?
+3. Did the value come from one provider or a mixed-source fallback path?
+4. Is there a checked time, block height, provider label, and source warning list?
+5. Is missing data shown as unavailable rather than zero?
+6. Does the claim need a route quote, transaction hash, pool state, Mimir key, or Midgard interval?
+7. Is the wording scoped to the checked snapshot instead of sounding permanent?
+
+If those answers are not available, use "insufficient evidence" rather than stretching the source.
+
+## Non-Claims
+
+This page does not prove:
+
+- That any current route is available, cheap, safe, or competitive.
+- That a Midgard metric is canonical protocol state.
+- That THORNode current state is a historical trend.
+- That a green `/api/ready` response proves protocol health or wallet safety.
+- That a degraded source means every displayed fact is false.
+- That one provider's response proves all providers agree.
+- That dashboard records prove revenue lift, partner attribution quality, or future availability.
+
+Use Midgard for indexed dashboard context. Use THORNode for current protocol state. Use both with source labels, warnings, and narrow claims.

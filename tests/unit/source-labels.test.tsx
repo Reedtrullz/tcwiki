@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { EcosystemFilterList } from '@/components/features/EcosystemFilterList';
 import { DeepDiveShell } from '@/components/features/DeepDiveShell';
@@ -7,11 +7,28 @@ import { LiveSourceMeta } from '@/components/ui/LiveSourceMeta';
 import { RelatedChecks } from '@/components/features/RelatedChecks';
 import { RouteSourcePosture } from '@/components/features/RouteSourcePosture';
 import { GlossaryExplorer } from '@/components/features/GlossaryExplorer';
+import { ProtocolChainFinder } from '@/components/features/ProtocolChainFinder';
 import { GLOSSARY_TERMS } from '@/lib/content/glossary';
-import { CHAIN_RECORDS, ECOSYSTEM_PROJECT_RECORDS, SECURITY_INCIDENT_RECORDS } from '@/lib/data/static';
-import { getContentEntry } from '@/lib/content/registry';
+import { CHAIN_RECORDS, ECOSYSTEM_PROJECT_RECORDS, getTokenomicsRecord, GOVERNANCE_PROPOSAL_RECORDS, SECURITY_INCIDENT_RECORDS } from '@/lib/data/static';
+import { CONTENT_ENTRIES, SEARCH_PAGE_ENTRY, getContentEntry } from '@/lib/content/registry';
+import { continuousLiquidityPoolsSource, cosmWasmSource, liquidityProvidersSource, liveInboundSource } from '@/lib/sources';
+
+vi.mock('next/navigation', () => ({
+  usePathname: () => '/test-route',
+  useRouter: () => ({
+    replace: vi.fn(),
+  }),
+  useSearchParams: () => new URLSearchParams(),
+}));
 
 describe('source and freshness labels', () => {
+  it('keeps the shared live inbound source date aligned with the current-state refresh', () => {
+    expect(liveInboundSource.retrievedAt).toBe('2026-07-04');
+    expect(GOVERNANCE_PROPOSAL_RECORDS.find((record) => record.data.id === 'mimir-operational-halts')?.freshness).toEqual(
+      expect.objectContaining({ checkedAt: '2026-07-04', nextReviewDue: '2026-08-04' })
+    );
+  });
+
   it('renders confidence labels and source links', () => {
     const html = renderToStaticMarkup(
       <FreshnessMeta
@@ -46,15 +63,55 @@ describe('source and freshness labels', () => {
 
     expect(html).toContain('Directory filters');
     expect(html).toContain('aria-atomic="true"');
-    expect(html).toContain('Listed Active');
+    expect(html).toContain('Catalog listed');
+    expect(html).toContain('Directory posture');
+    expect(html).toContain('Directory posture describes this wiki record only');
+    expect(html).not.toContain('Listed Active');
+    expect(html).not.toContain('All statuses');
+    expect(html).toContain('Use filters to find a surface to inspect');
+    expect(html).toContain('This listing can indicate');
+    expect(html).toContain('Still verify');
+    expect(html).toContain('Not a safety proof');
+    expect(html).toContain('Swap surface');
+    expect(html).toContain('Wallet surface');
     expect(html).toContain('Use for');
     expect(html).toContain('Check before use');
     expect(html).toContain('Review quoted fees, route, slippage, recipient address, and wallet approvals');
     expect(html).toContain('Confirm the current release, download source, wallet permissions, and device security');
-    expect(html).toContain('Live status');
-    expect(html).toContain('Source map');
+    expect(html).toContain('type="search"');
+    expect(html).toContain('placeholder="Project, chain, route, wallet..."');
+    expect(html).toContain('Check protocol route');
+    expect(html).toContain('Open diagnostics');
+    expect(html).toContain('Read source map');
     expect(html).toContain('Check live diagnostics');
     expect(html).toContain('Live inbound status must be checked before describing BTC swaps as open.');
+  });
+
+  it('surfaces ecosystem records that need source review as an explicit warning', () => {
+    const viewblockRecord = ECOSYSTEM_PROJECT_RECORDS.find((record) => record.data.id === 'viewblock');
+
+    expect(viewblockRecord).toBeDefined();
+    if (!viewblockRecord) {
+      return;
+    }
+
+    const html = renderToStaticMarkup(
+      <EcosystemFilterList projectRecords={[viewblockRecord]} chainRecords={CHAIN_RECORDS.slice(0, 1)} />
+    );
+
+    expect(html).toContain('Needs source review');
+    expect(html).toContain('Needs review');
+    expect(html).toContain('Direct source refresh needs review');
+    expect(html).toContain('Confirm the direct explorer page clears its anti-bot challenge');
+    expect(html).toContain('Review before relying on this entry');
+    expect(html).toContain('Review source posture');
+    expect(html).toContain('Open unreviewed external source');
+    expect(html).toContain('ViewBlock THORChain');
+    expect(html).not.toContain('Open external project');
+    expect(html).not.toContain('Check sample route');
+    expect(html).not.toContain('Listed Needs review');
+    expect(html).not.toContain('Status: Needs review');
+    expect(html).not.toContain('All statuses');
   });
 
   it('keeps ecosystem filter controls and source disclosures keyboard-visible', () => {
@@ -63,8 +120,9 @@ describe('source and freshness labels', () => {
     );
 
     expect(html).toMatch(/<select[^>]+focus:ring-1 focus:ring-accent\/50/);
-    expect(html).toMatch(/Open project[\s\S]*focus-visible:ring-2 focus-visible:ring-accent\/60/);
-    expect(html).toMatch(/Live status[\s\S]*focus-visible:ring-2 focus-visible:ring-accent\/60/);
+    expect(html).toMatch(/<input[^>]+focus:ring-1 focus:ring-accent\/50/);
+    expect(html).toMatch(/Open external project[\s\S]*focus-visible:ring-2 focus-visible:ring-accent\/60/);
+    expect(html).toMatch(/Check protocol route[\s\S]*focus-visible:ring-2 focus-visible:ring-accent\/60/);
     expect(html).toMatch(/Show 1 additional source[\s\S]*focus-visible:ring-2 focus-visible:ring-accent\/60/);
   });
 
@@ -82,6 +140,24 @@ describe('source and freshness labels', () => {
     expect(html).toContain('Bifrost');
     expect(html).toContain('Checked');
     expect(html).not.toContain('No glossary terms match');
+  });
+
+  it('renders the protocol chain finder without turning catalog records into live availability', () => {
+    const html = renderToStaticMarkup(
+      <ProtocolChainFinder chainRecords={CHAIN_RECORDS.slice(0, 3)} catalogReviewedAt="2026-07-06" />
+    );
+
+    expect(html).toContain('Supported Chain Finder');
+    expect(html).toContain('Showing 3 of 3 catalog chain records from the 2026-07-06 review.');
+    expect(html).toContain('Find supported chains');
+    expect(html).toContain('Address format');
+    expect(html).toContain('Review notes');
+    expect(html).toContain('Catalog Boundary');
+    expect(html).toContain('Listed means this chain was present in the curated inbound-address catalog.');
+    expect(html).toContain('It does not prove swaps, signing, LP actions, gas, or a route are open now.');
+    expect(html).toContain('Check live state');
+    expect(html).toContain('Check a route');
+    expect(html).toContain('Live inbound status must be checked before describing BTC swaps as open.');
   });
 
   it('renders source notes, retrieved timestamps, and reviewer metadata', () => {
@@ -110,7 +186,7 @@ describe('source and freshness labels', () => {
     );
 
     expect(html).toContain('Reviewed by Protocol review desk');
-    expect(html).toContain('Retrieved 2026-06-18T10:00:00.000Z');
+    expect(html).toContain('Source retrieved 2026-06-18T10:00:00.000Z');
     expect(html).toContain('Use as a current-only check for live chain availability and pause state.');
     expect(html).toContain('Narrative source used as a cross-check, not live availability proof.');
   });
@@ -131,16 +207,17 @@ describe('source and freshness labels', () => {
       />
     );
 
-    expect(html).toContain('Checked 2026-07-04');
-    expect(html).toContain('Review due 2026-08-04');
-    expect(html).toContain('Retrieved 2026-07-04');
+    expect(html).toContain('Checked 2026-07-05');
+    expect(html).toContain('Review due 2026-08-05');
+    expect(html).toContain('Source retrieved 2026-07-04');
     expect(html).toContain('Official root-cause report for the May 2026 GG20/TSS vault exploit.');
   });
 
   it('renders route-level source posture from registry metadata without hiding non-claims', () => {
+    const entry = getContentEntry('protocol');
     const html = renderToStaticMarkup(
       <RouteSourcePosture
-        entry={getContentEntry('protocol')}
+        entry={entry}
         useFor={['Architecture concepts and swap lifecycle context.']}
         verifyBeforeClaiming={['Current halt, signing, inbound-address, or Mimir state.']}
       />
@@ -152,10 +229,54 @@ describe('source and freshness labels', () => {
     expect(html).toContain('Architecture concepts and swap lifecycle context.');
     expect(html).toContain('Current halt, signing, inbound-address, or Mimir state.');
     expect(html).toContain('Curated');
-    expect(html).toContain('Checked 2026-07-05');
-    expect(html).toContain('Review due 2026-08-05');
+    expect(html).toContain(`Checked ${entry.reviewedAt}`);
+    expect(html).toContain(`Review due ${entry.nextReviewDue}`);
     expect(html).toContain('THORChain Docs');
+    expect(html).toContain('Source retrieved 2026-07-05');
     expect(html).toContain('+6 sources');
+  });
+
+  it('resolves tokenomics page records by exact id and fails closed when missing', () => {
+    expect(getTokenomicsRecord('rune-supply-framing').data.title).toBe('RUNE Supply Framing');
+    expect(getTokenomicsRecord('tcy-recovery-context').data.title).toBe('TCY Recovery Context');
+    expect(() => getTokenomicsRecord('missing-tokenomics-record')).toThrow('Missing tokenomics record for missing-tokenomics-record');
+  });
+
+  it('keeps visible route source posture backed by dated source-use metadata', () => {
+    for (const entry of [...CONTENT_ENTRIES, SEARCH_PAGE_ENTRY]) {
+      for (const source of entry.sources) {
+        expect(source.retrievedAt, `${entry.id} / ${source.label}`).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      }
+    }
+  });
+
+  it('keeps glossary source posture backed by shared dated source metadata', () => {
+    for (const term of GLOSSARY_TERMS) {
+      for (const source of term.sources) {
+        expect(source.retrievedAt, `${term.term} / ${source.label}`).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      }
+    }
+
+    expect(GLOSSARY_TERMS.find((term) => term.term === 'Impermanent loss')?.sources).toEqual(
+      expect.arrayContaining([liquidityProvidersSource, continuousLiquidityPoolsSource])
+    );
+    expect(GLOSSARY_TERMS.find((term) => term.term === 'App Layer')?.sources).toEqual(expect.arrayContaining([cosmWasmSource]));
+  });
+
+  it('renders the search route posture without turning result ranking into proof', () => {
+    const html = renderToStaticMarkup(
+      <RouteSourcePosture
+        entry={SEARCH_PAGE_ENTRY}
+        useFor={['Finding wiki pages, glossary terms, source-map sections, task guides, and reader paths.']}
+        verifyBeforeClaiming={['That a high-ranked result proves the claim without checking the result source, review date, and live evidence.']}
+      />
+    );
+
+    expect(html).toContain('Search, guided reader paths, task guides');
+    expect(html).toContain('Page Source Posture');
+    expect(html).toContain('Finding wiki pages, glossary terms');
+    expect(html).toContain('That a high-ranked result proves the claim');
+    expect(html).toContain('Source retrieved 2026-07-02');
   });
 
   it('renders related checks as source-conscious internal links', () => {
@@ -169,10 +290,10 @@ describe('source and freshness labels', () => {
             description: 'Check what this source can prove.',
           },
           {
-            label: 'Pause search',
-            href: '/search?q=Mimir%20halt&filter=task',
-            badge: 'search',
-            description: 'Find halt-key task results.',
+            label: 'Mimir halt guide',
+            href: '/deep-dives/mimir-halt-controls#what-mimirs-can-prove',
+            badge: 'guide',
+            description: 'Read halt-key interpretation guidance.',
           },
         ]}
       />
@@ -182,9 +303,9 @@ describe('source and freshness labels', () => {
     expect(html).toContain('Use these before turning current dashboard values into a broader claim.');
     expect(html).toContain('current-only');
     expect(html).toContain('href="/docs#current-protocol-state"');
-    expect(html).toContain('href="/search?q=Mimir%20halt&amp;filter=task"');
+    expect(html).toContain('href="/deep-dives/mimir-halt-controls#what-mimirs-can-prove"');
     expect(html).toContain('proof boundary');
-    expect(html).toContain('Find halt-key task results.');
+    expect(html).toContain('Read halt-key interpretation guidance.');
 
     const articleHtml = renderToStaticMarkup(
       <RelatedChecks
@@ -216,15 +337,20 @@ describe('source and freshness labels', () => {
 
     expect(html).toContain('Reader Paths For This Article');
     expect(html).toContain('Use This Article For');
-    expect(html).toContain('Curated explanation of Threshold Signatures (TSS) mechanics and terminology.');
+    expect(html).toContain('A security explainer for threshold signing, vault-key risk, GG20 incident language');
     expect(html).toContain('Verify Elsewhere Before Claiming');
+    expect(html).toContain('Current signing state, vault safety, validator upgrade coverage, active TSS implementation');
+    expect(html).toContain('Verify Now');
+    expect(html).toContain('Use these current-state checks before turning this explainer into a live protocol, wallet, or availability claim.');
     expect(html).toContain('Network Security');
     expect(html).toContain('Historical Recovery');
     expect(html).toContain('Verify Before Claiming');
     expect(html).toContain('Current signing, observation, trading, or chain-specific Mimir state.');
     expect(html).toContain('href="/deep-dives#deep-dive-path-network-security"');
     expect(html).toContain('href="/network#network-diagnostics"');
-    expect(html).toContain('Reviewed 2026-07-04');
+    expect(html).toContain('href="/docs#current-protocol-state"');
+    expect(html).toContain('Wiki reviewed 2026-07-04');
+    expect(html).toContain('Review due 2026-08-04');
 
     const historicalHtml = renderToStaticMarkup(
       <DeepDiveShell entryId="deep-dive-savers" editPath="content/deep-dives/savers.mdx">
@@ -232,8 +358,34 @@ describe('source and freshness labels', () => {
       </DeepDiveShell>
     );
 
-    expect(historicalHtml).toContain('Historical context for Savers and Lending (Historical); not current product instructions.');
-    expect(historicalHtml).toContain('Current product availability, user-action instructions, or recovery completion claims.');
+    expect(historicalHtml).toContain('A historical-product guide for archived Savers/Lending context, THORFi unwind boundaries');
+    expect(historicalHtml).toContain('whether old yield or lending behavior is being misread as live.');
+
+    const refundHtml = renderToStaticMarkup(
+      <DeepDiveShell entryId="deep-dive-streaming-swaps-refunds" editPath="content/deep-dives/streaming-swaps-refunds.mdx">
+        <h1>Streaming Swaps And Refunds</h1>
+      </DeepDiveShell>
+    );
+
+    expect(refundHtml).toContain('Verify Elsewhere Before Claiming: </span>Current quote result, memo, inbound address, amount thresholds, transaction evidence, and live halt/signing state.');
+
+    const tcyHtml = renderToStaticMarkup(
+      <DeepDiveShell entryId="deep-dive-tcy-recovery-timeline" editPath="content/deep-dives/tcy-recovery-timeline.mdx">
+        <h1>TCY Recovery Timeline</h1>
+      </DeepDiveShell>
+    );
+
+    expect(tcyHtml).toContain('A dated recovery-context guide for TCY, deprecated THORFi products, and current-state claims that need separate proof.');
+    expect(tcyHtml).toContain('Current TCY claiming, staking, trading, distribution, recovery progress, solvency, market value, or ADR-028 state.');
+
+    const clpHtml = renderToStaticMarkup(
+      <DeepDiveShell entryId="deep-dive-clp" editPath="content/deep-dives/clp.mdx">
+        <h1>Continuous Liquidity Pools</h1>
+      </DeepDiveShell>
+    );
+
+    expect(clpHtml).toContain('A mechanism and evidence-boundary guide for CLP pricing, slip/liquidity fees, route availability, and refund non-claims.');
+    expect(clpHtml).toContain('Current quote, route availability, pool depth, LP action state, source quality, transaction evidence');
   });
 
   it('preserves historical posture for TCY route metadata', () => {
@@ -246,12 +398,14 @@ describe('source and freshness labels', () => {
     );
 
     expect(html).toContain('Historical');
-    expect(html).toContain('Checked 2026-07-05');
-    expect(html).toContain('Review due 2026-08-05');
+    expect(html).toContain('Checked 2026-07-08');
+    expect(html).toContain('Review due 2026-08-08');
     expect(html).toContain('Archived Savers and Lending docs');
     expect(html).toContain('RUNE and TCY tokenomics');
+    expect(html).toContain('TCY Developer Guide');
+    expect(html).toContain('THORFi Unwind Announcement');
     expect(html).toContain('THORChain Exploit Report #1');
-    expect(html).toContain('+3 sources');
+    expect(html).toContain('+5 sources');
     expect(html).toContain('Historical THORFi unwind and TCY recovery framing.');
     expect(html).toContain('Current TCY operations, balances, or live claims state.');
   });
@@ -299,11 +453,42 @@ describe('source and freshness labels', () => {
 
     expect(html).toContain('THORNode');
     expect(html).toContain('+2 endpoint reads');
+    expect(html).toContain('Show 2 additional endpoint reads for THORNode');
     expect(html).toContain('THORNode Mimir');
     expect(html).toContain('height=100');
     expect(html).toContain('<details');
     expect(html).toContain('break-words');
+    expect(html).toContain('[overflow-wrap:anywhere]');
     expect(html).not.toContain('role="list"');
+    expect(html).not.toContain('whitespace-nowrap');
+  });
+
+  it('uses the shared source wrapping contract for long live endpoint labels', () => {
+    const longEndpointLabel = 'THORNode dynamic_l1_fees_current sealed accumulator endpoint with unusually long provider label';
+    const html = renderToStaticMarkup(
+      <LiveSourceMeta
+        result={{
+          status: 'ok',
+          checkedAt: '2026-06-18T00:00:00.000Z',
+          sources: [
+            {
+              label: longEndpointLabel,
+              url: 'https://thornode.thorchain.network/thorchain/dynamic_l1_fees_current?height=123456789',
+            },
+            {
+              label: `${longEndpointLabel} secondary read`,
+              url: 'https://thornode.thorchain.network/thorchain/dynamic_l1_fees?height=123456789',
+            },
+          ],
+        }}
+      />
+    );
+
+    expect(html).toContain(longEndpointLabel);
+    expect(html).toContain('+1 endpoint read');
+    expect(html).toContain(`Show 1 additional endpoint read for ${longEndpointLabel}`);
+    expect(html).toContain('min-w-0 max-w-full break-words');
+    expect(html).toContain('[overflow-wrap:anywhere]');
     expect(html).not.toContain('whitespace-nowrap');
   });
 
@@ -322,6 +507,10 @@ describe('source and freshness labels', () => {
     );
 
     expect(html).toContain('Source warning');
+    expect(html).toContain('1 source warning; 1 raw key hidden from compact view');
+    expect(html).toContain('warning / other');
+    expect(html).toContain('Unknown operation-like Mimir keys need review.');
+    expect(html).toContain('Exact key is available only in the source-specific diagnostics.');
     expect(html).toContain('THORNode');
     expect(html).not.toContain('Current-only');
     expect(html).not.toContain('VERY-LONG-KEY');

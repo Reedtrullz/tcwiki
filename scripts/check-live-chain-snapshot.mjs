@@ -1,3 +1,4 @@
+import './require-node22.mjs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createJiti } from 'jiti';

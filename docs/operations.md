@@ -2,7 +2,7 @@
 
 ## Deploy Inputs
 
-Deploys require immutable image and version inputs:
+Deploys require immutable image and version inputs. `REQUIRE_READY=0` is the explicit default: source-confidence degradation is reported but does not block a deploy. Set `REQUIRE_READY=1` for a deliberate upstream-readiness gate; degraded candidate or deployed readiness then fails closed and the existing rollback path is used.
 
 ```bash
 IMAGE_REF='ghcr.io/reedtrullz/tcwiki@sha256:<digest>'
@@ -16,16 +16,19 @@ The playbook refuses mutable tags and missing versions. Production deploys defau
 
 Do not deploy from local work unless the user explicitly requests a deploy. Local release checks
 such as `npm run build`, `npm run smoke:standalone`, `git diff --check`, and Ansible syntax checks
-are local evidence only. They do not prove that GitHub CI passed, that a GHCR image was published,
+must be run under Node 22; app and release-proof npm scripts fail fast through `scripts/require-node22.mjs`
+when an older runtime is active. Local checks are local evidence only. They do not prove that GitHub CI passed, that a GHCR image was published,
 or that production changed.
+Use `npm run check:release-tracked` before treating local release evidence as ship-ready; it fails when package scripts, CI, release docs, or their local script/spec dependencies reference local-only proof files that have not been tracked by git. CI runs the same trackedness audit before the rest of the release-shaped app gate.
 
 When reporting release state, keep these boundaries explicit:
 
 - Local proof: command, result, branch, and whether the worktree was dirty.
 - CI proof: GitHub run ID or URL, if actually checked.
 - Published-image proof: immutable GHCR digest, if actually published.
+- Pre-deploy image proof: published digest pulled and passed Docker runtime/browser smoke, if actually run.
 - Production proof: live endpoint readback date/time, `/api/health`, `/api/version`, and expected
-  headers, if actually checked.
+  `/api/ready?contract=strict` state and headers, if actually checked.
 
 ## Health And Version Checks
 
@@ -34,7 +37,7 @@ Check the deployed app:
 ```bash
 curl -fsS https://wiki.thorchain.no/api/health
 curl -fsS https://wiki.thorchain.no/api/version
-curl -sS -D - https://wiki.thorchain.no/api/ready
+curl -sS -D - 'https://wiki.thorchain.no/api/ready?contract=strict'
 ```
 
 Expected:
@@ -44,9 +47,10 @@ Expected:
 - `commit` matches the deployed commit SHA.
 - `image` is an immutable `@sha256:` digest ref when set by deployment.
 - `runtime.verified` is `true` and `runtime.warnings` is empty for deployed production checks.
-- `/api/ready` returns `ready: true` and `status: ready` before claiming upstream readiness.
+- `/api/ready?contract=strict` returns `ready: true` and `status: ready` before claiming upstream readiness.
 - `/api/ready` can intentionally return `503 degraded`; use a body-preserving command so the JSON diagnostics are still visible.
-- `/api/ready` checks visible Midgard datasets, THORNode operation state, and the dynamic L1 fee tracker source contract.
+- `/api/ready` checks visible Midgard datasets, THORNode operation state, the dynamic L1 fee tracker source contract, and RUNEPool/POL status/source posture through `sources.thornode.runePoolPol`.
+- `/api/ready` keeps HTTP responses `no-store`, but concurrent and repeated requests share one server-side upstream snapshot for up to 10 seconds. Use `checkedAt` as the snapshot time; a repeated value inside that window is intentional request deduplication, not proof that the endpoint is stuck.
 - `/api/ready` degrades on runtime identity problems only when `RUNTIME_METADATA_REQUIRED=1`; production containers set this so missing commit/image provenance is not treated as clean readiness.
 - `/api/ready` keeps `reasons` and `sourceWarnings` as simple strings for probes, exposes top-level `warnings` for non-blocking source caveats, and includes `sourceWarningDetails` with severity, category, action, keys, and scopes when warnings need operator review.
 

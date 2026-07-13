@@ -1,3 +1,4 @@
+import './require-node22.mjs';
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';

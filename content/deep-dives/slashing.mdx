@@ -2,6 +2,8 @@
 
 Slashing is the primary economic defense mechanism that aligns node operator incentives with the security of the network.
 
+The safest wiki wording separates reward slash points from bond-at-risk events, and separates design meaning from current constants or operator state.
+
 ## What is Slashing?
 
 THORChain uses two related penalty ideas that should not be collapsed together:
@@ -30,3 +32,35 @@ Nodes that accumulate too many slash points can be forced out of the active set 
 Without strong slashing, a rational actor could attempt to steal funds or disrupt the network if the expected value of the attack exceeded the bond at risk. Bond ranges, minimum bond, and slash multipliers are live/current-only parameters and should be checked before being quoted.
 
 The system has been tested through multiple real-world incidents and has continued to evolve its monitoring and response mechanisms.
+
+## Operator Evidence Ladder
+
+For a current operator or incident claim, use the strongest evidence available:
+
+1. Current node status, bond, and slash-point data from THORNode or operator tooling.
+2. Current Mimir and constants when the claim depends on thresholds or enabled/paused behavior.
+3. Exact observation, signing, keygen, or outbound evidence for a specific event.
+4. Dated incident reports or upgrade notes for historical root-cause and patch wording.
+5. Static docs for design meaning only.
+
+Do not treat "has slash points" as the same claim as "bond was confiscated". Do not treat a historical slash rule as a current parameter without checking current protocol state.
+
+## What To Verify Before Claiming
+
+Before making a slashing claim, verify:
+
+- whether it is reward slashing, slash points, bond slashing, or a broader incident-recovery mechanism,
+- whether the affected node was active, standby, leaving, or already churned out,
+- the current constants/Mimir values if quoting rates or thresholds,
+- the exact event family: observation, signing, keygen, equivocation, theft, or operational downtime,
+- whether a report is describing a specific dated incident rather than the current release.
+
+## Non-Claims
+
+This page does not prove:
+
+- Current slash-point totals, bond balances, or active node risk.
+- That a particular operator fault burned bond rather than reduced rewards.
+- Current slash multipliers, minimum bond, or unbonding availability.
+- That every incident is automatically made whole by slashing.
+- That slashing alone proves present-day network safety.

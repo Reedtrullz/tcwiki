@@ -1,6 +1,7 @@
 import type {
   ChainOperationalStatus,
   NetworkStatus,
+  OperationalControlStatus,
   Pool,
   SwapQuoteProbeResult,
 } from '@/lib/types';
@@ -19,6 +20,7 @@ export interface ChainAvailability {
   swapOut: AvailabilityCell;
   lpActions: AvailabilityCell;
   poolDeposits: AvailabilityCell;
+  scopedOperations: AvailabilityCell;
   dataQuality: AvailabilityCell;
   reasons: string[];
   swapReasons: string[];
@@ -45,7 +47,33 @@ export interface RouteAvailability {
   reasons: string[];
 }
 
-const SWAP_LIMIT_LABELS = new Set(['Chain halted', 'Trading halted', 'Signing paused']);
+export const NATIVE_RUNE_ASSET = 'THOR.RUNE';
+export const NODE_OPERATOR_ACTION_CONTROL_KEYS = ['PauseBond', 'PauseUnbond', 'HaltRebond', 'HaltOperatorRotate'] as const;
+
+const SWAP_LIMIT_LABELS = new Set([
+  'Chain halted',
+  'Trading halted',
+  'Signing paused',
+  'Network-wide trading halt',
+  'Network-wide signing halt',
+  'Network-wide chain observation halt',
+  'Node-requested chain pause',
+]);
+const GLOBAL_ROUTE_BLOCKER_LABELS = new Set([
+  'Network-wide trading halt',
+  'Network-wide signing halt',
+  'Network-wide chain observation halt',
+  'Node-requested chain pause',
+]);
+
+const NETWORK_WIDE_CONTROL_LABELS: Record<string, string> = {
+  HALTTRADING: 'Network-wide trading halt',
+  HALTSIGNING: 'Network-wide signing halt',
+  PAUSELP: 'Network-wide LP pause',
+  HALTCHAINGLOBAL: 'Network-wide chain observation halt',
+  NODEPAUSECHAINGLOBAL: 'Node-requested chain pause',
+};
+const NODE_OPERATOR_ACTION_CONTROL_KEY_SET = new Set(NODE_OPERATOR_ACTION_CONTROL_KEYS.map((key) => key.toUpperCase()));
 
 function unique(values: string[]) {
   return Array.from(new Set(values.filter(Boolean)));
@@ -56,23 +84,30 @@ function chainHasActiveKey(chain: ChainOperationalStatus, pattern: RegExp) {
 }
 
 function globalLabel(key: string) {
-  switch (key.toUpperCase()) {
-    case 'HALTTRADING':
-      return 'Network-wide trading halt';
-    case 'HALTSIGNING':
-      return 'Network-wide signing halt';
-    case 'PAUSELP':
-      return 'Network-wide LP pause';
-    case 'HALTCHAINGLOBAL':
-      return 'Network-wide chain observation halt';
-    case 'NODEPAUSECHAINGLOBAL':
-      return 'Node-requested chain pause';
-    default:
-      return 'Network-wide control';
-  }
+  return NETWORK_WIDE_CONTROL_LABELS[key.toUpperCase()] ?? null;
 }
 
-function availableCell(label = 'Available'): AvailabilityCell {
+function hasInheritedMimirKey(chain: ChainOperationalStatus, key: string) {
+  const upperKey = key.toUpperCase();
+  return (chain.inheritedMimirKeys ?? []).some((inheritedKey) => inheritedKey.toUpperCase() === upperKey);
+}
+
+function inheritedSwapInReasons(chain: ChainOperationalStatus) {
+  return [
+    chain.tradingPaused && hasInheritedMimirKey(chain, 'HALTTRADING') ? 'Network-wide trading halt' : null,
+    chain.halted && hasInheritedMimirKey(chain, 'HALTCHAINGLOBAL') ? 'Network-wide chain observation halt' : null,
+    chain.halted && hasInheritedMimirKey(chain, 'NODEPAUSECHAINGLOBAL') ? 'Node-requested chain pause' : null,
+  ].filter((reason): reason is string => reason !== null);
+}
+
+function inheritedSwapOutReasons(chain: ChainOperationalStatus) {
+  return [
+    ...inheritedSwapInReasons(chain),
+    chain.signingPaused && hasInheritedMimirKey(chain, 'HALTSIGNING') ? 'Network-wide signing halt' : null,
+  ].filter((reason): reason is string => reason !== null);
+}
+
+function availableCell(label = 'No visible blocker'): AvailabilityCell {
   return { state: 'available', label, reasons: [] };
 }
 
@@ -89,14 +124,20 @@ function chainReasonGroups(chain: ChainOperationalStatus) {
   const bothDirectionSwapReasons = [
     chain.halted && (chainHasActiveKey(chain, /(?:CHAIN|SOLVENCY)/) || inbound.includes('halted')) ? 'Chain halted' : null,
     chain.tradingPaused && (chainHasActiveKey(chain, /TRADING/) || inbound.includes('global_trading_paused') || inbound.includes('chain_trading_paused')) ? 'Trading halted' : null,
+    ...inheritedSwapInReasons(chain),
   ].filter((reason): reason is string => reason !== null);
   const swapOutReasons = [
     ...bothDirectionSwapReasons,
     chain.signingPaused && chainHasActiveKey(chain, /SIGNING/) ? 'Signing paused' : null,
+    ...inheritedSwapOutReasons(chain).filter((reason) => !bothDirectionSwapReasons.includes(reason)),
   ].filter((reason): reason is string => reason !== null);
-  const operationReasons = [
+  const lpActionReasons = [
     chain.lpActionsPaused && (chainHasActiveKey(chain, /^PAUSELP[A-Z0-9]+$/) || inbound.includes('chain_lp_actions_paused')) ? 'LP actions paused' : null,
+  ].filter((reason): reason is string => reason !== null);
+  const poolDepositReasons = [
     chain.lpDepositPaused ? 'Pool-specific deposit pause' : null,
+  ].filter((reason): reason is string => reason !== null);
+  const scopedOperationReasons = [
     chain.securedAssetDepositPaused ? 'Secured deposits paused' : null,
     chain.securedAssetWithdrawPaused ? 'Secured withdrawals paused' : null,
     chain.asymWithdrawalPaused ? 'Asym withdrawals paused' : null,
@@ -105,7 +146,10 @@ function chainReasonGroups(chain: ChainOperationalStatus) {
   return {
     swapIn: unique(bothDirectionSwapReasons),
     swapOut: unique(swapOutReasons),
-    operations: unique(operationReasons),
+    lpActions: unique(lpActionReasons),
+    poolDeposits: unique(poolDepositReasons),
+    scopedOperations: unique(scopedOperationReasons),
+    operations: unique([...lpActionReasons, ...poolDepositReasons, ...scopedOperationReasons]),
   };
 }
 
@@ -118,7 +162,6 @@ function evidenceReasons(chain: ChainOperationalStatus) {
     ...(chain.securedAssetWithdrawPauseKeys ?? []).map((key) => `Secured withdrawal halt: ${key}`),
     ...(chain.asymWithdrawalPauseKeys ?? []).map((key) => `Asym withdrawal pause: ${key}`),
     ...inbound.map((field) => `THORNode inbound flag: ${field}`),
-    ...(chain.inheritedMimirKeys ?? []).map((key) => `${globalLabel(key)} applies`),
     ...(chain.sourceWarnings ?? []),
     ...(chain.unparseableMimirKeys ?? []).map((key) => `Mimir value needs review: ${key}`),
   ]);
@@ -129,7 +172,7 @@ function chainDataQuality(chain: ChainOperationalStatus): AvailabilityCell {
     ...(chain.sourceWarnings ?? []),
     ...(chain.unparseableMimirKeys ?? []).map((key) => `Mimir value needs review: ${key}`),
   ];
-  return warnings.length > 0 ? reviewCell('Needs review', warnings) : availableCell('Source OK');
+  return warnings.length > 0 ? reviewCell('Needs review', warnings) : availableCell('No chain warnings');
 }
 
 export function deriveNetworkWideControls(status: NetworkStatus | undefined): NetworkWideControl[] {
@@ -138,13 +181,35 @@ export function deriveNetworkWideControls(status: NetworkStatus | undefined): Ne
   }
   const inheritedKeys = status.chainStatuses.flatMap((chain) => chain.inheritedMimirKeys ?? []);
   return unique([...status.activeControlKeys, ...inheritedKeys])
-    .map((key) => ({
-      key,
-      label: globalLabel(key),
-      reason: key.toUpperCase() === 'PAUSELP'
-        ? 'Network-wide LP pause applies to LP actions; it does not by itself mean ordinary swaps are globally halted.'
-        : `${globalLabel(key)} is active in current THORNode evidence.`,
-    }));
+    .flatMap((key) => {
+      const label = globalLabel(key);
+      if (!label) {
+        return [];
+      }
+      return [{
+        key,
+        label,
+        reason: key.toUpperCase() === 'PAUSELP'
+          ? 'Network-wide LP pause applies to LP actions; it does not by itself mean ordinary swaps are globally halted.'
+          : `${label} is active in current THORNode evidence.`,
+      }];
+    });
+}
+
+export function deriveNodeOperatorActionControls(status: NetworkStatus | undefined): OperationalControlStatus[] {
+  if (!status) {
+    return [];
+  }
+
+  const controlsByKey = new Map(
+    status.monitoredControls
+      .filter((control) => NODE_OPERATOR_ACTION_CONTROL_KEY_SET.has(control.key.toUpperCase()))
+      .map((control) => [control.key.toUpperCase(), control])
+  );
+
+  return NODE_OPERATOR_ACTION_CONTROL_KEYS
+    .map((key) => controlsByKey.get(key.toUpperCase()))
+    .filter((control): control is OperationalControlStatus => control !== undefined);
 }
 
 export function deriveChainAvailability(status: NetworkStatus | undefined): ChainAvailability[] {
@@ -160,14 +225,22 @@ export function deriveChainAvailability(status: NetworkStatus | undefined): Chai
         ...reasonGroups.swapIn,
         ...reasonGroups.swapOut,
       ]).filter((reason) => SWAP_LIMIT_LABELS.has(reason));
-      const swapIn = reasonGroups.swapIn.length > 0 ? limitedCell('Limited', reasonGroups.swapIn) : availableCell();
-      const swapOut = reasonGroups.swapOut.length > 0 ? limitedCell('Limited', reasonGroups.swapOut) : availableCell();
+      const lpPausedByNetworkWideControl = chain.lpActionsPaused &&
+        hasInheritedMimirKey(chain, 'PAUSELP') &&
+        !directReasons.includes('LP actions paused');
+      const swapIn = reasonGroups.swapIn.length > 0 ? limitedCell('Limited', reasonGroups.swapIn) : availableCell('No swap blocker');
+      const swapOut = reasonGroups.swapOut.length > 0 ? limitedCell('Limited', reasonGroups.swapOut) : availableCell('No swap blocker');
       const lpActions = chain.lpActionsPaused
-        ? limitedCell('Paused', directReasons.includes('LP actions paused') ? ['LP actions paused'] : ['Network-wide LP pause applies'])
-        : availableCell();
+        ? lpPausedByNetworkWideControl
+          ? limitedCell('Network-wide', ['Network-wide LP pause applies'])
+          : limitedCell('Paused', directReasons.includes('LP actions paused') ? ['LP actions paused'] : ['LP actions paused'])
+        : availableCell('No LP pause');
       const poolDeposits = chain.lpDepositPaused
         ? limitedCell('Paused', ['Pool-specific deposit pause'])
-        : availableCell();
+        : availableCell('No deposit pause');
+      const scopedOperations = reasonGroups.scopedOperations.length > 0
+        ? limitedCell('Limited', reasonGroups.scopedOperations)
+        : availableCell('No scoped halt');
       const dataQuality = chainDataQuality(chain);
       const reasons = evidenceReasons(chain);
       const swapLimited = swapReasons.length > 0;
@@ -179,6 +252,7 @@ export function deriveChainAvailability(status: NetworkStatus | undefined): Chai
         swapOut,
         lpActions,
         poolDeposits,
+        scopedOperations,
         dataQuality,
         reasons: reasons.length > 0 ? reasons : ['No active chain-specific swap blocker observed.'],
         swapReasons,
@@ -210,6 +284,9 @@ export function chainFromAsset(asset: string) {
 }
 
 export function poolHasAsset(pools: Pool[] | undefined, asset: string) {
+  if (asset === NATIVE_RUNE_ASSET) {
+    return true;
+  }
   return Boolean((pools ?? []).some((pool) => pool.asset === asset));
 }
 
@@ -221,12 +298,21 @@ export function deriveRouteAvailability(
   quoteResult: SwapQuoteProbeResult | undefined
 ): RouteAvailability {
   if (quoteResult) {
+    if (quoteResult.request.fromAsset !== fromAsset || quoteResult.request.toAsset !== toAsset) {
+      return {
+        status: 'needs-review',
+        label: 'Quote does not match selected route',
+        reasons: [
+          `The quote was for ${quoteResult.request.fromAsset} -> ${quoteResult.request.toAsset}, not ${fromAsset} -> ${toAsset}. Run the check again.`,
+        ],
+      };
+    }
     if (quoteResult.status === 'available') {
-      return { status: 'available', label: 'Quote available', reasons: [quoteResult.summary] };
+      return { status: 'available', label: 'Current quote returned', reasons: [quoteResult.summary] };
     }
     return {
-      status: quoteResult.status === 'limited' ? 'limited' : 'blocked',
-      label: quoteResult.status === 'limited' ? 'Quote limited' : 'Quote failed',
+      status: quoteResult.status === 'limited' || quoteResult.failure?.kind === 'halt' ? 'limited' : 'needs-review',
+      label: quoteResult.status === 'limited' || quoteResult.failure?.kind === 'halt' ? 'Quote limited' : 'Quote needs review',
       reasons: [quoteResult.failure?.message ?? quoteResult.summary],
     };
   }
@@ -236,6 +322,13 @@ export function deriveRouteAvailability(
   }
   if (!fromAsset || !toAsset || fromAsset === toAsset) {
     return { status: 'unknown', label: 'Choose a route', reasons: ['Select two different assets and an amount.'] };
+  }
+  if (!pools) {
+    return {
+      status: 'unknown',
+      label: 'Pool list unavailable',
+      reasons: ['Midgard pool choices have not loaded; run a quote probe after sources recover for current route evidence.'],
+    };
   }
   const missingPools = [fromAsset, toAsset].filter((asset) => !poolHasAsset(pools, asset));
   if (missingPools.length > 0) {
@@ -259,9 +352,10 @@ export function deriveRouteAvailability(
     return reasons.length > 0 ? [`${chain.chain}: ${unique(reasons).join(', ')}`] : [];
   });
   if (blockers.length > 0) {
+    const globallyBlocked = blockers.some((blocker) => [...GLOBAL_ROUTE_BLOCKER_LABELS].some((label) => blocker.includes(label)));
     return {
-      status: 'limited',
-      label: 'Route likely limited',
+      status: globallyBlocked ? 'blocked' : 'limited',
+      label: globallyBlocked ? 'Route blocked' : 'Route likely limited',
       reasons: blockers,
     };
   }
@@ -274,7 +368,7 @@ export function deriveRouteAvailability(
   }
   return {
     status: 'unknown',
-    label: 'Ready to quote',
+    label: 'Quote required',
     reasons: ['No visible chain blocker; run a quote probe for current route evidence.'],
   };
 }

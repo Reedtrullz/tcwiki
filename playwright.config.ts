@@ -29,7 +29,7 @@ export default defineConfig({
   webServer: externalBaseURL
     ? undefined
     : {
-        command: process.env.PLAYWRIGHT_WEB_SERVER_COMMAND || 'npm run start:standalone',
+        command: process.env.PLAYWRIGHT_WEB_SERVER_COMMAND || 'node scripts/start-playwright-server.mjs',
         url: 'http://localhost:3000',
         reuseExistingServer: false,
         timeout: 120 * 1000,

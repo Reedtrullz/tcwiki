@@ -10,9 +10,18 @@ import {
 } from '@/lib/data/static';
 import { CONTENT_ENTRIES, DEEP_DIVE_READER_PATHS, SOURCE_CHOICE_DECISIONS, TASK_INTENT_GUIDES } from '@/lib/content/registry';
 import { GLOSSARY_TERMS } from '@/lib/content/glossary';
+import {
+  OPERATIONAL_CONTROL_CATALOG,
+  REVIEWED_OPERATIONAL_SUPPORT_MIMIR_PREFIXES,
+  UNKNOWN_OPERATION_REVIEW_MIMIR_PREFIXES,
+  operationalControlPrefixSearchKey,
+} from '@/lib/operational-controls';
 import { MDX_SEARCH_DOCUMENTS } from '@/lib/search/mdx-documents.generated';
+import { networkHaltsSource } from '@/lib/sources';
 import type { DataConfidence, SourceMeta, SourcedRecord } from '@/lib/types';
+import { getConfidenceLabel } from '@/lib/trust';
 import { recordAnchor } from '@/lib/utils';
+import { ecosystemDirectoryPosture, ecosystemDirectoryPostureLabel } from '@/lib/ecosystem-directory';
 
 export type SearchDocType =
   | 'section'
@@ -46,35 +55,72 @@ export interface SearchDoc {
   description: string;
 }
 
-const OPERATIONAL_HALT_SEARCH_DOCUMENTS: SearchDoc[] = [
+const CHAIN_SCOPED_OPERATIONAL_SEARCH_CONTENT = CHAIN_RECORDS.flatMap((record) => {
+  const chain = record.data.chain.toUpperCase();
+  const chainName = record.data.name;
+
+  return [
+    `${chain} halted`,
+    `${chainName} halted`,
+    `${chain} chain halted`,
+    `${chainName} chain halted`,
+    `${chain} trading halted`,
+    `${chainName} trading halted`,
+    `${chain} signing halted`,
+    `${chainName} signing halted`,
+    `why is ${chain} halted`,
+    `why is ${chainName} halted`,
+    `HALT${chain}TRADING`,
+    `HALTTRADING${chain}`,
+    `HALT${chain}CHAIN`,
+    `HALTSIGNING${chain}`,
+    `HALT${chain}SIGNING`,
+    `SOLVENCYHALT${chain}CHAIN`,
+  ];
+}).join(' ');
+
+const OPERATIONAL_CONTROL_SEARCH_CONTENT = [
+  'Official THORNode and Mimir halt keys and related halt terms.',
+  'Treat halt, pause, disabled, enabled, RUNEPool, trade accounts, app layer, signing, trading, LP actions, asymmetric withdrawals, secured assets, bank sends, memoless availability, and source warnings as current-only source-backed status.',
+  'Network diagnostics owns the current interpretation; this search record routes exact keys and human phrases to the diagnostics view.',
+  CHAIN_SCOPED_OPERATIONAL_SEARCH_CONTENT,
+  ...OPERATIONAL_CONTROL_CATALOG.flatMap((control) => [
+    control.key,
+    operationalControlPrefixSearchKey(control.key),
+    control.label,
+    control.area,
+    control.description,
+    ...control.searchTerms,
+  ]),
+  ...REVIEWED_OPERATIONAL_SUPPORT_MIMIR_PREFIXES.flatMap((prefix) => [
+    prefix,
+    `${prefix} known operational-support Mimir key`,
+    `${prefix} source warning review`,
+  ]),
+  ...UNKNOWN_OPERATION_REVIEW_MIMIR_PREFIXES.flatMap((prefix) => [
+    prefix,
+    `${prefix} unknown operation-like Mimir key`,
+    `${prefix} source review`,
+  ]),
+  'Known operational-support Mimir keys are review warnings, not direct pause proof.',
+  'Unknown operation-like Mimir keys need review before treating the source as clean.',
+  'Mimir reference, not a current value. Use Network diagnostics for current values and active states.',
+].join(' ');
+
+export const OPERATIONAL_HALT_SEARCH_DOCUMENTS: SearchDoc[] = [
   {
     id: 'mimir:official-halt-controls',
     slug: '/network',
     href: '/network#network-diagnostics',
     anchor: 'network-diagnostics',
     type: 'mimir',
-    title: 'Official Mimir halt and enablement controls',
+    title: 'Mimir halt and enablement controls (current diagnostics)',
     confidence: 'official',
-    reviewedAt: '2026-07-02',
-    nextReviewDue: '2026-07-16',
-    sources: [
-      {
-        label: 'THORChain Network Halts',
-        url: 'https://dev.thorchain.org/concepts/network-halts.html',
-      },
-    ],
-    description: 'Live Mimir controls that can pause or disable THORChain operations.',
-    content: [
-      'Official THORNode and Mimir halt keys and related halt terms.',
-      'StreamingSwapPause means streaming swap pause behavior should be checked from live Mimir.',
-      'HaltMemoless means memoless transaction handling may be halted.',
-      'RUNEPoolHaltDeposit means RUNEPool deposits may be halted; use RUNEPool deposit halt as the human-readable phrase.',
-      'RUNEPoolHaltWithdraw means RUNEPool withdrawals may be halted.',
-      'Related controls include HALTTRADING, HALTSIGNING, PAUSELP, PAUSELOANS, HALTCHURNING, HALTWASMGLOBAL, TRADEACCOUNTSENABLED, TRADEACCOUNTSDEPOSITENABLED, MANUALSWAPSTOSYNTHDISABLED, RUNEPOOLENABLED, and BANKSENDENABLED.',
-      'Node and operator controls include PauseBond, PauseUnbond, HaltRebond, HaltOperatorRotate, and HaltOracle.',
-      'Scoped controls include PAUSELPDEPOSIT, PauseAsymWithdrawal, HaltSecuredDeposit, HaltSecuredWithdraw, HaltWasmDeployer, HaltWasmCs, and HaltWasmContract.',
-      'Treat halt, pause, disabled, enabled, RUNEPool, trade accounts, app layer, signing, trading, LP actions, asymmetric withdrawals, secured assets, bank sends, and memoless availability as current-only source-backed status.',
-    ].join(' '),
+    reviewedAt: '2026-07-08',
+    nextReviewDue: '2026-08-08',
+    sources: [networkHaltsSource],
+    description: 'Official Mimir control reference for THORChain operations. Current values and active states come from Network diagnostics, not this search record.',
+    content: OPERATIONAL_CONTROL_SEARCH_CONTENT,
   },
 ];
 
@@ -153,6 +199,7 @@ export const SEARCH_DOCUMENTS: SearchDoc[] = [
         guide.question,
         guide.description,
         guide.searchTerms.join(' '),
+        ['swap-availability', 'why-paused'].includes(guide.id) ? CHAIN_SCOPED_OPERATIONAL_SEARCH_CONTENT : '',
         sourceChoiceContent,
         guide.sources.map((source) => source.label).join(' '),
       ].join(' '),
@@ -178,6 +225,7 @@ export const SEARCH_DOCUMENTS: SearchDoc[] = [
       sources: path.sources,
       description: path.description,
       content: [
+        'deep dive reader path learning path article sequence',
         path.title,
         path.audience,
         path.description,
@@ -209,6 +257,8 @@ export const SEARCH_DOCUMENTS: SearchDoc[] = [
       content: [
         chain.name,
         chain.chain,
+        `${chain.chain}.${chain.chain}`,
+        `${chain.chain}.${chain.chain} asset notation`,
         `${chain.name} ${chain.chain} supported chain`,
         `${chain.name} chain support`,
         chain.supported ? 'listed supported live inbound address current-only chain availability' : 'needs review unsupported',
@@ -280,7 +330,8 @@ export const SEARCH_DOCUMENTS: SearchDoc[] = [
         `Use for: ${record.data.useFor.join(' ')}`,
         `Check before use: ${record.data.verifyBeforeUse.join(' ')}`,
         `Category: ${record.data.category}.`,
-        `Status: ${record.data.status}.`,
+        `Directory posture: ${ecosystemDirectoryPostureLabel(ecosystemDirectoryPosture(record.freshness.confidence))}.`,
+        `Source confidence: ${getConfidenceLabel(record.freshness.confidence)}.`,
         `Chains: ${record.data.chains.join(', ')}.`,
         record.sources.map((source) => source.label).join(' '),
       ].join(' '),
@@ -302,6 +353,14 @@ export const SEARCH_DOCUMENTS: SearchDoc[] = [
   }),
   ...GOVERNANCE_PROPOSAL_RECORDS.map((record) => {
     const anchor = recordAnchor('governance', record.data.id);
+    const trackerContent = record.data.trackerStatus
+      ? ` Current recovery tracker: ${record.data.trackerStatus}.`
+      : '';
+    const recordId = String(record.data.id);
+    const adrNumber = /\badr-(\d+)\b/i.exec(recordId)?.[1] ?? /\badr[-\s]?(\d+)\b/i.exec(record.data.title)?.[1];
+    const adrAliases = adrNumber
+      ? ` ADR-${adrNumber.padStart(3, '0')} ADR ${adrNumber.padStart(3, '0')} ADR${adrNumber.padStart(3, '0')} ADR-${Number(adrNumber)} ADR${Number(adrNumber)}`
+      : '';
     return {
       id: `governance:${record.data.id}`,
       slug: '/governance',
@@ -311,7 +370,7 @@ export const SEARCH_DOCUMENTS: SearchDoc[] = [
       title: record.data.title,
       description: record.data.description,
       ...searchMeta(record),
-      content: `${record.data.description} Type: ${record.data.type}. Status: ${record.data.status}. Created: ${record.data.createdDate}. Expires: ${record.data.expiryDate}. Voting period: ${record.data.votingPeriod}. ${record.sources.map((source) => source.label).join(' ')}`,
+      content: `${record.data.id} ${adrAliases} ${record.data.title}. ${record.data.description} Type: ${record.data.type}. Status: ${record.data.status}.${trackerContent} Created: ${record.data.createdDate}. Expires: ${record.data.expiryDate}. Voting period: ${record.data.votingPeriod}. ${record.sources.map((source) => source.label).join(' ')}`,
     };
   }),
   ...PROTOCOL_MILESTONE_RECORDS.map((record) => {

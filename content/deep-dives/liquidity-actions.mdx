@@ -1,0 +1,86 @@
+# Liquidity Actions Deep Dive
+
+Liquidity actions are not the same claim as ordinary swap availability. A pool can keep quoting swaps while LP adds, pool-specific deposits, asymmetric withdrawals, or RUNEPool flows are paused. This guide explains which evidence belongs to which LP claim.
+
+Use this as a source map and evidence checklist, not as wallet instructions.
+
+## What To Check First
+
+Start with the action, then choose the source:
+
+1. **Can LP actions happen at all?** Check `/network#network-diagnostics` for `PAUSELP`, chain-scoped LP pauses, pool-deposit pauses, asymmetric-withdrawal pauses, and source warnings.
+2. **Is the pool listed and economically relevant?** Check `/stats#stats-look-here-first` and Midgard pool data for current pool, depth, APY, and earnings context.
+3. **What transaction shape is being discussed?** Check official memo docs for add and withdraw memo formats, dust thresholds, paired-address behavior, affiliate fields, and basis-point withdrawal parameters.
+4. **Is this a historical yield or safety claim?** Separate CLP mechanics, incentive-pendulum reward framing, and current Midgard evidence before claiming APY, profitability, or risk reduction.
+
+If any source is stale, degraded, warning-backed, or missing the relevant field, say that the LP claim needs review instead of rendering zero or healthy.
+
+## LP Actions Versus Swaps
+
+The most common display bug is treating every pause as a swap pause. THORChain docs distinguish liquidity-provider pauses from trading halts:
+
+- `PAUSELP` applies network-wide to adding and removing liquidity.
+- `PAUSELP<CHAIN>` applies to LP actions scoped to a chain.
+- `PAUSELPDEPOSIT-<ASSET>` applies to adding liquidity into a specific pool.
+- `PAUSEASYMWITHDRAWAL-<CHAIN>` affects asymmetric withdrawal choices without necessarily blocking every withdrawal path.
+
+Those controls can be active while ordinary swaps continue. A good UI should therefore say "LP actions paused" or "Pool deposits paused" instead of "THORChain paused" unless a trading, signing, or chain halt supports the swap claim too.
+
+## Deposit Modes And Pool Scope
+
+LP deposits can be symmetric or asymmetric:
+
+- **Symmetric deposit:** the LP contributes both sides of the pool, RUNE and the external asset, in balanced value.
+- **Asymmetric deposit:** the LP contributes one side or unequal value. The pool accounting and slip mechanics can leave the position with less of the original asset than a naive input-value reading suggests.
+- **Pending or paired adds:** memo fields can link a paired address. If the pair is not matched, liquidity can be pending until the counterpart arrives or the pending-liquidity cleanup rules apply.
+
+Pool scope matters. A pool-specific deposit pause is different from a chain LP pause, and both are different from a pool being absent or unavailable in Midgard. Use pool absence wording for pool-list data, not halt wording.
+
+## Withdrawals And Asymmetric Limits
+
+Withdrawals need their own evidence because they are not just "the reverse of a deposit" in UI terms.
+
+The memo docs describe withdrawal basis points from `0` to `10000`, where `10000` represents a full withdrawal. They also allow an optional asset field for single-sided withdrawal. That does not mean every single-sided or asymmetric path is currently available:
+
+- A network-wide LP pause can suspend add and remove liquidity.
+- A chain LP pause can block LP actions for one chain.
+- An asymmetric-withdrawal pause can force dual-address LPs back toward symmetric withdrawal behavior.
+- Outbound signing, chain halts, dust thresholds, and source-state changes can still matter for the resulting transaction.
+
+For a concrete user issue, use transaction evidence: inbound hash, memo, pool, addresses, amount, observed THORChain event, outbound/refund hash, and the checked live status at the time if available.
+
+## Metrics, Yield, And Earnings
+
+Stats data is useful, but it answers a different question from "can I press add liquidity right now?"
+
+- **Pooled RUNE and pool depth** help frame depth and liquidity capacity.
+- **LP APY and earnings intervals** help frame recent reward and fee distribution shape.
+- **Midgard health and source warnings** decide whether those numbers are usable.
+- **THORNode Mimir and inbound-address state** decide whether a live LP action appears paused or limited.
+
+Do not treat a loaded APY, a deep pool, or a valid earnings chart as proof that deposits or withdrawals are open. Likewise, do not treat an LP pause as proof that swap quotes are blocked unless swap-specific evidence also exists.
+
+## Evidence Ladder
+
+Use this ladder before making an LP availability, yield, or troubleshooting claim:
+
+1. **Intent:** add liquidity, withdraw liquidity, asymmetric withdrawal, pool deposit, RUNEPool action, or APY/yield interpretation.
+2. **Operational state:** current network diagnostics, exact LP-related control family, checked provider, block height, source warning posture, and whether the control is network-wide, chain-scoped, or pool-scoped.
+3. **Pool data:** current Midgard pool listing, depth, APY, earnings interval coverage, and health/source labels.
+4. **Transaction shape:** official memo format, paired address, basis points, optional asset field, affiliate field, dust threshold, and interface-generated parameters.
+5. **Transaction evidence:** inbound tx, observed memo/event, outbound or refund tx, and the current source snapshot used to explain the result.
+
+If the claim skips a rung, label it as partial evidence.
+
+## Non-Claims
+
+This page does not prove:
+
+- That LP deposits, withdrawals, asymmetric withdrawals, or RUNEPool actions are available after the checked block.
+- That a missing LP halt key means a wallet flow is safe, supported, or correctly formed.
+- That APY, pool depth, or 30-day earnings prove future yield, profitability, or investment suitability.
+- That a pool listed in Midgard is available for every LP action.
+- That current LP controls explain a historical failed transaction without transaction-level evidence.
+- That archived Savers/Lending mechanics are current LP products.
+
+LP claims should stay scoped to the action, pool or chain, source, and checked time.

@@ -2,6 +2,18 @@
 
 The Incentive Pendulum is THORChain's reward-balancing mechanism. It adjusts reward distribution between node operators and liquidity providers based on the network's bond and liquidity posture.
 
+Use it to understand incentive alignment. Do not use it as proof of current APY, fair value, route competitiveness, or network health without live data.
+
+## What The Pendulum Can Prove
+
+This article can support a design claim:
+
+- THORChain intends to balance security capital and liquidity capital through reward allocation.
+- The mechanism points rewards toward the side that is comparatively under-supplied.
+- The commonly cited `2:1` bond-to-stake target is a design frame for security versus liquidity balance.
+
+This article cannot, by itself, prove a current-state claim. If the claim uses words like "now", "healthy", "available", "profitable", "cheap", "safe", or "undervalued", move from the model to live source checks.
+
 ## The Core Problem
 
 THORChain needs two things to function:
@@ -20,6 +32,8 @@ The protocol continuously measures the ratio of bonded RUNE vs. pooled RUNE.
 
 This creates a self-correcting feedback loop — the "pendulum" swings toward whichever side the network needs most at any given time.
 
+Official docs frame the target around bonded security versus pooled liquidity, commonly described as a `2:1` bond-to-stake ratio. That target is design framing; live bond, pooled RUNE, reserve, APY, and reward-split values should be read from current source-labeled data.
+
 ## Why It Matters
 
 Without this mechanism, maintaining healthy bonding and liquidity ratios would require more manual intervention. The Incentive Pendulum is designed to make reward allocation adaptive as market conditions change.
@@ -31,3 +45,43 @@ Without this mechanism, maintaining healthy bonding and liquidity ratios would r
 - Historical reward allocation has moved with network conditions, but current reward split and APY values should be read from live sources.
 
 The Incentive Pendulum is best treated as an incentive-alignment mechanism rather than a guarantee of network health or returns.
+
+## Evidence Ladder
+
+Use this ladder before turning the pendulum into a present-tense economics claim:
+
+1. **Design source:** Use the official economic model and security/governance docs to explain why reward allocation moves between node operators and liquidity providers.
+2. **Current metric source:** Use `/stats#stats-look-here-first` for current Midgard health, pooled RUNE, reserve, bonding APY, node count, pool context, and earnings coverage.
+3. **Operational source:** Use `/network#network-diagnostics` for trading, signing, LP controls, pool-deposit pauses, and source warnings that affect whether a reward or liquidity number is actionable.
+4. **Claim type:** Decide whether the statement is about mechanism design, current dashboard state, realized yield, token value, or route quality. Each needs different evidence.
+5. **Non-claim check:** If the source only proves the model, do not upgrade it into health, yield, price, or route-availability proof.
+
+## Common Misreadings
+
+- **"The pendulum exists, so the network is healthy."** The mechanism is a design control. Health still depends on current bond, liquidity, node, source, and operational state.
+- **"High bonding APY proves bonding is the best return."** APY is current-only, source-dependent, and not realized yield or investment advice.
+- **"The `2:1` target means the ratio is always exactly `2:1`."** The target describes an incentive direction, not a guarantee that market behavior will keep the ratio fixed.
+- **"More LP rewards mean every route is attractive."** Reward allocation does not prove pool depth, slippage, quoteability, settlement, or chain availability for a specific route.
+- **"Reward split proves protocol revenue lift."** Reward distribution and revenue attribution are different claims and should not be mixed without source-backed earnings data.
+
+## What To Verify Before Claiming
+
+Before using this article for a live economics claim, verify:
+
+1. Current pooled RUNE, reserve, bonding APY, node count, pool context, and earnings coverage from source-labeled live dashboards or protocol endpoints.
+2. Whether Midgard health is ok, warning, degraded, provider-mismatched, stale, or missing enough samples.
+3. Whether THORNode live operations show trading, signing, LP actions, pool deposits, or chain-specific controls that change the practical meaning of a reward or liquidity number.
+4. Whether the claim is about design incentives, current APY, actual realized yield, protocol revenue, token value, or route quality.
+5. Whether a third-party dashboard is summarizing Midgard data, THORNode state, or its own model.
+
+## Non-Claims
+
+This page does not prove:
+
+- Current node APY, LP APY, RUNE value, or investment suitability.
+- That the network is healthy just because the pendulum exists.
+- That rewards will attract enough bond or liquidity under all market conditions.
+- That current liquidity is available for every route.
+- That historical reward allocation predicts future yield.
+- That a route is quoteable, cheap, safe, or likely to settle.
+- That reward allocation proves protocol revenue growth or partner attribution.

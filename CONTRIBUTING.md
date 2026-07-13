@@ -5,7 +5,7 @@ Thank you for helping make THORChain more accessible! This guide explains how to
 ## Quick Start
 
 1. Fork the repo and clone your fork.
-2. `nvm use` — this project requires Node 22 and npm enforces the engine range.
+2. `nvm use` — this project requires Node 22. npm enforces the engine range, and app/proof scripts fail fast with `scripts/require-node22.mjs` if an older runtime is active.
 3. `npm ci --include=optional`
 4. `npm run dev` — site runs at http://localhost:3000
 5. Make changes, then run the local gate below before opening a PR.
@@ -13,6 +13,7 @@ Thank you for helping make THORChain more accessible! This guide explains how to
 ```bash
 nvm use
 df -h /System/Volumes/Data # stop if free space is below 50 GiB
+npm run check:release-tracked # fails if release proof commands point at local-only proof files
 npm run check:content
 npm run check:live-snapshot
 npm run check:live-snapshot -- --artifact .artifacts/live-source-drift/local.json # optional bounded JSON evidence
@@ -24,15 +25,24 @@ npm run lint
 npm run build
 npm run smoke:standalone
 CSP_ENFORCE=1 npm run smoke:standalone
+npm run smoke:docker # builds and probes the local Docker candidate
+npm run test:e2e:visual
+npm run test:e2e:links
 npm run test:e2e:csp
 npm run test:e2e
 CHECK_BASE_URL=https://wiki.thorchain.no REQUIRE_RUNTIME_METADATA=1 CSP_ENFORCE=1 npm run check:runtime-url # public runtime/header drift probe
 IMAGE_REF=ghcr.io/example/tcwiki@sha256:1111111111111111111111111111111111111111111111111111111111111111 APP_VERSION=1111111111111111111111111111111111111111 ansible-playbook -i inventory/hosts.yml ansible-playbook.yml --syntax-check
 ```
 
-`npm run test:e2e` starts a fresh standalone server by default. Set `PLAYWRIGHT_BASE_URL` only when you intentionally want to test an existing local standalone server or a remote deployment.
+`npm run test:e2e` starts a fresh standalone server by default and fails closed when source files are newer than `.next/standalone/server.js`. Run `npm run build` first for standalone proof, or use `PLAYWRIGHT_WEB_SERVER_COMMAND='npm run dev' npm run test:e2e -- <spec>` for source-mode browser checks while iterating. Set `PLAYWRIGHT_BASE_URL` only when you intentionally want to test an existing local standalone server or a remote deployment. The focused visual lane uses `tests/visual-safety.spec.ts` plus deep-dive visual checks. The focused rendered-link lane uses `tests/link-integrity.spec.ts` to crawl public sitemap routes, verify same-origin links and anchors, and catch hydration/framework console errors. Page-specific browser journeys should live in page-named specs.
 
-CI will run audits, content checks, lint, typecheck, unit tests, build, standalone smoke in report-only and enforced CSP modes, Playwright, enforced CSP browser smoke, and PR-only Docker image build/scan/runtime plus Ansible syntax checks. Scheduled/manual drift checks also verify live-source snapshots, upload a bounded JSON drift-evidence artifact, and check public runtime headers with enforced CSP expected for production.
+Most app and release-proof npm scripts start with the Node 22 guard. If a command reports `THORChain Wiki requires Node.js 22.x`, run `nvm use` from the repository root and rerun the command instead of treating the failed proof as an application result.
+
+Before opening or shipping a PR that changes release scripts, CI wiring, browser specs, or proof docs, run `npm run check:release-tracked`. It fails when package scripts, CI, release docs, or their local script/spec dependencies reference local-only proof files that have not been tracked by git. CI runs the same trackedness audit before the rest of the release-shaped app gate.
+
+CI will run audits, content checks, lint, typecheck, unit tests, build, standalone smoke in report-only and enforced CSP modes, Playwright, enforced CSP browser smoke, PR-only Docker image build/scan/runtime plus Ansible syntax checks, and a main-push published-digest Docker smoke before deploy. The deploy playbook probes the candidate's strict readiness contract at `/api/ready?contract=strict` before replacing the live container. Scheduled/manual drift checks also verify live-source snapshots, upload a bounded JSON drift-evidence artifact, and check public runtime headers with enforced CSP expected for production.
+
+For PRs, CI builds and scans the candidate Docker image, then runs the same `npm run smoke:docker` helper in prebuilt-image mode against the scanned tag on `http://127.0.0.1:3011`. For pushes to `main`, CI publishes the scanned digest, pulls that immutable digest in a fresh `Smoke published image` job, and runs the same Docker runtime smoke before the deploy job is allowed to start. Locally, `npm run smoke:docker` performs the same shape of proof by building an image, running it on a free localhost port with strict runtime metadata and enforced CSP, probing health/version/ready/security headers, and then running the narrow browser lane. The Docker smoke covers health/version/ready metadata, the shared readiness contract including `sources.thornode.runePoolPol` RUNEPool/POL status and RUNEPool/POL source posture, security headers, the Home first-screen render, and one mocked loaded-state smoke each for Network, Dynamic Fees, Economics RUNEPool/POL, and Stats; it is intentionally small and does not replace the full standalone Playwright suite.
 
 ## How Content Works Today
 
@@ -102,7 +112,8 @@ Every PR runs:
 - Full production build
 - Standalone server smoke tests
 - Playwright smoke tests
-- Docker image build and Ansible syntax validation for PRs
+- Docker image build, runtime/header probe, narrow Docker browser smoke, and Ansible syntax validation for PRs
+- Published digest pull plus Docker runtime/browser smoke before main deploys
 
 The "Build & publish image" job only runs on pushes to `main`.
 

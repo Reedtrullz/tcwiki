@@ -1,0 +1,132 @@
+# TCY Recovery Timeline
+
+TCY sits in a sensitive part of THORChain history: deprecated THORFi products, defaulted Savers and Lending claims, recovery-token mechanics, and later post-exploit recovery records. This timeline keeps those threads dated and separated.
+
+Use it to understand what happened and which current checks matter now. Do not use it as proof that a claim can be executed, a route is live, a recovery outcome is complete, or TCY has a guaranteed value.
+
+## What This Timeline Can Prove
+
+This page can support a few narrow claims:
+
+- Savers and Lending are historical THORFi features, not current product instructions.
+- The THORFi unwind converted defaulted THORFi debt into TCY recovery-token framing.
+- Official TCY sources describe `1 TCY` per `$1` of defaulted debt and a 10% system-income allocation to TCY stakers.
+- Official TCY sources also say full debt recovery is market dependent and not guaranteed.
+- May 2026 exploit recovery records are adjacent recovery context, but they are not the same event as the January-February 2025 THORFi unwind.
+
+Everything current still needs live or freshly checked evidence.
+
+## Timeline
+
+### Before January 2025: THORFi Products
+
+Savers and Lending were THORFi features with their own historical mechanics. The archived docs are useful for understanding what those products were, but they are not deposit, borrow, or yield instructions today.
+
+For mechanics, start with the [Savers and Lending historical deep dive](/deep-dives/savers).
+
+### January 2025: Risk Discussion And Pauses
+
+The THORFi unwind announcement describes a January 2025 period where contributors and node operators discussed liability risk around Savers, Lending, synthetic exposure, and the effect of forced loan closures on RUNE supply and liquidity providers.
+
+The same source describes THORFi lending and savings services as suspended in January 2025. Treat exact live availability as a current-source question, not as something this historical post can prove by itself.
+
+### January 24, 2025: Node-Voted Pause
+
+The unwind postmortem says node operators paused Savers and Lending while the community discussed how to handle outstanding liabilities. It reports approximately `$200M` of outstanding liabilities at pause time, with an approximately `$206M` figure when additional synth exposure was included.
+
+That is a dated liability snapshot. It does not prove the amount owed, claimed, repaid, or distributed at any later date.
+
+### January 30-31, 2025: Saver Yield Redirection
+
+The unwind announcement says network parameters were proposed and then changed by node vote so yield generated from Savers collateral would be redirected back to liquidity providers instead of Savers during the discussion period.
+
+This is useful context for why the wiki treats Savers as historical. It is not a current LP, yield, or solvency claim.
+
+### February 2-3, 2025: Proposal 6
+
+After the pause, community proposals were put to node operators. The unwind announcement says Proposal 6 was approved by 67% of node operators on February 3, 2025.
+
+The safe summary of Proposal 6 is:
+
+- Defaulted THORFi debt would be converted into TCY.
+- Borrowers and Savers could claim `1 TCY` per `$1` of owed liability.
+- TCY would receive 10% of network revenue/system income.
+- A RUNE/TCY pool would provide a market exit path.
+- THORFi products would be eliminated or retired rather than treated as active products.
+
+The important boundary: a market exit path is not the same thing as guaranteed par recovery.
+
+### March 19, 2025: THORFi Unwind Postmortem
+
+The public THORFi unwind article recorded the postmortem and next steps. At that point, implementation was still in progress and the article did not by itself prove future claim availability.
+
+For present-tense TCY claiming, staking, unstaking, distributions, or trading, use current official interfaces, THORNode endpoints, and live Mimir controls.
+
+### TCY Documentation: Mechanics And Caveats
+
+The TCY developer guide and tokenomics docs describe the technical framing:
+
+- TCY is a native THORChain token associated with approximately `$210M` of defaulted THORFi debt.
+- Total supply is described as `210M TCY`.
+- Claims are described at `1 TCY` per `$1` of defaulted debt.
+- Claimed TCY is described as automatically staked.
+- TCY stakers receive a 10% system-income allocation in RUNE when distribution conditions are met.
+- TCY does not grant governance rights.
+- Full debt recovery is market dependent and not guaranteed.
+
+Those docs explain the model. They still do not prove a specific claimant's current status, a current RUNE distribution amount, or any future value.
+
+### May-June 2026: Separate Exploit Recovery Context
+
+The May 2026 GG20/TSS exploit and the v3.19.0 restart are separate incident-recovery records. They belong beside the TCY timeline because readers often search for "recovery", but they should not be merged into the THORFi/TCY debt timeline.
+
+Use the [Governance current recovery tracker](/governance#current-recovery) for ADR-028 and post-exploit records, and the [TSS deep dive](/deep-dives/tss) for signing-mechanics context.
+
+## What TCY Represents
+
+TCY is best described as recovery-token framing for defaulted THORFi claims. It is not the old Savers product, not the old Lending product, and not a governance token.
+
+The useful mental model is:
+
+- THORFi claims were dollarized for recovery accounting.
+- TCY represents the recovery-token side of that unwind.
+- Revenue sharing can create value, but the outcome depends on protocol revenue, RUNE price, market demand, distribution rules, and user-specific claim or staking state.
+
+That is why the wiki should say "recovery-token framing" rather than "made whole".
+
+## What To Check Now
+
+Before making a current TCY claim, check:
+
+1. The official TCY docs and claim interface for current claiming rules.
+2. `/network#network-diagnostics` for live TCY Mimir controls such as `TCYCLAIMINGHALT`, `TCYSTAKINGHALT`, `TCYSTAKEDISTRIBUTIONHALT`, `TCYUNSTAKINGHALT`, and `HALTTCYTRADING`.
+3. THORNode TCY endpoints for current claim or staking data when a specific address or aggregate claim requires protocol-state evidence.
+4. The [TCY page](/tcy) for wiki-level caveats and source posture.
+5. The [Governance recovery tracker](/governance#current-recovery) for records that are explicitly tagged as current or needing current recovery review.
+
+If those checks disagree, say which source was checked, when it was checked, and what it can prove.
+
+## Common Misreadings
+
+**"Savers are back."** The archived docs and TCY framing do not make Savers a current product.
+
+**"Lending is available."** Historical Lending mechanics do not prove current borrowing availability.
+
+**"1 TCY equals $1."** The claim conversion ratio is not a guaranteed market price or redemption value.
+
+**"10% system income means guaranteed yield."** Revenue distributions depend on protocol income, distribution conditions, staking state, and market exposure.
+
+**"TCY recovery and exploit recovery are the same thing."** The THORFi unwind and the May 2026 GG20/TSS exploit are different events with different evidence trails.
+
+## Non-Claims
+
+This page does not prove:
+
+- Current TCY claiming, staking, unstaking, trading, or distribution availability.
+- Current Savers or Lending product availability.
+- Full debt recovery, par redemption, or that any claimant has been made whole.
+- Current solvency, safety, restart, or exploit recovery completion.
+- TCY price, yield, suitability, or investment value.
+- That a third-party interface is safe or using current claim logic.
+
+Use this article as a dated map. Use live diagnostics, official interfaces, and address-specific THORNode evidence before making present-tense claims.

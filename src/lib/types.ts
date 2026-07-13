@@ -145,6 +145,26 @@ export interface ReadinessResponse {
         sourceWarnings: string[];
         sourceWarningDetails: NetworkStatusSourceWarning[];
       };
+      runePoolPol: {
+        status: LiveDataStatus;
+        checkedAt?: string;
+        source?: SourceMeta;
+        sources?: SourceMeta[];
+        error?: string;
+        activePolPoolCount?: number;
+        depositMaturityBlocksState?: RunePoolMimirConfigFlag['state'];
+        depositMaturityBlocksValue?: number | null;
+        maxReserveBackstopState?: RunePoolMimirConfigFlag['state'];
+        maxReserveBackstopValue?: number | null;
+        minRunePoolDepthState?: RunePoolMimirConfigFlag['state'];
+        minRunePoolDepthValue?: number | null;
+        thorchainHeight?: number;
+        snapshotPinned?: boolean;
+        thorchainBlockTime?: string;
+        thorchainBlockAgeSeconds?: number;
+        sourceWarnings: string[];
+        sourceWarningDetails: NetworkStatusSourceWarning[];
+      };
       error?: string;
     };
   };
@@ -177,9 +197,8 @@ export interface Pool {
   assetPrice?: string;
   assetPriceUSD?: string;
   runePriceUSD?: string;
-  liquidityUSD?: string;
+  liquidityInUSD?: string;
   volume24h?: string;
-  volume24hUSD?: string;
   pool?: string;
   earnings?: string;
   rewards?: string;
@@ -214,8 +233,12 @@ export interface SwapQuoteSuccess {
   raw: Record<string, unknown>;
 }
 
+export type SwapQuoteFailureKind = 'halt' | 'input' | 'rate-limit' | 'provider' | 'malformed' | 'unknown';
+
 export interface SwapQuoteFailure {
+  kind: SwapQuoteFailureKind;
   code?: number;
+  httpStatus?: number;
   message: string;
   details?: unknown[];
   raw?: Record<string, unknown>;
@@ -225,6 +248,7 @@ export interface SwapQuoteProbeResult {
   request: SwapQuoteRequest;
   status: 'available' | 'limited' | 'failed';
   summary: string;
+  sourceWarnings?: string[];
   quote?: SwapQuoteSuccess;
   failure?: SwapQuoteFailure;
 }
@@ -381,6 +405,7 @@ export interface GovernanceProposal {
   description: string;
   type: string;
   status: string;
+  trackerStatus?: 'current' | 'needs-review';
   votingPeriod: string;
   createdDate: string;
   expiryDate: string;
@@ -434,7 +459,6 @@ export interface EcosystemProject {
   description: string;
   url: string;
   logo?: string;
-  status: string;
   chains: string[];
   useFor: string[];
   verifyBeforeUse: string[];
@@ -564,6 +588,64 @@ export interface DynamicL1FeeStatus {
   sourceWarnings: string[];
   sourceWarningDetails: NetworkStatusSourceWarning[];
   caveats: Array<'current-only' | 'adr-experiment' | 'not-historical-fee-proof'>;
+}
+
+export interface RunePoolPolBucket {
+  valueRuneBaseUnits: string | null;
+  pnlRuneBaseUnits: string | null;
+  currentDepositRuneBaseUnits: string | null;
+}
+
+export interface RunePoolPolTotals extends RunePoolPolBucket {
+  runeDepositedBaseUnits: string | null;
+  runeWithdrawnBaseUnits: string | null;
+}
+
+export interface RunePoolProviderTotals extends RunePoolPolBucket {
+  units: string | null;
+  pendingUnits: string | null;
+  pendingRuneBaseUnits: string | null;
+}
+
+export interface RunePoolReserveTotals extends RunePoolPolBucket {
+  units: string | null;
+}
+
+export type RunePoolPolMimirState = 'active' | 'inactive' | 'unparseable';
+
+export interface RunePoolPolMimirPool {
+  key: string;
+  asset: string;
+  value: number | null;
+  state: RunePoolPolMimirState;
+}
+
+export interface RunePoolMimirConfigFlag {
+  key: string;
+  value: number | null;
+  state: 'present' | 'absent' | 'unparseable';
+}
+
+export interface RunePoolSourceFreshness {
+  thorchainHeight: number;
+  thorchainBlockTime: string;
+  thorchainBlockAgeSeconds?: number;
+  snapshotPinned: boolean;
+}
+
+export interface RunePoolPolStatus {
+  pol: RunePoolPolTotals;
+  providers: RunePoolProviderTotals;
+  reserve: RunePoolReserveTotals;
+  polPools: RunePoolPolMimirPool[];
+  activePolPoolCount: number;
+  depositMaturityBlocks: RunePoolMimirConfigFlag;
+  maxReserveBackstop: RunePoolMimirConfigFlag;
+  minRunePoolDepth?: RunePoolMimirConfigFlag;
+  sourceFreshness: RunePoolSourceFreshness;
+  sourceWarnings: string[];
+  sourceWarningDetails: NetworkStatusSourceWarning[];
+  caveats: Array<'current-only' | 'not-yield-proof' | 'availability-separate'>;
 }
 
 export type InboundOperationField = 'halted' | 'global_trading_paused' | 'chain_trading_paused' | 'chain_lp_actions_paused';

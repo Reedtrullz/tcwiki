@@ -38,6 +38,23 @@ function networkStatus(overrides: Partial<NetworkStatus> = {}): NetworkStatus {
 }
 
 describe('network current-only state labels', () => {
+  it('renders clean pause checks as no active halt instead of open', () => {
+    expect(getNetworkCurrentOnlyStateLabel({
+      paused: false,
+      statusLoading: false,
+      sourceUnavailable: false,
+      networkStatus: networkStatus(),
+    })).toBe('No active halt');
+
+    expect(getNetworkCurrentOnlyStateLabel({
+      paused: false,
+      statusLoading: false,
+      sourceUnavailable: false,
+      networkStatus: networkStatus(),
+      clearLabel: 'No active pause',
+    })).toBe('No active pause');
+  });
+
   it('renders exact malformed Mimir controls as warnings instead of open', () => {
     const status = networkStatus({
       monitoredControls: [

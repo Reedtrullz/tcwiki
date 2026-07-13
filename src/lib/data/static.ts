@@ -11,68 +11,45 @@ import type {
   SourcedRecord,
   TokenomicsSnapshot,
 } from '@/lib/types';
+import {
+  adr026DynamicFeesSource,
+  archivedSaversLendingSource as archivedFeaturesSource,
+  assetNotationSource,
+  cosmWasmSource as cosmwasmSource,
+  dynamicL1FeesCurrentSource,
+  dynamicL1FeesSource,
+  exploitReport1Source as exploitReportSource,
+  exploitReport2Source,
+  feesSource,
+  liveInboundSource,
+  midgardEarningsSource,
+  midgardHealthSource,
+  midgardNetworkSource,
+  midgardPoolsSource,
+  networkHaltsSource,
+  protocolUpgradeV319Source,
+  queryingThorchainSource,
+  runePoolDevSource,
+  runePoolDocsSource,
+  runePoolEndpointSource,
+  tcyGuideSource,
+  thorchainEcosystemSource as ecosystemSource,
+  thorchainDevDocsSource as developerDocs,
+  thorchainDocsSource as officialDocs,
+  thorfiUnwindSource,
+  thornameGuideSource,
+  thornodeMimirSource,
+  tokenomicsSource,
+} from '@/lib/sources';
 import { unwrapRecord, withFreshness } from '@/lib/trust';
 
 export const STATIC_DATA_LAST_UPDATED = '2026-06-18';
 
-const officialDocs: SourceMeta = {
-  label: 'THORChain Docs',
-  url: 'https://docs.thorchain.org',
-};
-
-const developerDocs: SourceMeta = {
-  label: 'THORChain Dev Docs',
-  url: 'https://dev.thorchain.org',
-};
-
-const liveInboundSource: SourceMeta = {
-  label: 'THORNode inbound_addresses',
-  url: 'https://thornode.thorchain.network/thorchain/inbound_addresses',
-  notes: 'Use as a current-only check for live chain availability and pause state.',
-};
-
-const archivedFeaturesSource: SourceMeta = {
-  label: 'Archived Savers and Lending docs',
-  url: 'https://docs.thorchain.org/thornodes/archived',
-};
-
-const exploitReportSource: SourceMeta = {
-  label: 'THORChain Exploit Report #1',
-  url: 'https://blog.thorchain.org/thorchain-exploit-report-1',
-};
-
-const exploitReport2Source: SourceMeta = {
-  label: 'THORChain Exploit Report #2',
-  url: 'https://blog.thorchain.org/thorchain-exploit-report-2',
-  retrievedAt: '2026-07-04',
-  notes: 'Official root-cause report for the May 2026 GG20/TSS vault exploit.',
-};
-
-const protocolUpgradeV319Source: SourceMeta = {
-  label: 'Protocol Upgrade v3.19.0',
-  url: 'https://blog.thorchain.org/protocol-upgrade-v3-19-0',
-  retrievedAt: '2026-07-04',
-  notes: 'Official release summary for the post-exploit restart and recovery/security patch set.',
-};
-
 const ethRouterExploitSource: SourceMeta = {
   label: 'ETH Router exploit post-mortem',
   url: 'https://medium.com/thorchain/post-mortem-eth-router-exploits-1-2-and-premature-return-to-trading-incident-2908928c5fb',
-};
-
-const tokenomicsSource: SourceMeta = {
-  label: 'RUNE and TCY tokenomics',
-  url: 'https://docs.thorchain.org/tokenomics-rune-tcy',
-};
-
-const networkHaltsSource: SourceMeta = {
-  label: 'THORChain Network Halts',
-  url: 'https://dev.thorchain.org/concepts/network-halts.html',
-};
-
-const ecosystemSource: SourceMeta = {
-  label: 'THORChain Ecosystem',
-  url: 'https://docs.thorchain.org/ecosystem',
+  retrievedAt: '2026-07-08',
+  notes: 'Historical THORChain post-mortem for early ETH router incidents; not current router availability evidence.',
 };
 
 const shapeshiftThorchainSource: SourceMeta = {
@@ -82,176 +59,179 @@ const shapeshiftThorchainSource: SourceMeta = {
   notes: 'ShapeShift-maintained protocol page describing THORChain route support; verify current app routing before using.',
 };
 
+const thorwalletSource: SourceMeta = {
+  label: 'THORWallet',
+  url: 'https://www.thorwallet.org/',
+  retrievedAt: '2026-07-09',
+  notes: 'Project-maintained wallet and swap-interface source; not a wallet-security audit, app-uptime proof, or route guarantee.',
+};
+
+const vultisigSource: SourceMeta = {
+  label: 'Vultisig',
+  url: 'https://vultisig.com/',
+  retrievedAt: '2026-07-09',
+  notes: 'Project-maintained MPC wallet/vault source; verify current release, wallet permissions, and route behavior before use.',
+};
+
+const rangoSource: SourceMeta = {
+  label: 'Rango Exchange',
+  url: 'https://rango.exchange/',
+  retrievedAt: '2026-07-09',
+  notes: 'Project-maintained aggregator source; route selection, fees, and supported paths are current third-party state.',
+};
+
+const ledgerRuneSource: SourceMeta = {
+  label: 'Ledger THORChain support',
+  url: 'https://support.ledger.com/article/4402987997841-zd',
+  retrievedAt: '2026-07-09',
+  notes: 'Ledger support source for THORChain/RUNE account setup; not proof that a swap route or third-party interface is usable.',
+};
+
 const messariQ1Source: SourceMeta = {
   label: 'Messari THORChain Q1 2025 Brief',
   url: 'https://messari.io/report/thorchain-q1-2025-brief',
+  retrievedAt: '2026-07-08',
+  notes: 'Third-party quarterly research brief; use as historical analysis, not live protocol state.',
 };
 
 const nineRealmsQ2Source: SourceMeta = {
   label: 'Nine Realms Q2 2025 Ecosystem Report',
   url: 'https://medium.com/thorchain/thorchain-q2-2025-ecosystem-report-q3-roadmap-1f5097a086a9',
+  retrievedAt: '2026-07-08',
+  notes: 'Ecosystem report and roadmap context from Nine Realms; roadmap items are not current delivery proof.',
 };
 
 const nineRealmsQ3Source: SourceMeta = {
   label: 'Nine Realms Q3 2024 Ecosystem Report',
   url: 'https://medium.com/thorchain/thorchain-q3-2024-ecosystem-report-1b048fe55141',
+  retrievedAt: '2026-07-08',
+  notes: 'Historical ecosystem report from Nine Realms; use for period context, not current protocol state.',
 };
 
 const trmBybitSource: SourceMeta = {
   label: 'TRM Labs Bybit laundering update',
   url: 'https://www.trmlabs.com/resources/blog/bybit-hack-update-north-korea-moves-to-next-stage-of-laundering',
-};
-
-const thornodeMimirSource: SourceMeta = {
-  label: 'THORNode Mimir',
-  url: 'https://thornode.thorchain.network/thorchain/mimir',
-  notes: 'Current-only operational controls; malformed values must not be treated as inactive.',
-};
-
-const midgardHealthSource: SourceMeta = {
-  label: 'Midgard v2 Health',
-  url: 'https://midgard.thorchain.network/v2/health',
-  notes: 'Use to check Midgard provider health, sync state, and lag before trusting live metrics.',
-};
-
-const midgardNetworkSource: SourceMeta = {
-  label: 'Midgard v2 Network',
-  url: 'https://midgard.thorchain.network/v2/network',
-  notes: 'Current-only network metrics; source label and health should be shown beside values.',
-};
-
-const midgardPoolsSource: SourceMeta = {
-  label: 'Midgard v2 Pools',
-  url: 'https://midgard.thorchain.network/v2/pools?status=available',
-  notes: 'Current-only pool availability and pool-count snapshot; not durable pool uptime proof.',
-};
-
-const midgardEarningsSource: SourceMeta = {
-  label: 'Midgard v2 Earnings',
-  url: 'https://midgard.thorchain.network/v2/history/earnings?interval=day&count=30',
-  notes: 'Current-only earnings intervals as returned by Midgard, not protocol revenue attribution proof.',
+  retrievedAt: '2026-07-08',
+  notes: 'Third-party illicit-flow analysis; this is not a THORChain protocol exploit source.',
 };
 
 const liquifyMidgardHealthSource: SourceMeta = {
   label: 'Liquify Midgard Gateway',
   url: 'https://gateway.liquify.com/chain/thorchain_midgard/v2/health',
+  retrievedAt: '2026-07-04',
   notes: 'Runtime failover source used only after response-shape validation.',
 };
 
 const thornodeVersionSource: SourceMeta = {
   label: 'THORChain THORNode Version',
   url: 'https://thornode.thorchain.network/thorchain/version',
+  retrievedAt: '2026-07-04',
+  notes: 'Runtime version endpoint used for source and deployment identity checks.',
 };
 
 const liquifyThornodeVersionSource: SourceMeta = {
   label: 'Liquify THORNode Gateway',
   url: 'https://gateway.liquify.com/chain/thorchain_api/thorchain/version',
+  retrievedAt: '2026-07-04',
   notes: 'Runtime failover source used only after response-shape validation.',
-};
-
-const queryingThorchainSource: SourceMeta = {
-  label: 'Querying THORChain',
-  url: 'https://dev.thorchain.org/concepts/querying-thorchain.html',
-};
-
-const feesSource: SourceMeta = {
-  label: 'Fees',
-  url: 'https://dev.thorchain.org/concepts/fees.html',
-};
-
-const adr026DynamicFeesSource: SourceMeta = {
-  label: 'ADR-026 dynamic L1 fee model',
-  url: 'https://gitlab.com/thorchain/thornode/-/raw/develop/docs/architecture/adr-026-dynamic-l1-min-fee-per-thorname.md',
-  notes: 'Architecture decision text currently labeled proposed; compare with live THORNode state before making current claims.',
-};
-
-const thornameGuideSource: SourceMeta = {
-  label: 'THORName affiliate guide',
-  url: 'https://dev.thorchain.org/affiliate-guide/thorname-guide.html',
-};
-
-const dynamicL1FeesSource: SourceMeta = {
-  label: 'THORNode dynamic_l1_fees',
-  url: 'https://thornode.thorchain.network/thorchain/dynamic_l1_fees',
-  notes: 'Current-only sealed dynamic L1 fee records.',
-};
-
-const dynamicL1FeesCurrentSource: SourceMeta = {
-  label: 'THORNode dynamic_l1_fees_current',
-  url: 'https://thornode.thorchain.network/thorchain/dynamic_l1_fees_current',
-  notes: 'Current-only in-progress epoch accumulators.',
-};
-
-const assetNotationSource: SourceMeta = {
-  label: 'Asset Notation',
-  url: 'https://dev.thorchain.org/concepts/asset-notation.html',
-};
-
-const cosmwasmSource: SourceMeta = {
-  label: 'CosmWasm',
-  url: 'https://docs.thorchain.org/technical-documentation/technology/cosmwasm',
-};
-
-const tcyGuideSource: SourceMeta = {
-  label: 'TCY Developer Guide',
-  url: 'https://dev.thorchain.org/concepts/tcy.html',
-};
-
-const thorfiUnwindSource: SourceMeta = {
-  label: 'THORFi Unwind Announcement',
-  url: 'https://medium.com/thorchain/thorfi-unwind-96b46dff72c0',
 };
 
 const runescanSource: SourceMeta = {
   label: 'RuneScan',
   url: 'https://runescan.io',
+  retrievedAt: '2026-07-05',
+  notes: 'External explorer reference; indexing and labels are not canonical protocol state.',
 };
 
 const viewblockSource: SourceMeta = {
   label: 'ViewBlock THORChain',
   url: 'https://viewblock.io/thorchain',
+  retrievedAt: '2026-07-05',
+  notes: 'External explorer reference; reconcile with THORNode or dated evidence before making protocol claims.',
+};
+
+const viewblockNeedsReviewSource: SourceMeta = {
+  ...viewblockSource,
+  retrievedAt: '2026-07-08',
+  notes: 'Direct source returned a Cloudflare challenge from this review environment; keep as needs-review until a human/browser refresh confirms THORChain indexing.',
+};
+
+const adr026DynamicFeesReviewedAt20260708: SourceMeta = {
+  ...adr026DynamicFeesSource,
+  retrievedAt: '2026-07-08',
+  notes: 'Architecture decision text still labels the ADR proposed; live THORNode evidence is separate current-only state.',
+};
+
+const thornodeMimirDynamicFeesReviewedAt20260708: SourceMeta = {
+  ...thornodeMimirSource,
+  retrievedAt: '2026-07-08',
+  notes: 'Current-only Mimir read showed L1DYNAMICFEEENABLED=1 with SS and Symbiosis whitelist entries; values can change after the checked block.',
+};
+
+const dynamicL1FeesReviewedAt20260708: SourceMeta = {
+  ...dynamicL1FeesSource,
+  retrievedAt: '2026-07-08',
+  notes: 'Current-only sealed dynamic L1 fee endpoint returned records during this refresh; record values can change by epoch.',
+};
+
+const dynamicL1FeesCurrentReviewedAt20260708: SourceMeta = {
+  ...dynamicL1FeesCurrentSource,
+  retrievedAt: '2026-07-08',
+  notes: 'Current-only in-progress epoch accumulator endpoint returned records during this refresh; not historical attribution proof.',
 };
 
 const messariReportsSource: SourceMeta = {
   label: 'Messari THORChain Reports',
   url: 'https://messari.io/project/thorchain',
+  retrievedAt: '2026-07-05',
+  notes: 'External analytics and research reference; not canonical protocol state.',
 };
 
 const thorchainGithubSource: SourceMeta = {
   label: 'THORChain GitHub',
   url: 'https://github.com/thorchain',
+  retrievedAt: '2026-07-05',
+  notes: 'Open-source repository reference; code state still needs branch, commit, and deployment context.',
 };
 
 const discordSource: SourceMeta = {
   label: 'Discord',
   url: 'https://discord.com/invite/thorchaincommunity',
+  retrievedAt: '2026-07-05',
+  notes: 'Community channel reference; useful context, not canonical protocol proof.',
 };
 
 const twitterSource: SourceMeta = {
   label: 'Twitter/X',
   url: 'https://x.com/thorchain_org',
+  retrievedAt: '2026-07-05',
+  notes: 'Social channel reference; announcements still need source and date context.',
 };
 
 const telegramSource: SourceMeta = {
   label: 'Telegram',
   url: 'https://t.me/thorchain_org',
+  retrievedAt: '2026-07-05',
+  notes: 'Community channel reference; useful context, not canonical protocol proof.',
 };
 
 const redditSource: SourceMeta = {
   label: 'Reddit',
   url: 'https://reddit.com/r/THORChain',
+  retrievedAt: '2026-07-05',
+  notes: 'Community discussion reference; sentiment needs careful sampling and date boundaries.',
 };
 
 interface StaticRecordFreshnessOptions {
-  checkedAt?: string;
-  nextReviewDue?: string;
+  checkedAt: string;
+  nextReviewDue: string;
   reviewedBy?: string;
 }
 
 const checkedFreshness = (
   confidence: DataConfidence,
-  nextReviewDue = '2026-07-18',
-  checkedAt = STATIC_DATA_LAST_UPDATED,
+  nextReviewDue: string,
+  checkedAt: string,
   reviewedBy?: string
 ): FreshnessMeta => {
   const freshness: FreshnessMeta = {
@@ -270,8 +250,8 @@ const checkedFreshness = (
 const record = <T>(
   data: T,
   sources: SourceMeta[],
-  confidence: DataConfidence = 'curated',
-  freshnessOptions: StaticRecordFreshnessOptions = {}
+  confidence: DataConfidence,
+  freshnessOptions: StaticRecordFreshnessOptions
 ): SourcedRecord<T> => withFreshness(
   data,
   sources,
@@ -283,6 +263,58 @@ const record = <T>(
   )
 );
 
+const sourceMapLiveInboundSource: SourceMeta = {
+  ...liveInboundSource,
+  retrievedAt: '2026-07-04',
+};
+
+const sourceMapEcosystemSource: SourceMeta = {
+  ...ecosystemSource,
+  retrievedAt: '2026-07-04',
+  notes: 'Official ecosystem directory reference; listings are not wallet-security audits or current app-availability proof.',
+};
+
+const ecosystemSourceReviewedAt20260708: SourceMeta = {
+  ...ecosystemSource,
+  retrievedAt: '2026-07-08',
+};
+
+const liveInboundSourceReviewedAt20260708: SourceMeta = {
+  ...liveInboundSource,
+  retrievedAt: '2026-07-08',
+};
+
+const thorchainSwapSource: SourceMeta = {
+  label: 'THORChain Swap app',
+  url: 'https://swap.thorchain.org',
+  retrievedAt: '2026-07-08',
+  notes: 'Current app availability check for the THORChain-branded swap interface; not quote, settlement, or wallet-safety proof.',
+};
+
+const asgardexSource: SourceMeta = {
+  label: 'ASGARDEX website',
+  url: 'https://www.asgardex.com',
+  retrievedAt: '2026-07-08',
+  notes: 'Project website availability check; release downloads, device security, and route availability need upstream and live checks.',
+};
+
+const runescanSourceReviewedAt20260708: SourceMeta = {
+  ...runescanSource,
+  retrievedAt: '2026-07-08',
+};
+
+const SUPPORTED_CHAIN_CATALOG_REVIEWED_AT = '2026-07-06';
+const SUPPORTED_CHAIN_CATALOG_NEXT_REVIEW_DUE = '2026-08-06';
+const supportedChainCatalogFreshness = {
+  checkedAt: SUPPORTED_CHAIN_CATALOG_REVIEWED_AT,
+  nextReviewDue: SUPPORTED_CHAIN_CATALOG_NEXT_REVIEW_DUE,
+};
+const supportedChainInboundSource: SourceMeta = {
+  ...liveInboundSource,
+  retrievedAt: SUPPORTED_CHAIN_CATALOG_REVIEWED_AT,
+  notes: 'Supported-chain catalog refresh against live inbound_addresses; chain presence is not swap, signing, LP-action, or route-availability proof.',
+};
+
 export const CHAIN_RECORDS: SourcedRecord<Chain>[] = [
   record({
     name: 'Bitcoin',
@@ -292,7 +324,7 @@ export const CHAIN_RECORDS: SourcedRecord<Chain>[] = [
     dustThreshold: 546,
     supported: true,
     statusNote: 'Live inbound status must be checked before describing BTC swaps as open.',
-  }, [liveInboundSource, developerDocs], 'official'),
+  }, [supportedChainInboundSource, developerDocs], 'official', supportedChainCatalogFreshness),
   record({
     name: 'Ethereum',
     chain: 'ETH',
@@ -300,28 +332,28 @@ export const CHAIN_RECORDS: SourcedRecord<Chain>[] = [
     addressFormats: ['EIP-55'],
     supported: true,
     statusNote: 'Router/inbound status is live-state dependent.',
-  }, [liveInboundSource, developerDocs], 'official'),
+  }, [supportedChainInboundSource, developerDocs], 'official', supportedChainCatalogFreshness),
   record({
     name: 'BNB Chain',
     chain: 'BSC',
     explorer: 'https://bscscan.com/block',
     addressFormats: ['EIP-55'],
     supported: true,
-  }, [liveInboundSource], 'official'),
+  }, [supportedChainInboundSource], 'official', supportedChainCatalogFreshness),
   record({
     name: 'Avalanche',
     chain: 'AVAX',
     explorer: 'https://snowtrace.io/block',
     addressFormats: ['EIP-55'],
     supported: true,
-  }, [liveInboundSource], 'official'),
+  }, [supportedChainInboundSource], 'official', supportedChainCatalogFreshness),
   record({
     name: 'Cosmos Hub',
     chain: 'GAIA',
     explorer: 'https://www.mintscan.io/cosmos/blocks',
     addressFormats: ['Bech32'],
     supported: true,
-  }, [liveInboundSource], 'official'),
+  }, [supportedChainInboundSource], 'official', supportedChainCatalogFreshness),
   record({
     name: 'Dogecoin',
     chain: 'DOGE',
@@ -329,7 +361,7 @@ export const CHAIN_RECORDS: SourcedRecord<Chain>[] = [
     addressFormats: ['Bech32', 'P2PKH'],
     dustThreshold: 1000000,
     supported: true,
-  }, [liveInboundSource], 'official'),
+  }, [supportedChainInboundSource], 'official', supportedChainCatalogFreshness),
   record({
     name: 'Litecoin',
     chain: 'LTC',
@@ -337,7 +369,7 @@ export const CHAIN_RECORDS: SourcedRecord<Chain>[] = [
     addressFormats: ['Bech32', 'P2PKH'],
     dustThreshold: 100000,
     supported: true,
-  }, [liveInboundSource], 'official'),
+  }, [supportedChainInboundSource], 'official', supportedChainCatalogFreshness),
   record({
     name: 'Bitcoin Cash',
     chain: 'BCH',
@@ -345,21 +377,21 @@ export const CHAIN_RECORDS: SourcedRecord<Chain>[] = [
     addressFormats: ['CashAddr', 'P2PKH'],
     dustThreshold: 1000,
     supported: true,
-  }, [liveInboundSource], 'official'),
+  }, [supportedChainInboundSource], 'official', supportedChainCatalogFreshness),
   record({
     name: 'Tron',
     chain: 'TRON',
     explorer: 'https://tronscan.org/#/block',
     addressFormats: ['Base58'],
     supported: true,
-  }, [liveInboundSource], 'official'),
+  }, [supportedChainInboundSource], 'official', supportedChainCatalogFreshness),
   record({
     name: 'Base',
     chain: 'BASE',
     explorer: 'https://basescan.org/block',
     addressFormats: ['EIP-55'],
     supported: true,
-  }, [liveInboundSource], 'official'),
+  }, [supportedChainInboundSource], 'official', supportedChainCatalogFreshness),
   record({
     name: 'Solana',
     chain: 'SOL',
@@ -367,14 +399,14 @@ export const CHAIN_RECORDS: SourcedRecord<Chain>[] = [
     addressFormats: ['Base58'],
     supported: true,
     statusNote: 'SOL uses EdDSA signing; Exploit Report #2 says EdDSA chains such as Solana were not exposed to the GG20/Paillier attack path.',
-  }, [liveInboundSource, exploitReport2Source], 'official'),
+  }, [supportedChainInboundSource, exploitReport2Source], 'official', supportedChainCatalogFreshness),
   record({
     name: 'XRP Ledger',
     chain: 'XRP',
     explorer: 'https://xrpscan.com/ledger',
     addressFormats: ['Classic address', 'X-address'],
     supported: true,
-  }, [liveInboundSource], 'official'),
+  }, [supportedChainInboundSource], 'official', supportedChainCatalogFreshness),
 ];
 
 export const CHAINS: Chain[] = CHAIN_RECORDS.map(unwrapRecord);
@@ -385,21 +417,27 @@ export const SOURCE_MAP_SECTION_RECORDS: SourcedRecord<SourceMapSection>[] = [
   record({
     id: 'current-protocol-state',
     title: 'Current Protocol State',
-    decision: 'Is a protocol feature, chain, pool, or halt state available right now?',
-    use: 'Use these for source-backed current state, live availability, halt flags, pool metrics, and operational checks.',
-    caveat: 'Live API responses are current-only snapshots. A successful response is not durable historical proof.',
+    decision: 'Is an operational control active, or what does a live metric snapshot say right now?',
+    use: 'Use THORNode evidence for live operational checks such as halts, signing, quotes, Mimir values, and inbound fields. Use Midgard for indexed dashboard metrics such as pools, network totals, and earnings intervals.',
+    caveat: 'Live API responses are current-only snapshots. Midgard metrics are useful dashboard context, but they are not by themselves route-availability proof.',
     claimExamples: [
-      'Current halt, pause, signing, LP, TCY, trade-account, secured-asset, or chain-observation state.',
-      'Current inbound address, router, gas-rate, pool, node, bond, reserve, or earnings snapshot.',
-      'Whether a rendered live metric is available, unavailable, degraded, or warning-backed at check time.',
+      'Current halt, pause, signing, LP, TCY, trade-account, secured-asset, app-layer, or chain-observation state from THORNode.',
+      'Current inbound-address, router, gas-rate, Mimir, quote, node/version, or dynamic-fee snapshot.',
+      'Current halt, inbound, or quote evidence for a catalog-listed or queried supported chain after the separate static catalog lookup.',
+      'Current Midgard pool, network, reserve, bond, node-count, earnings, or APY-style dashboard metric with source freshness attached.',
+      'Whether a rendered live value is available, unavailable, degraded, or warning-backed at check time.',
     ],
     nonClaims: [
       'Durable historical uptime or availability.',
       'Protocol design intent or governance approval.',
-      'Revenue lift, safety, or route quality beyond the checked snapshot.',
+      'Revenue lift, safety, route quality, or route availability beyond the checked snapshot.',
+      'That a Midgard pool or network metric proves a specific swap, LP action, secured-asset flow, or app-layer action is usable now.',
     ],
-    links: [thornodeMimirSource, liveInboundSource, midgardHealthSource, midgardNetworkSource, midgardPoolsSource, midgardEarningsSource],
-  }, [thornodeMimirSource, liveInboundSource, midgardHealthSource, midgardNetworkSource, midgardPoolsSource, midgardEarningsSource], 'official'),
+    links: [thornodeMimirSource, sourceMapLiveInboundSource, midgardHealthSource, midgardNetworkSource, midgardPoolsSource, midgardEarningsSource],
+  }, [thornodeMimirSource, sourceMapLiveInboundSource, midgardHealthSource, midgardNetworkSource, midgardPoolsSource, midgardEarningsSource], 'official', {
+    checkedAt: '2026-07-05',
+    nextReviewDue: '2026-08-05',
+  }),
   record({
     id: 'runtime-live-data-failover',
     title: 'Runtime Live-Data Failover',
@@ -422,6 +460,52 @@ export const SOURCE_MAP_SECTION_RECORDS: SourcedRecord<SourceMapSection>[] = [
     nextReviewDue: '2026-08-04',
   }),
   record({
+    id: 'runepool-pol-evidence',
+    title: 'RUNEPool/POL Evidence',
+    decision: 'Is this RUNEPool accounting, POL scope, or RUNEPool deposit/withdraw availability?',
+    use: 'Use the live RUNEPool/POL snapshot for current THORNode `/runepool` accounting, POL-enabled pool Mimirs, and RUNEPool caveat keys. Pair it with Network diagnostics when the claim is about whether deposits or withdrawals are usable now.',
+    caveat: 'RUNEPool accounting is a current-only snapshot. It does not prove future yield, profitability, route health, deposit support, withdrawal support, or user-specific position outcomes.',
+    claimExamples: [
+      'Current global RUNEPool value, PnL, provider, reserve, and current-deposit fields from THORNode.',
+      'Current POL-enabled pool scope from `POL-<Asset>` Mimir keys.',
+      'Whether a RUNEPool dashboard value is available, unavailable, degraded, or warning-backed at check time.',
+      'Which separate live controls need review before claiming RUNEPool deposits or withdrawals are open.',
+    ],
+    nonClaims: [
+      'Future yield, profitability, impermanent-loss outcome, or investment suitability.',
+      'That every POL-enabled pool is liquid, routeable, safe, or competitive.',
+      'That a clean accounting snapshot proves RUNEPool deposits or withdrawals are currently usable.',
+      'A user-specific RUNEPool balance or payout without a provider-specific endpoint and intentional address context.',
+    ],
+    links: [runePoolEndpointSource, runePoolDevSource, runePoolDocsSource, thornodeMimirSource, networkHaltsSource],
+  }, [runePoolEndpointSource, runePoolDevSource, runePoolDocsSource, thornodeMimirSource, networkHaltsSource], 'curated', {
+    checkedAt: '2026-07-06',
+    nextReviewDue: '2026-08-06',
+  }),
+  record({
+    id: 'rune-tokenomics-and-value',
+    title: 'RUNE Tokenomics And Value Claims',
+    decision: 'Which source family should back a RUNE number, supply framing, security constant, or value claim?',
+    use: 'Use official tokenomics and protocol docs for dated RUNE supply and role framing, Stats for current Midgard network metrics, and THORNode/Mimir evidence for current security constants such as minimum bond or slash settings.',
+    caveat: 'The wiki does not provide price targets, fair-value models, investment suitability, market-cap proof, exchange float, or guaranteed-yield conclusions. Keep dated tokenomics, current live metrics, and market analysis separate.',
+    claimExamples: [
+      'Dated RUNE supply, reserve, circulating-supply, burn, or TCY-context framing from the tokenomics source.',
+      'Which live dashboard surface owns pooled RUNE, reserve, bond, node-count, earnings, or APY-style metrics.',
+      'Which THORNode or Mimir source family should be checked before quoting minimum bond, slash settings, or current security constants.',
+      'Which external evidence would be needed before making price, fair-value, market-cap, or investment-suitability claims.',
+    ],
+    nonClaims: [
+      'Current RUNE price, fair value, market cap, exchange float, or investment suitability.',
+      'Live circulating supply, reserve balance, bond posture, minimum bond, or slash settings from dated tokenomics text alone.',
+      'Future yield, protocol revenue lift, recovery value, or guaranteed return.',
+      'That one RUNE number can be reused across settlement, security, liquidity, tokenomics, and market-value claims.',
+    ],
+    links: [tokenomicsSource, officialDocs, developerDocs, midgardNetworkSource, thornodeMimirSource],
+  }, [tokenomicsSource, officialDocs, developerDocs, midgardNetworkSource, thornodeMimirSource], 'curated', {
+    checkedAt: '2026-07-06',
+    nextReviewDue: '2026-08-06',
+  }),
+  record({
     id: 'developer-integration',
     title: 'Developer Integration',
     decision: 'How should an app or integration talk to THORChain?',
@@ -439,8 +523,8 @@ export const SOURCE_MAP_SECTION_RECORDS: SourcedRecord<SourceMapSection>[] = [
     ],
     links: [developerDocs, queryingThorchainSource, feesSource, assetNotationSource],
   }, [developerDocs, queryingThorchainSource, feesSource, assetNotationSource], 'official', {
-    checkedAt: '2026-07-04',
-    nextReviewDue: '2026-08-04',
+    checkedAt: '2026-07-05',
+    nextReviewDue: '2026-08-05',
   }),
   record({
     id: 'third-party-interfaces-wallets',
@@ -458,8 +542,8 @@ export const SOURCE_MAP_SECTION_RECORDS: SourcedRecord<SourceMapSection>[] = [
       'Official endorsement of a third-party interface or wallet.',
       'That a listed interface has implemented current protocol behavior correctly.',
     ],
-    links: [ecosystemSource, developerDocs, liveInboundSource, networkHaltsSource],
-  }, [ecosystemSource, developerDocs, liveInboundSource, networkHaltsSource], 'curated', {
+    links: [sourceMapEcosystemSource, developerDocs, sourceMapLiveInboundSource, networkHaltsSource],
+  }, [sourceMapEcosystemSource, developerDocs, sourceMapLiveInboundSource, networkHaltsSource], 'curated', {
     checkedAt: '2026-07-04',
     nextReviewDue: '2026-08-04',
   }),
@@ -501,7 +585,10 @@ export const SOURCE_MAP_SECTION_RECORDS: SourcedRecord<SourceMapSection>[] = [
       'Third-party interface status, wallet safety, or market conclusions.',
     ],
     links: [officialDocs, networkHaltsSource, tokenomicsSource, cosmwasmSource],
-  }, [officialDocs, networkHaltsSource, tokenomicsSource, cosmwasmSource], 'official'),
+  }, [officialDocs, networkHaltsSource, tokenomicsSource, cosmwasmSource], 'official', {
+    checkedAt: '2026-07-05',
+    nextReviewDue: '2026-08-05',
+  }),
   record({
     id: 'historical-features-and-recovery',
     title: 'Historical Features And Recovery',
@@ -511,10 +598,12 @@ export const SOURCE_MAP_SECTION_RECORDS: SourcedRecord<SourceMapSection>[] = [
     claimExamples: [
       'Savers/Lending deprecation and THORFi unwind history.',
       'Official exploit-report root cause, remediation, restart, and recovery context.',
+      'Which current TCY controls need review before making claim, stake, distribution, unstake, claim-swap, or trading availability claims.',
       'Dated milestones or incident lessons where the source itself supports the claim.',
     ],
     nonClaims: [
       'That historical products are available now.',
+      'That TCY claiming, staking, trading, distributions, user eligibility, or interface support is currently available without live controls and official-interface evidence.',
       'Current solvency, safety, or recovery completion beyond dated sources.',
       'Financial advice, recovery-value expectations, or investment outcomes.',
     ],
@@ -534,8 +623,8 @@ export const SOURCE_MAP_SECTION_RECORDS: SourcedRecord<SourceMapSection>[] = [
     exploitReport2Source,
     protocolUpgradeV319Source,
   ], 'historical', {
-    checkedAt: '2026-07-04',
-    nextReviewDue: '2026-08-04',
+    checkedAt: '2026-07-08',
+    nextReviewDue: '2026-08-08',
   }),
   record({
     id: 'external-analytics-and-explorers',
@@ -554,7 +643,10 @@ export const SOURCE_MAP_SECTION_RECORDS: SourcedRecord<SourceMapSection>[] = [
       'Endorsement, safety review, or complete interface coverage.',
     ],
     links: [runescanSource, viewblockSource, messariReportsSource, thorchainGithubSource],
-  }, [runescanSource, viewblockSource, messariReportsSource, thorchainGithubSource], 'curated'),
+  }, [runescanSource, viewblockSource, messariReportsSource, thorchainGithubSource], 'curated', {
+    checkedAt: '2026-07-05',
+    nextReviewDue: '2026-08-05',
+  }),
   record({
     id: 'community-channels',
     title: 'Community Channels',
@@ -572,7 +664,10 @@ export const SOURCE_MAP_SECTION_RECORDS: SourcedRecord<SourceMapSection>[] = [
       'Representative sentiment without careful sampling and date boundaries.',
     ],
     links: [discordSource, twitterSource, telegramSource, redditSource, thorchainGithubSource],
-  }, [discordSource, twitterSource, telegramSource, redditSource, thorchainGithubSource], 'curated'),
+  }, [discordSource, twitterSource, telegramSource, redditSource, thorchainGithubSource], 'curated', {
+    checkedAt: '2026-07-05',
+    nextReviewDue: '2026-08-05',
+  }),
 ];
 
 export const SOURCE_MAP_SECTIONS: SourceMapSection[] = SOURCE_MAP_SECTION_RECORDS.map(unwrapRecord);
@@ -581,7 +676,7 @@ export const TOKENOMICS_RECORDS: SourcedRecord<TokenomicsSnapshot>[] = [
   record({
     id: 'rune-supply-framing',
     title: 'RUNE Supply Framing',
-    summary: 'As reviewed on 2026-06-18, the official tokenomics source frames RUNE around a reduced supply near 425M, circulating supply near 350M, reserve near 75M, and ongoing burn mechanics.',
+    summary: 'As reviewed on 2026-07-05, the official tokenomics source frames RUNE around a reduced supply near 425M, circulating supply near 350M, reserve near 75M, and ongoing burn mechanics.',
     figures: [
       { label: 'Original Cap Context', value: '500M RUNE', tone: 'historical' },
       { label: 'Current Supply Framing', value: '~425M and burning', tone: 'source-backed' },
@@ -591,7 +686,10 @@ export const TOKENOMICS_RECORDS: SourcedRecord<TokenomicsSnapshot>[] = [
       { label: 'Bond Requirement', value: 'Check constants + Mimir', tone: 'current-only' },
       { label: 'Slash Penalty', value: 'Check constants + Mimir', tone: 'current-only' },
     ],
-  }, [tokenomicsSource], 'official'),
+  }, [tokenomicsSource], 'official', {
+    checkedAt: '2026-07-05',
+    nextReviewDue: '2026-08-05',
+  }),
   record({
     id: 'tcy-recovery-context',
     title: 'TCY Recovery Context',
@@ -610,24 +708,36 @@ export const TOKENOMICS_RECORDS: SourcedRecord<TokenomicsSnapshot>[] = [
   }),
 ];
 
+export function getTokenomicsRecord(id: string): SourcedRecord<TokenomicsSnapshot> {
+  const record = TOKENOMICS_RECORDS.find((candidate) => candidate.data.id === id);
+
+  if (!record) {
+    throw new Error(`Missing tokenomics record for ${id}`);
+  }
+
+  return record;
+}
+
 export const ECOSYSTEM_PROJECT_RECORDS: SourcedRecord<EcosystemProject>[] = [
   record({
     id: 'thorchain-swap',
     name: 'THORChain Swap',
     category: 'Interface',
-    description: 'Official THORChain swap interface for native cross-chain swaps. Live availability depends on current THORNode halt and inbound status.',
+    description: 'THORChain-branded swap interface for native cross-chain swaps. Live availability depends on current THORNode halt, quote, and inbound status.',
     url: 'https://swap.thorchain.org',
-    status: 'Active',
     chains: chainCodes,
     useFor: [
-      'Official swap-interface starting point for native cross-chain swap routes.',
-      'Checking whether the canonical interface exposes a route for a supported chain pair.',
+      'THORChain swap-interface starting point for native cross-chain swap routes.',
+      'Checking whether the branded interface exposes a route for a supported chain pair.',
     ],
     verifyBeforeUse: [
       'Confirm live trading, signing, inbound-address, and gas status on the Network page before assuming a swap can settle.',
       'Review quoted fees, route, slippage, recipient address, and wallet approvals in the interface before signing.',
     ],
-  }, [ecosystemSource, liveInboundSource], 'curated'),
+  }, [thorchainSwapSource, ecosystemSourceReviewedAt20260708, liveInboundSourceReviewedAt20260708], 'curated', {
+    checkedAt: '2026-07-08',
+    nextReviewDue: '2026-08-08',
+  }),
   record({
     id: 'asgardex',
     name: 'AsgardEX',
@@ -635,7 +745,6 @@ export const ECOSYSTEM_PROJECT_RECORDS: SourcedRecord<EcosystemProject>[] = [
     description: 'Multi-chain desktop wallet and DEX interface with THORChain support.',
     url: 'https://www.asgardex.com',
     logo: '/logos/asgardex.svg',
-    status: 'Active',
     chains: ['BTC', 'ETH', 'BSC', 'AVAX', 'GAIA', 'DOGE', 'LTC', 'BCH'],
     useFor: [
       'Desktop wallet and THORChain swap interface exploration.',
@@ -645,7 +754,10 @@ export const ECOSYSTEM_PROJECT_RECORDS: SourcedRecord<EcosystemProject>[] = [
       'Confirm the current release, download source, wallet permissions, and device security outside this wiki.',
       'Check live chain and THORChain halt status before relying on any swap or LP action.',
     ],
-  }, [ecosystemSource], 'curated'),
+  }, [asgardexSource, ecosystemSourceReviewedAt20260708], 'curated', {
+    checkedAt: '2026-07-08',
+    nextReviewDue: '2026-08-08',
+  }),
   record({
     id: 'thorswap',
     name: 'THORSwap',
@@ -653,7 +765,6 @@ export const ECOSYSTEM_PROJECT_RECORDS: SourcedRecord<EcosystemProject>[] = [
     description: 'Multi-chain DEX aggregator and THORChain interface. Deprecated Savers/Lending products should be treated as historical.',
     url: 'https://app.thorswap.finance',
     logo: '/logos/thorswap.svg',
-    status: 'Active',
     chains: chainCodes,
     useFor: [
       'Third-party swap, aggregation, and THORChain interface research.',
@@ -663,14 +774,16 @@ export const ECOSYSTEM_PROJECT_RECORDS: SourcedRecord<EcosystemProject>[] = [
       'Treat product availability, terms, compliance controls, and routed quotes as current third-party state.',
       'Do not infer that historical Savers or Lending features are available; verify any product shown by the app.',
     ],
-  }, [ecosystemSource, archivedFeaturesSource], 'curated'),
+  }, [ecosystemSource, archivedFeaturesSource], 'curated', {
+    checkedAt: '2026-07-05',
+    nextReviewDue: '2026-08-05',
+  }),
   record({
     id: 'shapeshift',
     name: 'ShapeShift',
     category: 'Interface',
     description: 'Self-custody multichain wallet and DEX aggregator with THORChain route support for native cross-chain swaps.',
     url: 'https://app.shapeshift.com',
-    status: 'Active',
     chains: chainCodes,
     useFor: [
       'Third-party wallet and swap-interface research where THORChain can be one of the route sources.',
@@ -685,12 +798,87 @@ export const ECOSYSTEM_PROJECT_RECORDS: SourcedRecord<EcosystemProject>[] = [
     nextReviewDue: '2026-08-05',
   }),
   record({
+    id: 'thorwallet',
+    name: 'THORWallet',
+    category: 'Wallet',
+    description: 'Self-custody mobile wallet and cross-chain DEX surface listed by THORChain ecosystem sources.',
+    url: 'https://www.thorwallet.org/',
+    chains: chainCodes,
+    useFor: [
+      'Third-party wallet and swap-interface research where THORChain routes may be exposed in a mobile workflow.',
+      'Inspecting THORWallet route, wallet-connection, recipient, and signing behavior before a user-facing recommendation.',
+    ],
+    verifyBeforeUse: [
+      'Confirm the current app release, download source, wallet permissions, route quote, recipient address, slippage, and fees before signing.',
+      'Check live THORNode diagnostics first; this listing is not a wallet-security audit, app-uptime proof, or route-quality guarantee.',
+    ],
+  }, [ecosystemSourceReviewedAt20260708, thorwalletSource, liveInboundSourceReviewedAt20260708], 'curated', {
+    checkedAt: '2026-07-09',
+    nextReviewDue: '2026-08-09',
+  }),
+  record({
+    id: 'vultisig',
+    name: 'Vultisig',
+    category: 'Wallet',
+    description: 'Self-custodial MPC wallet and multi-chain vault listed by THORChain ecosystem sources.',
+    url: 'https://vultisig.com/',
+    chains: chainCodes,
+    useFor: [
+      'Researching seedless MPC custody, multi-factor signing, and THORChain-enabled wallet workflows.',
+      'Inspecting current Vultisig wallet support, route handling, and release/source path before suggesting it to users.',
+    ],
+    verifyBeforeUse: [
+      'Confirm the current release channel, backup/recovery model, device quorum, wallet permissions, quote route, recipient, slippage, and fees before signing.',
+      'Treat MPC and vault claims as project claims to verify upstream; this listing is not a wallet-security audit or custody recommendation.',
+    ],
+  }, [ecosystemSourceReviewedAt20260708, vultisigSource, liveInboundSourceReviewedAt20260708], 'curated', {
+    checkedAt: '2026-07-09',
+    nextReviewDue: '2026-08-09',
+  }),
+  record({
+    id: 'rango',
+    name: 'Rango',
+    category: 'Interface',
+    description: 'Cross-chain DEX and bridge aggregator listed by THORChain ecosystem sources.',
+    url: 'https://rango.exchange/',
+    chains: chainCodes,
+    useFor: [
+      'Third-party route-aggregation research where THORChain may be one of several possible liquidity paths.',
+      'Comparing quote, route selection, fee, bridge, and execution disclosures against THORNode route checks.',
+    ],
+    verifyBeforeUse: [
+      'Confirm whether the current quote actually uses THORChain, which intermediate protocols are involved, and what recipient/slippage/fee settings are applied.',
+      'Do not infer best execution, route safety, or route availability from this listing; use live quote and network diagnostics first.',
+    ],
+  }, [ecosystemSourceReviewedAt20260708, rangoSource, liveInboundSourceReviewedAt20260708], 'curated', {
+    checkedAt: '2026-07-09',
+    nextReviewDue: '2026-08-09',
+  }),
+  record({
+    id: 'ledger-rune',
+    name: 'Ledger RUNE',
+    category: 'Wallet',
+    description: 'Hardware-wallet support surface for THORChain/RUNE accounts; this is account and signing support, not a live swap interface.',
+    url: 'https://support.ledger.com/article/4402987997841-zd',
+    chains: ['THOR'],
+    useFor: [
+      'Researching Ledger THORChain/RUNE account setup, storage, and signing support.',
+      'Checking hardware-wallet support as one part of a wallet workflow before choosing an interface.',
+    ],
+    verifyBeforeUse: [
+      'Confirm Ledger firmware, THORChain app version, account path, connected interface, address display, and signing prompts before use.',
+      'Do not treat Ledger support as a route-availability, swap-interface, staking, or LP-action guarantee.',
+    ],
+  }, [ecosystemSourceReviewedAt20260708, ledgerRuneSource], 'curated', {
+    checkedAt: '2026-07-09',
+    nextReviewDue: '2026-08-09',
+  }),
+  record({
     id: 'runescan',
     name: 'RuneScan',
     category: 'Explorer',
     description: 'THORChain explorer for transactions, pools, nodes, and statistics.',
     url: 'https://runescan.io',
-    status: 'Active',
     chains: ['THOR'],
     useFor: [
       'Exploring THORChain transactions, pools, nodes, addresses, and historical network context.',
@@ -700,31 +888,35 @@ export const ECOSYSTEM_PROJECT_RECORDS: SourcedRecord<EcosystemProject>[] = [
       'Do not treat explorer display alone as proof that swaps, LP actions, or signing are currently open.',
       'Cross-check protocol availability against live THORNode diagnostics when making operational claims.',
     ],
-  }, [ecosystemSource], 'curated'),
+  }, [runescanSourceReviewedAt20260708, ecosystemSourceReviewedAt20260708], 'curated', {
+    checkedAt: '2026-07-08',
+    nextReviewDue: '2026-08-08',
+  }),
   record({
     id: 'viewblock',
     name: 'ViewBlock',
     category: 'Explorer',
-    description: 'Multi-chain explorer with THORChain support.',
+    description: 'Unverified multi-chain explorer pointer for THORChain context. Direct source refresh needs review before treating it as a current explorer reference.',
     url: 'https://viewblock.io/thorchain',
-    status: 'Active',
     chains: ['THOR'],
     useFor: [
-      'Inspecting THORChain explorer data through a multi-chain explorer surface.',
-      'Comparing transaction or account context with other explorer sources.',
+      'Following up on a historical multi-chain explorer pointer.',
+      'Comparing transaction or account context only after the direct source is reachable and reconciled.',
     ],
     verifyBeforeUse: [
-      'Use explorer data as evidence context, not as a wallet-safety or route-availability guarantee.',
+      'Confirm the direct explorer page clears its anti-bot challenge and currently indexes THORChain before relying on it.',
       'Check live THORNode state before making current operational claims.',
     ],
-  }, [ecosystemSource], 'curated'),
+  }, [viewblockNeedsReviewSource], 'needs-review', {
+    checkedAt: '2026-07-08',
+    nextReviewDue: '2026-08-08',
+  }),
   record({
     id: 'swapkit',
     name: 'SwapKit',
     category: 'Developer Tools',
     description: 'SDK and API tooling for cross-chain swap integrations.',
     url: 'https://swapkit.dev',
-    status: 'Active',
     chains: chainCodes,
     useFor: [
       'Developer SDK/API research for THORChain and cross-chain swap integrations.',
@@ -734,14 +926,16 @@ export const ECOSYSTEM_PROJECT_RECORDS: SourcedRecord<EcosystemProject>[] = [
       'Confirm current package versions, API behavior, supported chains, and integration security in upstream docs.',
       'Test quotes, memos, slippage, affiliate settings, and error handling against live endpoints before shipping.',
     ],
-  }, [developerDocs], 'curated'),
+  }, [developerDocs], 'curated', {
+    checkedAt: '2026-07-02',
+    nextReviewDue: '2026-08-02',
+  }),
   record({
     id: 'xchainjs',
     name: 'XChainJS',
     category: 'Developer Tools',
     description: 'JavaScript client libraries for THORChain and connected chains.',
     url: 'https://xchainjs.org',
-    status: 'Active',
     chains: chainCodes,
     useFor: [
       'JavaScript client-library research for THORChain and connected-chain tooling.',
@@ -751,7 +945,10 @@ export const ECOSYSTEM_PROJECT_RECORDS: SourcedRecord<EcosystemProject>[] = [
       'Confirm current package versions, chain-module support, wallet handling, and breaking changes upstream.',
       'Do not treat library presence here as proof of production readiness for an integration.',
     ],
-  }, [developerDocs], 'curated'),
+  }, [developerDocs], 'curated', {
+    checkedAt: '2026-07-02',
+    nextReviewDue: '2026-08-02',
+  }),
 ];
 
 export const ECOSYSTEM_PROJECTS: EcosystemProject[] = ECOSYSTEM_PROJECT_RECORDS.map(unwrapRecord);
@@ -769,7 +966,10 @@ export const RESEARCH_REPORT_RECORDS: SourcedRecord<ResearchReport>[] = [
       'THORFi was paused after protocol liability concerns',
       'Affiliate volume and TVL moved sharply during Q1 2025',
     ],
-  }, [messariQ1Source], 'curated'),
+  }, [messariQ1Source], 'curated', {
+    checkedAt: '2026-07-08',
+    nextReviewDue: '2026-08-08',
+  }),
   record({
     id: 'nine-realms-q2-2025',
     title: 'THORChain Q2 2025 Ecosystem Report & Q3 Roadmap',
@@ -779,7 +979,10 @@ export const RESEARCH_REPORT_RECORDS: SourcedRecord<ResearchReport>[] = [
     url: 'https://medium.com/thorchain/thorchain-q2-2025-ecosystem-report-q3-roadmap-1f5097a086a9',
     summary: 'Ecosystem report with Q3 roadmap priorities and development updates.',
     keyInsights: [],
-  }, [nineRealmsQ2Source], 'curated'),
+  }, [nineRealmsQ2Source], 'curated', {
+    checkedAt: '2026-07-08',
+    nextReviewDue: '2026-08-08',
+  }),
   record({
     id: 'nine-realms-q3-2024',
     title: 'THORChain Q3 2024 Ecosystem Report',
@@ -789,7 +992,10 @@ export const RESEARCH_REPORT_RECORDS: SourcedRecord<ResearchReport>[] = [
     url: 'https://medium.com/thorchain/thorchain-q3-2024-ecosystem-report-1b048fe55141',
     summary: 'Quarterly ecosystem report covering protocol performance, development milestones, and community initiatives.',
     keyInsights: [],
-  }, [nineRealmsQ3Source], 'curated'),
+  }, [nineRealmsQ3Source], 'curated', {
+    checkedAt: '2026-07-08',
+    nextReviewDue: '2026-08-08',
+  }),
 ];
 
 export const RESEARCH_REPORTS: ResearchReport[] = RESEARCH_REPORT_RECORDS.map(unwrapRecord);
@@ -798,27 +1004,39 @@ export const SECURITY_INCIDENT_RECORDS: SourcedRecord<SecurityIncident>[] = [
   record({
     id: 'eth-router-1',
     title: 'ETH Router Exploit #1',
-    date: '2021-04-19',
+    date: '2021-07-15',
     type: 'Exploit',
-    description: 'Early ETH router exploit affecting a limited amount of funds during Chaosnet.',
-    impact: '$12,000 loss',
+    description: 'ETH router/Bifrost exploit where an attack contract in front of the router caused fake ETH deposits to be read as real deposits.',
+    impact: 'Approximately $8M impact; the post-mortem says no other chains or assets were affected.',
     resolved: true,
-    resolutionDate: '2021-04-20',
-    lessons: ['Router audits and monitoring became more important', 'Incident response procedures were refined'],
+    lessons: [
+      'Deposit-event parsing needed stricter validation',
+      'Unaudited ETH Bifrost code created unacceptable router risk',
+      'Solvency checks and active monitoring became explicit recovery priorities',
+    ],
     url: 'https://medium.com/thorchain/post-mortem-eth-router-exploits-1-2-and-premature-return-to-trading-incident-2908928c5fb',
-  }, [ethRouterExploitSource], 'historical'),
+  }, [ethRouterExploitSource], 'historical', {
+    checkedAt: '2026-07-08',
+    nextReviewDue: '2026-08-08',
+  }),
   record({
     id: 'eth-router-2',
     title: 'ETH Router Exploit #2',
-    date: '2021-04-22',
+    date: '2021-07-23',
     type: 'Exploit',
-    description: 'Second ETH router exploit, followed by further fixes and a cautious return-to-trading process.',
-    impact: '$8,000 loss',
+    description: 'Second ETH router exploit where a fake router and malicious deposit event path caused real ERC-20 refunds from the system.',
+    impact: 'Approximately $8M across economically significant ERC-20 assets, followed by a broader recovery and audit plan.',
     resolved: true,
-    resolutionDate: '2021-04-23',
-    lessons: ['Return-to-trading safety needs explicit gates', 'Router changes require extra validation'],
+    lessons: [
+      'Return-to-trading needed explicit safety gates and halt controls',
+      'Router changes required deeper adversarial validation',
+      'Outbound throttling, node timeouts, and audit coverage became part of the response plan',
+    ],
     url: 'https://medium.com/thorchain/post-mortem-eth-router-exploits-1-2-and-premature-return-to-trading-incident-2908928c5fb',
-  }, [ethRouterExploitSource], 'historical'),
+  }, [ethRouterExploitSource], 'historical', {
+    checkedAt: '2026-07-08',
+    nextReviewDue: '2026-08-08',
+  }),
   record({
     id: 'thorfi-unwind-2025',
     title: 'THORFi Unwind',
@@ -830,7 +1048,10 @@ export const SECURITY_INCIDENT_RECORDS: SourcedRecord<SecurityIncident>[] = [
     trackerStatus: 'historical-open',
     lessons: ['Experimental yield and lending features need explicit solvency and liability framing'],
     url: 'https://docs.thorchain.org/thornodes/archived',
-  }, [archivedFeaturesSource, tokenomicsSource], 'official'),
+  }, [archivedFeaturesSource, tokenomicsSource], 'official', {
+    checkedAt: '2026-07-05',
+    nextReviewDue: '2026-08-05',
+  }),
   record({
     id: 'bybit-laundering-2025',
     title: 'Post-Bybit Laundering Flow',
@@ -842,7 +1063,10 @@ export const SECURITY_INCIDENT_RECORDS: SourcedRecord<SecurityIncident>[] = [
     trackerStatus: 'historical-open',
     lessons: ['Separate protocol exploits from illicit usage of open infrastructure', 'Use precise source-backed labels'],
     url: 'https://www.trmlabs.com/resources/blog/bybit-hack-update-north-korea-moves-to-next-stage-of-laundering',
-  }, [trmBybitSource], 'needs-review'),
+  }, [trmBybitSource], 'needs-review', {
+    checkedAt: '2026-07-08',
+    nextReviewDue: '2026-08-08',
+  }),
   record({
     id: 'gg20-vault-exploit-2026',
     title: 'GG20 Vault Exploit',
@@ -859,8 +1083,8 @@ export const SECURITY_INCIDENT_RECORDS: SourcedRecord<SecurityIncident>[] = [
     ],
     url: 'https://blog.thorchain.org/thorchain-exploit-report-2',
   }, [exploitReport2Source, protocolUpgradeV319Source, exploitReportSource], 'official', {
-    checkedAt: '2026-07-04',
-    nextReviewDue: '2026-08-04',
+    checkedAt: '2026-07-05',
+    nextReviewDue: '2026-08-05',
   }),
 ];
 
@@ -877,29 +1101,39 @@ export const GOVERNANCE_PROPOSAL_RECORDS: SourcedRecord<GovernanceProposal>[] = 
     createdDate: '2025-01',
     expiryDate: 'Historical',
     sourceUrl: 'https://docs.thorchain.org/thornodes/archived',
-  }, [archivedFeaturesSource, tokenomicsSource], 'official'),
+  }, [archivedFeaturesSource, tokenomicsSource], 'official', {
+    checkedAt: '2026-07-05',
+    nextReviewDue: '2026-08-05',
+  }),
   record({
     id: 'adr-028-recovery',
     title: 'ADR-028 Recovery Path',
     description: 'Recovery of May 2026 exploit losses was described by the first official exploit report as a community governance decision.',
     type: 'Recovery',
     status: 'Needs current review',
+    trackerStatus: 'needs-review',
     votingPeriod: 'Source-dependent',
     createdDate: '2026-05',
     expiryDate: 'Current status must be checked',
     sourceUrl: 'https://blog.thorchain.org/thorchain-exploit-report-1',
-  }, [exploitReportSource], 'needs-review'),
+  }, [exploitReportSource], 'needs-review', {
+    checkedAt: '2026-07-05',
+    nextReviewDue: '2026-08-05',
+  }),
   record({
     id: 'mimir-operational-halts',
     title: 'Operational Mimir Halts',
     description: 'Operational Mimir parameters such as HALTTRADING and HALTSIGNING can pause network activity and should be read from THORNode.',
     type: 'Operational Parameter',
-    status: 'Live',
+    status: 'Current-only control reference',
     votingPeriod: 'Current-only',
     createdDate: 'Ongoing',
-    expiryDate: 'Live parameter',
+    expiryDate: 'Check current THORNode Mimir state',
     sourceUrl: 'https://dev.thorchain.org/concepts/network-halts.html',
-  }, [networkHaltsSource, liveInboundSource], 'official'),
+  }, [networkHaltsSource, liveInboundSource], 'official', {
+    checkedAt: '2026-07-04',
+    nextReviewDue: '2026-08-04',
+  }),
   record({
     id: 'adr-026-dynamic-l1-fees',
     title: 'ADR-026 Dynamic L1 Fees',
@@ -908,11 +1142,16 @@ export const GOVERNANCE_PROPOSAL_RECORDS: SourcedRecord<GovernanceProposal>[] = 
     status: 'Proposed ADR / live Mimir evidence',
     votingPeriod: 'Current-only Mimir and source review',
     createdDate: '2026-04-15',
-    expiryDate: 'Review due 2026-07-17',
+    expiryDate: 'ADR discussion review target 2026-08-08',
     sourceUrl: 'https://gitlab.com/thorchain/thornode/-/raw/develop/docs/architecture/adr-026-dynamic-l1-min-fee-per-thorname.md',
-  }, [adr026DynamicFeesSource, thornodeMimirSource, dynamicL1FeesSource, dynamicL1FeesCurrentSource], 'curated', {
-    checkedAt: '2026-07-04',
-    nextReviewDue: '2026-08-04',
+  }, [
+    adr026DynamicFeesReviewedAt20260708,
+    thornodeMimirDynamicFeesReviewedAt20260708,
+    dynamicL1FeesReviewedAt20260708,
+    dynamicL1FeesCurrentReviewedAt20260708,
+  ], 'curated', {
+    checkedAt: '2026-07-08',
+    nextReviewDue: '2026-08-08',
   }),
 ];
 
@@ -923,29 +1162,41 @@ export const PROTOCOL_MILESTONE_RECORDS = [
     date: '2018-10-15',
     title: 'THORChain Founded',
     description: 'THORChain project founded and initial whitepaper work begins.',
-  }, [officialDocs], 'historical'),
+  }, [officialDocs], 'historical', {
+    checkedAt: '2026-07-02',
+    nextReviewDue: '2026-08-02',
+  }),
   record({
     date: '2021-04-13',
     title: 'Mainnet Chaosnet Launch',
     description: 'Mainnet Chaosnet launches with native cross-chain swaps.',
-  }, [officialDocs], 'historical'),
+  }, [officialDocs], 'historical', {
+    checkedAt: '2026-07-02',
+    nextReviewDue: '2026-08-02',
+  }),
   record({
     date: '2024-12-22',
     title: 'THORChain V3 Release',
     description: 'Major protocol upgrade introducing app-layer and protocol improvements.',
-  }, [officialDocs], 'historical'),
+  }, [officialDocs], 'historical', {
+    checkedAt: '2026-07-02',
+    nextReviewDue: '2026-08-02',
+  }),
   record({
     date: '2025-01',
     title: 'Savers and Lending Deprecated',
     description: 'Archived THORChain docs mark Savers and Lending as deprecated and no longer available.',
-  }, [archivedFeaturesSource], 'official'),
+  }, [archivedFeaturesSource], 'official', {
+    checkedAt: '2026-07-05',
+    nextReviewDue: '2026-08-05',
+  }),
   record({
     date: '2026-05-15',
     title: 'GG20 Vault Exploit and Emergency Halt',
     description: 'Official reports say one vault was drained through a GG20/TSS cryptographic attack; v3.19.0 carried restart recovery/security changes, and later reporting described v3.19.1 patching plus migration planning away from GG20.',
   }, [exploitReport2Source, protocolUpgradeV319Source, exploitReportSource], 'official', {
-    checkedAt: '2026-07-04',
-    nextReviewDue: '2026-08-04',
+    checkedAt: '2026-07-05',
+    nextReviewDue: '2026-08-05',
   }),
 ];
 

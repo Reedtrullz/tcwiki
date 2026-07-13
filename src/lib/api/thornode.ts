@@ -16,6 +16,10 @@ import {
   NetworkStatus,
   NetworkStatusSourceWarning,
   OperationalControlStatus,
+  RunePoolMimirConfigFlag,
+  RunePoolPolMimirPool,
+  RunePoolPolStatus,
+  RunePoolSourceFreshness,
   SourceMeta,
   SwapQuoteFailure,
   SwapQuoteProbeResult,
@@ -25,6 +29,14 @@ import {
   ThornodeLastBlock,
 } from '@/lib/types';
 import { CHAINS } from '@/lib/data/static';
+import {
+  EXACT_MONITORED_MIMIR_KEYS,
+  PREFIX_MONITORED_MIMIR_KEYS,
+  REVIEWED_NON_PAUSING_OPERATIONAL_MIMIR_PREFIXES,
+  REVIEWED_OPERATIONAL_SUPPORT_MIMIR_PREFIXES,
+  UNKNOWN_OPERATION_REVIEW_MIMIR_PREFIXES,
+  getOperationalControlCatalogEntry,
+} from '@/lib/operational-controls';
 import { liveDegraded, liveOk } from '@/lib/trust';
 
 type ThornodeEndpoint = SourceMeta & {
@@ -59,76 +71,18 @@ export function resetThornodeEndpointForTests() {
 }
 
 const MIMIR_INTEGER_PATTERN = /^[+-]?\d+$/;
-const EXACT_MONITORED_MIMIR_KEYS = [
-  'HALTTRADING',
-  'StreamingSwapPause',
-  'HaltMemoless',
-  'HALTSIGNING',
-  'PAUSELP',
-  'RUNEPoolHaltDeposit',
-  'RUNEPoolHaltWithdraw',
-  'PAUSELOANS',
-  'HALTCHAINGLOBAL',
-  'NODEPAUSECHAINGLOBAL',
-  'HALTCHURNING',
-  'PauseBond',
-  'PauseUnbond',
-  'HaltRebond',
-  'HaltOperatorRotate',
-  'HaltOracle',
-  'HALTSECUREDGLOBAL',
-  'TCYCLAIMINGHALT',
-  'TCYCLAIMINGSWAPHALT',
-  'TCYSTAKINGHALT',
-  'TCYSTAKEDISTRIBUTIONHALT',
-  'TCYUNSTAKINGHALT',
-  'HALTTCYTRADING',
-  'HALTWASMGLOBAL',
-  'TRADEACCOUNTSENABLED',
-  'TRADEACCOUNTSDEPOSITENABLED',
-  'MANUALSWAPSTOSYNTHDISABLED',
-  'RUNEPOOLENABLED',
-  'BANKSENDENABLED',
-] as const;
-
-const PREFIX_MONITORED_MIMIR_KEYS = [
-  'PAUSELPDEPOSIT-',
-  'PauseAsymWithdrawal-',
-  'HaltSecuredDeposit-',
-  'HaltSecuredWithdraw-',
-  'HaltWasmDeployer-',
-  'HaltWasmCs-',
-  'HaltWasmContract-',
-] as const;
-
 const NON_CHAIN_SCOPED_MIMIR_CODES = new Set(['TCY']);
 const CURATED_CHAIN_CODES = new Set([...CHAINS.map((chain) => chain.chain.toUpperCase()), 'THOR']);
 const KNOWN_NON_OPERATIONAL_PAUSE_KEYS = new Set(['PAUSEONSLASHTHRESHOLD']);
-const REVIEWED_NON_PAUSING_OPERATIONAL_MIMIR_PREFIXES = [
-  'DYNAMICFEE-WHITELIST-',
-  'EVMALLOWANCECHECK-',
-  'ADR',
-  'POL-',
-  'TORANCHOR-',
-] as const;
-const UNKNOWN_OPERATION_REVIEW_MIMIR_PREFIXES = [
-  'STOPSOLVENCYCHECK',
-  'EVMDISABLECONTRACTWHITELIST',
-  'RAGNAROK-',
-] as const;
-const REVIEWED_OPERATIONAL_SUPPORT_MIMIR_PREFIXES = [
-  'COMPROMISEDVAULT-',
-  'ENABLESWITCH-',
-  'BURNSYNTHS',
-  'SCHEDULEDMIGRATION',
-  'FUNDMIGRATIONINTERVAL',
-  'MIMIRRECALLFUND',
-  'MIMIRUPGRADECONTRACT',
-] as const;
 const DYNAMIC_L1_FEE_WHITELIST_PREFIX = 'DYNAMICFEE-WHITELIST-';
 const TOR_BASE_UNIT_MAX_DIGITS = 80;
 const TOR_BASE_UNIT_PATTERN = /^\d+$/;
 const SWAP_QUOTE_AMOUNT_PATTERN = /^\d+$/;
+const MAX_QUOTE_EXPIRY_UNIX_SECONDS = 8_640_000_000_000;
+const RUNEPOOL_BASE_UNIT_MAX_DIGITS = 80;
+const RUNEPOOL_SIGNED_BASE_UNIT_PATTERN = /^[+-]?\d+$/;
+const RUNEPOOL_UNSIGNED_BASE_UNIT_PATTERN = /^\d+$/;
+const RUNEPOOL_POL_MIMIR_PREFIX = 'POL-';
 
 type MimirActivationMode = 'positive' | 'at-or-after-height' | 'after-height' | 'until-height';
 
@@ -272,6 +226,15 @@ function dynamicL1FeeStatusSources(endpoint: ThornodeEndpoint, snapshotHeight: n
   ];
 }
 
+function runePoolPolStatusSources(endpoint: ThornodeEndpoint, snapshotHeight: number) {
+  return [
+    endpoint,
+    sourceForCosmosPath(endpoint, 'latest block', '/base/tendermint/v1beta1/blocks/latest'),
+    sourceForThornodePath(endpoint, 'Mimir', '/mimir', snapshotHeight),
+    sourceForThornodePath(endpoint, 'RUNEPool accounting', '/runepool', snapshotHeight),
+  ];
+}
+
 function quotePath(request: SwapQuoteRequest) {
   const params = new URLSearchParams({
     from_asset: request.fromAsset,
@@ -322,6 +285,17 @@ function asOptionalQuoteNumber(value: unknown, field: string): number | undefine
   return value;
 }
 
+function asOptionalQuoteExpiry(value: unknown): number | undefined {
+  const expiry = asOptionalQuoteNumber(value, 'expiry');
+  if (expiry === undefined) {
+    return undefined;
+  }
+  if (expiry > MAX_QUOTE_EXPIRY_UNIX_SECONDS) {
+    throw new Error('THORNode quote response has invalid expiry');
+  }
+  return expiry;
+}
+
 function quoteRecord(value: unknown): Record<string, unknown> {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
     throw new Error('THORNode quote response was not an object');
@@ -348,7 +322,7 @@ function normalizeSwapQuoteSuccess(request: SwapQuoteRequest, rawValue: unknown)
     outboundDelaySeconds: asOptionalQuoteNumber(raw.outbound_delay_seconds, 'outbound_delay_seconds'),
     streamingSwapSeconds: asOptionalQuoteNumber(raw.streaming_swap_seconds, 'streaming_swap_seconds'),
     totalSwapSeconds: asOptionalQuoteNumber(raw.total_swap_seconds, 'total_swap_seconds'),
-    expiry: asOptionalQuoteNumber(raw.expiry, 'expiry'),
+    expiry: asOptionalQuoteExpiry(raw.expiry),
     warning: typeof raw.warning === 'string' && raw.warning !== '' ? raw.warning : undefined,
     fees,
     raw,
@@ -362,16 +336,35 @@ function normalizeSwapQuoteSuccess(request: SwapQuoteRequest, rawValue: unknown)
   };
 }
 
-function normalizeSwapQuoteFailure(request: SwapQuoteRequest, rawValue: unknown): SwapQuoteProbeResult {
+function normalizeSwapQuoteFailure(request: SwapQuoteRequest, rawValue: unknown, httpStatus: number): SwapQuoteProbeResult {
   const raw = quoteRecord(rawValue);
-  const message = typeof raw.message === 'string' && raw.message !== ''
-    ? raw.message
-    : 'THORNode did not return a usable quote for this route.';
+  const hasMessage = typeof raw.message === 'string' && raw.message !== '';
+  const message = hasMessage ? raw.message as string : 'THORNode did not return a usable quote error.';
   const code = typeof raw.code === 'number' && Number.isSafeInteger(raw.code) ? raw.code : undefined;
   const details = Array.isArray(raw.details) ? raw.details : undefined;
-  const status = /halt|pause|disabled|unavailable|not available/i.test(message) ? 'limited' : 'failed';
+  const lowerMessage = message.toLowerCase();
+  const providerStatus = httpStatus >= 500 || httpStatus === 408 || httpStatus === 425;
+  const providerMessage = /(?:service|gateway|upstream).*(?:unavailable|timeout|error)|timed? out|temporarily unavailable/.test(lowerMessage);
+  const routeHaltMessage = /(?:trading|chain|swap|route|deposit|withdraw|lp).*(?:halt|pause|disabled?|unavailable|not available)|(?:halt|pause|disabled?).*(?:trading|chain|swap|route|deposit|withdraw|lp)/.test(lowerMessage);
+  const kind = !hasMessage
+    ? 'malformed'
+    : httpStatus === 429 || /rate limit|too many requests/.test(lowerMessage)
+      ? 'rate-limit'
+      : routeHaltMessage
+        ? 'halt'
+        : providerStatus || providerMessage
+          ? 'provider'
+      : /amount|minimum|dust|invalid|positive|same asset|not enough|insufficient/.test(lowerMessage)
+        ? 'input'
+        : 'unknown';
+  const status = kind === 'halt' ? 'limited' : 'failed';
+  const sourceWarnings = kind === 'rate-limit' || kind === 'provider' || kind === 'malformed' || kind === 'unknown'
+    ? [`THORNode quote probe ${kind} response needs review: ${message}`]
+    : undefined;
   const failure: SwapQuoteFailure = {
+    kind,
     ...(code !== undefined ? { code } : {}),
+    httpStatus,
     message,
     ...(details !== undefined ? { details } : {}),
     raw,
@@ -383,8 +376,15 @@ function normalizeSwapQuoteFailure(request: SwapQuoteRequest, rawValue: unknown)
     summary: status === 'limited'
       ? 'THORNode says this route is currently limited.'
       : 'THORNode could not quote this route.',
+    ...(sourceWarnings ? { sourceWarnings } : {}),
     failure,
   };
+}
+
+function shouldFailoverSwapQuote(result: SwapQuoteProbeResult) {
+  return result.failure?.kind === 'provider' ||
+    result.failure?.kind === 'rate-limit' ||
+    result.failure?.kind === 'malformed';
 }
 
 function validateSwapQuoteRequest(request: SwapQuoteRequest) {
@@ -836,6 +836,255 @@ function getDynamicFeeBlockAgeWarnings(blockAgeSeconds: number | undefined) {
   }
 
   return [];
+}
+
+function runePoolWarningKeys(message: string) {
+  return [...new Set(message.match(/\b(?:POL-[A-Z0-9._-]+|runepool\.[a-z_]+(?:\.[a-z_]+)?)\b/g) ?? [])]
+    .sort((left, right) => left.localeCompare(right));
+}
+
+function classifyRunePoolSourceWarning(message: string): NetworkStatusSourceWarning {
+  const keys = runePoolWarningKeys(message);
+
+  if (message.includes('latest block timestamp')) {
+    return warningDetail({
+      severity: message.includes(' is stale.') ? 'critical' : 'warning',
+      category: 'freshness',
+      message,
+      action: 'Treat RUNEPool accounting as stale until THORNode returns a fresh latest-block timestamp.',
+      keys,
+    });
+  }
+
+  if (message.includes('POL-') && message.includes('unparseable')) {
+    return warningDetail({
+      severity: 'review',
+      category: 'mimir-parse',
+      message,
+      action: 'Review the exact POL Mimir key before treating the POL-enabled pool set as clean.',
+      keys,
+    });
+  }
+
+  if (
+    message.includes('did not include') ||
+    message.includes('unusable') ||
+    message.includes('invalid') ||
+    message.includes('malformed')
+  ) {
+    return warningDetail({
+      severity: 'warning',
+      category: 'source-shape',
+      message,
+      action: 'Treat the affected RUNEPool accounting field as unavailable until THORNode returns a clean base-unit value.',
+      keys,
+    });
+  }
+
+  return warningDetail({
+    severity: 'warning',
+    category: 'other',
+    message,
+    action: 'Review this RUNEPool source warning before treating the live panel as clean.',
+    keys,
+  });
+}
+
+function getRunePoolSourceWarningDetails(warnings: string[]) {
+  return uniqueSourceWarningDetails(warnings.map(classifyRunePoolSourceWarning));
+}
+
+function getRunePoolBlockAgeWarnings(blockAgeSeconds: number | undefined) {
+  if (blockAgeSeconds === undefined) {
+    return [];
+  }
+
+  if (blockAgeSeconds < -THORNODE_BLOCK_FUTURE_DEGRADED_SECONDS) {
+    return [`THORNode latest block timestamp is ${formatAgeSeconds(blockAgeSeconds)} in the future; RUNEPool state is stale.`];
+  }
+  if (blockAgeSeconds < -THORNODE_BLOCK_FUTURE_WARNING_SECONDS) {
+    return [`THORNode latest block timestamp is ${formatAgeSeconds(blockAgeSeconds)} in the future; RUNEPool state may be stale.`];
+  }
+  if (blockAgeSeconds > THORNODE_BLOCK_STALE_DEGRADED_SECONDS) {
+    return [`THORNode latest block timestamp is ${formatAgeSeconds(blockAgeSeconds)} old; RUNEPool state is stale.`];
+  }
+  if (blockAgeSeconds > THORNODE_BLOCK_STALE_WARNING_SECONDS) {
+    return [`THORNode latest block timestamp is ${formatAgeSeconds(blockAgeSeconds)} old; RUNEPool state may be stale.`];
+  }
+
+  return [];
+}
+
+function getRunePoolWarningSnapshotScore(status: RunePoolPolStatus) {
+  const details = status.sourceWarningDetails.length
+    ? status.sourceWarningDetails
+    : getRunePoolSourceWarningDetails(status.sourceWarnings);
+
+  return details.reduce((score, detail) => score + getWarningDetailSnapshotScore(detail), 0);
+}
+
+function runePoolRecord(value: unknown, field: string, sourceWarnings: string[]) {
+  if (!isPlainRecord(value)) {
+    sourceWarnings.push(`THORNode runepool.${field} did not include a usable object.`);
+    return {};
+  }
+  return value;
+}
+
+function runePoolBaseUnits(
+  value: unknown,
+  field: string,
+  sourceWarnings: string[],
+  options: { allowNegative?: boolean } = {}
+) {
+  if (typeof value !== 'string' || value.length === 0) {
+    sourceWarnings.push(`THORNode runepool.${field} did not include a usable RUNE base-unit string.`);
+    return null;
+  }
+
+  if (value.length > RUNEPOOL_BASE_UNIT_MAX_DIGITS) {
+    sourceWarnings.push(`THORNode runepool.${field} is too large to display safely.`);
+    return null;
+  }
+
+  const pattern = options.allowNegative ? RUNEPOOL_SIGNED_BASE_UNIT_PATTERN : RUNEPOOL_UNSIGNED_BASE_UNIT_PATTERN;
+  if (!pattern.test(value)) {
+    sourceWarnings.push(`THORNode runepool.${field} included an invalid RUNE base-unit value.`);
+    return null;
+  }
+
+  try {
+    return BigInt(value).toString();
+  } catch {
+    sourceWarnings.push(`THORNode runepool.${field} included an unusable RUNE base-unit value.`);
+    return null;
+  }
+}
+
+function runePoolUnits(value: unknown, field: string, sourceWarnings: string[]) {
+  if (typeof value !== 'string' || value.length === 0) {
+    sourceWarnings.push(`THORNode runepool.${field} did not include a usable unit string.`);
+    return null;
+  }
+  if (value.length > RUNEPOOL_BASE_UNIT_MAX_DIGITS || !RUNEPOOL_UNSIGNED_BASE_UNIT_PATTERN.test(value)) {
+    sourceWarnings.push(`THORNode runepool.${field} included an invalid unit value.`);
+    return null;
+  }
+  return BigInt(value).toString();
+}
+
+function runePoolBucket(
+  record: Record<string, unknown>,
+  prefix: string,
+  sourceWarnings: string[]
+) {
+  return {
+    valueRuneBaseUnits: runePoolBaseUnits(record.value, `${prefix}.value`, sourceWarnings),
+    pnlRuneBaseUnits: runePoolBaseUnits(record.pnl, `${prefix}.pnl`, sourceWarnings, { allowNegative: true }),
+    currentDepositRuneBaseUnits: runePoolBaseUnits(record.current_deposit, `${prefix}.current_deposit`, sourceWarnings),
+  };
+}
+
+function runePoolPolPools(mimir: Record<string, unknown>, sourceWarnings: string[]): RunePoolPolMimirPool[] {
+  return Object.entries(mimir)
+    .filter(([key]) => key.toUpperCase().startsWith(RUNEPOOL_POL_MIMIR_PREFIX))
+    .map(([key, raw]) => {
+      const value = toMimirNumber(raw);
+      const asset = key.slice(RUNEPOOL_POL_MIMIR_PREFIX.length).toUpperCase();
+      if (value === null) {
+        sourceWarnings.push(`THORNode Mimir ${key} was unparseable for RUNEPool POL scope.`);
+        return {
+          key,
+          asset,
+          value: null,
+          state: 'unparseable' as const,
+        };
+      }
+      return {
+        key,
+        asset,
+        value,
+        state: value > 0 ? 'active' as const : 'inactive' as const,
+      };
+    })
+    .sort((left, right) => (
+      Number(right.state === 'active') - Number(left.state === 'active') ||
+      left.asset.localeCompare(right.asset)
+    ));
+}
+
+function runePoolMimirConfigFlag(
+  mimir: Record<string, unknown>,
+  key: string,
+  sourceWarnings: string[]
+): RunePoolMimirConfigFlag {
+  const value = getMimirNumericState(mimir, key);
+  if (value.state === 'valid') {
+    return { key: value.key, value: value.value, state: 'present' };
+  }
+  if (value.state === 'unparseable') {
+    sourceWarnings.push(`THORNode Mimir ${value.key} was unparseable for RUNEPool availability caveats.`);
+    return { key: value.key, value: null, state: 'unparseable' };
+  }
+  return { key, value: null, state: 'absent' };
+}
+
+export function deriveRunePoolPolStatus(
+  mimir: unknown,
+  runepool: unknown,
+  sourceFreshness: RunePoolSourceFreshness
+): RunePoolPolStatus {
+  const sourceWarnings: string[] = [];
+  const mimirRecord = isPlainRecord(mimir) ? mimir : {};
+  if (!isPlainRecord(mimir)) {
+    sourceWarnings.push('THORNode Mimir did not include a usable object for RUNEPool POL scope.');
+  }
+  if (!isPlainRecord(runepool)) {
+    sourceWarnings.push('THORNode runepool response did not include a usable object.');
+  }
+
+  const root = isPlainRecord(runepool) ? runepool : {};
+  const pol = runePoolRecord(root.pol, 'pol', sourceWarnings);
+  const providers = runePoolRecord(root.providers, 'providers', sourceWarnings);
+  const reserve = runePoolRecord(root.reserve, 'reserve', sourceWarnings);
+  const polPools = runePoolPolPools(mimirRecord, sourceWarnings);
+  const polBucket = runePoolBucket(pol, 'pol', sourceWarnings);
+  const providerBucket = runePoolBucket(providers, 'providers', sourceWarnings);
+  const reserveBucket = runePoolBucket(reserve, 'reserve', sourceWarnings);
+  const polTotals = {
+    ...polBucket,
+    runeDepositedBaseUnits: runePoolBaseUnits(pol.rune_deposited, 'pol.rune_deposited', sourceWarnings),
+    runeWithdrawnBaseUnits: runePoolBaseUnits(pol.rune_withdrawn, 'pol.rune_withdrawn', sourceWarnings),
+  };
+  const providerTotals = {
+    ...providerBucket,
+    units: runePoolUnits(providers.units, 'providers.units', sourceWarnings),
+    pendingUnits: runePoolUnits(providers.pending_units, 'providers.pending_units', sourceWarnings),
+    pendingRuneBaseUnits: runePoolBaseUnits(providers.pending_rune, 'providers.pending_rune', sourceWarnings),
+  };
+  const reserveTotals = {
+    ...reserveBucket,
+    units: runePoolUnits(reserve.units, 'reserve.units', sourceWarnings),
+  };
+  const depositMaturityBlocks = runePoolMimirConfigFlag(mimirRecord, 'RUNEPoolDepositMaturityBlocks', sourceWarnings);
+  const maxReserveBackstop = runePoolMimirConfigFlag(mimirRecord, 'RUNEPoolMaxReserveBackstop', sourceWarnings);
+  const minRunePoolDepth = runePoolMimirConfigFlag(mimirRecord, 'MINRUNEPOOLDEPTH', sourceWarnings);
+  const uniqueWarnings = [...new Set(sourceWarnings)].sort((left, right) => left.localeCompare(right));
+
+  return {
+    pol: polTotals,
+    providers: providerTotals,
+    reserve: reserveTotals,
+    polPools,
+    activePolPoolCount: polPools.filter((pool) => pool.state === 'active').length,
+    depositMaturityBlocks,
+    maxReserveBackstop,
+    minRunePoolDepth,
+    sourceFreshness,
+    sourceWarnings: uniqueWarnings,
+    sourceWarningDetails: getRunePoolSourceWarningDetails(uniqueWarnings),
+    caveats: ['current-only', 'not-yield-proof', 'availability-separate'],
+  };
 }
 
 function toNonNegativeInteger(value: unknown, field: string): number {
@@ -1922,6 +2171,18 @@ function aggregatePauseControl(
   };
 }
 
+function controlLabel(key: string) {
+  return getOperationalControlCatalogEntry(key).label;
+}
+
+function controlDescription(key: string) {
+  return getOperationalControlCatalogEntry(key).description;
+}
+
+function aggregateControlDescription(key: string) {
+  return controlDescription(key).replace(/\.$/, '');
+}
+
 function getInvalidMimirKeysForChain(
   mimir: Record<string, unknown>,
   chainCode: string,
@@ -2232,96 +2493,96 @@ export function deriveNetworkStatus(
   });
 
   const monitoredControls: OperationalControlStatus[] = [
-    pauseControl(mimir, 'HALTTRADING', 'Trading', 'Swaps and trading actions are paused when active.', 'at-or-after-height', thorchainHeight),
-    optionalPauseControl(mimir, 'StreamingSwapPause', 'Streaming swaps', 'Streaming swaps are paused when active.'),
-    optionalPauseControl(mimir, 'HaltMemoless', 'Memoless transactions', 'Memoless transaction handling is halted when active.'),
-    pauseControl(mimir, 'HALTSIGNING', 'Signing', 'Outbound signing is paused when active.', 'at-or-after-height', thorchainHeight),
-    pauseControl(mimir, 'PAUSELP', 'LP actions', 'Liquidity-provider actions are paused when active.', 'at-or-after-height', thorchainHeight),
+    pauseControl(mimir, 'HALTTRADING', controlLabel('HALTTRADING'), controlDescription('HALTTRADING'), 'at-or-after-height', thorchainHeight),
+    optionalPauseControl(mimir, 'StreamingSwapPause', controlLabel('StreamingSwapPause'), controlDescription('StreamingSwapPause')),
+    optionalPauseControl(mimir, 'HaltMemoless', controlLabel('HaltMemoless'), controlDescription('HaltMemoless')),
+    pauseControl(mimir, 'HALTSIGNING', controlLabel('HALTSIGNING'), controlDescription('HALTSIGNING'), 'at-or-after-height', thorchainHeight),
+    pauseControl(mimir, 'PAUSELP', controlLabel('PAUSELP'), controlDescription('PAUSELP'), 'at-or-after-height', thorchainHeight),
     aggregatePauseControl(
       'PAUSELPDEPOSIT-*',
-      'Pool deposits',
+      controlLabel('PAUSELPDEPOSIT-*'),
       poolDepositPauseKeys,
       invalidPoolDepositPauseKeys,
       'No active pool-specific deposit pause keys were observed.',
-      'Pool-specific liquidity deposits are paused for one or more assets'
+      aggregateControlDescription('PAUSELPDEPOSIT-*')
     ),
     aggregatePauseControl(
       'PauseAsymWithdrawal-*',
-      'Asym LP withdrawals',
+      controlLabel('PauseAsymWithdrawal-*'),
       asymWithdrawalPauseKeys,
       invalidAsymWithdrawalPauseKeys,
       'No active chain-specific asymmetric withdrawal pause keys were observed.',
-      'Asymmetric liquidity withdrawals are paused for one or more chains'
+      aggregateControlDescription('PauseAsymWithdrawal-*')
     ),
-    optionalPauseControl(mimir, 'RUNEPoolHaltDeposit', 'RUNEPool deposits', 'RUNEPool deposits are halted when active.', 'at-or-after-height', thorchainHeight),
-    optionalPauseControl(mimir, 'RUNEPoolHaltWithdraw', 'RUNEPool withdrawals', 'RUNEPool withdrawals are halted when active.', 'at-or-after-height', thorchainHeight),
-    pauseControl(mimir, 'PAUSELOANS', 'Loans', 'Legacy loan actions are paused when active.'),
-    pauseControl(mimir, 'HALTCHAINGLOBAL', 'Chain observation', 'Global chain observation is halted when active.', 'at-or-after-height', thorchainHeight),
-    optionalPauseControl(mimir, 'NODEPAUSECHAINGLOBAL', 'Node chain pause', 'Node-requested chain pausing is active until this height when the Mimir key is active.', 'until-height', thorchainHeight),
-    pauseControl(mimir, 'HALTCHURNING', 'Churning', 'Validator/vault rotation is halted when active.', 'at-or-after-height', thorchainHeight),
-    optionalPauseControl(mimir, 'PauseBond', 'Bonding', 'Node bond actions are paused when active.'),
-    optionalPauseControl(mimir, 'PauseUnbond', 'Unbonding', 'Node unbond actions are paused when active.'),
-    optionalPauseControl(mimir, 'HaltRebond', 'Rebonding', 'Node rebond actions are halted when active.'),
-    optionalPauseControl(mimir, 'HaltOperatorRotate', 'Operator rotation', 'Node operator rotation is halted when active.'),
-    optionalPauseControl(mimir, 'HaltOracle', 'Oracle', 'Oracle operations are halted when active.'),
-    optionalPauseControl(mimir, 'HALTSECUREDGLOBAL', 'Secured assets', 'Secured-asset operations are halted when active.', 'at-or-after-height', thorchainHeight),
+    optionalPauseControl(mimir, 'RUNEPoolHaltDeposit', controlLabel('RUNEPoolHaltDeposit'), controlDescription('RUNEPoolHaltDeposit'), 'at-or-after-height', thorchainHeight),
+    optionalPauseControl(mimir, 'RUNEPoolHaltWithdraw', controlLabel('RUNEPoolHaltWithdraw'), controlDescription('RUNEPoolHaltWithdraw'), 'at-or-after-height', thorchainHeight),
+    pauseControl(mimir, 'PAUSELOANS', controlLabel('PAUSELOANS'), controlDescription('PAUSELOANS')),
+    pauseControl(mimir, 'HALTCHAINGLOBAL', controlLabel('HALTCHAINGLOBAL'), controlDescription('HALTCHAINGLOBAL'), 'at-or-after-height', thorchainHeight),
+    optionalPauseControl(mimir, 'NODEPAUSECHAINGLOBAL', controlLabel('NODEPAUSECHAINGLOBAL'), controlDescription('NODEPAUSECHAINGLOBAL'), 'until-height', thorchainHeight),
+    pauseControl(mimir, 'HALTCHURNING', controlLabel('HALTCHURNING'), controlDescription('HALTCHURNING'), 'at-or-after-height', thorchainHeight),
+    optionalPauseControl(mimir, 'PauseBond', controlLabel('PauseBond'), controlDescription('PauseBond')),
+    optionalPauseControl(mimir, 'PauseUnbond', controlLabel('PauseUnbond'), controlDescription('PauseUnbond')),
+    optionalPauseControl(mimir, 'HaltRebond', controlLabel('HaltRebond'), controlDescription('HaltRebond')),
+    optionalPauseControl(mimir, 'HaltOperatorRotate', controlLabel('HaltOperatorRotate'), controlDescription('HaltOperatorRotate')),
+    optionalPauseControl(mimir, 'HaltOracle', controlLabel('HaltOracle'), controlDescription('HaltOracle')),
+    optionalPauseControl(mimir, 'HALTSECUREDGLOBAL', controlLabel('HALTSECUREDGLOBAL'), controlDescription('HALTSECUREDGLOBAL'), 'at-or-after-height', thorchainHeight),
     aggregatePauseControl(
       'HaltSecuredDeposit-*',
-      'Secured deposits',
+      controlLabel('HaltSecuredDeposit-*'),
       securedAssetDepositPauseKeys,
       invalidSecuredAssetDepositPauseKeys,
       'No active secured-asset deposit pause keys were observed.',
-      'Secured-asset deposits are paused for one or more chains',
+      aggregateControlDescription('HaltSecuredDeposit-*'),
       scheduledSecuredAssetDepositPauseKeys
     ),
     aggregatePauseControl(
       'HaltSecuredWithdraw-*',
-      'Secured withdrawals',
+      controlLabel('HaltSecuredWithdraw-*'),
       securedAssetWithdrawPauseKeys,
       invalidSecuredAssetWithdrawPauseKeys,
       'No active secured-asset withdrawal pause keys were observed.',
-      'Secured-asset withdrawals are paused for one or more chains',
+      aggregateControlDescription('HaltSecuredWithdraw-*'),
       scheduledSecuredAssetWithdrawPauseKeys
     ),
-    optionalPauseControl(mimir, 'TCYCLAIMINGHALT', 'TCY claiming', 'TCY claim actions are halted when active.'),
-    optionalPauseControl(mimir, 'TCYCLAIMINGSWAPHALT', 'TCY claim swaps', 'TCY claim swap actions are halted when active.'),
-    optionalPauseControl(mimir, 'TCYSTAKINGHALT', 'TCY staking', 'TCY staking actions are halted when active.'),
-    optionalPauseControl(mimir, 'TCYSTAKEDISTRIBUTIONHALT', 'TCY distributions', 'TCY stake distribution is halted when active.'),
-    optionalPauseControl(mimir, 'TCYUNSTAKINGHALT', 'TCY unstaking', 'TCY unstaking actions are halted when active.'),
-    optionalPauseControl(mimir, 'HALTTCYTRADING', 'TCY trading', 'TCY trading is halted when active.', 'at-or-after-height', thorchainHeight),
-    optionalPauseControl(mimir, 'HALTWASMGLOBAL', 'WASM/app layer', 'WASM/app-layer actions are halted when active.', 'after-height', thorchainHeight),
+    optionalPauseControl(mimir, 'TCYCLAIMINGHALT', controlLabel('TCYCLAIMINGHALT'), controlDescription('TCYCLAIMINGHALT')),
+    optionalPauseControl(mimir, 'TCYCLAIMINGSWAPHALT', controlLabel('TCYCLAIMINGSWAPHALT'), controlDescription('TCYCLAIMINGSWAPHALT')),
+    optionalPauseControl(mimir, 'TCYSTAKINGHALT', controlLabel('TCYSTAKINGHALT'), controlDescription('TCYSTAKINGHALT')),
+    optionalPauseControl(mimir, 'TCYSTAKEDISTRIBUTIONHALT', controlLabel('TCYSTAKEDISTRIBUTIONHALT'), controlDescription('TCYSTAKEDISTRIBUTIONHALT')),
+    optionalPauseControl(mimir, 'TCYUNSTAKINGHALT', controlLabel('TCYUNSTAKINGHALT'), controlDescription('TCYUNSTAKINGHALT')),
+    optionalPauseControl(mimir, 'HALTTCYTRADING', controlLabel('HALTTCYTRADING'), controlDescription('HALTTCYTRADING'), 'at-or-after-height', thorchainHeight),
+    optionalPauseControl(mimir, 'HALTWASMGLOBAL', controlLabel('HALTWASMGLOBAL'), controlDescription('HALTWASMGLOBAL'), 'after-height', thorchainHeight),
     aggregatePauseControl(
       'HaltWasmDeployer-*',
-      'WASM deployers',
+      controlLabel('HaltWasmDeployer-*'),
       wasmDeployerHaltKeys,
       invalidWasmDeployerHaltKeys,
       'No active WASM deployer halt keys were observed.',
-      'WASM deployments are halted for one or more scoped deployers',
+      aggregateControlDescription('HaltWasmDeployer-*'),
       scheduledWasmDeployerHaltKeys
     ),
     aggregatePauseControl(
       'HaltWasmCs-*',
-      'WASM code checksums',
+      controlLabel('HaltWasmCs-*'),
       wasmCodeHashHaltKeys,
       invalidWasmCodeHashHaltKeys,
       'No active WASM code-checksum halt keys were observed.',
-      'WASM code checksum execution is halted for one or more scoped checksums',
+      aggregateControlDescription('HaltWasmCs-*'),
       scheduledWasmCodeHashHaltKeys
     ),
     aggregatePauseControl(
       'HaltWasmContract-*',
-      'WASM contracts',
+      controlLabel('HaltWasmContract-*'),
       wasmContractHaltKeys,
       invalidWasmContractHaltKeys,
       'No active WASM contract halt keys were observed.',
-      'WASM contract execution is halted for one or more scoped contracts',
+      aggregateControlDescription('HaltWasmContract-*'),
       scheduledWasmContractHaltKeys
     ),
-    enablementControl(mimir, 'TRADEACCOUNTSENABLED', 'Trade accounts', 'Trade accounts are unavailable when disabled.'),
-    enablementControl(mimir, 'TRADEACCOUNTSDEPOSITENABLED', 'Trade deposits', 'Trade-account deposits are unavailable when disabled.'),
-    optionalPauseControl(mimir, 'MANUALSWAPSTOSYNTHDISABLED', 'Manual synth swaps', 'Manual swaps to synthetic assets are disabled when active.'),
-    enablementControl(mimir, 'RUNEPOOLENABLED', 'RUNEPool', 'RUNEPool is unavailable when disabled.'),
-    enablementControl(mimir, 'BANKSENDENABLED', 'Bank sends', 'Native bank-send messages are unavailable when disabled.'),
+    enablementControl(mimir, 'TRADEACCOUNTSENABLED', controlLabel('TRADEACCOUNTSENABLED'), controlDescription('TRADEACCOUNTSENABLED')),
+    enablementControl(mimir, 'TRADEACCOUNTSDEPOSITENABLED', controlLabel('TRADEACCOUNTSDEPOSITENABLED'), controlDescription('TRADEACCOUNTSDEPOSITENABLED')),
+    optionalPauseControl(mimir, 'MANUALSWAPSTOSYNTHDISABLED', controlLabel('MANUALSWAPSTOSYNTHDISABLED'), controlDescription('MANUALSWAPSTOSYNTHDISABLED')),
+    enablementControl(mimir, 'RUNEPOOLENABLED', controlLabel('RUNEPOOLENABLED'), controlDescription('RUNEPOOLENABLED')),
+    enablementControl(mimir, 'BANKSENDENABLED', controlLabel('BANKSENDENABLED'), controlDescription('BANKSENDENABLED')),
   ];
 
   const activeControlKeys = monitoredControls
@@ -2585,6 +2846,8 @@ export class ThornodeAPI {
   static async getSwapQuoteProbe(request: SwapQuoteRequest): Promise<LiveDataResult<SwapQuoteProbeResult>> {
     const checkedAt = new Date().toISOString();
     const errors: string[] = [];
+    const sources: SourceMeta[] = [];
+    let lastProviderFailure: SwapQuoteProbeResult | undefined;
 
     try {
       validateSwapQuoteRequest(request);
@@ -2599,6 +2862,7 @@ export class ThornodeAPI {
       const controller = new AbortController();
       const timeoutId = globalThis.setTimeout(() => controller.abort(), 5000);
       const source = sourceForSwapQuote(endpoint, request);
+      sources.push(source);
 
       try {
         const response = await fetch(source.url, {
@@ -2608,7 +2872,12 @@ export class ThornodeAPI {
         const raw = await response.json();
         const result = response.ok
           ? normalizeSwapQuoteSuccess(request, raw)
-          : normalizeSwapQuoteFailure(request, raw);
+          : normalizeSwapQuoteFailure(request, raw, response.status);
+        if (!response.ok && shouldFailoverSwapQuote(result)) {
+          lastProviderFailure = result;
+          errors.push(`${endpoint.label}: ${result.failure?.message ?? 'quote provider response needs review'}`);
+          continue;
+        }
         activeEndpoint = endpointIndex;
         return liveOk(result, source, checkedAt);
       } catch (error) {
@@ -2619,8 +2888,98 @@ export class ThornodeAPI {
       }
     }
 
+    if (lastProviderFailure) {
+      return {
+        status: 'degraded',
+        data: lastProviderFailure,
+        error: `THORNode quote providers did not return a usable route response (${errors.join('; ')})`,
+        source: sources[0],
+        sources,
+        checkedAt,
+      };
+    }
+
     return liveDegraded<SwapQuoteProbeResult>(
       `THORNode quote sources did not provide a usable response (${errors.join('; ')})`,
+      sources.length > 0 ? sources : THORNODE_ENDPOINTS,
+      checkedAt
+    );
+  }
+
+  static async getRunePoolPolStatus(): Promise<LiveDataResult<RunePoolPolStatus>> {
+    const checkedAt = new Date().toISOString();
+    const errors: string[] = [];
+    const warningSnapshots: Array<{
+      endpointIndex: number;
+      status: RunePoolPolStatus;
+      sources: SourceMeta[];
+    }> = [];
+
+    for (let i = 0; i < THORNODE_ENDPOINTS.length; i += 1) {
+      const endpointIndex = (activeEndpoint + i) % THORNODE_ENDPOINTS.length;
+      const endpoint = THORNODE_ENDPOINTS[endpointIndex];
+
+      try {
+        const latestBlock = await requestCosmosFromEndpoint<unknown>(endpoint, '/base/tendermint/v1beta1/blocks/latest');
+        const latestBlockInfo = getTendermintLatestBlockInfo(latestBlock);
+        if (latestBlockInfo === null) {
+          throw new Error('THORNode latest block response did not include a usable height and timestamp.');
+        }
+
+        const snapshotHeight = getConservativeSnapshotHeight(latestBlockInfo.height);
+        const sources = runePoolPolStatusSources(endpoint, snapshotHeight);
+        const checkedAtMs = Date.parse(checkedAt);
+        const blockTimeMs = Date.parse(latestBlockInfo.time);
+        const blockAgeSeconds = Number.isNaN(checkedAtMs) || Number.isNaN(blockTimeMs)
+          ? undefined
+          : Math.round((checkedAtMs - blockTimeMs) / 1000);
+        const [mimir, runepool] = await Promise.all([
+          requestFromEndpoint<unknown>(endpoint, '/mimir', snapshotHeight),
+          requestFromEndpoint<unknown>(endpoint, '/runepool', snapshotHeight),
+        ]);
+        const sourceFreshness: RunePoolSourceFreshness = {
+          thorchainHeight: snapshotHeight,
+          thorchainBlockTime: latestBlockInfo.time,
+          thorchainBlockAgeSeconds: blockAgeSeconds,
+          snapshotPinned: true,
+        };
+        const baseStatus = deriveRunePoolPolStatus(mimir, runepool, sourceFreshness);
+        const sourceWarnings = [
+          ...baseStatus.sourceWarnings,
+          ...getRunePoolBlockAgeWarnings(blockAgeSeconds),
+        ];
+        const uniqueWarnings = [...new Set(sourceWarnings)].sort((left, right) => left.localeCompare(right));
+        const status = {
+          ...baseStatus,
+          sourceWarnings: uniqueWarnings,
+          sourceWarningDetails: getRunePoolSourceWarningDetails(uniqueWarnings),
+        };
+
+        if (status.sourceWarnings.length === 0) {
+          activeEndpoint = endpointIndex;
+          return liveOk(status, sources, checkedAt);
+        }
+
+        warningSnapshots.push({ endpointIndex, status, sources });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unknown THORNode RUNEPool status error';
+        errors.push(`${endpoint.label}: ${message}`);
+      }
+    }
+
+    const [bestWarningSnapshot] = [...warningSnapshots]
+      .sort((left, right) => (
+        getRunePoolWarningSnapshotScore(left.status) - getRunePoolWarningSnapshotScore(right.status) ||
+        left.status.sourceWarnings.length - right.status.sourceWarnings.length ||
+        left.endpointIndex - right.endpointIndex
+      ));
+    if (bestWarningSnapshot) {
+      activeEndpoint = bestWarningSnapshot.endpointIndex;
+      return liveOk(bestWarningSnapshot.status, bestWarningSnapshot.sources, checkedAt);
+    }
+
+    return liveDegraded<RunePoolPolStatus>(
+      `THORNode RUNEPool sources did not provide a usable snapshot (${errors.join('; ')})`,
       THORNODE_ENDPOINTS,
       checkedAt
     );

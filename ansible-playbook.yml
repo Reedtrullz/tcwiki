@@ -7,6 +7,7 @@
     image_ref: "{{ lookup('env', 'IMAGE_REF') }}"
     app_version: "{{ lookup('env', 'APP_VERSION') }}"
     csp_enforce: "{{ lookup('env', 'CSP_ENFORCE') | default('1', true) }}"
+    require_ready: "{{ lookup('env', 'REQUIRE_READY') | default('0', true) }}"
 
   pre_tasks:
     - name: Require immutable image ref
@@ -18,7 +19,8 @@
           - app_version is defined
           - app_version | length > 0
           - csp_enforce in ['0', '1']
-        fail_msg: "IMAGE_REF must be a digest ref, APP_VERSION must be set, and CSP_ENFORCE must be 0 or 1."
+          - require_ready in ['0', '1']
+        fail_msg: "IMAGE_REF must be a digest ref, APP_VERSION must be set, CSP_ENFORCE and REQUIRE_READY must be 0 or 1."
 
     - name: Get current container image
       community.docker.docker_container_info:
@@ -169,9 +171,9 @@
           retries: 6
           delay: 5
 
-        - name: Verify candidate readiness shape
+        - name: Verify candidate readiness contract
           uri:
-            url: "http://localhost:3004/api/ready"
+            url: "http://localhost:3004/api/ready?contract=strict"
             return_content: yes
             timeout: 10
             status_code: [200, 503]
@@ -193,6 +195,13 @@
           debug:
             msg: "Candidate readiness degraded; app/version/image proof passed. Reasons: {{ candidate_ready_check.json.reasons | default([]) }}"
           when: candidate_ready_check.json.ready != true
+
+        - name: Block degraded candidate readiness when required
+          assert:
+            that:
+              - candidate_ready_check.json.ready == true
+            fail_msg: "Candidate readiness is degraded and REQUIRE_READY=1; live container was left untouched. Reasons: {{ candidate_ready_check.json.reasons | default([]) }}"
+          when: require_ready == '1'
 
         - name: Stop and remove existing container
           community.docker.docker_container:
@@ -293,9 +302,9 @@
           retries: 6
           delay: 5
 
-        - name: Verify deployed readiness
+        - name: Verify deployed readiness contract
           uri:
-            url: "http://localhost:3003/api/ready"
+            url: "http://localhost:3003/api/ready?contract=strict"
             return_content: yes
             timeout: 10
             status_code: [200, 503]
@@ -317,6 +326,13 @@
           debug:
             msg: "Readiness degraded after deploy; app/version/image proof passed. Reasons: {{ ready_check.json.reasons | default([]) }}"
           when: ready_check.json.ready != true
+
+        - name: Block degraded readiness after deploy when required
+          assert:
+            that:
+              - ready_check.json.ready == true
+            fail_msg: "Deployed readiness is degraded and REQUIRE_READY=1; rollback will be attempted. Reasons: {{ ready_check.json.reasons | default([]) }}"
+          when: require_ready == '1'
 
       rescue:
         - name: Remove candidate container after failed deploy attempt

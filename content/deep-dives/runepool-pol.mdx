@@ -1,0 +1,81 @@
+# RUNEPool And POL Evidence
+
+RUNEPool lets RUNE providers participate in protocol-owned liquidity (POL). That makes it easy to overstate: a single RUNEPool number can describe current accounting, but it does not prove future yield, safety, route health, or that deposits and withdrawals are available after the checked block.
+
+Use this as an evidence ladder for RUNEPool/POL claims, not as wallet instructions.
+
+## What This Page Can Prove
+
+This page can help you say what kind of proof a RUNEPool/POL statement needs:
+
+1. **Mechanism:** RUNEPool is aggregate exposure to POL-enabled pools, not a user-selected single pool.
+2. **Current accounting:** `/thorchain/runepool` can show global POL, provider, and reserve fields such as `value`, `pnl`, and `current_deposit` in RUNE base units.
+3. **Current availability:** Mimir and network diagnostics can show whether RUNEPool is enabled or whether RUNEPool deposits and withdrawals are halted.
+4. **Pool scope:** `POL-<Asset>` style Mimir keys identify POL-enabled pools; the exact list is live Mimir evidence, not a static wiki guarantee.
+
+If the question is "can I deposit or withdraw now?", start with `/network#network-diagnostics`. If the question is "what is the position worth?", use the [live RUNEPool/POL snapshot](/economics#runepool-pol-live), the current THORNode RUNEPool endpoint, and the checked time attached.
+
+## RUNEPool Versus LP Positions
+
+RUNEPool is not the same thing as a normal LP position:
+
+- **Ordinary LP:** the user owns liquidity units in one pool and may add or withdraw with pool-specific, chain-specific, asymmetric, and memo-shape constraints.
+- **RUNEPool provider:** the user supplies native RUNE into a RUNEPool accounting system that shares aggregate exposure across POL-enabled pools.
+- **Protocol-owned liquidity:** the protocol side of the aggregate position can move between reserve, pending, and deployed units.
+
+Official developer docs describe RUNEPool participants as exposed to RUNE plus all POL-enabled assets in aggregate. That makes "RUNEPool yield" shorthand risky. Better wording is: "The checked RUNEPool snapshot reports provider value/PnL under the current POL accounting model."
+
+## Evidence Ladder
+
+Use the narrowest evidence that matches the claim:
+
+1. **Define the claim:** mechanism explanation, current availability, current accounting, historical PnL, or investment/yield interpretation.
+2. **Check operation state:** use Network diagnostics for `RUNEPOOLENABLED`, RUNEPool deposit/withdraw halts, source warnings, provider, height, and block age.
+3. **Check accounting state:** use `/thorchain/runepool` for global `pol`, `providers`, and `reserve` fields; treat missing or malformed money fields as unavailable, not zero.
+4. **Check pool scope:** use Mimir for the current `POL-<Asset>` set; use Midgard pools only for dashboard context, not as proof that POL is active in every pool.
+5. **Check user-specific position:** use the per-provider RUNEPool endpoint only for a specific THOR address and keep it out of public examples unless the address is intentionally shared.
+
+If a statement skips one of those steps, label it as partial evidence.
+
+## Availability Checks
+
+RUNEPool current-use claims need operational evidence:
+
+- `RUNEPOOLENABLED` answers whether RUNEPool is enabled by current Mimir state.
+- RUNEPool deposit and withdrawal halt controls answer whether the action appears paused in the checked snapshot.
+- `RUNEPoolDepositMaturityBlocks` can affect when a provider is allowed to withdraw after deposit.
+- `RUNEPoolMaxReserveBackstop` can constrain withdrawals when reserve backstop limits would be exceeded.
+- Source warnings, stale blocks, unpinned sources, and malformed Mimir values should degrade the claim even when a known blocker is visible.
+
+Do not collapse these into "THORChain is paused." Say "RUNEPool deposits are halted", "RUNEPool is disabled", or "RUNEPool status needs source review" when that is what the evidence supports.
+
+## Accounting Checks
+
+The global RUNEPool endpoint can report three accounting buckets:
+
+- **`pol`:** protocol-owned-liquidity totals such as deposited RUNE, withdrawn RUNE, current value, PnL, and current deposit.
+- **`providers`:** aggregate independent-provider units, pending units, pending RUNE, value, PnL, and current deposit.
+- **`reserve`:** reserve-side units, value, PnL, and current deposit.
+
+Those fields are RUNE-denominated base-unit values. A dashboard can display them if it keeps source freshness and field availability visible. It should not turn a missing `pnl` or `value` into zero, and it should not use one current snapshot as proof that RUNEPool is profitable, safe, or outperforming ordinary LP positions.
+
+## Common Misreadings
+
+- **"RUNEPool earns RUNE automatically."** Better: current accounting may show provider PnL, but aggregate POL exposure can include impermanent loss and negative yield.
+- **"POL-enabled means every pool is safe or deep."** Better: POL scope is a current Mimir and accounting question; pool depth and route quality need separate live data.
+- **"RUNEPool is just LP without the asset side."** Better: it is aggregate POL exposure with RUNEPool units, pending units, reserve movement, and protocol accounting.
+- **"A valid runepool endpoint proves I can deposit now."** Better: accounting data and operation availability are separate checks.
+- **"Provider PnL proves future yield."** Better: it is a checked accounting value, not a forward-looking guarantee.
+
+## Non-Claims
+
+This page does not prove:
+
+- That RUNEPool deposits or withdrawals are currently open after the checked block.
+- That RUNEPool, POL, ordinary LP positions, secured assets, trade accounts, or archived Savers/Lending products are interchangeable.
+- That a current `value`, `pnl`, APY, or pool-depth number proves future yield, profitability, or investment suitability.
+- That every POL-enabled pool is liquid, routeable, safe, or competitive.
+- That a missing RUNEPool halt key means a wallet flow is supported or correctly formed.
+- That a public provider-position query should be shown without address privacy review.
+
+Keep RUNEPool/POL claims scoped to the action, endpoint, field, source, and checked time.

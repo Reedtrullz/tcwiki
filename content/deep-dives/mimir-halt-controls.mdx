@@ -1,0 +1,137 @@
+# Mimir And Halt Controls
+
+Mimir values are THORChain operational controls. They let the network change parameters, pause scoped actions, and schedule some controls without changing the protocol code every time. This article explains how to read those controls without turning a static docs page into a false current-status claim.
+
+For current availability, start with `/network#network-diagnostics`. This page is the map for interpreting the evidence.
+
+## What Mimirs Can Prove
+
+Mimirs can support a precise current-state claim when the claim names the action, scope, source, and checked height.
+
+Good wording sounds like:
+
+- "Trading is halted for BSC in this checked THORNode snapshot."
+- "A network-wide LP pause applies, so LP actions should not be described as available from this snapshot."
+- "Operation-like Mimir keys need review, so the source quality is degraded even when a specific route blocker is visible."
+
+Risky wording sounds like:
+
+- "THORChain is paused" when only LP, loan, churn, or one chain route is affected.
+- "Swaps are healthy" because no global halt key appears in one source read.
+- "This app is safe" because a WASM halt key is absent.
+
+Mimir evidence is strongest when paired with the exact key, source freshness, block height, and the user action being discussed.
+
+## Control Families
+
+The same word "halt" can apply to very different operations. Keep the families separate.
+
+### Ordinary swap controls
+
+Use these when the claim is about base-layer swaps:
+
+- `HALTTRADING` and chain-scoped trading keys.
+- `HALTSIGNING` and chain-scoped signing keys.
+- Chain halt fields from `inbound_addresses`.
+- Quote errors from THORNode `/thorchain/quote/swap` for a specific route.
+- Streaming and memo-related controls such as `StreamingSwapPause` and `HaltMemoless`.
+
+These are the controls that should drive phrases such as "ordinary swaps available", "some routes limited", or "route blocked".
+
+### LP, pool, loan, and churn controls
+
+These controls matter, but they should not make ordinary swaps look globally halted:
+
+- `PAUSELP` and chain-scoped LP controls.
+- Pool-specific deposit controls.
+- `PAUSELOANS`.
+- `HALTCHURNING`.
+- RUNEPool controls such as `RUNEPoolHaltDeposit` and `RUNEPoolHaltWithdraw`.
+
+If one of these is active, label the affected operation. Do not collapse it into "swaps paused" unless a swap control also supports that claim.
+
+### App Layer, secured-asset, and trade-account controls
+
+App Layer and account-style flows have their own controls:
+
+- `HaltWasmGlobal`, `HaltWasmDeployer-*`, `HaltWasmCs-*`, and `HaltWasmContract-*`.
+- `HaltOracle`.
+- `HaltSecuredGlobal`, `HaltSecuredDeposit-*`, and `HaltSecuredWithdraw-*`.
+- `TradeAccountsEnabled` and related trade-account deposit controls.
+
+These controls are scoped. A specific contract, code checksum, deployer, secured-asset flow, or trade-account action can be limited while ordinary swaps remain available.
+
+### Node and operator controls
+
+Node operations use another family:
+
+- `PauseBond`.
+- `PauseUnbond`.
+- `HaltRebond`.
+- `HaltOperatorRotate`.
+
+These keys affect node/operator workflows. They should not be used as route-availability proof unless the claim is about the relevant node action.
+
+## Active, Scheduled, Inactive, Absent
+
+The dashboard should distinguish four states:
+
+- **Active:** the key or source field currently blocks the scoped action.
+- **Scheduled:** the value refers to a future or height-dependent control, so the claim depends on the checked block height.
+- **Inactive:** the key is known and present but does not currently block the scoped action.
+- **Absent:** the key was not returned by the source snapshot.
+
+Absent is the easiest state to overread. A missing halt key is not full proof that every related operation is healthy. It only means that key was not present in the checked source response. Current availability still depends on inbound fields, pool state, route quote behavior, provider freshness, and whether the relevant key family is fully understood by the dashboard.
+
+## Scoped Keys And Normalization
+
+Many halt controls are scoped rather than global. Scope can come from a chain suffix, pool, contract address suffix, deployer, checksum, or account-flow family.
+
+When interpreting a scoped control:
+
+1. Normalize the chain or asset name before comparing values.
+2. Separate network-wide controls from chain-specific controls.
+3. Render network-wide controls once instead of repeating them on every chain.
+4. Preserve the exact raw key in collapsed diagnostics for auditability.
+5. Avoid inventing a healthy status for unknown or malformed keys.
+
+This is why a good diagnostics panel names the user-facing blocker first, then keeps raw Mimir keys in a disclosure. A reader needs "BSC: trading halted" before they need the exact key spelling.
+
+## Source Warnings And Review Keys
+
+Operational source warnings should degrade the data-quality label even when the visible blocker is clear.
+
+Examples:
+
+- A stale or unpinned source means the page should not present the data as a fresh snapshot.
+- A malformed Mimir value should be shown as a warning, not coerced to zero.
+- An unknown operation-like Mimir key should enter a review queue until the dashboard knows how to classify it.
+- Duplicate or conflicting scoped records should fail closed for that provider.
+
+Unknown keys are not automatically active halts. They are a source-quality problem. The practical posture is: show the known current blockers, disclose the review queue, and avoid claiming complete coverage.
+
+## What To Verify Before Claiming
+
+Before saying an action is available, limited, or paused, verify:
+
+1. The current `/network#network-diagnostics` headline and limited-chain list.
+2. Whether the claim is about ordinary swaps, LP actions, pool deposits, secured assets, app-layer contracts, TCY/RUNEPool, node operations, or a specific route quote.
+3. The exact Mimir key or source field behind the blocker.
+4. The source provider, checked time, block height, and data-quality badge.
+5. Whether a network-wide control is being repeated as inherited context or directly blocking the chain/action.
+6. For a concrete route, the current quote result from THORNode rather than a broad chain-level assumption.
+
+Use static docs for design meaning. Use live THORNode, inbound-address, quote, and Midgard evidence for current claims.
+
+## Non-Claims
+
+This page does not prove:
+
+- Future availability after the checked block or epoch.
+- That a missing halt key means an action is safe or healthy.
+- Wallet, interface, memo, inbound-address, or transaction safety.
+- Historical uptime, incident status, or post-upgrade readiness.
+- Route competitiveness, liquidity depth, or expected execution quality.
+- That every unknown operation-like key has no user impact.
+
+Mimir controls are powerful evidence, but only when the claim stays scoped to the action, key, source, and checked snapshot.

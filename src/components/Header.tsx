@@ -4,68 +4,11 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Search, Menu, X, ChevronDown } from 'lucide-react';
-import { JOURNEY_LINKS, NAV_ITEMS, TASK_INTENT_GUIDES, type TaskIntentGuide } from '@/lib/content/registry';
+import { JOURNEY_LINKS, NAV_ITEMS, TASK_GUIDE_GROUPED } from '@/lib/content/registry';
 
-interface TaskGuideGroupDefinition {
-  id: string;
-  label: string;
-  guideIds: string[];
-}
-
-interface TaskGuideGroup {
-  id: string;
-  label: string;
-  guides: TaskIntentGuide[];
-}
-
-const TASK_GUIDE_GROUPS: TaskGuideGroupDefinition[] = [
-  {
-    id: 'use-now',
-    label: 'Use Now',
-    guideIds: ['swap-availability', 'why-paused', 'liquidity-actions', 'fees-and-adr026'],
-  },
-  {
-    id: 'learn',
-    label: 'Learn & Explain',
-    guideIds: ['learn-thorchain', 'swap-refund-lifecycle', 'app-layer-and-secured-assets'],
-  },
-  {
-    id: 'build',
-    label: 'Build & Inspect',
-    guideIds: ['build-query', 'choose-interface'],
-  },
-  {
-    id: 'trust',
-    label: 'Trust & Recovery',
-    guideIds: ['source-choice', 'tcy-recovery', 'tss-security-claims'],
-  },
-] satisfies TaskGuideGroupDefinition[];
-
-function groupedTaskGuides(guides: TaskIntentGuide[]): TaskGuideGroup[] {
-  const guideById = new Map(guides.map((guide) => [guide.id, guide]));
-  const groupedIds = new Set(TASK_GUIDE_GROUPS.flatMap((group) => group.guideIds));
-  const groups = TASK_GUIDE_GROUPS.map((group) => ({
-    id: group.id,
-    label: group.label,
-    guides: group.guideIds.flatMap((guideId) => {
-      const guide = guideById.get(guideId);
-      return guide ? [guide] : [];
-    }),
-  })).filter((group) => group.guides.length > 0);
-
-  const ungrouped = guides.filter((guide) => !groupedIds.has(guide.id));
-  if (ungrouped.length > 0) {
-    groups.push({
-      id: 'more',
-      label: 'More Checks',
-      guides: ungrouped,
-    });
-  }
-
-  return groups;
-}
-
-const TASK_GUIDE_GROUPED = groupedTaskGuides(TASK_INTENT_GUIDES);
+const DESKTOP_NAV_ITEMS = NAV_ITEMS
+  .filter((item) => item.href !== '/deep-dives')
+  .map((item) => (item.href === '/stats' ? { ...item, name: 'Stats' } : item));
 
 export default function Header() {
   const pathname = usePathname();
@@ -87,10 +30,11 @@ export default function Header() {
   );
   const pathForHref = (href: string) => href.split(/[?#]/)[0] || href;
   const isCurrentLink = (href: string) => isCurrentHref(pathForHref(href));
+  const guidesRouteActive = isCurrentHref('/deep-dives');
   const navLinkClassName = (href: string) => {
     const current = isCurrentLink(href);
     return [
-      'rounded-md border px-3 py-1.5 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60',
+      'shrink-0 whitespace-nowrap rounded-md border px-2.5 py-1.5 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60',
       current
         ? 'border-accent/25 bg-accent/10 text-accent'
         : 'border-transparent text-slate-400 hover:bg-slate-800/50 hover:text-slate-100',
@@ -168,8 +112,8 @@ export default function Header() {
             </span>
           </Link>
 
-          <nav aria-label="Primary navigation" className="hidden lg:flex items-center gap-1">
-            {NAV_ITEMS.map((item) => (
+          <nav aria-label="Primary navigation" className="hidden xl:flex items-center gap-1">
+            {DESKTOP_NAV_ITEMS.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
@@ -192,8 +136,8 @@ export default function Header() {
               aria-expanded={showGuidesForPath}
               aria-controls="desktop-guides-panel"
               className={[
-                'inline-flex items-center gap-1 rounded-md border px-3 py-1.5 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60',
-                showGuidesForPath
+                'inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-md border px-2.5 py-1.5 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60',
+                showGuidesForPath || guidesRouteActive
                   ? 'border-accent/25 bg-accent/10 text-accent'
                   : 'border-transparent text-slate-400 hover:bg-slate-800/50 hover:text-slate-100',
               ].join(' ')}
@@ -217,9 +161,10 @@ export default function Header() {
               aria-label={showSearchForPath ? 'Close search' : 'Open search'}
               aria-expanded={showSearchForPath}
               aria-controls="site-search-panel"
-              className="p-2 text-slate-400 hover:text-slate-100 rounded-md hover:bg-slate-800/50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
+              className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-slate-400 transition-colors hover:bg-slate-800/50 hover:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
             >
               <Search className="h-4 w-4" />
+              <span className="hidden text-sm sm:inline xl:hidden">Search</span>
             </button>
             <button
               ref={menuButtonRef}
@@ -234,7 +179,7 @@ export default function Header() {
               aria-label={isOpenForPath ? 'Close navigation menu' : 'Open navigation menu'}
               aria-expanded={isOpenForPath}
               aria-controls="mobile-navigation"
-              className="lg:hidden p-2 text-slate-400 hover:text-slate-100 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
+              className="xl:hidden p-2 text-slate-400 hover:text-slate-100 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
             >
               {isOpenForPath ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
             </button>
@@ -286,12 +231,21 @@ export default function Header() {
                 </section>
               ))}
             </div>
+            <div className="mt-3 flex justify-end">
+              <Link
+                href="/search#search-guided-answers"
+                className="rounded-sm text-xs text-slate-400 transition-colors hover:text-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
+                onClick={() => closePanels(false)}
+              >
+                Browse guided answers →
+              </Link>
+            </div>
           </form>
         </div>
       )}
 
       {showGuidesForPath && (
-        <div id="desktop-guides-panel" className="hidden max-h-[calc(100vh-52px)] overflow-y-auto border-t border-border bg-surface-elevated px-6 py-3 lg:block">
+        <div id="desktop-guides-panel" className="hidden max-h-[calc(100vh-52px)] overflow-y-auto border-t border-border bg-surface-elevated px-6 py-3 xl:block">
           <nav aria-label="Guide links" className="mx-auto grid max-w-7xl gap-4 xl:grid-cols-[0.95fr_1.35fr]">
             <section aria-labelledby="desktop-reader-paths">
               <p id="desktop-reader-paths" className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
@@ -313,9 +267,18 @@ export default function Header() {
               </div>
             </section>
             <section aria-labelledby="desktop-common-tasks">
-              <p id="desktop-common-tasks" className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
-                Common Tasks
-              </p>
+              <div className="mb-2 flex items-center justify-between gap-3">
+                <p id="desktop-common-tasks" className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                  Common Tasks
+                </p>
+                <Link
+                  href="/search#search-guided-answers"
+                  className="rounded-sm text-[11px] text-slate-400 transition-colors hover:text-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
+                  onClick={() => closePanels(false)}
+                >
+                  All guided answers
+                </Link>
+              </div>
               <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
                 {TASK_GUIDE_GROUPED.map((group) => (
                   <section key={group.id} aria-labelledby={`desktop-task-group-${group.id}`}>
@@ -345,7 +308,7 @@ export default function Header() {
       )}
 
       {isOpenForPath && (
-        <div id="mobile-navigation" className="max-h-[calc(100vh-52px)] overflow-y-auto overscroll-contain border-t border-border bg-surface-elevated lg:hidden">
+        <div id="mobile-navigation" className="max-h-[calc(100vh-52px)] overflow-y-auto overscroll-contain border-t border-border bg-surface-elevated xl:hidden">
           <nav aria-label="Mobile navigation" className="px-4 py-2 space-y-0.5">
             <p className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
               Sections
@@ -380,6 +343,14 @@ export default function Header() {
             <p className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
               Common Tasks
             </p>
+            <Link
+              href="/search#search-guided-answers"
+              aria-current={isCurrentLink('/search#search-guided-answers') ? 'page' : undefined}
+              className={mobileLinkClassName('/search#search-guided-answers')}
+              onClick={() => closePanels(false)}
+            >
+              All guided answers
+            </Link>
             {TASK_GUIDE_GROUPED.map((group) => (
               <section key={group.id} aria-labelledby={`mobile-task-group-${group.id}`}>
                 <p id={`mobile-task-group-${group.id}`} className="px-3 pb-1 pt-3 text-[10px] font-semibold uppercase tracking-wider text-slate-500">

@@ -16,10 +16,12 @@ export function RouteSourcePosture({
   className,
 }: RouteSourcePostureProps) {
   return (
-    <Card className={className}>
+    <Card className={className} role="region" aria-labelledby="route-source-posture-heading">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">Page Source Posture</p>
+          <p id="route-source-posture-heading" className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
+            Page Source Posture
+          </p>
           <FreshnessMeta
             freshness={{
               checkedAt: entry.reviewedAt,

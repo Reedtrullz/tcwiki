@@ -1,6 +1,6 @@
-import MidgardAPI from '@/lib/api/midgard';
-import ThornodeAPI from '@/lib/api/thornode';
+import { getReadinessUpstreamSnapshot } from '@/lib/readiness-snapshot';
 import { getRuntimeMetadata } from '@/lib/runtime-metadata';
+import { assertReadinessContract } from '../../../../scripts/lib/readiness-contract.mjs';
 import type {
   DynamicL1FeeStatus,
   LiveDataResult,
@@ -13,6 +13,18 @@ import type {
 } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
+
+function wantsStrictContract(request: Request | undefined) {
+  if (!request) {
+    return false;
+  }
+
+  try {
+    return new URL(request.url).searchParams.get('contract') === 'strict';
+  } catch {
+    return false;
+  }
+}
 
 function runtimeMetadata() {
   const runtime = getRuntimeMetadata();
@@ -48,23 +60,6 @@ function sourceCheckWithError<T>(result: LiveDataResult<T>, error?: string): Rea
     ...sourceCheck(result),
     error: error ?? result.error,
   };
-}
-
-async function safeLiveCheck<T>(
-  label: string,
-  checkedAt: string,
-  operation: () => Promise<LiveDataResult<T>>
-): Promise<LiveDataResult<T>> {
-  try {
-    return await operation();
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown readiness check failure';
-    return {
-      status: 'degraded',
-      checkedAt,
-      error: `${label} readiness check failed: ${message}`,
-    };
-  }
 }
 
 function degradedReason(label: string, result: LiveDataResult<unknown>) {
@@ -277,6 +272,18 @@ function hasExactDynamicFeeSources(sources: Array<{ url: string }> | undefined) 
   ].every((predicate) => sourceUrlMatches(sources, predicate));
 }
 
+function hasExactRunePoolPolSources(sources: Array<{ url: string }> | undefined) {
+  if (!sources?.length) {
+    return false;
+  }
+
+  return [
+    (url: URL) => sourcePathEndsWith(url.pathname, '/base/tendermint/v1beta1/blocks/latest'),
+    (url: URL) => isHeightPinnedSource(url, '/mimir'),
+    (url: URL) => isHeightPinnedSource(url, '/runepool'),
+  ].every((predicate) => sourceUrlMatches(sources, predicate));
+}
+
 function getMidgardSourceWarnings(
   health: LiveDataResult<MidgardHealth>,
   visibleSources: Array<[string, LiveDataResult<unknown>]>
@@ -321,22 +328,30 @@ function getDynamicFeeWarningDetails(warnings: string[]) {
   })));
 }
 
+function getRunePoolPolWarningDetails(warnings: string[]) {
+  return uniqueSourceWarningDetails(warnings.map((warning) => classifyReadinessWarning(warning, {
+    action: 'Treat RUNEPool/POL readiness as degraded until THORNode returns a complete, pinned, warning-free RUNEPool/POL snapshot.',
+  })));
+}
+
 function dynamicFeeHistorySampleCount(status: DynamicL1FeeStatus | undefined) {
   return status?.histories.reduce((total, thorname) => (
     total + thorname.pairs.reduce((pairTotal, pair) => pairTotal + pair.history.length, 0)
   ), 0);
 }
 
-export async function GET() {
-  const checkedAt = new Date().toISOString();
-  const [midgard, midgardNetwork, midgardPools, midgardEarnings, thornode, dynamicFees] = await Promise.all([
-    safeLiveCheck('Midgard health', checkedAt, () => MidgardAPI.getHealth()),
-    safeLiveCheck('Midgard network data', checkedAt, () => MidgardAPI.getNetworkData()),
-    safeLiveCheck('Midgard pools data', checkedAt, () => MidgardAPI.getPools('available')),
-    safeLiveCheck('Midgard earnings history', checkedAt, () => MidgardAPI.getHistory('day', 1)),
-    safeLiveCheck('THORNode network status', checkedAt, () => ThornodeAPI.getNetworkStatus()),
-    safeLiveCheck('THORNode dynamic fee status', checkedAt, () => ThornodeAPI.getDynamicL1FeeStatus()),
-  ]);
+export async function GET(request?: Request) {
+  const strictContract = wantsStrictContract(request);
+  const {
+    checkedAt,
+    midgard,
+    midgardNetwork,
+    midgardPools,
+    midgardEarnings,
+    thornode,
+    dynamicFees,
+    runePoolPol,
+  } = await getReadinessUpstreamSnapshot();
   const reasons: string[] = [];
   const computedThornodeWarnings: string[] = [];
   const poolsError = dataReady(midgardPools) && !nonEmptyDataReady(midgardPools)
@@ -368,6 +383,17 @@ export async function GET() {
   ) {
     computedThornodeWarnings.push(`THORNode network status source ${thornode.source.label} differs from dynamic fee source ${dynamicFees.source.label}.`);
   }
+  if (
+    thornode.status === 'ok' &&
+    thornode.data !== undefined &&
+    thornode.source &&
+    runePoolPol.status === 'ok' &&
+    runePoolPol.data !== undefined &&
+    runePoolPol.source &&
+    !sameSourceGroup(thornode.source.url, runePoolPol.source.url)
+  ) {
+    computedThornodeWarnings.push(`THORNode network status source ${thornode.source.label} differs from RUNEPool/POL source ${runePoolPol.source.label}.`);
+  }
   if (thornode.status === 'ok' && thornode.data !== undefined && !hasExactThornodeNetworkSources(thornode.sources)) {
     computedThornodeWarnings.push('THORNode network status sources do not include exact pinned endpoint evidence.');
   }
@@ -375,6 +401,11 @@ export async function GET() {
     dynamicFees.data !== undefined &&
     !hasExactDynamicFeeSources(dynamicFees.sources)
     ? ['THORNode dynamic fee sources do not include exact pinned endpoint evidence.']
+    : [];
+  const runePoolPolExactSourceWarnings = runePoolPol.status === 'ok' &&
+    runePoolPol.data !== undefined &&
+    !hasExactRunePoolPolSources(runePoolPol.sources)
+    ? ['THORNode RUNEPool/POL sources do not include exact pinned endpoint evidence.']
     : [];
   const midgardSourceWarnings = [
     ...(midgardHeightLagBlocks !== undefined && midgardHeightLagBlocks > 20
@@ -412,6 +443,18 @@ export async function GET() {
     ...dynamicFeeSourceWarningDetails.map((detail) => detail.message),
     ...dynamicFeeExactSourceWarnings,
   ]);
+  const runePoolPolClientWarningDetails = runePoolPol.data?.sourceWarningDetails?.length
+    ? runePoolPol.data.sourceWarningDetails
+    : getRunePoolPolWarningDetails(runePoolPol.data?.sourceWarnings ?? []);
+  const runePoolPolSourceWarningDetails = uniqueSourceWarningDetails([
+    ...runePoolPolClientWarningDetails,
+    ...getRunePoolPolWarningDetails(runePoolPolExactSourceWarnings),
+  ]);
+  const runePoolPolSourceWarnings = uniqueStrings([
+    ...(runePoolPol.data?.sourceWarnings ?? []),
+    ...runePoolPolSourceWarningDetails.map((detail) => detail.message),
+    ...runePoolPolExactSourceWarnings,
+  ]);
   const midgardSourceWarningDetails = getMidgardSourceWarningDetails(midgardSourceWarnings);
   const midgardHealthWarnings = getMidgardHealthWarnings(midgard);
   const midgardHealthReady = midgard.status === 'ok' &&
@@ -428,6 +471,9 @@ export async function GET() {
   const dynamicFeesReady = dynamicFees.status === 'ok' &&
     dynamicFees.data !== undefined &&
     dynamicFeeSourceWarnings.length === 0;
+  const runePoolPolReady = runePoolPol.status === 'ok' &&
+    runePoolPol.data !== undefined &&
+    runePoolPolSourceWarnings.length === 0;
 
   if (!midgardHealthReady) {
     reasons.push(midgard.error ?? midgard.data?.reasons.join(' ') ?? 'Midgard readiness degraded.');
@@ -459,13 +505,19 @@ export async function GET() {
   if (dynamicFeeSourceWarnings.length) {
     reasons.push(...dynamicFeeSourceWarnings);
   }
+  if (runePoolPol.status !== 'ok' || runePoolPol.data === undefined) {
+    reasons.push(degradedReason('THORNode RUNEPool/POL status', runePoolPol));
+  }
+  if (runePoolPolSourceWarnings.length) {
+    reasons.push(...runePoolPolSourceWarnings);
+  }
 
   const metadata = runtimeMetadata();
   if (metadata.runtime.strict && !metadata.runtime.verified) {
     reasons.push(...metadata.runtime.warnings);
   }
   const runtimeReady = !metadata.runtime.strict || metadata.runtime.verified;
-  const ready = midgardReady && visibleMidgardReady && thornodeReady && dynamicFeesReady && runtimeReady;
+  const ready = midgardReady && visibleMidgardReady && thornodeReady && dynamicFeesReady && runePoolPolReady && runtimeReady;
   const body: ReadinessResponse = {
     status: ready ? 'ready' : 'degraded',
     ready,
@@ -535,11 +587,53 @@ export async function GET() {
           sourceWarnings: dynamicFeeSourceWarnings,
           sourceWarningDetails: dynamicFeeSourceWarningDetails,
         },
+        runePoolPol: {
+          status: runePoolPol.status,
+          checkedAt: runePoolPol.checkedAt,
+          source: runePoolPol.source,
+          sources: runePoolPol.sources,
+          error: runePoolPol.error,
+          activePolPoolCount: runePoolPol.data?.activePolPoolCount,
+          depositMaturityBlocksState: runePoolPol.data?.depositMaturityBlocks.state,
+          depositMaturityBlocksValue: runePoolPol.data?.depositMaturityBlocks.value,
+          maxReserveBackstopState: runePoolPol.data?.maxReserveBackstop.state,
+          maxReserveBackstopValue: runePoolPol.data?.maxReserveBackstop.value,
+          minRunePoolDepthState: runePoolPol.data?.minRunePoolDepth?.state,
+          minRunePoolDepthValue: runePoolPol.data?.minRunePoolDepth?.value,
+          thorchainHeight: runePoolPol.data?.sourceFreshness.thorchainHeight,
+          snapshotPinned: runePoolPol.data?.sourceFreshness.snapshotPinned,
+          thorchainBlockTime: runePoolPol.data?.sourceFreshness.thorchainBlockTime,
+          thorchainBlockAgeSeconds: runePoolPol.data?.sourceFreshness.thorchainBlockAgeSeconds,
+          sourceWarnings: runePoolPolSourceWarnings,
+          sourceWarningDetails: runePoolPolSourceWarningDetails,
+        },
         error: thornode.error,
       },
     },
     reasons,
   };
+
+  if (strictContract) {
+    try {
+      assertReadinessContract(body);
+    } catch (error) {
+      return Response.json(
+        {
+          status: 'contract-failed',
+          ready: false,
+          checkedAt,
+          ...metadata,
+          error: error instanceof Error ? error.message : 'Readiness contract validation failed.',
+        },
+        {
+          status: 500,
+          headers: {
+            'Cache-Control': 'no-store',
+          },
+        }
+      );
+    }
+  }
 
   return Response.json(
     body,

@@ -4,6 +4,30 @@ Savers and Lending were THORFi-era features. They are useful for understanding t
 
 Official archived THORChain docs state that Savers and Lending are deprecated and no longer available. Current TCY claiming, staking, and recovery state should be checked from live protocol sources and dated announcements.
 
+## What This Page Can Prove
+
+This page can support a narrow set of historical claims:
+
+- Savers and Lending were THORFi-era products, not current wiki product instructions.
+- Savers used single-sided synthetic accounting rather than a normal paired LP position.
+- Lending was part of the same historical THORFi liability surface.
+- The THORFi unwind led to TCY recovery-token framing, but TCY is not the old Savers or Lending product returning under a new name.
+- Current TCY actions need live controls, official interfaces, and address-specific protocol evidence.
+
+It cannot prove that any Savers, Lending, TCY claim, stake, trade, unstake, or distribution action is available now.
+
+## Evidence Ladder
+
+Use the strongest evidence available for the claim being made:
+
+1. **Current TCY action:** current `/network#network-diagnostics` evidence for TCY controls such as `TCYCLAIMINGHALT`, `TCYSTAKINGHALT`, `TCYSTAKEDISTRIBUTIONHALT`, `TCYUNSTAKINGHALT`, and `HALTTCYTRADING`; then official interface and address-specific THORNode evidence.
+2. **Current recovery framing:** the [TCY Recovery Timeline](/deep-dives/tcy-recovery-timeline), official TCY docs, dated governance records, and current TCY page caveats.
+3. **Historical Savers or Lending mechanics:** archived THORChain docs and dated THORFi unwind sources. Use past tense and do not add deposit, borrow, repay, or yield instructions.
+4. **Specific claimant status:** address-specific official-interface or THORNode evidence. Static wiki pages cannot prove one user's claim, stake, or distribution state.
+5. **Third-party interface support:** interface implementation, quote or transaction construction, wallet permission surface, and current protocol diagnostics. Ecosystem presence is not a safety review.
+
+If a claim moves from "Savers once worked this way" to "a user can do this now," it is missing current evidence.
+
 ## What Savers Were
 
 Savers offered single-sided exposure through synthetic accounting. A user could deposit an external asset without pairing it with RUNE, and the protocol accounted for yield differently than a full liquidity-provider position.
@@ -34,6 +58,8 @@ Use current-only language for:
 - live Mimir pause flags
 - any claim or redemption value
 
+For the dated unwind sequence, use the [TCY Recovery Timeline](/deep-dives/tcy-recovery-timeline). This page stays focused on what the archived products were and why they should remain past-tense.
+
 ## Source Posture
 
 The stable rule for this page is conservative:
@@ -41,3 +67,35 @@ The stable rule for this page is conservative:
 - Historical mechanics can be explained in past tense.
 - Current availability must come from official docs or live THORNode state.
 - Unknown live state must be labeled unavailable or needs review, not assumed active.
+
+## Common Misreadings
+
+**"Savers are back because TCY exists."** TCY is recovery-token framing for defaulted THORFi claims. It is not the old Savers product returning as a live deposit product.
+
+**"Lending mechanics mean borrowing is available."** Historical Lending descriptions explain what existed, not what can be borrowed or repaid now.
+
+**"A claim ratio or revenue-share description proves recovery value."** TCY mechanics do not guarantee par recovery, yield, or market value.
+
+**"No local wiki warning means an interface is safe."** Current actions require live controls, official interface checks, transaction details, and wallet-specific scrutiny.
+
+**"Historical liability numbers are current debt or repayment totals."** Dated THORFi figures are snapshots. They do not prove current claimed, distributed, recovered, or outstanding amounts.
+
+## What To Verify Before Claiming
+
+Before making a Savers, Lending, or TCY statement, verify:
+
+1. Whether the statement is about historical product mechanics, TCY recovery-token framing, or current TCY operations.
+2. Official archived docs for deprecated Savers/Lending status.
+3. The TCY timeline and TCY docs for Proposal 6, claim conversion, revenue-share, and non-guarantee wording.
+4. Live TCY Mimir controls before saying claim, stake, unstake, distribution, or trading actions are available.
+5. Address-specific THORNode or official-interface evidence before discussing one claimant's status.
+
+## Non-Claims
+
+This page does not prove:
+
+- Savers or Lending are currently available.
+- A user can claim, stake, trade, unstake, or receive TCY distributions now.
+- Full recovery, par redemption, or that any claimant has been made whole.
+- TCY price, yield, suitability, or investment value.
+- That a third-party interface is safe or using current claim logic.

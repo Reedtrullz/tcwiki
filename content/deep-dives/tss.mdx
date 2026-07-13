@@ -33,3 +33,26 @@ The same report says this was not a smart-contract, bridge, oracle, multisig-ope
 Post-incident changes should be described in dated terms. THORChain's v3.19.0 upgrade post identifies restart recovery work such as TSS patches, compromised-vault exclusion, temporary Keyverify checks, and pause-safety rules. The later official exploit report says validators upgraded to v3.19.1, that THORChain plans to move away from GG20 toward alternatives such as DKLS and/or Schnorr-style approaches, and that validator-level key-sign failure monitoring is being strengthened. Proposals such as minimum validator age, gradual exposure for new validators, dual-scheme vault architecture, and bug-bounty redesign should be presented as under consideration unless a later source verifies implementation.
 
 TSS is what makes true native cross-chain liquidity possible without bridges or wrapped tokens.
+
+## What To Verify Before Claiming
+
+Before using this article for a current security, signing, or recovery claim, verify:
+
+1. Whether the claim is about historical GG20 behavior, the May 2026 exploit, the current running release, or a future migration path.
+2. Current `/network` diagnostics for signing state, chain halts, source warnings, and any visible compromised-vault or key-verification controls.
+3. Current THORNode version, upgrade notes, and validator rollout evidence before saying a mitigation is active network-wide.
+4. Whether DKLS, Schnorr, dual-scheme vaults, validator-age rules, or bug-bounty changes are implemented, planned, or only under discussion in the cited source.
+5. Whether a transaction or vault claim needs exact THORNode, explorer, or incident-report evidence instead of generic TSS design language.
+
+## Non-Claims
+
+This page does not prove:
+
+- Current vault safety, restart completion, or exploit recovery completion.
+- That every validator is upgraded, honest, or protected from the same class of fault.
+- That DKLS, Schnorr, or dual-scheme vault architecture is live unless a current source says so.
+- That Paillier/GG20 risk has been eliminated for every current signing path.
+- That signing, trading, chain observation, or a specific route is currently available.
+- That a specific transaction, outbound, or refund failed because of TSS without transaction-level evidence.
+
+Use this article as security context. Use current network diagnostics, dated release notes, and exact transaction or vault evidence before making present-tense safety claims.

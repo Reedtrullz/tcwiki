@@ -1,3 +1,4 @@
+import './require-node22.mjs';
 import { spawn } from 'node:child_process';
 import { createServer } from 'node:net';
 import { dirname, join } from 'node:path';

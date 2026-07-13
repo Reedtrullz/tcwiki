@@ -1,13 +1,15 @@
+import Link from 'next/link';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { FreshnessMeta } from '@/components/ui/FreshnessMeta';
 import { RouteSourcePosture } from '@/components/features/RouteSourcePosture';
 import { RelatedChecks, type RelatedCheck } from '@/components/features/RelatedChecks';
-import { TOKENOMICS_RECORDS } from '@/lib/data/static';
+import { getTokenomicsRecord } from '@/lib/data/static';
 import { getContentEntry } from '@/lib/content/registry';
 import { createRouteMetadata } from '@/lib/metadata';
 import { recordAnchor } from '@/lib/utils';
+import { TcyControlsPanel } from './TcyControlsPanel';
 
 export const metadata = createRouteMetadata({
   title: 'TCY And THORFi History | THORChain Wiki',
@@ -16,15 +18,22 @@ export const metadata = createRouteMetadata({
 });
 
 const entry = getContentEntry('tcy');
-const tcyRecord = TOKENOMICS_RECORDS.find((record) => record.data.id === 'tcy-recovery-context') ?? TOKENOMICS_RECORDS[0];
+
+const tcyRecord = getTokenomicsRecord('tcy-recovery-context');
 const tcyAnchor = recordAnchor('tokenomics', tcyRecord.data.id);
 
 const tcyRelatedChecks: RelatedCheck[] = [
   {
-    label: 'Historical Recovery',
-    href: '/deep-dives#deep-dive-path-historical-recovery',
-    badge: 'path',
-    description: 'Read deprecated THORFi, security mechanics, and recovery context together.',
+    label: 'Current TCY controls',
+    href: '/tcy#tcy-current-controls',
+    badge: 'live state',
+    description: 'Check current TCY halt controls before making claim, stake, distribution, unstake, or trading availability claims.',
+  },
+  {
+    label: 'TCY timeline',
+    href: '/deep-dives/tcy-recovery-timeline#what-to-check-now',
+    badge: 'deep dive',
+    description: 'Read the dated THORFi unwind and TCY recovery-token timeline before making current claims.',
   },
   {
     label: 'Recovery tracker',
@@ -39,10 +48,10 @@ const tcyRelatedChecks: RelatedCheck[] = [
     description: 'Separate archived feature context from present-day product availability.',
   },
   {
-    label: 'TCY recovery search',
-    href: '/search?q=TCY%20recovery&filter=task',
-    badge: 'task',
-    description: 'Find the recovery task route and related source-backed records.',
+    label: 'Recovery claim checks',
+    href: '/governance#governance-claim-checks',
+    badge: 'router',
+    description: 'Route TCY, exploit recovery, incident, and current-state claims through the right proof path.',
   },
 ];
 
@@ -101,6 +110,8 @@ export default function TCYPage() {
         badgeLabel="claim path"
       />
 
+      <TcyControlsPanel />
+
       <div id={tcyAnchor} className="mb-12 scroll-mt-24 rounded-lg border border-amber-500/20 bg-amber-500/5 p-5">
         <div className="flex flex-wrap items-center gap-2 mb-2">
           <Badge variant="warning">Historical</Badge>
@@ -128,6 +139,13 @@ export default function TCYPage() {
       </div>
 
       <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-5">Historical Timeline</h2>
+      <p className="mb-4 max-w-3xl text-sm leading-relaxed text-slate-400">
+        For the source-backed date sequence, use the{' '}
+        <Link href="/deep-dives/tcy-recovery-timeline" className="text-accent underline-offset-4 hover:underline">
+          TCY Recovery Timeline
+        </Link>
+        . This page keeps the quick decision matrix visible; the deep dive separates THORFi/TCY debt recovery from later post-exploit recovery records.
+      </p>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-12">
         {[
           {
