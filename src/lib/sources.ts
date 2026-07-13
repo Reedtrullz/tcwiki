@@ -14,6 +14,48 @@ export const thorchainDevDocsSource: SourceMeta = {
   notes: 'Official developer documentation root used for API and integration concepts; pair with live endpoints for current state.',
 };
 
+export const thorchainFaqSource: SourceMeta = {
+  label: 'THORChain FAQ',
+  url: 'https://docs.thorchain.org/thornodes/frequently-asked-questions',
+  retrievedAt: '2026-07-13',
+  notes: 'Official FAQ source for the 2018 founding year; it does not provide a more precise founding date.',
+};
+
+export const multichainChaosnetLaunchSource: SourceMeta = {
+  label: 'THORChain Multichain Chaosnet launch',
+  url: 'https://medium.com/thorchain/thorchain-launch-multichain-chaosnet-bb9f60008a03',
+  retrievedAt: '2026-07-13',
+  notes: 'Contemporaneous THORChain launch announcement for Multichain Chaosnet on 2021-04-13; the article explicitly describes safeguards and a future path to mainnet.',
+};
+
+export const thornodeV300TagSource: SourceMeta = {
+  label: 'THORNode v3.0.0 tag',
+  url: 'https://gitlab.com/thorchain/thornode/-/tags/v3.0.0',
+  retrievedAt: '2026-07-13',
+  notes: 'Official THORNode release tag created on 2024-12-11 with the v3.0.0 change list.',
+};
+
+export const thorchain2024YearEndSource: SourceMeta = {
+  label: 'THORChain 2024 year-end report',
+  url: 'https://blog.thorchain.org/thorchain-2024-year-end-report-q4-report/',
+  retrievedAt: '2026-07-13',
+  notes: 'Official Q4 report describing the Cosmos SDK v0.50 upgrade as groundwork for future CosmWasm App Layer functionality.',
+};
+
+export const swapkitDocsSource: SourceMeta = {
+  label: 'SwapKit SDK documentation',
+  url: 'https://swapkit.github.io/SwapKit/',
+  retrievedAt: '2026-07-13',
+  notes: 'Project-maintained SDK documentation for cross-chain integrations, supported chains, wallets, and THORChain integration; current package behavior still needs direct testing.',
+};
+
+export const xchainJsSource: SourceMeta = {
+  label: 'XChainJS',
+  url: 'https://xchainjs.org/',
+  retrievedAt: '2026-07-13',
+  notes: 'Project-maintained source for the cross-chain TypeScript toolkit and its supported-chain framing; confirm package-specific releases before integration.',
+};
+
 export const liquidityProvidersSource: SourceMeta = {
   label: 'Liquidity Providers',
   url: 'https://docs.thorchain.org/technical-documentation/understanding-thorchain/roles/liquidity-providers',
