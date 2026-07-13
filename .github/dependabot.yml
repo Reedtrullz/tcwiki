@@ -18,6 +18,10 @@ updates:
       - dependency-name: eslint
         update-types:
           - version-update:semver-major
+      # Runtime and type declarations intentionally stay on the Node 22 lane.
+      - dependency-name: "@types/node"
+        update-types:
+          - version-update:semver-major
     open-pull-requests-limit: 5
   - package-ecosystem: github-actions
     directory: /
@@ -28,4 +32,9 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    ignore:
+      # Docker must match package.json engines and scripts/require-node22.mjs.
+      - dependency-name: node
+        update-types:
+          - version-update:semver-major
     open-pull-requests-limit: 5
