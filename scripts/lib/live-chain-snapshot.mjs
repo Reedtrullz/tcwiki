@@ -31,6 +31,12 @@ const MAX_EVIDENCE_MESSAGE_LENGTH = 500;
 const EVIDENCE_CHECK_NAME = 'live-chain-snapshot';
 const EVIDENCE_SCHEMA_VERSION = 1;
 
+export function latestBlockRequestUrl(cosmosUrl, nowMs = Date.now()) {
+  const requestUrl = new URL(`${cosmosUrl}${LATEST_BLOCK_PATH}`);
+  requestUrl.searchParams.set('tcwiki_cache_bust', String(nowMs));
+  return requestUrl.toString();
+}
+
 function isPlainRecord(value) {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
@@ -318,7 +324,7 @@ async function fetchJson(fetchImpl, url) {
 }
 
 async function fetchProviderSnapshot(source, fetchImpl, nowMs) {
-  const latestBlock = await fetchJson(fetchImpl, `${source.cosmosUrl}${LATEST_BLOCK_PATH}`);
+  const latestBlock = await fetchJson(fetchImpl, latestBlockRequestUrl(source.cosmosUrl, nowMs));
   const latestBlockInfo = parseLatestBlockInfo(latestBlock);
   const snapshotHeight = getConservativeSnapshotHeight(latestBlockInfo.height);
   const { ageSeconds, warnings } = getBlockAgeWarnings(latestBlockInfo.time, nowMs);

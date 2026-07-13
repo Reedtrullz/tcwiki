@@ -60,6 +60,8 @@ Expected:
 
 The monitor fails only when the full sampling window has no ready observation. A failure opens one deduplicated `Production readiness monitor degraded` issue; a later successful window closes it with recovery evidence. This alert does not authorize changing `REQUIRE_READY`, suppressing warnings, or treating a degraded 503 as an application outage. Investigate the run artifact, provider path, and VPS network first.
 
+THORNode latest-block discovery appends a unique `tcwiki_cache_bust` query value to each request. This bypasses stale intermediary cache entries observed on a geo-routed Liquify backend while keeping displayed provenance URLs canonical; the resulting state reads remain pinned to the conservative `latest - 1` height. Do not replace this with a fixed query value, a provider-IP pin, or weaker freshness thresholds.
+
 For a local one-sample diagnostic without waiting:
 
 ```bash

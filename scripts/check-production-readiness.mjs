@@ -1,7 +1,7 @@
 import './require-node22.mjs';
 import { setTimeout as wait } from 'node:timers/promises';
 import { assertReadinessContract } from './lib/readiness-contract.mjs';
-import { DEFAULT_THORNODE_SOURCES, parseLatestBlockInfo } from './lib/live-chain-snapshot.mjs';
+import { DEFAULT_THORNODE_SOURCES, latestBlockRequestUrl, parseLatestBlockInfo } from './lib/live-chain-snapshot.mjs';
 import {
   buildReadinessMonitorEvidence,
   summarizeReadinessResponse,
@@ -42,15 +42,15 @@ async function fetchWithTimeout(url) {
 }
 
 async function probeProvider(source, observedAt) {
-  const url = `${source.cosmosUrl}/base/tendermint/v1beta1/blocks/latest`;
+  const canonicalUrl = `${source.cosmosUrl}/base/tendermint/v1beta1/blocks/latest`;
   try {
-    const response = await fetchWithTimeout(url);
+    const response = await fetchWithTimeout(latestBlockRequestUrl(source.cosmosUrl, Date.parse(observedAt)));
     if (!response.ok) {
       throw new Error(`${response.status} ${response.statusText}`);
     }
     const block = parseLatestBlockInfo(await response.json());
     return {
-      source: { label: source.label, url, cosmosUrl: source.cosmosUrl },
+      source: { label: source.label, url: canonicalUrl, cosmosUrl: source.cosmosUrl },
       status: 'ok',
       height: block.height,
       blockTime: block.time,
@@ -58,7 +58,7 @@ async function probeProvider(source, observedAt) {
     };
   } catch (error) {
     return {
-      source: { label: source.label, url, cosmosUrl: source.cosmosUrl },
+      source: { label: source.label, url: canonicalUrl, cosmosUrl: source.cosmosUrl },
       status: 'error',
       error: error instanceof Error ? error.message : 'Unknown provider probe error',
     };

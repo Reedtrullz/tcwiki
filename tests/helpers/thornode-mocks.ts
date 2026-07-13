@@ -20,7 +20,7 @@ export async function mockSwapperFirstNetwork(page: Page, options: SwapperFirstN
     { asset: 'SOL.SOL', assetDepth: '100000000', runeDepth: '100000000', status: 'available' },
   ];
 
-  await page.route(/\/base\/tendermint\/v1beta1\/blocks\/latest$/, async (route) => {
+  await page.route(/\/base\/tendermint\/v1beta1\/blocks\/latest(?:\?.*)?$/, async (route) => {
     await fulfillJson(route, {
       block: {
         header: {
