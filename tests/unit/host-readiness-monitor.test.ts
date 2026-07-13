@@ -60,7 +60,7 @@ function readiness(ready: boolean) {
   });
 }
 
-function run(path: string, responses: Response[], extra: NodeJS.ProcessEnv = {}) {
+function run(path: string, responses: Response[], extra: Partial<NodeJS.ProcessEnv> = {}) {
   const bin = join(path, 'bin');
   const fixtures = join(path, 'fixtures');
   mkdirSync(bin, { recursive: true });
