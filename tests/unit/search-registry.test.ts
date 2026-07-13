@@ -455,8 +455,8 @@ describe('SEARCH_DOCUMENTS', () => {
 
     expect(gg20Incident?.reviewedAt).toBe('2026-07-05');
     expect(gg20Incident?.nextReviewDue).toBe('2026-08-05');
-    expect(dynamicFeeSourceMap?.reviewedAt).toBe('2026-07-04');
-    expect(dynamicFeeSourceMap?.nextReviewDue).toBe('2026-08-04');
+    expect(dynamicFeeSourceMap?.reviewedAt).toBe('2026-07-13');
+    expect(dynamicFeeSourceMap?.nextReviewDue).toBe('2026-08-13');
     expect(SEARCH_DOCUMENTS.find((doc) => doc.id === 'tokenomics:rune-supply-framing')?.reviewedAt).toBe('2026-07-05');
     expect(SEARCH_DOCUMENTS.find((doc) => doc.id === 'tokenomics:tcy-recovery-context')?.nextReviewDue).toBe('2026-08-05');
     expect(olderIncident?.reviewedAt).toBe('2026-07-08');
@@ -617,12 +617,15 @@ describe('SEARCH_DOCUMENTS', () => {
       'glossary:multi-prime-modulus',
       'glossary:key-sign-failures',
       'glossary:compromised-vault',
-      'glossary:keyverify',
     ]) {
       const doc = SEARCH_DOCUMENTS.find((candidate) => candidate.id === id);
       expect(doc?.href, `${id} href`).toBe(`/glossary#term-${id.replace('glossary:', '')}`);
       expect(doc?.sources.map((source) => source.label), `${id} sources`).toContain('THORChain Exploit Report #2');
     }
+
+    const keyVerify = SEARCH_DOCUMENTS.find((doc) => doc.id === 'glossary:keyverify');
+    expect(keyVerify?.href).toBe('/glossary#term-keyverify');
+    expect(keyVerify?.sources.map((source) => source.label)).toEqual(['Protocol Upgrade v3.19.0']);
   });
 
   it('labels the synthetic Mimir search record as a reference to current diagnostics', () => {
