@@ -220,10 +220,79 @@ describe('source and freshness labels', () => {
       />
     );
 
-    expect(html).toContain('Checked 2026-07-05');
-    expect(html).toContain('Review due 2026-08-05');
+    expect(html).toContain('Checked 2026-07-13');
+    expect(html).toContain('Review due 2026-08-13');
     expect(html).toContain('Source retrieved 2026-07-04');
-    expect(html).toContain('Official root-cause report for the May 2026 GG20/TSS vault exploit.');
+    expect(html).toContain('Source retrieved 2026-07-13');
+    expect(html).toContain('Official root-cause report for the May 2026 GG20/TSS vault exploit, patched v3.19.1 recovery, and still-planned migration away from GG20.');
+  });
+
+  it('locks the security and recovery cohort to the July 13 UTC primary-source review', () => {
+    const reviewedAt = '2026-07-13';
+    const nextReviewDue = '2026-08-13';
+    const expectedEntryIds = ['deep-dive-tss', 'deep-dive-tcy-recovery-timeline'];
+    const expectedGuideIds = ['tss-security-claims', 'tcy-recovery'];
+    const expectedGlossaryTerms = [
+      'Savers',
+      'TCY',
+      'DKLS',
+      'Schnorr',
+      'GG20',
+      'Paillier',
+      'MTA',
+      'Multi-prime modulus',
+      'Key-sign failures',
+      'Compromised vault',
+      'KeyVerify',
+      'TSS',
+    ];
+
+    for (const id of expectedEntryIds) {
+      expect(CONTENT_ENTRIES.find((entry) => entry.id === id), id).toEqual(
+        expect.objectContaining({ reviewedAt, nextReviewDue })
+      );
+    }
+
+    for (const id of expectedGuideIds) {
+      expect(TASK_INTENT_GUIDES.find((guide) => guide.id === id), id).toEqual(
+        expect.objectContaining({ reviewedAt, nextReviewDue })
+      );
+    }
+
+    for (const termName of expectedGlossaryTerms) {
+      expect(GLOSSARY_TERMS.find(({ term }) => term === termName), termName).toEqual(
+        expect.objectContaining({ reviewedAt, nextReviewDue })
+      );
+    }
+
+    expect(GLOSSARY_TERMS.find(({ term }) => term === 'TCY')?.confidence).toBe('official');
+    expect(GLOSSARY_TERMS.find(({ term }) => term === 'DKLS')?.sources.map(({ url }) => url)).toContain(
+      'https://blog.thorchain.org/thorchain-is-back-monero-nears-mainnet-and-pol-takes-center-stage'
+    );
+
+    const tokenomics = getTokenomicsRecord('tcy-recovery-context');
+    expect(tokenomics.freshness).toEqual(expect.objectContaining({ checkedAt: reviewedAt, nextReviewDue, confidence: 'official' }));
+
+    const thorfiIncident = SECURITY_INCIDENT_RECORDS.find(({ data }) => data.id === 'thorfi-unwind-2025');
+    const gg20Incident = SECURITY_INCIDENT_RECORDS.find(({ data }) => data.id === 'gg20-vault-exploit-2026');
+    expect(thorfiIncident?.freshness).toEqual(expect.objectContaining({ checkedAt: reviewedAt, nextReviewDue, confidence: 'official' }));
+    expect(thorfiIncident?.data.trackerStatus).toBe('historical-open');
+    expect(gg20Incident?.freshness).toEqual(expect.objectContaining({ checkedAt: reviewedAt, nextReviewDue, confidence: 'official' }));
+    expect(gg20Incident?.data.trackerStatus).toBe('current');
+    expect(gg20Incident?.data.impact).toContain('normal signing and fund movements resumed');
+    expect(gg20Incident?.data.impact).toContain('migration away from GG20 remains planned');
+
+    const thorfiGovernance = GOVERNANCE_PROPOSAL_RECORDS.find(({ data }) => data.id === 'thorfi-unwind');
+    const adr028 = GOVERNANCE_PROPOSAL_RECORDS.find(({ data }) => data.id === 'adr-028-recovery');
+    expect(thorfiGovernance?.freshness).toEqual(expect.objectContaining({ checkedAt: reviewedAt, nextReviewDue, confidence: 'official' }));
+    expect(adr028?.freshness).toEqual(expect.objectContaining({ checkedAt: reviewedAt, nextReviewDue, confidence: 'official' }));
+    expect(adr028?.data).toEqual(expect.objectContaining({
+      status: 'Accepted; implemented in v3.19.0',
+      trackerStatus: 'current',
+      sourceUrl: 'https://gitlab.com/thorchain/thornode/-/blob/v3.19.0/docs/architecture/adr-028-exploit-conciliation.md',
+    }));
+    expect(adr028?.data.description).toContain('one-time conciliation migration');
+    expect(adr028?.data.description).toContain('not proof that every loss was restored');
   });
 
   it('renders route-level source posture from registry metadata without hiding non-claims', () => {
@@ -283,7 +352,6 @@ describe('source and freshness labels', () => {
       ['CLP', 'https://docs.thorchain.org/technical-documentation/thorchain-finance/continuous-liquidity-pools'],
       ['Current-only', 'https://dev.thorchain.org/concepts/querying-thorchain.html'],
       ['Mimir', 'https://dev.thorchain.org/concepts/network-halts.html'],
-      ['TSS', 'https://docs.thorchain.org/technical-documentation/technology/bifrost-tss-and-vaults'],
     ]);
 
     for (const [termName, sourceUrl] of expectedSources) {
@@ -300,8 +368,6 @@ describe('source and freshness labels', () => {
       'App Layer',
       'CosmWasm',
       'Dynamic L1 fee',
-      'GG20',
-      'KeyVerify',
       'Outbound fee',
       'Secured asset',
       'Trade asset',
@@ -322,7 +388,10 @@ describe('source and freshness labels', () => {
     const keyVerify = GLOSSARY_TERMS.find(({ term }) => term === 'KeyVerify');
     expect(keyVerify?.definition).toContain('temporary recovery check');
     expect(keyVerify?.definition).toContain('before trading resumed');
-    expect(keyVerify?.sources.map(({ url }) => url)).toEqual(['https://blog.thorchain.org/protocol-upgrade-v3-19-0']);
+    expect(keyVerify?.sources.map(({ url }) => url)).toEqual([
+      'https://blog.thorchain.org/protocol-upgrade-v3-19-0',
+      'https://blog.thorchain.org/thorchain-exploit-report-2',
+    ]);
 
     const appLayer = GLOSSARY_TERMS.find(({ term }) => term === 'App Layer');
     expect(appLayer?.definition).toContain('Mimir-governed deployment permissioning');

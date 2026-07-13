@@ -12,7 +12,8 @@ This page can support a few narrow claims:
 - The THORFi unwind converted defaulted THORFi debt into TCY recovery-token framing.
 - Official TCY sources describe `1 TCY` per `$1` of defaulted debt and a 10% system-income allocation to TCY stakers.
 - Official TCY sources also say full debt recovery is market dependent and not guaranteed.
-- May 2026 exploit recovery records are adjacent recovery context, but they are not the same event as the January-February 2025 THORFi unwind.
+- The accepted ADR-028 source specifies a one-time v3.19.0 conciliation migration for the May 2026 exploit-created accounting gap.
+- May 2026 exploit conciliation is adjacent recovery context, but it is not the same event as the January-February 2025 THORFi unwind or proof that every loss was restored.
 
 Everything current still needs live or freshly checked evidence.
 
@@ -62,9 +63,9 @@ The public THORFi unwind article recorded the postmortem and next steps. At that
 
 For present-tense TCY claiming, staking, unstaking, distributions, or trading, use current official interfaces, THORNode endpoints, and live Mimir controls.
 
-### TCY Documentation: Mechanics And Caveats
+### Current TCY Documentation: Mechanics And Caveats
 
-The TCY developer guide and tokenomics docs describe the technical framing:
+The TCY developer guide, updated on July 12, 2026 at this review, and the tokenomics docs describe the technical framing:
 
 - TCY is a native THORChain token associated with approximately `$210M` of defaulted THORFi debt.
 - Total supply is described as `210M TCY`.
@@ -74,11 +75,13 @@ The TCY developer guide and tokenomics docs describe the technical framing:
 - TCY does not grant governance rights.
 - Full debt recovery is market dependent and not guaranteed.
 
-Those docs explain the model. They still do not prove a specific claimant's current status, a current RUNE distribution amount, or any future value.
+The developer guide also documents claim, staker, and bank-balance endpoints. Those docs establish the supported mechanics, but they still do not prove a specific claimant's status, a current RUNE distribution amount, that every interface is available, or any future value.
 
-### May-June 2026: Separate Exploit Recovery Context
+### May-June 2026: Separate Exploit Conciliation
 
-The May 2026 GG20/TSS exploit and the v3.19.0 restart are separate incident-recovery records. They belong beside the TCY timeline because readers often search for "recovery", but they should not be merged into the THORFi/TCY debt timeline.
+The May 2026 GG20/TSS exploit, the v3.19.x restart, and ADR-028 are separate incident-recovery records. They belong beside the TCY timeline because readers often search for "recovery", but they should not be merged into the THORFi/TCY debt timeline.
+
+The immutable v3.19.0 ADR-028 source marks the decision **Accepted** and specifies a one-time `Migrate15to16` conciliation waterfall. It reconciles protocol accounting with post-exploit on-chain holdings through reserve/POL, reserve-synth, Saver, and treasury layers. That proves an accepted allocation and migration design. It does not prove that every affected user recovered every loss, that no haircut occurred, or that current vault safety follows from the migration.
 
 Use the [Governance current recovery tracker](/governance#current-recovery) for ADR-028 and post-exploit records, and the [TSS deep dive](/deep-dives/tss) for signing-mechanics context.
 
@@ -102,7 +105,7 @@ Before making a current TCY claim, check:
 2. `/network#network-diagnostics` for live TCY Mimir controls such as `TCYCLAIMINGHALT`, `TCYSTAKINGHALT`, `TCYSTAKEDISTRIBUTIONHALT`, `TCYUNSTAKINGHALT`, and `HALTTCYTRADING`.
 3. THORNode TCY endpoints for current claim or staking data when a specific address or aggregate claim requires protocol-state evidence.
 4. The [TCY page](/tcy) for wiki-level caveats and source posture.
-5. The [Governance recovery tracker](/governance#current-recovery) for records that are explicitly tagged as current or needing current recovery review.
+5. The [Governance recovery tracker](/governance#current-recovery) for the accepted ADR-028 record and current GG20 incident posture; neither replaces live protocol evidence.
 
 If those checks disagree, say which source was checked, when it was checked, and what it can prove.
 
@@ -116,7 +119,9 @@ If those checks disagree, say which source was checked, when it was checked, and
 
 **"10% system income means guaranteed yield."** Revenue distributions depend on protocol income, distribution conditions, staking state, and market exposure.
 
-**"TCY recovery and exploit recovery are the same thing."** The THORFi unwind and the May 2026 GG20/TSS exploit are different events with different evidence trails.
+**"TCY recovery and exploit recovery are the same thing."** The THORFi unwind and the May 2026 GG20/TSS exploit conciliation are different events with different liabilities, decisions, and evidence trails.
+
+**"ADR-028 means every loss was restored."** The accepted ADR defines a one-time accounting and loss-allocation migration; its own waterfall includes Saver and treasury impacts, so acceptance is not universal made-whole proof.
 
 ## Non-Claims
 

@@ -13,6 +13,7 @@ import type {
 } from '@/lib/types';
 import {
   adr026DynamicFeesSource,
+  adr028ExploitConciliationSource,
   archivedSaversLendingSource as archivedFeaturesSource,
   assetNotationSource,
   cosmWasmSource as cosmwasmSource,
@@ -33,6 +34,7 @@ import {
   multichainChaosnetLaunchSource,
   networkHaltsSource,
   protocolUpgradeV319Source,
+  postRestartSecuritySource,
   queryingThorchainSource,
   runePoolDevSource,
   runePoolDocsSource,
@@ -712,9 +714,9 @@ export const TOKENOMICS_RECORDS: SourcedRecord<TokenomicsSnapshot>[] = [
       { label: 'Current claim state', value: 'Check THORNode/Mimir + interface', tone: 'current-only' },
       { label: 'Savers/Lending state', value: 'Deprecated historical products', tone: 'historical' },
     ],
-  }, [tokenomicsSource, tcyGuideSource, thorfiUnwindSource, archivedFeaturesSource], 'needs-review', {
-    checkedAt: '2026-07-05',
-    nextReviewDue: '2026-08-05',
+  }, [tokenomicsSource, tcyGuideSource, thorfiUnwindSource, archivedFeaturesSource], 'official', {
+    checkedAt: '2026-07-13',
+    nextReviewDue: '2026-08-13',
   }),
 ];
 
@@ -1053,14 +1055,14 @@ export const SECURITY_INCIDENT_RECORDS: SourcedRecord<SecurityIncident>[] = [
     date: '2025-01',
     type: 'Protocol Unwind',
     description: 'Savers and Lending were deprecated and moved to archived documentation after THORFi liability concerns.',
-    impact: 'Deprecated Savers and Lending products; TCY became the main recovery token framing.',
+    impact: 'Deprecated Savers and Lending products; Proposal 6 and current TCY docs establish the recovery-token mechanics, but do not prove par recovery or that every claimant was made whole.',
     resolved: false,
     trackerStatus: 'historical-open',
     lessons: ['Experimental yield and lending features need explicit solvency and liability framing'],
     url: 'https://docs.thorchain.org/thornodes/archived',
-  }, [archivedFeaturesSource, tokenomicsSource], 'official', {
-    checkedAt: '2026-07-05',
-    nextReviewDue: '2026-08-05',
+  }, [archivedFeaturesSource, thorfiUnwindSource, tokenomicsSource, tcyGuideSource], 'official', {
+    checkedAt: '2026-07-13',
+    nextReviewDue: '2026-08-13',
   }),
   record({
     id: 'bybit-laundering-2025',
@@ -1083,7 +1085,7 @@ export const SECURITY_INCIDENT_RECORDS: SourcedRecord<SecurityIncident>[] = [
     date: '2026-05-15',
     type: 'Exploit',
     description: 'Exploit Report #2 describes a cryptographic GG20/TSS attack: a validator planted malformed Paillier key material and used repeated failed MTA rounds to leak key-share fragments before signing alone.',
-    impact: 'Approximately $10M-$10.7M drained from one vault; Report #2 says no other vault was affected and EdDSA chains such as Solana were not exposed.',
+    impact: 'Approximately $10M-$10.7M drained from one vault; normal signing and fund movements resumed after v3.19.1 verification, while migration away from GG20 remains planned and current vault safety still needs live evidence.',
     resolved: false,
     trackerStatus: 'current',
     lessons: [
@@ -1092,9 +1094,9 @@ export const SECURITY_INCIDENT_RECORDS: SourcedRecord<SecurityIncident>[] = [
       'Do not describe EdDSA chains as exposed to this specific GG20 attack path',
     ],
     url: 'https://blog.thorchain.org/thorchain-exploit-report-2',
-  }, [exploitReport2Source, protocolUpgradeV319Source, exploitReportSource], 'official', {
-    checkedAt: '2026-07-05',
-    nextReviewDue: '2026-08-05',
+  }, [exploitReport2Source, protocolUpgradeV319Source, postRestartSecuritySource, adr028ExploitConciliationSource, exploitReportSource], 'official', {
+    checkedAt: '2026-07-13',
+    nextReviewDue: '2026-08-13',
   }),
 ];
 
@@ -1111,24 +1113,24 @@ export const GOVERNANCE_PROPOSAL_RECORDS: SourcedRecord<GovernanceProposal>[] = 
     createdDate: '2025-01',
     expiryDate: 'Historical',
     sourceUrl: 'https://docs.thorchain.org/thornodes/archived',
-  }, [archivedFeaturesSource, tokenomicsSource], 'official', {
-    checkedAt: '2026-07-05',
-    nextReviewDue: '2026-08-05',
+  }, [archivedFeaturesSource, thorfiUnwindSource, tokenomicsSource, tcyGuideSource], 'official', {
+    checkedAt: '2026-07-13',
+    nextReviewDue: '2026-08-13',
   }),
   record({
     id: 'adr-028-recovery',
     title: 'ADR-028 Recovery Path',
-    description: 'Recovery of May 2026 exploit losses was described by the first official exploit report as a community governance decision.',
+    description: 'ADR-028 is Accepted in the v3.19.0 source and specifies a one-time conciliation migration for exploit-created accounting gaps; that allocation decision is not proof that every loss was restored.',
     type: 'Recovery',
-    status: 'Needs current review',
-    trackerStatus: 'needs-review',
-    votingPeriod: 'Source-dependent',
+    status: 'Accepted; implemented in v3.19.0',
+    trackerStatus: 'current',
+    votingPeriod: 'Accepted ADR and one-time consensus migration',
     createdDate: '2026-05',
-    expiryDate: 'Current status must be checked',
-    sourceUrl: 'https://blog.thorchain.org/thorchain-exploit-report-1',
-  }, [exploitReportSource], 'needs-review', {
-    checkedAt: '2026-07-05',
-    nextReviewDue: '2026-08-05',
+    expiryDate: 'Implemented once; current recovery claims still need fresh evidence',
+    sourceUrl: 'https://gitlab.com/thorchain/thornode/-/blob/v3.19.0/docs/architecture/adr-028-exploit-conciliation.md',
+  }, [adr028ExploitConciliationSource, protocolUpgradeV319Source, exploitReport2Source, exploitReportSource], 'official', {
+    checkedAt: '2026-07-13',
+    nextReviewDue: '2026-08-13',
   }),
   record({
     id: 'mimir-operational-halts',

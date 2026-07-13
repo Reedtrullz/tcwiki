@@ -30,15 +30,27 @@ The May 15, 2026 official exploit reports say one vault was drained through a cr
 
 The same report says this was not a smart-contract, bridge, oracle, multisig-operator, or Solana/EdDSA exposure. It was specific to the GG20/ECDSA path and its Paillier cryptography assumptions. It also explains why solvency checks did not halt the loss in time: by the time funds moved, the upstream key compromise had already happened and the outbound transaction looked like a valid signature.
 
-Post-incident changes should be described in dated terms. THORChain's v3.19.0 upgrade post identifies restart recovery work such as TSS patches, compromised-vault exclusion, temporary Keyverify checks, and pause-safety rules. The later official exploit report says validators upgraded to v3.19.1, that THORChain plans to move away from GG20 toward alternatives such as DKLS and/or Schnorr-style approaches, and that validator-level key-sign failure monitoring is being strengthened. Proposals such as minimum validator age, gradual exposure for new validators, dual-scheme vault architecture, and bug-bounty redesign should be presented as under consideration unless a later source verifies implementation.
+Post-incident changes should be described in dated terms. THORChain's v3.19.0 upgrade post identifies restart recovery work such as TSS patches, compromised-vault exclusion, temporary KeyVerify checks, and pause-safety rules. The later official exploit report says validators upgraded to v3.19.1 and completed coordinated vault verification before normal signing and fund movements resumed. It also says THORChain plans to move away from GG20 toward alternatives such as DKLS and/or Schnorr-style approaches, and that validator-level key-sign failure monitoring is being strengthened. Proposals such as minimum validator age, gradual exposure for new validators, dual-scheme vault architecture, and bug-bounty redesign should be presented as under consideration unless a later source verifies implementation.
 
 TSS is what makes true native cross-chain liquidity possible without bridges or wrapped tokens.
+
+## Dated Recovery State
+
+The source-backed July 2026 boundary is narrower than either "nothing changed" or "the cryptography has been replaced":
+
+- v3.19.0 shipped the restart-oriented TSS patches, compromised-vault exclusion, temporary KeyVerify flow, and pause-safety changes.
+- Exploit Report #2 says every validator upgraded to v3.19.1 and that coordinated vault verification happened before normal signing and fund movements resumed.
+- The June 25 post-restart update says trading had resumed.
+- That same post-restart update still describes DKLS/FROST evaluation and chain-by-chain migration as future security work. It does not say current ECDSA vault signing has completed that migration.
+- The official documentation root still described THORChain with GG20 at the July 14 review. That is architecture context, not proof that every running signing path, validator, or vault is safe now.
+
+Therefore, the safe statement is: **the v3.19.x recovery restored normal network operation with patched GG20-era signing, while migration away from GG20 remained planned.** Current signing and vault-safety claims still need live diagnostics and newer release evidence.
 
 ## What To Verify Before Claiming
 
 Before using this article for a current security, signing, or recovery claim, verify:
 
-1. Whether the claim is about historical GG20 behavior, the May 2026 exploit, the current running release, or a future migration path.
+1. Whether the claim is about historical GG20 behavior, the May 2026 exploit, the v3.19.x restart, the current running release, or a future migration path.
 2. Current `/network` diagnostics for signing state, chain halts, source warnings, and any visible compromised-vault or key-verification controls.
 3. Current THORNode version, upgrade notes, and validator rollout evidence before saying a mitigation is active network-wide.
 4. Whether DKLS, Schnorr, dual-scheme vaults, validator-age rules, or bug-bounty changes are implemented, planned, or only under discussion in the cited source.
@@ -48,7 +60,7 @@ Before using this article for a current security, signing, or recovery claim, ve
 
 This page does not prove:
 
-- Current vault safety, restart completion, or exploit recovery completion.
+- Current vault safety or present availability merely because the historical v3.19.x restart completed.
 - That every validator is upgraded, honest, or protected from the same class of fault.
 - That DKLS, Schnorr, or dual-scheme vault architecture is live unless a current source says so.
 - That Paillier/GG20 risk has been eliminated for every current signing path.

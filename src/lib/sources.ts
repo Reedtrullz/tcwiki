@@ -4,7 +4,7 @@ export const thorchainDocsSource: SourceMeta = {
   label: 'THORChain Docs',
   url: 'https://docs.thorchain.org',
   retrievedAt: '2026-07-02',
-  notes: 'Official documentation root used for curated protocol background; pair with live endpoints for current state.',
+  notes: 'Official documentation root used for curated protocol background; it still describes GG20 at review time, but current safety and migration state require dated incident and release sources.',
 };
 
 export const thorchainDevDocsSource: SourceMeta = {
@@ -312,14 +312,14 @@ export const tokenomicsSource: SourceMeta = {
   label: 'RUNE and TCY tokenomics',
   url: 'https://docs.thorchain.org/tokenomics-rune-tcy',
   retrievedAt: '2026-07-05',
-  notes: 'Official RUNE and TCY tokenomics overview, including TCY supply, revenue share, and no-governance-rights caveat.',
+  notes: 'Official RUNE and TCY tokenomics overview, including TCY supply, revenue share, and no-governance-rights caveat; current amounts and distributions still require live evidence.',
 };
 
 export const tcyGuideSource: SourceMeta = {
   label: 'TCY Developer Guide',
   url: 'https://dev.thorchain.org/concepts/tcy.html',
   retrievedAt: '2026-07-05',
-  notes: 'Developer-facing TCY mechanics, claim, staking, and recovery caveats.',
+  notes: 'Developer-facing TCY mechanics, claim, staking, and recovery caveats, including the explicit warning that full debt recovery is market dependent and not guaranteed.',
 };
 
 export const appLayerSource: SourceMeta = {
@@ -354,49 +354,63 @@ export const archivedSaversLendingSource: SourceMeta = {
   label: 'Archived Savers and Lending docs',
   url: 'https://docs.thorchain.org/thornodes/archived',
   retrievedAt: '2026-07-05',
-  notes: 'Official archived feature index marking Savers, Lending, and Savers FAQ as deprecated.',
+  notes: 'Official archived feature index marking Savers and Lending as deprecated, no longer available, and preserved only for historical reference.',
 };
 
 export const thorfiUnwindSource: SourceMeta = {
   label: 'THORFi Unwind Announcement',
   url: 'https://medium.com/thorchain/thorfi-unwind-96b46dff72c0',
   retrievedAt: '2026-07-05',
-  notes: 'Dated THORFi unwind postmortem with January-February 2025 liability, pause, and Proposal 6 milestones.',
+  notes: 'Dated THORFi unwind postmortem with January-February 2025 liability, pause, and Proposal 6 milestones; its implementation-status section is historical, not current TCY availability proof.',
 };
 
 export const exploitReport1Source: SourceMeta = {
   label: 'THORChain Exploit Report #1',
   url: 'https://blog.thorchain.org/thorchain-exploit-report-1',
   retrievedAt: '2026-07-05',
-  notes: 'Official first May 2026 exploit report and ADR-028 recovery-path framing.',
+  notes: 'Official initial May 2026 exploit timeline and then-pending ADR-028 recovery framing; use Report #2 and the accepted ADR for later root-cause and conciliation status.',
 };
 
 export const exploitReport2Source: SourceMeta = {
   label: 'THORChain Exploit Report #2',
   url: 'https://blog.thorchain.org/thorchain-exploit-report-2',
   retrievedAt: '2026-07-04',
-  notes: 'Official root-cause report for the May 2026 GG20/TSS vault exploit.',
+  notes: 'Official root-cause report for the May 2026 GG20/TSS vault exploit, patched v3.19.1 recovery, and still-planned migration away from GG20.',
 };
 
 export const protocolUpgradeV319Source: SourceMeta = {
   label: 'Protocol Upgrade v3.19.0',
   url: 'https://blog.thorchain.org/protocol-upgrade-v3-19-0',
   retrievedAt: '2026-07-04',
-  notes: 'Official release summary for the post-exploit restart and recovery/security patch set.',
+  notes: 'Official v3.19.0 release summary for post-exploit restart controls, including TSS patches, compromised-vault exclusion, temporary KeyVerify, and pause safety.',
+};
+
+export const adr028ExploitConciliationSource: SourceMeta = {
+  label: 'ADR-028 Exploit Conciliation (v3.19.0)',
+  url: 'https://gitlab.com/thorchain/thornode/-/blob/v3.19.0/docs/architecture/adr-028-exploit-conciliation.md',
+  retrievedAt: '2026-07-13',
+  notes: 'Immutable v3.19.0 source marking ADR-028 Accepted and specifying the one-time Migrate15to16 conciliation waterfall; not proof that every affected user recovered every loss.',
+};
+
+export const postRestartSecuritySource: SourceMeta = {
+  label: 'THORChain Is Back: Security Update',
+  url: 'https://blog.thorchain.org/thorchain-is-back-monero-nears-mainnet-and-pol-takes-center-stage',
+  retrievedAt: '2026-07-13',
+  notes: 'Official 2026-06-25 post-restart update confirming trading resumed while DKLS/FROST migration and TSS-library publication remained future work.',
 };
 
 export const asgardTssChurnSource: SourceMeta = {
   label: 'Under the Hood: Asgard Vaults, TSS and Node Churns',
   url: 'https://blog.thorchain.org/under-the-hood-asgard-vaults-tss-and-node-churns',
   retrievedAt: '2026-07-04',
-  notes: 'Historical educational explainer for Asgard vault, TSS, and churn mechanics.',
+  notes: 'Historical 2022 educational explainer for Asgard vault, TSS, and churn mechanics; fixed node-count and cadence examples are not current configuration proof.',
 };
 
 export const bifrostTssVaultsSource: SourceMeta = {
   label: 'Bifrost, TSS and Vaults',
   url: 'https://docs.thorchain.org/technical-documentation/technology/bifrost-tss-and-vaults',
   retrievedAt: '2026-07-05',
-  notes: 'Official technology docs for Bifrost, TSS, Asgard vaults, vault migration, and churn-related mechanics.',
+  notes: 'Official technology docs for Bifrost, TSS, Asgard vaults, vault migration, and churn-related mechanics; pair with dated security sources for the current signing scheme and incident posture.',
 };
 
 export const thornodeStackSource: SourceMeta = {
