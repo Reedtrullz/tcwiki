@@ -25,6 +25,8 @@
     "generate:search": "node scripts/require-node22.mjs && node scripts/generate-mdx-search.mjs",
     "check:content": "node scripts/require-node22.mjs && node scripts/generate-mdx-search.mjs --check && node scripts/check-curated-data.mjs",
     "check:live-snapshot": "node scripts/require-node22.mjs && node scripts/check-live-chain-snapshot.mjs",
+    "check:production-readiness": "node scripts/require-node22.mjs && node scripts/check-production-readiness.mjs",
+    "report:content-reviews": "node scripts/require-node22.mjs && node scripts/report-content-reviews.mjs",
     "smoke:standalone": "node scripts/require-node22.mjs && node scripts/smoke-standalone.mjs",
     "smoke:docker": "node scripts/require-node22.mjs && node scripts/smoke-docker-runtime.mjs",
     "audit:prod": "node scripts/require-node22.mjs && npm audit --omit=dev --audit-level=moderate",

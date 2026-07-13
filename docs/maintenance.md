@@ -6,6 +6,7 @@
 - Review curated static records at least monthly, or sooner when official docs, incident reports, ADRs, or tokenomics pages change.
 - Run `npm run check:content` after editing deep dives, curated records, glossary terms, or search metadata.
 - `npm run check:content` fails when `nextReviewDue` is before today's date. Use `CONTENT_CHECK_TODAY=YYYY-MM-DD` for deterministic local audits, and use `ALLOW_OVERDUE_CONTENT=1` only with explicit release evidence and non-claims.
+- Run `npm run report:content-reviews` to build a dated, machine-readable queue across curated records, route entries, task guides, reader paths, and glossary metadata. The weekly operational workflow uploads the 30-day queue as an artifact and fails when any item is overdue. Use `--today YYYY-MM-DD` and `--horizon-days N` for deterministic planning; `--allow-overdue` is an evidence-only escape hatch, not a content refresh.
 - Run `npm run check:live-snapshot` when reviewing supported-chain records. It compares curated supported chains with same-provider, height-pinned THORNode `inbound_addresses` snapshots and fails on duplicate chains, missing operation fields, provider disagreement, stale/far-future latest-block timestamps, or curated/live chain drift; CI runs it on the scheduled/manual live-source drift job rather than every PR. Use `npm run check:live-snapshot -- --artifact .artifacts/live-source-drift/local.json` when you need a bounded JSON evidence artifact for review notes.
 - Before merging content-shape changes, use the source-posture and reader-path checklist in `CONTRIBUTING.md`. It covers route `CONTENT_ENTRIES`, `RouteSourcePosture`, `TASK_INTENT_GUIDES`, `DEEP_DIVE_READER_PATHS`, source-map non-claims, ecosystem use/check fields, and the focused tests expected when journeys or anchors change.
 
@@ -50,6 +51,7 @@ nvm use
 df -h /System/Volumes/Data # stop if free space is below 50 GiB
 npm run check:release-tracked # fails if release proof commands point at local-only proof files
 npm run check:content
+npm run report:content-reviews -- --horizon-days 30 --artifact .artifacts/content-reviews/local.json
 npm run check:live-snapshot # live-source drift audit, optional for ordinary copy-only edits
 npm run check:live-snapshot -- --artifact .artifacts/live-source-drift/local.json # optional bounded JSON evidence
 npm run audit:prod
@@ -66,5 +68,6 @@ npm run test:e2e:links # rendered internal links, anchors, and hydration/runtime
 npm run test:e2e
 npm run test:e2e:csp
 CHECK_BASE_URL=https://wiki.thorchain.no REQUIRE_RUNTIME_METADATA=1 CSP_ENFORCE=1 npm run check:runtime-url # public runtime/header drift probe
+npm run check:production-readiness -- --samples 1 --interval-ms 0 --artifact .artifacts/readiness-monitor/local.json # sampled public readiness plus direct-provider evidence
 IMAGE_REF=ghcr.io/example/tcwiki@sha256:1111111111111111111111111111111111111111111111111111111111111111 APP_VERSION=1111111111111111111111111111111111111111 ansible-playbook -i inventory/hosts.yml ansible-playbook.yml --syntax-check
 ```

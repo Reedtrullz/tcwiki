@@ -5,6 +5,7 @@ import { dirname, join } from 'node:path';
 export const RELEASE_TRACKED_SOURCE_FILES = [
   'package.json',
   '.github/workflows/ci.yml',
+  '.github/workflows/operations.yml',
   'README.md',
   'CONTRIBUTING.md',
   'docs/maintenance.md',

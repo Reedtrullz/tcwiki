@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 const workflow = readFileSync('.github/workflows/ci.yml', 'utf8');
+const operationsWorkflow = readFileSync('.github/workflows/operations.yml', 'utf8');
 const packageJson = readFileSync('package.json', 'utf8');
 const playbook = readFileSync('ansible-playbook.yml', 'utf8');
 const readme = readFileSync('README.md', 'utf8');
@@ -82,6 +83,8 @@ describe('release and browser test wiring', () => {
       'generate:search',
       'check:content',
       'check:live-snapshot',
+      'check:production-readiness',
+      'report:content-reviews',
       'smoke:standalone',
       'smoke:docker',
       'audit:prod',
@@ -102,6 +105,8 @@ describe('release and browser test wiring', () => {
       releaseTrackedCheck,
       readFileSync('scripts/check-curated-data.mjs', 'utf8'),
       readFileSync('scripts/check-live-chain-snapshot.mjs', 'utf8'),
+      readFileSync('scripts/check-production-readiness.mjs', 'utf8'),
+      readFileSync('scripts/report-content-reviews.mjs', 'utf8'),
       readFileSync('scripts/generate-mdx-search.mjs', 'utf8'),
       readFileSync('scripts/start-playwright-server.mjs', 'utf8'),
       readFileSync('scripts/start-standalone.mjs', 'utf8'),
@@ -116,6 +121,19 @@ describe('release and browser test wiring', () => {
     expect(contributing).toContain('THORChain Wiki requires Node.js 22.x');
     expect(maintenance).toContain('scripts/require-node22.mjs');
     expect(operations).toContain('scripts/require-node22.mjs');
+  });
+
+  it('samples persistent production readiness separately from weekly content review reporting', () => {
+    expect(operationsWorkflow).toContain("cron: '23 * * * *'");
+    expect(operationsWorkflow).toContain("cron: '41 6 * * 1'");
+    expect(operationsWorkflow).toContain('npm run check:production-readiness');
+    expect(operationsWorkflow).toContain('--samples 3');
+    expect(operationsWorkflow).toContain('--interval-ms 60000');
+    expect(operationsWorkflow).toContain('Open persistent readiness alert');
+    expect(operationsWorkflow).toContain('Close recovered readiness alert');
+    expect(operationsWorkflow).toContain('npm run report:content-reviews');
+    expect(operationsWorkflow).toContain('--horizon-days 30');
+    expect(releaseTrackedLib).toContain("'.github/workflows/operations.yml'");
   });
 
   it('defaults the Ansible production containers to enforced CSP with an explicit override', () => {
