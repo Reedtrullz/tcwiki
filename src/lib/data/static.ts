@@ -26,20 +26,26 @@ import {
   midgardHealthSource,
   midgardNetworkSource,
   midgardPoolsSource,
+  multichainChaosnetLaunchSource,
   networkHaltsSource,
   protocolUpgradeV319Source,
   queryingThorchainSource,
   runePoolDevSource,
   runePoolDocsSource,
   runePoolEndpointSource,
+  swapkitDocsSource,
   tcyGuideSource,
   thorchainEcosystemSource as ecosystemSource,
+  thorchain2024YearEndSource,
   thorchainDevDocsSource as developerDocs,
   thorchainDocsSource as officialDocs,
+  thorchainFaqSource,
   thorfiUnwindSource,
   thornameGuideSource,
   thornodeMimirSource,
+  thornodeV300TagSource,
   tokenomicsSource,
+  xchainJsSource,
 } from '@/lib/sources';
 import { unwrapRecord, withFreshness } from '@/lib/trust';
 
@@ -926,9 +932,9 @@ export const ECOSYSTEM_PROJECT_RECORDS: SourcedRecord<EcosystemProject>[] = [
       'Confirm current package versions, API behavior, supported chains, and integration security in upstream docs.',
       'Test quotes, memos, slippage, affiliate settings, and error handling against live endpoints before shipping.',
     ],
-  }, [developerDocs], 'curated', {
-    checkedAt: '2026-07-02',
-    nextReviewDue: '2026-08-02',
+  }, [swapkitDocsSource], 'curated', {
+    checkedAt: '2026-07-13',
+    nextReviewDue: '2026-08-13',
   }),
   record({
     id: 'xchainjs',
@@ -945,9 +951,9 @@ export const ECOSYSTEM_PROJECT_RECORDS: SourcedRecord<EcosystemProject>[] = [
       'Confirm current package versions, chain-module support, wallet handling, and breaking changes upstream.',
       'Do not treat library presence here as proof of production readiness for an integration.',
     ],
-  }, [developerDocs], 'curated', {
-    checkedAt: '2026-07-02',
-    nextReviewDue: '2026-08-02',
+  }, [xchainJsSource], 'curated', {
+    checkedAt: '2026-07-13',
+    nextReviewDue: '2026-08-13',
   }),
 ];
 
@@ -1159,28 +1165,28 @@ export const GOVERNANCE_PROPOSALS: GovernanceProposal[] = GOVERNANCE_PROPOSAL_RE
 
 export const PROTOCOL_MILESTONE_RECORDS = [
   record({
-    date: '2018-10-15',
+    date: '2018',
     title: 'THORChain Founded',
-    description: 'THORChain project founded and initial whitepaper work begins.',
-  }, [officialDocs], 'historical', {
-    checkedAt: '2026-07-02',
-    nextReviewDue: '2026-08-02',
+    description: 'A pseudonymous core team founded THORChain in 2018.',
+  }, [thorchainFaqSource], 'historical', {
+    checkedAt: '2026-07-13',
+    nextReviewDue: '2026-08-13',
   }),
   record({
     date: '2021-04-13',
-    title: 'Mainnet Chaosnet Launch',
-    description: 'Mainnet Chaosnet launches with native cross-chain swaps.',
-  }, [officialDocs], 'historical', {
-    checkedAt: '2026-07-02',
-    nextReviewDue: '2026-08-02',
+    title: 'Multichain Chaosnet Launch',
+    description: 'Multichain Chaosnet launches with native cross-chain swaps across five networks while safeguards remain in place on the path to mainnet.',
+  }, [multichainChaosnetLaunchSource], 'historical', {
+    checkedAt: '2026-07-13',
+    nextReviewDue: '2026-08-13',
   }),
   record({
-    date: '2024-12-22',
-    title: 'THORChain V3 Release',
-    description: 'Major protocol upgrade introducing app-layer and protocol improvements.',
-  }, [officialDocs], 'historical', {
-    checkedAt: '2026-07-02',
-    nextReviewDue: '2026-08-02',
+    date: '2024-12-11',
+    title: 'THORNode v3.0.0 Release',
+    description: 'THORNode v3.0.0 upgrades to Cosmos SDK v0.50 and lays groundwork for future App Layer functionality.',
+  }, [thornodeV300TagSource, thorchain2024YearEndSource], 'historical', {
+    checkedAt: '2026-07-13',
+    nextReviewDue: '2026-08-13',
   }),
   record({
     date: '2025-01',

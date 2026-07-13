@@ -9,7 +9,7 @@ import { RouteSourcePosture } from '@/components/features/RouteSourcePosture';
 import { GlossaryExplorer } from '@/components/features/GlossaryExplorer';
 import { ProtocolChainFinder } from '@/components/features/ProtocolChainFinder';
 import { GLOSSARY_TERMS } from '@/lib/content/glossary';
-import { CHAIN_RECORDS, ECOSYSTEM_PROJECT_RECORDS, getTokenomicsRecord, GOVERNANCE_PROPOSAL_RECORDS, SECURITY_INCIDENT_RECORDS } from '@/lib/data/static';
+import { CHAIN_RECORDS, ECOSYSTEM_PROJECT_RECORDS, getTokenomicsRecord, GOVERNANCE_PROPOSAL_RECORDS, PROTOCOL_MILESTONE_RECORDS, SECURITY_INCIDENT_RECORDS } from '@/lib/data/static';
 import { CONTENT_ENTRIES, SEARCH_PAGE_ENTRY, getContentEntry } from '@/lib/content/registry';
 import { continuousLiquidityPoolsSource, cosmWasmSource, liquidityProvidersSource, liveInboundSource } from '@/lib/sources';
 
@@ -261,6 +261,77 @@ describe('source and freshness labels', () => {
       expect.arrayContaining([liquidityProvidersSource, continuousLiquidityPoolsSource])
     );
     expect(GLOSSARY_TERMS.find((term) => term.term === 'App Layer')?.sources).toEqual(expect.arrayContaining([cosmWasmSource]));
+  });
+
+  it('backs the earliest August glossary review batch with claim-specific sources', () => {
+    const expectedSources = new Map([
+      ['Asgard vault', 'https://docs.thorchain.org/technical-documentation/technology/bifrost-tss-and-vaults'],
+      ['Bifrost', 'https://docs.thorchain.org/technical-documentation/technology/bifrost-tss-and-vaults'],
+      ['CLP', 'https://docs.thorchain.org/technical-documentation/thorchain-finance/continuous-liquidity-pools'],
+      ['Current-only', 'https://dev.thorchain.org/concepts/querying-thorchain.html'],
+      ['Mimir', 'https://dev.thorchain.org/concepts/network-halts.html'],
+      ['TSS', 'https://docs.thorchain.org/technical-documentation/technology/bifrost-tss-and-vaults'],
+    ]);
+
+    for (const [termName, sourceUrl] of expectedSources) {
+      const term = GLOSSARY_TERMS.find(({ term }) => term === termName);
+      expect(term?.sources.some(({ url }) => url === sourceUrl), termName).toBe(true);
+      expect(term?.reviewedAt, termName).toBe('2026-07-13');
+      expect(term?.nextReviewDue, termName).toBe('2026-08-13');
+    }
+  });
+
+  it('backs SwapKit and XChainJS listings with their maintained project sources', () => {
+    const expectedSources = new Map([
+      ['swapkit', 'https://swapkit.github.io/SwapKit/'],
+      ['xchainjs', 'https://xchainjs.org/'],
+    ]);
+
+    for (const [projectId, sourceUrl] of expectedSources) {
+      const record = ECOSYSTEM_PROJECT_RECORDS.find(({ data }) => data.id === projectId);
+      expect(record?.sources.some(({ url }) => url === sourceUrl), projectId).toBe(true);
+      expect(record?.freshness.checkedAt, projectId).toBe('2026-07-13');
+      expect(record?.freshness.nextReviewDue, projectId).toBe('2026-08-13');
+    }
+  });
+
+  it('keeps historical milestones aligned with dated primary evidence', () => {
+    expect(PROTOCOL_MILESTONE_RECORDS.slice(0, 3).map(({ data, freshness, sources }) => ({
+      date: data.date,
+      title: data.title,
+      description: data.description,
+      checkedAt: freshness.checkedAt,
+      nextReviewDue: freshness.nextReviewDue,
+      sourceUrls: sources.map(({ url }) => url),
+    }))).toEqual([
+      {
+        date: '2018',
+        title: 'THORChain Founded',
+        description: 'A pseudonymous core team founded THORChain in 2018.',
+        checkedAt: '2026-07-13',
+        nextReviewDue: '2026-08-13',
+        sourceUrls: ['https://docs.thorchain.org/thornodes/frequently-asked-questions'],
+      },
+      {
+        date: '2021-04-13',
+        title: 'Multichain Chaosnet Launch',
+        description: 'Multichain Chaosnet launches with native cross-chain swaps across five networks while safeguards remain in place on the path to mainnet.',
+        checkedAt: '2026-07-13',
+        nextReviewDue: '2026-08-13',
+        sourceUrls: ['https://medium.com/thorchain/thorchain-launch-multichain-chaosnet-bb9f60008a03'],
+      },
+      {
+        date: '2024-12-11',
+        title: 'THORNode v3.0.0 Release',
+        description: 'THORNode v3.0.0 upgrades to Cosmos SDK v0.50 and lays groundwork for future App Layer functionality.',
+        checkedAt: '2026-07-13',
+        nextReviewDue: '2026-08-13',
+        sourceUrls: [
+          'https://gitlab.com/thorchain/thornode/-/tags/v3.0.0',
+          'https://blog.thorchain.org/thorchain-2024-year-end-report-q4-report/',
+        ],
+      },
+    ]);
   });
 
   it('renders the search route posture without turning result ranking into proof', () => {

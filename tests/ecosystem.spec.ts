@@ -94,7 +94,7 @@ test.describe('THORChain Wiki Ecosystem Smoke Tests', () => {
 
     await ecosystemFilters.getByLabel('Category').selectOption('Developer Tools');
     await expect(page).toHaveURL(/category=Developer\+Tools/);
-    await expect(page.getByText(/SwapKit/i)).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'SwapKit', exact: true })).toBeVisible();
     await expect(page.getByText(/production readiness/i).first()).toBeVisible();
     await expect(page.getByText(/Showing 2 of/i)).toBeVisible();
     await expect(page.getByRole('button', { name: /^Reset$/ })).toBeVisible();
