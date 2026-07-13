@@ -11,7 +11,20 @@ import { ProtocolChainFinder } from '@/components/features/ProtocolChainFinder';
 import { GLOSSARY_TERMS } from '@/lib/content/glossary';
 import { CHAIN_RECORDS, ECOSYSTEM_PROJECT_RECORDS, getTokenomicsRecord, GOVERNANCE_PROPOSAL_RECORDS, PROTOCOL_MILESTONE_RECORDS, SECURITY_INCIDENT_RECORDS, SOURCE_MAP_SECTION_RECORDS } from '@/lib/data/static';
 import { CONTENT_ENTRIES, DEEP_DIVE_READER_PATHS, SEARCH_PAGE_ENTRY, TASK_INTENT_GUIDES, getContentEntry } from '@/lib/content/registry';
-import { continuousLiquidityPoolsSource, cosmWasmSource, liquidityProvidersSource, liveInboundSource } from '@/lib/sources';
+import {
+  continuousLiquidityPoolsSource,
+  cosmWasmSource,
+  liquifyDynamicL1FeesCurrentSource,
+  liquifyDynamicL1FeesSource,
+  liquifyLiveInboundSource,
+  liquifyMidgardEarningsSource,
+  liquifyMidgardHealthSource,
+  liquifyMidgardNetworkSource,
+  liquifyMidgardPoolsSource,
+  liquifyThornodeMimirSource,
+  liquidityProvidersSource,
+  liveInboundSource,
+} from '@/lib/sources';
 
 vi.mock('next/navigation', () => ({
   usePathname: () => '/test-route',
@@ -347,6 +360,62 @@ describe('source and freshness labels', () => {
         expect.objectContaining({ reviewedAt: '2026-07-13', nextReviewDue: '2026-08-13' })
       );
     }
+  });
+
+  it('refreshes the August 5 live-source review slice with current documented gateway endpoints', () => {
+    const gatewaySources = [
+      liquifyLiveInboundSource,
+      liquifyThornodeMimirSource,
+      liquifyMidgardHealthSource,
+      liquifyMidgardNetworkSource,
+      liquifyMidgardPoolsSource,
+      liquifyMidgardEarningsSource,
+      liquifyDynamicL1FeesSource,
+      liquifyDynamicL1FeesCurrentSource,
+    ];
+
+    expect(gatewaySources.map(({ url }) => url)).toEqual([
+      'https://gateway.liquify.com/chain/thorchain_api/thorchain/inbound_addresses',
+      'https://gateway.liquify.com/chain/thorchain_api/thorchain/mimir',
+      'https://gateway.liquify.com/chain/thorchain_midgard/v2/health',
+      'https://gateway.liquify.com/chain/thorchain_midgard/v2/network',
+      'https://gateway.liquify.com/chain/thorchain_midgard/v2/pools?status=available',
+      'https://gateway.liquify.com/chain/thorchain_midgard/v2/history/earnings?interval=day&count=30',
+      'https://gateway.liquify.com/chain/thorchain_api/thorchain/dynamic_l1_fees',
+      'https://gateway.liquify.com/chain/thorchain_api/thorchain/dynamic_l1_fees_current',
+    ]);
+    expect(gatewaySources.every(({ retrievedAt }) => retrievedAt === '2026-07-13')).toBe(true);
+
+    const contentIds = [
+      'dynamic-fees',
+      'ecosystem',
+      'stats',
+      'deep-dive-streaming-swaps-refunds',
+      'deep-dive-mimir-halt-controls',
+    ];
+    for (const id of contentIds) {
+      expect(CONTENT_ENTRIES.find((entry) => entry.id === id), id).toEqual(
+        expect.objectContaining({ reviewedAt: '2026-07-13', nextReviewDue: '2026-08-13' })
+      );
+    }
+
+    const shapeshift = ECOSYSTEM_PROJECT_RECORDS.find(({ data }) => data.id === 'shapeshift');
+    expect(shapeshift?.freshness).toEqual(
+      expect.objectContaining({ checkedAt: '2026-07-13', nextReviewDue: '2026-08-13' })
+    );
+    const currentProtocolState = SOURCE_MAP_SECTION_RECORDS.find(({ data }) => data.id === 'current-protocol-state');
+    expect(currentProtocolState?.freshness).toEqual(
+      expect.objectContaining({ checkedAt: '2026-07-13', nextReviewDue: '2026-08-13' })
+    );
+
+    const reviewedSources = [
+      ...contentIds.flatMap((id) => CONTENT_ENTRIES.find((entry) => entry.id === id)?.sources ?? []),
+      ...(shapeshift?.sources ?? []),
+      ...(currentProtocolState?.sources ?? []),
+    ];
+    const reviewedGatewaySources = reviewedSources.filter(({ url }) => url.startsWith('https://gateway.liquify.com/'));
+    expect(reviewedGatewaySources.length).toBeGreaterThan(0);
+    expect(reviewedGatewaySources.every(({ retrievedAt }) => retrievedAt === '2026-07-13')).toBe(true);
   });
 
   it('backs SwapKit and XChainJS listings with their maintained project sources', () => {

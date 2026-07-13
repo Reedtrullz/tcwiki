@@ -56,7 +56,7 @@ Expected:
 
 ## Scheduled Operational Monitoring
 
-`.github/workflows/operations.yml` samples public strict readiness hourly. Each run takes three observations one minute apart and probes the configured THORNode latest-block endpoints directly from the runner. The bounded JSON artifact therefore distinguishes app-observed source posture from runner-observed provider height and freshness without storing raw Mimir, inbound-address, or accounting payloads.
+`.github/workflows/operations.yml` samples public strict readiness twice per hour at off-peak minutes 23 and 53. The redundant schedule reduces the chance that a delayed or dropped GitHub `schedule` event leaves an hour unobserved. Each run takes three observations one minute apart and probes the configured THORNode latest-block endpoints directly from the runner. The bounded JSON artifact therefore distinguishes app-observed source posture from runner-observed provider height and freshness without storing raw Mimir, inbound-address, or accounting payloads.
 
 The monitor fails only when the full sampling window has no ready observation. A failure opens one deduplicated `Production readiness monitor degraded` issue; a later successful window closes it with recovery evidence. This alert does not authorize changing `REQUIRE_READY`, suppressing warnings, or treating a degraded 503 as an application outage. Investigate the run artifact, provider path, and VPS network first.
 

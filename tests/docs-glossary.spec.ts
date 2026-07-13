@@ -36,8 +36,8 @@ test.describe('THORChain Wiki Docs And Glossary Smoke Tests', () => {
     await expect(sourceMap.getByText(/THORChain Wiki source-map evidence packet/i).first()).toBeVisible();
     await expect(sourceMap.getByText(/Start with: Current Protocol State/i).first()).toBeVisible();
     await expect(sourceMap.getByText(/Source posture: official/i).first()).toBeVisible();
-    await expect(sourceMap.getByText(/Checked \/ review due: 2026-07-05 \/ 2026-08-05/i).first()).toBeVisible();
-    await expect(sourceMap.getByText(/Primary source: THORNode Mimir/i).first()).toBeVisible();
+    await expect(sourceMap.getByText(/Checked \/ review due: 2026-07-13 \/ 2026-08-13/i).first()).toBeVisible();
+    await expect(sourceMap.getByText(/Primary source: Liquify THORNode Mimir/i).first()).toBeVisible();
     await expect(sourceMap.getByText(/Do not claim from this alone: Durable uptime/i).first()).toBeVisible();
     await expect(sourceMap.getByRole('button', { name: /Copy evidence packet for Something is available/i }).first()).toBeVisible();
     await expect(page.getByRole('link', { name: 'Network diagnostics' }).first()).toHaveAttribute('href', '/network#network-diagnostics');

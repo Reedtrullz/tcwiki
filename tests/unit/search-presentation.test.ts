@@ -278,7 +278,7 @@ describe('search presentation helpers', () => {
 
     const sourceMap = SEARCH_DOCUMENTS.find((doc) => doc.id === 'source-map:current-protocol-state');
     expect(getSearchSourceRetrievalSummary(sourceMap?.sources ?? [])).toEqual({
-      label: '2026-07-04 to 2026-07-05',
+      label: '2026-07-13',
       datedSourceCount: 6,
       hasUndatedSources: false,
     });

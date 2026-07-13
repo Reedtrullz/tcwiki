@@ -245,6 +245,62 @@ export const dynamicL1FeesCurrentSource: SourceMeta = {
   notes: 'Current-only in-progress epoch accumulators.',
 };
 
+export const liquifyLiveInboundSource: SourceMeta = {
+  label: 'Liquify THORNode inbound_addresses',
+  url: 'https://gateway.liquify.com/chain/thorchain_api/thorchain/inbound_addresses',
+  retrievedAt: '2026-07-13',
+  notes: 'Current-only Liquify chain availability, router, halt, and inbound-address snapshot; not durable uptime or cross-region freshness proof.',
+};
+
+export const liquifyThornodeMimirSource: SourceMeta = {
+  label: 'Liquify THORNode Mimir endpoint',
+  url: 'https://gateway.liquify.com/chain/thorchain_api/thorchain/mimir',
+  retrievedAt: '2026-07-13',
+  notes: 'Current-only Liquify operational controls; malformed or regionally stale values must not be treated as inactive.',
+};
+
+export const liquifyMidgardHealthSource: SourceMeta = {
+  label: 'Liquify Midgard v2 Health',
+  url: 'https://gateway.liquify.com/chain/thorchain_midgard/v2/health',
+  retrievedAt: '2026-07-13',
+  notes: 'Current-only Liquify Midgard provider health, sync state, and lag for rendered live metrics; regional provider freshness still needs checking.',
+};
+
+export const liquifyMidgardNetworkSource: SourceMeta = {
+  label: 'Liquify Midgard v2 Network',
+  url: 'https://gateway.liquify.com/chain/thorchain_midgard/v2/network',
+  retrievedAt: '2026-07-13',
+  notes: 'Current-only Liquify network totals; pair with visible source freshness before treating values as live.',
+};
+
+export const liquifyMidgardPoolsSource: SourceMeta = {
+  label: 'Liquify Midgard v2 Pools',
+  url: 'https://gateway.liquify.com/chain/thorchain_midgard/v2/pools?status=available',
+  retrievedAt: '2026-07-13',
+  notes: 'Current-only Liquify available-pool snapshot; not durable pool uptime or cross-region freshness proof.',
+};
+
+export const liquifyMidgardEarningsSource: SourceMeta = {
+  label: 'Liquify Midgard v2 Earnings',
+  url: 'https://gateway.liquify.com/chain/thorchain_midgard/v2/history/earnings?interval=day&count=30',
+  retrievedAt: '2026-07-13',
+  notes: 'Current-only Liquify earnings intervals as returned by Midgard; not protocol revenue attribution or cross-region freshness proof.',
+};
+
+export const liquifyDynamicL1FeesSource: SourceMeta = {
+  label: 'Liquify THORNode dynamic_l1_fees',
+  url: 'https://gateway.liquify.com/chain/thorchain_api/thorchain/dynamic_l1_fees',
+  retrievedAt: '2026-07-13',
+  notes: 'Current-only Liquify sealed dynamic L1 fee records; verify provider freshness before interpreting them.',
+};
+
+export const liquifyDynamicL1FeesCurrentSource: SourceMeta = {
+  label: 'Liquify THORNode dynamic_l1_fees_current',
+  url: 'https://gateway.liquify.com/chain/thorchain_api/thorchain/dynamic_l1_fees_current',
+  retrievedAt: '2026-07-13',
+  notes: 'Current-only Liquify in-progress epoch accumulators; verify provider freshness before interpreting them.',
+};
+
 export const thorchainEcosystemSource: SourceMeta = {
   label: 'THORChain Ecosystem',
   url: 'https://docs.thorchain.org/ecosystem',

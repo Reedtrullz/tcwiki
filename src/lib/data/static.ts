@@ -21,11 +21,15 @@ import {
   exploitReport1Source as exploitReportSource,
   exploitReport2Source,
   feesSource,
+  liquifyLiveInboundSource,
+  liquifyMidgardEarningsSource,
+  liquifyMidgardHealthSource,
+  liquifyMidgardNetworkSource,
+  liquifyMidgardPoolsSource,
+  liquifyThornodeMimirSource,
   liveInboundSource,
-  midgardEarningsSource,
   midgardHealthSource,
   midgardNetworkSource,
-  midgardPoolsSource,
   multichainChaosnetLaunchSource,
   networkHaltsSource,
   protocolUpgradeV319Source,
@@ -121,9 +125,9 @@ const trmBybitSource: SourceMeta = {
   notes: 'Third-party illicit-flow analysis; this is not a THORChain protocol exploit source.',
 };
 
-const liquifyMidgardHealthSource: SourceMeta = {
+const liquifyMidgardHealthReviewedAt20260704: SourceMeta = {
+  ...liquifyMidgardHealthSource,
   label: 'Liquify Midgard Gateway',
-  url: 'https://gateway.liquify.com/chain/thorchain_midgard/v2/health',
   retrievedAt: '2026-07-04',
   notes: 'Runtime failover source used only after response-shape validation.',
 };
@@ -439,10 +443,10 @@ export const SOURCE_MAP_SECTION_RECORDS: SourcedRecord<SourceMapSection>[] = [
       'Revenue lift, safety, route quality, or route availability beyond the checked snapshot.',
       'That a Midgard pool or network metric proves a specific swap, LP action, secured-asset flow, or app-layer action is usable now.',
     ],
-    links: [thornodeMimirSource, sourceMapLiveInboundSource, midgardHealthSource, midgardNetworkSource, midgardPoolsSource, midgardEarningsSource],
-  }, [thornodeMimirSource, sourceMapLiveInboundSource, midgardHealthSource, midgardNetworkSource, midgardPoolsSource, midgardEarningsSource], 'official', {
-    checkedAt: '2026-07-05',
-    nextReviewDue: '2026-08-05',
+    links: [liquifyThornodeMimirSource, liquifyLiveInboundSource, liquifyMidgardHealthSource, liquifyMidgardNetworkSource, liquifyMidgardPoolsSource, liquifyMidgardEarningsSource],
+  }, [liquifyThornodeMimirSource, liquifyLiveInboundSource, liquifyMidgardHealthSource, liquifyMidgardNetworkSource, liquifyMidgardPoolsSource, liquifyMidgardEarningsSource], 'official', {
+    checkedAt: '2026-07-13',
+    nextReviewDue: '2026-08-13',
   }),
   record({
     id: 'runtime-live-data-failover',
@@ -460,8 +464,8 @@ export const SOURCE_MAP_SECTION_RECORDS: SourcedRecord<SourceMapSection>[] = [
       'That a clean provider response proves historical correctness.',
       'That degraded readiness is a deploy failure when warnings are intentionally conservative.',
     ],
-    links: [liquifyMidgardHealthSource, midgardHealthSource, liquifyThornodeVersionSource, thornodeVersionSource],
-  }, [liquifyMidgardHealthSource, midgardHealthSource, liquifyThornodeVersionSource, thornodeVersionSource], 'curated', {
+    links: [liquifyMidgardHealthReviewedAt20260704, midgardHealthSource, liquifyThornodeVersionSource, thornodeVersionSource],
+  }, [liquifyMidgardHealthReviewedAt20260704, midgardHealthSource, liquifyThornodeVersionSource, thornodeVersionSource], 'curated', {
     checkedAt: '2026-07-13',
     nextReviewDue: '2026-08-13',
   }),
@@ -799,9 +803,9 @@ export const ECOSYSTEM_PROJECT_RECORDS: SourcedRecord<EcosystemProject>[] = [
       'Confirm the current app route, affiliate fee, slippage, recipient address, and supported chain pair before signing.',
       'Check live THORNode diagnostics and ShapeShift app availability; this listing is not a wallet-security audit or route guarantee.',
     ],
-  }, [ecosystemSource, shapeshiftThorchainSource, liveInboundSource], 'curated', {
-    checkedAt: '2026-07-05',
-    nextReviewDue: '2026-08-05',
+  }, [ecosystemSource, shapeshiftThorchainSource, liquifyLiveInboundSource], 'curated', {
+    checkedAt: '2026-07-13',
+    nextReviewDue: '2026-08-13',
   }),
   record({
     id: 'thorwallet',
