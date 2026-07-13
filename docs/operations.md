@@ -54,6 +54,20 @@ Expected:
 - `/api/ready` degrades on runtime identity problems only when `RUNTIME_METADATA_REQUIRED=1`; production containers set this so missing commit/image provenance is not treated as clean readiness.
 - `/api/ready` keeps `reasons` and `sourceWarnings` as simple strings for probes, exposes top-level `warnings` for non-blocking source caveats, and includes `sourceWarningDetails` with severity, category, action, keys, and scopes when warnings need operator review.
 
+## Scheduled Operational Monitoring
+
+`.github/workflows/operations.yml` samples public strict readiness hourly. Each run takes three observations one minute apart and probes the configured THORNode latest-block endpoints directly from the runner. The bounded JSON artifact therefore distinguishes app-observed source posture from runner-observed provider height and freshness without storing raw Mimir, inbound-address, or accounting payloads.
+
+The monitor fails only when the full sampling window has no ready observation. A failure opens one deduplicated `Production readiness monitor degraded` issue; a later successful window closes it with recovery evidence. This alert does not authorize changing `REQUIRE_READY`, suppressing warnings, or treating a degraded 503 as an application outage. Investigate the run artifact, provider path, and VPS network first.
+
+For a local one-sample diagnostic without waiting:
+
+```bash
+npm run check:production-readiness -- --samples 1 --interval-ms 0 --artifact .artifacts/readiness-monitor/local.json
+```
+
+VPS SSH is a separate evidence path. If port 22 refuses before authentication, report that boundary and use the public readiness plus direct-provider artifact; do not claim a container-side provider readback.
+
 ## Rollback Behavior
 
 The Ansible playbook captures the previous container image before replacing the container.

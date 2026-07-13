@@ -1,0 +1,95 @@
+name: Operational monitors
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '23 * * * *'
+    - cron: '41 6 * * 1'
+
+permissions:
+  contents: read
+  issues: write
+
+env:
+  NODE_VERSION: '22'
+
+jobs:
+  production-readiness:
+    name: Sample production readiness
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '23 * * * *'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Sample public readiness and direct THORNode providers
+        id: monitor
+        continue-on-error: true
+        run: >-
+          npm run check:production-readiness --
+          --base-url https://wiki.thorchain.no
+          --samples 3
+          --interval-ms 60000
+          --artifact .artifacts/readiness-monitor/production-readiness.json
+      - name: Upload readiness evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: production-readiness-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .artifacts/readiness-monitor/production-readiness.json
+          if-no-files-found: warn
+          retention-days: 30
+      - name: Open persistent readiness alert
+        if: steps.monitor.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          issue_number="$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search 'Production readiness monitor degraded in:title' --json number,title --jq '.[] | select(.title == "Production readiness monitor degraded") | .number' | head -1)"
+          if [ -z "$issue_number" ]; then
+            gh issue create \
+              --repo "$GITHUB_REPOSITORY" \
+              --title 'Production readiness monitor degraded' \
+              --body "Three sampled production readiness checks had no ready observation. This is an operational alert, not permission to weaken the readiness contract. Evidence: https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          fi
+      - name: Close recovered readiness alert
+        if: steps.monitor.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue list --repo "$GITHUB_REPOSITORY" --state open --search 'Production readiness monitor degraded in:title' --json number,title --jq '.[] | select(.title == "Production readiness monitor degraded") | .number' | while read -r issue_number; do
+            gh issue close "$issue_number" --repo "$GITHUB_REPOSITORY" --comment "The sampled readiness window recovered. Evidence: https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          done
+      - name: Fail on persistent degraded readiness
+        if: steps.monitor.outcome == 'failure'
+        run: exit 1
+
+  content-review-schedule:
+    name: Report upcoming content reviews
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '41 6 * * 1'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci --include=optional
+      - name: Build content review queue
+        id: reviews
+        continue-on-error: true
+        run: >-
+          npm run report:content-reviews --
+          --horizon-days 30
+          --artifact .artifacts/content-reviews/content-review-schedule.json
+      - name: Upload content review evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: content-review-schedule-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .artifacts/content-reviews/content-review-schedule.json
+          if-no-files-found: warn
+          retention-days: 30
+      - name: Fail when content reviews are overdue
+        if: steps.reviews.outcome == 'failure'
+        run: exit 1
