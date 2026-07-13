@@ -238,15 +238,22 @@ test.describe('THORChain Wiki Search Smoke Tests', () => {
 
     await page.goto('/search?q=ADR-028');
     const adr028Result = page.locator('main article').first();
-    await expect(adr028Result.getByRole('link', { name: /Governance Needs review ADR-028 Recovery Path/i })).toHaveAttribute('href', '/governance#governance-adr-028-recovery');
+    await expect(adr028Result.getByRole('link', { name: /Governance Official source ADR-028 Recovery Path/i })).toHaveAttribute('href', '/governance#governance-adr-028-recovery');
+    await expect(adr028Result.getByText(/ADR-028 is Accepted in the v3.19.0 source/i)).toBeVisible();
     const adr028FilterNav = page.getByRole('navigation', { name: /Filter search results/i });
-    await expect(adr028FilterNav.getByRole('link', { name: /Needs Review/i })).toBeVisible();
+    await expect(adr028FilterNav.getByRole('link', { name: /Governance/i })).toBeVisible();
+    await expect(adr028FilterNav.getByRole('link', { name: /Needs Review/i })).toHaveCount(0);
+
+    await page.goto('/search?q=ViewBlock');
+    const viewBlockLink = page.locator('main article a[href="/ecosystem#ecosystem-viewblock"]').first();
+    await expect(viewBlockLink).toBeVisible();
+    const viewBlockFilterNav = page.getByRole('navigation', { name: /Filter search results/i });
+    await expect(viewBlockFilterNav.getByRole('link', { name: /Needs Review/i })).toBeVisible();
     await Promise.all([
-      page.waitForURL(/\/search\?q=ADR-028&filter=needs-review/),
-      adr028FilterNav.getByRole('link', { name: /Needs Review/i }).click(),
+      page.waitForURL(/\/search\?q=ViewBlock&filter=needs-review/),
+      viewBlockFilterNav.getByRole('link', { name: /Needs Review/i }).click(),
     ]);
-    await expect(page.getByText(/of .* results/i).first()).toBeVisible();
-    await expect(page.locator('main article').first().getByRole('link', { name: /Governance Needs review ADR-028 Recovery Path/i })).toHaveAttribute('href', '/governance#governance-adr-028-recovery');
+    await expect(page.locator('main article a[href="/ecosystem#ecosystem-viewblock"]').first()).toBeVisible();
 
     await page.goto('/search?q=submit%20proposal');
     const governanceProposalResult = page.locator('main article').first();
@@ -463,9 +470,9 @@ test.describe('THORChain Wiki Search Smoke Tests', () => {
     await expect(incidentLink.getByText('Official source', { exact: true })).toBeVisible();
     const incidentResult = page.locator('main article').filter({ has: incidentLink }).first();
     const incidentMeta = incidentResult.locator('dl').first();
-    await expect(incidentMeta).toContainText(/Wiki reviewed\s*2026-07-05/i);
-    await expect(incidentMeta).toContainText(/Next wiki review\s*2026-08-05/i);
-    await expect(incidentMeta).toContainText(/Source retrieved\s*2026-07-04 to 2026-07-05/i);
+    await expect(incidentMeta).toContainText(/Wiki reviewed\s*2026-07-13/i);
+    await expect(incidentMeta).toContainText(/Next wiki review\s*2026-08-13/i);
+    await expect(incidentMeta).toContainText(/Source retrieved\s*2026-07-04 to 2026-07-13/i);
     await expect(incidentResult.getByText(/Sources used/i)).toBeVisible();
     await expect(incidentResult.getByRole('link', { name: 'THORChain Exploit Report #2' })).toBeVisible();
     await incidentResult.getByText('source retrieval details').click();

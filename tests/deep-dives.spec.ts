@@ -182,7 +182,7 @@ test.describe('THORChain Wiki Deep Dive Smoke Tests', () => {
     }
     await expect(page.getByText('Curated', { exact: true }).first()).toBeVisible();
     await expect(page.getByText('THORChain Docs', { exact: true }).first()).toBeVisible();
-    await expect(page.getByText('+4 sources', { exact: true }).first()).toBeVisible();
+    await expect(page.getByText('+5 sources', { exact: true }).first()).toBeVisible();
     await expect(page.getByText(/Use This Article For/i)).toBeVisible();
     await expect(page.getByText(/security explainer for threshold signing, vault-key risk, GG20 incident language/i)).toBeVisible();
     await expect(page.getByText(/Verify Elsewhere Before Claiming/i)).toBeVisible();
@@ -311,9 +311,11 @@ test.describe('THORChain Wiki Deep Dive Smoke Tests', () => {
         await expect(page.getByText(/Do not treat "has slash points" as the same claim/i)).toBeVisible();
       }
       if (slug === 'tss') {
+        await expect(page.getByRole('heading', { name: /Dated Recovery State/i })).toBeVisible();
         await expect(page.getByRole('heading', { name: /What To Verify Before Claiming/i })).toBeVisible();
         await expect(page.getByRole('heading', { name: /Non-Claims/i })).toBeVisible();
-        await expect(page.getByText(/Current vault safety, restart completion, or exploit recovery completion/i)).toBeVisible();
+        await expect(page.getByText(/recovery restored normal network operation with patched GG20-era signing/i)).toBeVisible();
+        await expect(page.getByText(/Current vault safety or present availability merely because the historical v3.19.x restart completed/i)).toBeVisible();
         await expect(page.getByRole('link', { name: /What To Verify Before Claiming/i })).toHaveAttribute('href', '#what-to-verify-before-claiming');
       }
       if (slug === 'incentive-pendulum') {
@@ -396,8 +398,12 @@ test.describe('THORChain Wiki Deep Dive Smoke Tests', () => {
       }
       if (slug === 'tcy-recovery-timeline') {
         await expect(page.getByRole('heading', { name: /What This Timeline Can Prove/i })).toBeVisible();
+        await expect(page.getByRole('heading', { name: /Separate Exploit Conciliation/i })).toBeVisible();
         await expect(page.getByRole('heading', { name: /What To Check Now/i })).toBeVisible();
-        await expect(page.getByText(/The THORFi unwind and the May 2026 GG20\/TSS exploit are different events/i)).toBeVisible();
+        await expect(
+          page.locator('p').filter({ hasText: /immutable v3.19.0 ADR-028 source marks the decision Accepted and specifies a one-time Migrate15to16 conciliation waterfall/i })
+        ).toBeVisible();
+        await expect(page.getByText(/The THORFi unwind and the May 2026 GG20\/TSS exploit conciliation are different events/i)).toBeVisible();
         await expect(page.getByText(/Full debt recovery, par redemption, or that any claimant has been made whole/i)).toBeVisible();
       }
     }

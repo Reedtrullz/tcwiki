@@ -165,8 +165,9 @@ test.describe('THORChain Wiki Docs And Glossary Smoke Tests', () => {
     await expect(page.locator('#term-paillier')).toBeVisible();
     await expect(page.getByText(/malformed Paillier key material/i)).toBeVisible();
     await filterInput.fill('compromised vault');
-    await expect(page.locator('#term-compromised-vault')).toBeVisible();
-    await expect(page.getByText(/compromised-vault exclusion/i)).toBeVisible();
+    const compromisedVaultTerm = page.locator('#term-compromised-vault');
+    await expect(compromisedVaultTerm).toBeVisible();
+    await expect(compromisedVaultTerm.getByText(/A vault treated as unsafe or excluded after key-compromise evidence/i)).toBeVisible();
     await filterInput.fill('quote expiry');
     await expect(page.locator('#term-quote-expiry')).toBeVisible();
     await expect(page.getByText(/Expired quotes need a fresh quote/i)).toBeVisible();

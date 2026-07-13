@@ -274,7 +274,7 @@ describe('SEARCH_DOCUMENTS', () => {
     expect(docsMatching('A specific refund cause without transaction level evidence').some((doc) => doc.slug === '/deep-dives/streaming-swaps-refunds')).toBe(true);
     expect(docsMatching('liquidity_tolerance_bps').some((doc) => doc.slug === '/deep-dives/streaming-swaps-refunds')).toBe(true);
     expect(docsMatching('1 TCY per $1 of defaulted debt').some((doc) => doc.slug === '/deep-dives/tcy-recovery-timeline')).toBe(true);
-    expect(docsMatching('The THORFi unwind and the May 2026 GG20/TSS exploit are different events').some((doc) => doc.slug === '/deep-dives/tcy-recovery-timeline')).toBe(true);
+    expect(docsMatching('The THORFi unwind and the May 2026 GG20/TSS exploit conciliation are different events').some((doc) => doc.slug === '/deep-dives/tcy-recovery-timeline')).toBe(true);
     expect(docsMatching('Full debt recovery, par redemption').some((doc) => doc.slug === '/deep-dives/tcy-recovery-timeline')).toBe(true);
     expect(docsMatching('GG20 Vault Exploit').some((doc) => doc.slug === '/governance')).toBe(true);
     expect(docsMatching('multi-prime modulus').some((doc) => doc.slug === '/deep-dives/tss')).toBe(true);
@@ -282,7 +282,7 @@ describe('SEARCH_DOCUMENTS', () => {
     expect(docsMatching('Keyverify').some((doc) => doc.slug === '/deep-dives/tss')).toBe(true);
     expect(docsMatching('compromised vault exclusion').some((doc) => doc.slug === '/deep-dives/tss')).toBe(true);
     expect(docsMatching('current running release').some((doc) => doc.slug === '/deep-dives/tss')).toBe(true);
-    expect(docsMatching('Current vault safety, restart completion').some((doc) => doc.slug === '/deep-dives/tss')).toBe(true);
+    expect(docsMatching('Current vault safety or present availability').some((doc) => doc.slug === '/deep-dives/tss')).toBe(true);
     expect(docsMatching('DKLS').some((doc) => doc.id === 'task:tss-security-claims' && doc.href === '/deep-dives/tss')).toBe(true);
     expect(docsMatching('Schnorr').some((doc) => doc.id === 'deep-dive-path:network-security')).toBe(true);
   });
@@ -374,7 +374,7 @@ describe('SEARCH_DOCUMENTS', () => {
     expect(runeSupply?.content).toContain('Bond Requirement');
     expect(runeSupply?.sources.map((source) => source.label)).toContain('RUNE and TCY tokenomics');
     expect(tcyRecovery?.href).toBe('/tcy#tokenomics-tcy-recovery-context');
-    expect(tcyRecovery?.confidence).toBe('needs-review');
+    expect(tcyRecovery?.confidence).toBe('official');
     expect(tcyRecovery?.content).toContain('Full recovery Not guaranteed');
     expect(tcyRecovery?.sources.map((source) => source.label)).toContain('TCY Developer Guide');
     expect(docsMatching('reduced supply near 425M').some((doc) => doc.id === 'tokenomics:rune-supply-framing')).toBe(true);
@@ -453,12 +453,14 @@ describe('SEARCH_DOCUMENTS', () => {
     const olderIncident = SEARCH_DOCUMENTS.find((doc) => doc.id === 'incident:eth-router-1');
     const dynamicFeeSourceMap = SEARCH_DOCUMENTS.find((doc) => doc.id === 'source-map:dynamic-fee-experiment');
 
-    expect(gg20Incident?.reviewedAt).toBe('2026-07-05');
-    expect(gg20Incident?.nextReviewDue).toBe('2026-08-05');
+    expect(gg20Incident?.reviewedAt).toBe('2026-07-13');
+    expect(gg20Incident?.nextReviewDue).toBe('2026-08-13');
     expect(dynamicFeeSourceMap?.reviewedAt).toBe('2026-07-13');
     expect(dynamicFeeSourceMap?.nextReviewDue).toBe('2026-08-13');
     expect(SEARCH_DOCUMENTS.find((doc) => doc.id === 'tokenomics:rune-supply-framing')?.reviewedAt).toBe('2026-07-05');
-    expect(SEARCH_DOCUMENTS.find((doc) => doc.id === 'tokenomics:tcy-recovery-context')?.nextReviewDue).toBe('2026-08-05');
+    expect(SEARCH_DOCUMENTS.find((doc) => doc.id === 'tokenomics:tcy-recovery-context')).toEqual(
+      expect.objectContaining({ confidence: 'official', reviewedAt: '2026-07-13', nextReviewDue: '2026-08-13' })
+    );
     expect(olderIncident?.reviewedAt).toBe('2026-07-08');
     expect(olderIncident?.nextReviewDue).toBe('2026-08-08');
   });
@@ -467,11 +469,18 @@ describe('SEARCH_DOCUMENTS', () => {
     const adr028 = SEARCH_DOCUMENTS.find((doc) => doc.id === 'governance:adr-028-recovery');
 
     expect(adr028?.href).toBe('/governance#governance-adr-028-recovery');
-    expect(adr028?.content).toContain('Current recovery tracker: needs-review.');
+    expect(adr028).toEqual(expect.objectContaining({ confidence: 'official', reviewedAt: '2026-07-13', nextReviewDue: '2026-08-13' }));
+    expect(adr028?.content).toContain('Status: Accepted; implemented in v3.19.0.');
+    expect(adr028?.content).toContain('Current recovery tracker: current.');
+    expect(adr028?.content).toContain('one-time conciliation migration');
+    expect(adr028?.content).toContain('not proof that every loss was restored');
+    expect(adr028?.sources.map(({ url }) => url)).toContain(
+      'https://gitlab.com/thorchain/thornode/-/blob/v3.19.0/docs/architecture/adr-028-exploit-conciliation.md'
+    );
     expect(docsMatching('ADR-028 Recovery Path').some((doc) => doc.id === 'governance:adr-028-recovery')).toBe(true);
-    expect(docsMatching('Current recovery tracker: needs-review').some((doc) => doc.id === 'governance:adr-028-recovery')).toBe(true);
+    expect(docsMatching('Current recovery tracker: current').some((doc) => doc.id === 'governance:adr-028-recovery')).toBe(true);
     expect(docsMatching('Recovery State Matrix').some((doc) => doc.id === 'governance')).toBe(true);
-    expect(docsMatching('No made-whole proof').some((doc) => doc.id === 'governance')).toBe(true);
+    expect(docsMatching('no universal made-whole proof').some((doc) => doc.id === 'governance')).toBe(true);
     expect(docsMatching('THORFi debt unwind GG20 exploit recovery current user actions').some((doc) => doc.id === 'governance')).toBe(true);
   });
 
@@ -496,8 +505,8 @@ describe('SEARCH_DOCUMENTS', () => {
       const entry = CONTENT_ENTRIES.find((candidate) => candidate.id === id);
       const doc = SEARCH_DOCUMENTS.find((candidate) => candidate.id === id);
 
-      expect(entry?.reviewedAt, `${id} entry reviewedAt`).toMatch(/^2026-07-(05|06|08|09|13)$/);
-      expect(entry?.nextReviewDue, `${id} entry nextReviewDue`).toMatch(/^2026-08-(05|06|08|09|13)$/);
+      expect(entry?.reviewedAt, `${id} entry reviewedAt`).toMatch(/^2026-07-(05|06|08|09|13|14)$/);
+      expect(entry?.nextReviewDue, `${id} entry nextReviewDue`).toMatch(/^2026-08-(05|06|08|09|13|14)$/);
       expect(doc?.reviewedAt, `${id} search reviewedAt`).toBe(entry?.reviewedAt);
       expect(doc?.nextReviewDue, `${id} search nextReviewDue`).toBe(entry?.nextReviewDue);
       expect(doc?.sources.map((source) => source.label), `${id} search sources`).toEqual(entry?.sources.map((source) => source.label));
@@ -601,8 +610,8 @@ describe('SEARCH_DOCUMENTS', () => {
     expect(docsMatching('Synthetics were part of historical Savers').some((doc) => doc.id === 'glossary:synthetic-asset')).toBe(true);
     expect(docsMatching('deployer, checksum').some((doc) => doc.id === 'glossary:cosmwasm')).toBe(true);
     expect(docsMatching('threshold-signature implementation').some((doc) => doc.id === 'glossary:gg20')).toBe(true);
-    expect(docsMatching('possible migration path away from GG20').some((doc) => doc.id === 'glossary:dkls')).toBe(true);
-    expect(docsMatching('current vault signing has moved to Schnorr').some((doc) => doc.id === 'glossary:schnorr')).toBe(true);
+    expect(docsMatching('chain-by-chain DKLS/FROST migration as future work').some((doc) => doc.id === 'glossary:dkls')).toBe(true);
+    expect(docsMatching('current vault signing has moved to Schnorr/FROST').some((doc) => doc.id === 'glossary:schnorr')).toBe(true);
     expect(docsMatching('malformed Paillier key material').some((doc) => doc.id === 'glossary:paillier')).toBe(true);
     expect(docsMatching('failed MTA rounds leaked').some((doc) => doc.id === 'glossary:mta')).toBe(true);
     expect(docsMatching('incident-root-cause vocabulary').some((doc) => doc.id === 'glossary:multi-prime-modulus')).toBe(true);
@@ -625,7 +634,10 @@ describe('SEARCH_DOCUMENTS', () => {
 
     const keyVerify = SEARCH_DOCUMENTS.find((doc) => doc.id === 'glossary:keyverify');
     expect(keyVerify?.href).toBe('/glossary#term-keyverify');
-    expect(keyVerify?.sources.map((source) => source.label)).toEqual(['Protocol Upgrade v3.19.0']);
+    expect(keyVerify?.sources.map((source) => source.label)).toEqual([
+      'Protocol Upgrade v3.19.0',
+      'THORChain Exploit Report #2',
+    ]);
   });
 
   it('labels the synthetic Mimir search record as a reference to current diagnostics', () => {

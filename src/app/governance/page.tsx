@@ -148,8 +148,8 @@ const recoveryStateMatrix = [
     title: 'GG20 exploit recovery',
     badge: 'current review',
     badgeVariant: 'warning' as const,
-    status: 'Restart, patch, migration, and ADR-028 review are separate from the earlier THORFi debt unwind.',
-    evidence: 'Use exploit reports, v3.19 upgrade notes, ADR-028 status, and full incident records.',
+    status: 'The v3.19.x restart and accepted ADR-028 conciliation are separate from the earlier THORFi debt unwind and from the still-planned migration away from GG20.',
+    evidence: 'Use exploit reports, v3.19 upgrade notes, the immutable accepted ADR-028 source, and full incident records.',
     nonClaim: 'No final recovery-complete or present-day safety proof.',
     href: '/deep-dives#deep-dive-path-network-security',
     linkLabel: 'Read TSS context',
@@ -181,13 +181,13 @@ const recoveryReviewGuidanceById: Record<string, {
     boundary: 'Do not use the incident record, restart, or v3.19 notes as proof that recovery is complete, users are made whole, or present-day safety is guaranteed.',
   },
   'governance:adr-028-recovery': {
-    focus: 'Recovery-path placeholder from official exploit-report framing; the governance outcome and implementation state still need a fresh current source.',
+    focus: 'Accepted ADR-028 decision and one-time v3.19.0 conciliation migration for the May 2026 exploit-created accounting gap.',
     verifyNow: [
-      'Updated ADR, proposal, or official report source before saying ADR-028 passed, failed, funded, or settled losses.',
-      'Network diagnostics before converting recovery-path language into current protocol availability.',
+      'The immutable v3.19.0 ADR before describing its reserve, Saver, treasury, or stuck-swap allocation waterfall.',
+      'Current release and Network diagnostics before converting the historical migration into present protocol availability or safety.',
       'TCY controls and official interface evidence before saying a user can claim, stake, trade, or receive distributions now.',
     ],
-    boundary: 'Do not claim ADR-028 has restored losses, completed recovery, created solvency proof, or enabled any user action until current sources confirm it.',
+    boundary: 'ADR-028 acceptance proves the conciliation decision and migration design, not that every loss was restored, recovery is complete, current vaults are safe, or any user action is enabled.',
   },
 };
 
@@ -485,7 +485,7 @@ export default function GovernancePage() {
         <div className="mb-3 rounded-lg border border-amber-500/20 bg-amber-500/5 p-4">
           <p className="text-[11px] font-semibold uppercase tracking-wider text-amber-300">Safe current wording</p>
           <p className="mt-1 max-w-4xl text-sm leading-relaxed text-slate-300">
-            The GG20 exploit record is promoted for current recovery tracking, while ADR-028 remains a needs-review recovery-path record. Use this section to decide what to verify next; it does not prove final recovery, solvency, restitution, or current user-action availability.
+            The GG20 exploit record remains a current security tracker, while ADR-028 is now source-backed as Accepted and implemented through the one-time v3.19.0 conciliation migration. Use this section to decide what to verify next; neither record proves every loss was restored, final recovery, current vault safety, or user-action availability.
           </p>
         </div>
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">

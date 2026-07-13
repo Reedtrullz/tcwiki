@@ -67,7 +67,7 @@ describe('search presentation helpers', () => {
   });
 
   it('exposes needs-review matches as an explicit trust filter', () => {
-    const results = rankedResults('ADR-028');
+    const results = rankedResults('ViewBlock');
     const options = buildSearchFilterOptions(results);
     const reviewResults = filterSearchResults(results, 'needs-review');
 
@@ -77,7 +77,7 @@ describe('search presentation helpers', () => {
     }));
     expect(reviewResults.length).toBeGreaterThan(0);
     expect(reviewResults.every((result) => result.confidence === 'needs-review')).toBe(true);
-    expect(reviewResults.some((result) => result.id === 'governance:adr-028-recovery')).toBe(true);
+    expect(reviewResults.some((result) => result.id === 'ecosystem:viewblock')).toBe(true);
   });
 
   it('keeps current-state task guides visible in the Live State filter', () => {
@@ -271,8 +271,8 @@ describe('search presentation helpers', () => {
   it('summarizes source retrieval dates separately from result review dates', () => {
     const incident = SEARCH_DOCUMENTS.find((doc) => doc.id === 'incident:gg20-vault-exploit-2026');
     expect(getSearchSourceRetrievalSummary(incident?.sources ?? [])).toEqual({
-      label: '2026-07-04 to 2026-07-05',
-      datedSourceCount: 3,
+      label: '2026-07-04 to 2026-07-13',
+      datedSourceCount: 5,
       hasUndatedSources: false,
     });
 
