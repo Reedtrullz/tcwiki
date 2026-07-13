@@ -1,3 +1,4 @@
+import './require-node22.mjs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { prepareStandaloneAssets } from './prepare-standalone-assets.mjs';

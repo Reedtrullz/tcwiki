@@ -1,4 +1,25 @@
 import type { DataConfidence, SourceMeta } from '@/lib/types';
+import {
+  adr026DynamicFeesSource,
+  archivedSaversLendingSource as archivedSource,
+  assetNotationSource,
+  continuousLiquidityPoolsSource as clpSource,
+  cosmWasmSource as cosmwasmSource,
+  exploitReport2Source,
+  feesSource,
+  liquidityProvidersSource,
+  networkHaltsSource,
+  protocolUpgradeV319Source,
+  queryingThorchainSource,
+  runePoolDevSource,
+  runePoolDocsSource,
+  runePoolEndpointSource,
+  tcyGuideSource,
+  thorchainDevDocsSource as devDocsSource,
+  thorchainDocsSource as docsSource,
+  thornameGuideSource,
+  tokenomicsSource,
+} from '@/lib/sources';
 import { slugifyFragment } from '@/lib/utils';
 
 export interface GlossaryTerm {
@@ -13,73 +34,72 @@ export interface GlossaryTerm {
   relatedHrefs: string[];
 }
 
-const docsSource: SourceMeta = {
-  label: 'THORChain Docs',
-  url: 'https://docs.thorchain.org',
-};
+export interface GlossaryDefinitionPath {
+  title: string;
+  badge: 'operations' | 'economics' | 'developer' | 'history';
+  description: string;
+  termIds: string[];
+  verifyHref: string;
+  verifyLabel: string;
+  boundary: string;
+}
 
-const devDocsSource: SourceMeta = {
-  label: 'THORChain Dev Docs',
-  url: 'https://dev.thorchain.org',
-};
-
-const networkHaltsSource: SourceMeta = {
-  label: 'THORChain Network Halts',
-  url: 'https://dev.thorchain.org/concepts/network-halts.html',
-};
-
-const queryingThorchainSource: SourceMeta = {
-  label: 'Querying THORChain',
-  url: 'https://dev.thorchain.org/concepts/querying-thorchain.html',
-};
-
-const feesSource: SourceMeta = {
-  label: 'Fees',
-  url: 'https://dev.thorchain.org/concepts/fees.html',
-};
-
-const liquidityProvidersSource: SourceMeta = {
-  label: 'Liquidity Providers',
-  url: 'https://docs.thorchain.org/technical-documentation/understanding-thorchain/roles/liquidity-providers',
-};
-
-const clpSource: SourceMeta = {
-  label: 'Continuous Liquidity Pools',
-  url: 'https://docs.thorchain.org/technical-documentation/thorchain-finance/continuous-liquidity-pools',
-};
-
-const adr026DynamicFeesSource: SourceMeta = {
-  label: 'ADR-026 dynamic L1 fee model',
-  url: 'https://gitlab.com/thorchain/thornode/-/raw/develop/docs/architecture/adr-026-dynamic-l1-min-fee-per-thorname.md',
-  notes: 'Architecture decision text; compare with live THORNode state before making current claims.',
-};
-
-const assetNotationSource: SourceMeta = {
-  label: 'Asset Notation',
-  url: 'https://dev.thorchain.org/concepts/asset-notation.html',
-};
-
-const cosmwasmSource: SourceMeta = {
-  label: 'CosmWasm',
-  url: 'https://docs.thorchain.org/technical-documentation/technology/cosmwasm',
-};
-
-const exploitReport2Source: SourceMeta = {
-  label: 'THORChain Exploit Report 2',
-  url: 'https://blog.thorchain.org/thorchain-exploit-report-2',
-  retrievedAt: '2026-07-04',
-};
-
-const protocolUpgradeV319Source: SourceMeta = {
-  label: 'Protocol Upgrade v3.19.0',
-  url: 'https://blog.thorchain.org/protocol-upgrade-v3-19-0',
-  retrievedAt: '2026-07-04',
-};
-
-const archivedSource: SourceMeta = {
-  label: 'Archived Savers and Lending docs',
-  url: 'https://docs.thorchain.org/thornodes/archived',
-};
+export const GLOSSARY_DEFINITION_PATHS: GlossaryDefinitionPath[] = [
+  {
+    title: 'Live State Terms',
+    badge: 'operations',
+    description: 'Use these terms when a claim depends on current THORNode, Mimir, inbound, halt, pause, or source-health state.',
+    termIds: ['mimir', 'mimir-override', 'inbound-address', 'current-only'],
+    verifyHref: '/network#network-diagnostics',
+    verifyLabel: 'Verify in network diagnostics',
+    boundary: 'A definition does not prove the network is open right now.',
+  },
+  {
+    title: 'Vault, Signing, And Observation Terms',
+    badge: 'operations',
+    description: 'Use these for vault membership, chain observation, TSS, signing health, and compromised-vault wording before turning architecture terms into safety claims.',
+    termIds: ['asgard-vault', 'bifrost', 'tss', 'key-sign-failures', 'compromised-vault'],
+    verifyHref: '/deep-dives#deep-dive-path-network-security',
+    verifyLabel: 'Follow security evidence path',
+    boundary: 'Vault and signing vocabulary does not prove current signing health, vault safety, or chain observation completeness.',
+  },
+  {
+    title: 'Swap And Fee Terms',
+    badge: 'economics',
+    description: 'Use these for CLP, quotes, refund boundaries, liquidity, fee, affiliate, and dynamic-fee vocabulary before quoting a number or route conclusion.',
+    termIds: ['clp', 'quote', 'quote-expiry', 'recommended-min-amount-in', 'dust-threshold', 'refund-address', 'streaming-swap', 'liquidity-tolerance-bps', 'outbound-fee', 'affiliate-fee', 'thorname', 'dynamic-l1-fee'],
+    verifyHref: '/deep-dives/streaming-swaps-refunds#what-to-check-first',
+    verifyLabel: 'Check swap/refund evidence',
+    boundary: 'Static swap and fee terms do not prove live quoteability, settlement, refund cause, route competitiveness, or revenue lift.',
+  },
+  {
+    title: 'Liquidity And Pool Accounting Terms',
+    badge: 'economics',
+    description: 'Use these when an LP, liquidity-unit, impermanent-loss, RUNEPool, or POL claim needs an action, accounting, or live-source boundary.',
+    termIds: ['liquidity-provider', 'liquidity-units', 'asymmetric-withdrawal', 'impermanent-loss', 'impermanent-loss-protection', 'protocol-owned-liquidity', 'runepool'],
+    verifyHref: '/deep-dives/liquidity-actions#what-to-check-first',
+    verifyLabel: 'Check liquidity evidence ladder',
+    boundary: 'Pool accounting terms do not prove LP actions are open, yield is positive, POL scope is stable, or a pool is routeable.',
+  },
+  {
+    title: 'App Layer And Asset Terms',
+    badge: 'developer',
+    description: 'Use these when explaining memos, CosmWasm, secured assets, trade assets, and app-layer availability boundaries.',
+    termIds: ['memo', 'app-layer', 'cosmwasm', 'secured-asset', 'trade-asset', 'synthetic-asset'],
+    verifyHref: '/deep-dives/app-layer',
+    verifyLabel: 'Read app-layer explainer',
+    boundary: 'Do not infer contract, secured-asset, trade-account, or archived synth availability without live controls and dated product context.',
+  },
+  {
+    title: 'Incident And Recovery Terms',
+    badge: 'history',
+    description: 'Use these for deprecated THORFi context, TCY, and post-exploit TSS/security vocabulary.',
+    termIds: ['savers', 'tcy', 'gg20', 'dkls', 'schnorr', 'paillier', 'mta', 'multi-prime-modulus', 'keyverify'],
+    verifyHref: '/governance#current-recovery',
+    verifyLabel: 'Check recovery tracker',
+    boundary: 'Dated incident vocabulary is not present-day safety or recovery proof.',
+  },
+];
 
 export const GLOSSARY_TERMS: GlossaryTerm[] = [
   {
@@ -190,7 +210,7 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     reviewedAt: '2026-07-02',
     nextReviewDue: '2026-08-02',
     sources: [networkHaltsSource],
-    relatedHrefs: ['/network', '/governance'],
+    relatedHrefs: ['/network', '/deep-dives/mimir-halt-controls', '/governance'],
   },
   {
     id: slugifyFragment('Mimir override'),
@@ -198,8 +218,8 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     definition: 'A live operational value that can override a protocol default or constant. Current behavior should be checked against both constants and Mimir.',
     category: 'operations',
     confidence: 'official',
-    reviewedAt: '2026-07-04',
-    nextReviewDue: '2026-08-04',
+    reviewedAt: '2026-07-05',
+    nextReviewDue: '2026-08-05',
     sources: [networkHaltsSource, queryingThorchainSource],
     relatedHrefs: ['/protocol', '/network#network-diagnostics'],
   },
@@ -209,8 +229,8 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     definition: 'A current THORNode-provided address, router, gas-rate, and pause-state record for a supported external chain. Treat it as live availability evidence only.',
     category: 'operations',
     confidence: 'official',
-    reviewedAt: '2026-07-04',
-    nextReviewDue: '2026-08-04',
+    reviewedAt: '2026-07-05',
+    nextReviewDue: '2026-08-05',
     sources: [queryingThorchainSource, devDocsSource],
     relatedHrefs: ['/protocol', '/docs#current-protocol-state'],
   },
@@ -220,10 +240,87 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     definition: 'The transaction instruction string used by THORChain actions such as swaps, LP operations, refunds, affiliates, and other protocol messages.',
     category: 'developer',
     confidence: 'curated',
-    reviewedAt: '2026-07-04',
-    nextReviewDue: '2026-08-04',
+    reviewedAt: '2026-07-05',
+    nextReviewDue: '2026-08-05',
     sources: [devDocsSource, queryingThorchainSource],
     relatedHrefs: ['/protocol', '/docs#developer-integration'],
+  },
+  {
+    id: slugifyFragment('Quote'),
+    term: 'Quote',
+    definition: 'A short-lived THORNode swap response for a specific from-asset, to-asset, and amount. It can prove the route response at the checked time, but it is not wallet instructions, settlement proof, or durable route availability.',
+    category: 'operations',
+    confidence: 'curated',
+    reviewedAt: '2026-07-06',
+    nextReviewDue: '2026-08-06',
+    sources: [queryingThorchainSource, feesSource],
+    relatedHrefs: ['/network#network-diagnostics', '/deep-dives/streaming-swaps-refunds#what-to-check-first'],
+  },
+  {
+    id: slugifyFragment('Quote expiry'),
+    term: 'Quote expiry',
+    definition: 'The time limit after which a quote should no longer be treated as current. Expired quotes need a fresh quote before making route, fee, slippage, or minimum-input claims.',
+    category: 'operations',
+    confidence: 'curated',
+    reviewedAt: '2026-07-06',
+    nextReviewDue: '2026-08-06',
+    sources: [queryingThorchainSource],
+    relatedHrefs: ['/network#network-diagnostics', '/deep-dives/streaming-swaps-refunds#memos-limits-and-refund-addresses'],
+  },
+  {
+    id: slugifyFragment('recommended_min_amount_in'),
+    term: 'recommended_min_amount_in',
+    definition: 'A quote-field signal for the recommended minimum input amount, using THORChain base units. It is a current quote constraint, not a guarantee that a later transaction will execute or avoid refund.',
+    category: 'economics',
+    confidence: 'curated',
+    reviewedAt: '2026-07-06',
+    nextReviewDue: '2026-08-06',
+    sources: [feesSource, queryingThorchainSource],
+    relatedHrefs: ['/network#network-diagnostics', '/deep-dives/streaming-swaps-refunds#memos-limits-and-refund-addresses'],
+  },
+  {
+    id: slugifyFragment('Dust threshold'),
+    term: 'Dust threshold',
+    definition: 'A minimum amount boundary below which a chain or route may reject, ignore, or refund an action. Treat exact thresholds as live quote, inbound-address, or chain-specific evidence.',
+    category: 'operations',
+    confidence: 'curated',
+    reviewedAt: '2026-07-06',
+    nextReviewDue: '2026-08-06',
+    sources: [queryingThorchainSource, feesSource],
+    relatedHrefs: ['/network#network-diagnostics', '/deep-dives/build-query-data#quotes-inbound-addresses-and-caching'],
+  },
+  {
+    id: slugifyFragment('Refund address'),
+    term: 'Refund address',
+    definition: 'The address used for returning funds when a swap or action cannot complete. A glossary definition cannot prove a specific refund cause; use transaction evidence, memo shape, quote state, and live halts together.',
+    category: 'operations',
+    confidence: 'curated',
+    reviewedAt: '2026-07-06',
+    nextReviewDue: '2026-08-06',
+    sources: [devDocsSource, queryingThorchainSource],
+    relatedHrefs: ['/deep-dives/streaming-swaps-refunds#what-to-check-first', '/network#network-diagnostics'],
+  },
+  {
+    id: slugifyFragment('Streaming swap'),
+    term: 'Streaming swap',
+    definition: 'A swap execution style that can split execution over time or intervals to reduce price impact. Current streaming support, interval, limits, and refund behavior must come from quote and transaction evidence.',
+    category: 'operations',
+    confidence: 'curated',
+    reviewedAt: '2026-07-06',
+    nextReviewDue: '2026-08-06',
+    sources: [devDocsSource, feesSource],
+    relatedHrefs: ['/deep-dives/streaming-swaps-refunds', '/network#network-diagnostics'],
+  },
+  {
+    id: slugifyFragment('liquidity_tolerance_bps'),
+    term: 'liquidity_tolerance_bps',
+    definition: 'A basis-point tolerance used in swap or memo contexts to constrain acceptable liquidity/slippage behavior. It is not itself proof that a route is safe, cheap, or currently executable.',
+    category: 'economics',
+    confidence: 'curated',
+    reviewedAt: '2026-07-06',
+    nextReviewDue: '2026-08-06',
+    sources: [devDocsSource, feesSource],
+    relatedHrefs: ['/deep-dives/streaming-swaps-refunds#memos-limits-and-refund-addresses', '/deep-dives/clp#evidence-ladder'],
   },
   {
     id: slugifyFragment('Outbound fee'),
@@ -248,6 +345,17 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     relatedHrefs: ['/economics', '/dynamic-fees#dynamic-fees-live'],
   },
   {
+    id: slugifyFragment('THORName'),
+    term: 'THORName',
+    definition: 'A THORChain L1 vanity-name and alias record with an owner, expiry, chain aliases, and optional preferred asset for affiliate-fee payouts. It can support affiliate tracking and fee collection, but it does not by itself prove current dynamic-fee attribution, route quality, or interface safety.',
+    category: 'developer',
+    confidence: 'official',
+    reviewedAt: '2026-07-09',
+    nextReviewDue: '2026-08-09',
+    sources: [thornameGuideSource],
+    relatedHrefs: ['/docs#developer-integration', '/dynamic-fees#dynamic-fees-live', '/glossary#term-affiliate-fee'],
+  },
+  {
     id: slugifyFragment('Dynamic L1 fee'),
     term: 'Dynamic L1 fee',
     definition: 'ADR-026 experiment terminology for per-thorname, per-pair L1 minimum slip floors adjusted by TOR-denominated fee evidence. Live state is current-only THORNode evidence.',
@@ -264,21 +372,21 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     definition: 'Liquidity controlled by the protocol rather than ordinary external LPs. Balances, exposure, and enabled state should be described with current source labels.',
     category: 'economics',
     confidence: 'curated',
-    reviewedAt: '2026-07-04',
-    nextReviewDue: '2026-08-04',
-    sources: [docsSource],
-    relatedHrefs: ['/economics', '/stats#stats-look-here-first'],
+    reviewedAt: '2026-07-06',
+    nextReviewDue: '2026-08-06',
+    sources: [runePoolDocsSource, runePoolDevSource, runePoolEndpointSource],
+    relatedHrefs: ['/economics#runepool-pol-live', '/deep-dives/runepool-pol#accounting-checks', '/stats#stats-look-here-first'],
   },
   {
     id: slugifyFragment('RUNEPool'),
     term: 'RUNEPool',
-    definition: 'A RUNE-only participation mechanism whose availability depends on current protocol controls and should not be assumed from static text.',
+    definition: 'A RUNE-only participation mechanism with aggregate exposure to POL-enabled pools. Current value, PnL, POL scope, and deposit or withdrawal availability need live THORNode and Mimir evidence.',
     category: 'economics',
     confidence: 'curated',
-    reviewedAt: '2026-07-02',
-    nextReviewDue: '2026-08-02',
-    sources: [docsSource, networkHaltsSource],
-    relatedHrefs: ['/rune', '/network'],
+    reviewedAt: '2026-07-06',
+    nextReviewDue: '2026-08-06',
+    sources: [runePoolDocsSource, runePoolDevSource, runePoolEndpointSource, networkHaltsSource],
+    relatedHrefs: ['/economics#runepool-pol-live', '/deep-dives/runepool-pol#accounting-checks', '/network#network-diagnostics'],
   },
   {
     id: slugifyFragment('Secured asset'),
@@ -341,21 +449,21 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
     definition: 'A deprecated historical THORFi feature. Current wiki copy should frame Savers as archived, not presently available yield.',
     category: 'history',
     confidence: 'official',
-    reviewedAt: '2026-07-02',
-    nextReviewDue: '2026-08-02',
+    reviewedAt: '2026-07-05',
+    nextReviewDue: '2026-08-05',
     sources: [archivedSource],
     relatedHrefs: ['/tcy', '/deep-dives/savers'],
   },
   {
     id: slugifyFragment('TCY'),
     term: 'TCY',
-    definition: 'A recovery-token framing associated with the THORFi unwind and later recovery context. Current status needs source-specific review.',
+    definition: 'A recovery-token framing associated with the THORFi unwind. Official sources describe 1 TCY per $1 of defaulted THORFi debt and warn that full recovery is market dependent, so current claim, staking, and value claims need fresh evidence.',
     category: 'history',
     confidence: 'needs-review',
-    reviewedAt: '2026-07-02',
-    nextReviewDue: '2026-07-16',
-    sources: [docsSource, archivedSource],
-    relatedHrefs: ['/tcy', '/governance'],
+    reviewedAt: '2026-07-05',
+    nextReviewDue: '2026-08-05',
+    sources: [tokenomicsSource, tcyGuideSource, archivedSource],
+    relatedHrefs: ['/tcy', '/deep-dives/tcy-recovery-timeline', '/governance#current-recovery'],
   },
   {
     id: slugifyFragment('DKLS'),

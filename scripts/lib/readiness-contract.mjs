@@ -44,6 +44,12 @@ function assertOptionalNumber(value, path) {
   }
 }
 
+function assertOptionalNumberOrNull(value, path) {
+  if (value !== undefined && value !== null) {
+    assert(typeof value === 'number' && Number.isFinite(value), `${path} must be a finite number or null`);
+  }
+}
+
 function assertOptionalBoolean(value, path) {
   if (value !== undefined) {
     assert(typeof value === 'boolean', `${path} must be boolean`);
@@ -186,6 +192,19 @@ function assertExactDynamicFeeSources(sources, path) {
   }
 }
 
+function assertExactRunePoolPolSources(sources, path) {
+  assertSourceMetaArray(sources, path);
+  const requiredSources = [
+    ['latest Cosmos block', (url) => sourcePathEndsWith(url.pathname, '/base/tendermint/v1beta1/blocks/latest')],
+    ['height-pinned /mimir', (url) => isHeightPinnedSource(url, '/mimir')],
+    ['height-pinned /runepool', (url) => isHeightPinnedSource(url, '/runepool')],
+  ];
+
+  for (const [label, predicate] of requiredSources) {
+    assert(sourceUrlMatches(sources, predicate), `${path} must include ${label}`);
+  }
+}
+
 function assertSameReadySourceGroup(referenceSource, candidate, path, referencePath) {
   assertReadySource(candidate, path);
   assertRequiredSourceMeta(referenceSource, referencePath);
@@ -259,6 +278,30 @@ export function assertReadinessContract(json) {
   assertStringArray(dynamicFees.sourceWarnings, 'sources.thornode.dynamicFees.sourceWarnings');
   assertWarningDetails(dynamicFees.sourceWarningDetails, 'sources.thornode.dynamicFees.sourceWarningDetails');
 
+  const runePoolPol = thornode.runePoolPol;
+  assert(runePoolPol && typeof runePoolPol === 'object', 'sources.thornode.runePoolPol must be an object');
+  assert(allowedSourceStatuses.has(runePoolPol.status), 'sources.thornode.runePoolPol.status must be ok or degraded');
+  assertSourceMeta(runePoolPol.source, 'sources.thornode.runePoolPol.source');
+  if (runePoolPol.sources !== undefined) {
+    assert(Array.isArray(runePoolPol.sources), 'sources.thornode.runePoolPol.sources must be an array');
+    runePoolPol.sources.forEach((source, index) => assertSourceMeta(source, `sources.thornode.runePoolPol.sources[${index}]`));
+  }
+  assertOptionalString(runePoolPol.checkedAt, 'sources.thornode.runePoolPol.checkedAt');
+  assertOptionalString(runePoolPol.error, 'sources.thornode.runePoolPol.error');
+  assertOptionalNumber(runePoolPol.activePolPoolCount, 'sources.thornode.runePoolPol.activePolPoolCount');
+  assertOptionalString(runePoolPol.depositMaturityBlocksState, 'sources.thornode.runePoolPol.depositMaturityBlocksState');
+  assertOptionalNumberOrNull(runePoolPol.depositMaturityBlocksValue, 'sources.thornode.runePoolPol.depositMaturityBlocksValue');
+  assertOptionalString(runePoolPol.maxReserveBackstopState, 'sources.thornode.runePoolPol.maxReserveBackstopState');
+  assertOptionalNumberOrNull(runePoolPol.maxReserveBackstopValue, 'sources.thornode.runePoolPol.maxReserveBackstopValue');
+  assertOptionalString(runePoolPol.minRunePoolDepthState, 'sources.thornode.runePoolPol.minRunePoolDepthState');
+  assertOptionalNumberOrNull(runePoolPol.minRunePoolDepthValue, 'sources.thornode.runePoolPol.minRunePoolDepthValue');
+  assertOptionalNumber(runePoolPol.thorchainHeight, 'sources.thornode.runePoolPol.thorchainHeight');
+  assertOptionalBoolean(runePoolPol.snapshotPinned, 'sources.thornode.runePoolPol.snapshotPinned');
+  assertOptionalString(runePoolPol.thorchainBlockTime, 'sources.thornode.runePoolPol.thorchainBlockTime');
+  assertOptionalNumber(runePoolPol.thorchainBlockAgeSeconds, 'sources.thornode.runePoolPol.thorchainBlockAgeSeconds');
+  assertStringArray(runePoolPol.sourceWarnings, 'sources.thornode.runePoolPol.sourceWarnings');
+  assertWarningDetails(runePoolPol.sourceWarningDetails, 'sources.thornode.runePoolPol.sourceWarningDetails');
+
   const statusIsReady = json.status === 'ready';
   assert(statusIsReady === json.ready, 'readiness status and ready flag must agree');
 
@@ -278,6 +321,10 @@ export function assertReadinessContract(json) {
     assertExactDynamicFeeSources(dynamicFees.sources, 'sources.thornode.dynamicFees.sources');
     assertEmptyArray(dynamicFees.sourceWarnings, 'sources.thornode.dynamicFees.sourceWarnings');
     assertEmptyArray(dynamicFees.sourceWarningDetails, 'sources.thornode.dynamicFees.sourceWarningDetails');
+    assertSameReadySourceGroup(thornode.source, runePoolPol, 'sources.thornode.runePoolPol', 'sources.thornode.source');
+    assertExactRunePoolPolSources(runePoolPol.sources, 'sources.thornode.runePoolPol.sources');
+    assertEmptyArray(runePoolPol.sourceWarnings, 'sources.thornode.runePoolPol.sourceWarnings');
+    assertEmptyArray(runePoolPol.sourceWarningDetails, 'sources.thornode.runePoolPol.sourceWarningDetails');
     if (json.runtime.strict) {
       assert(json.runtime.verified, 'ready responses with strict runtime metadata must be verified');
       assertEmptyArray(json.runtime.warnings, 'runtime.warnings');

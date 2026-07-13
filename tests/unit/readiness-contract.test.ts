@@ -22,6 +22,13 @@ const dynamicFeeSources = [
   { label: 'THORNode dynamic L1 fee history ss', url: 'https://thornode.thorchain.network/thorchain/dynamic_l1_fees/ss?height=26799999' },
 ];
 
+const runePoolPolSources = [
+  { label: 'THORNode', url: 'https://thornode.thorchain.network/thorchain' },
+  { label: 'THORNode latest block', url: 'https://thornode.thorchain.network/cosmos/base/tendermint/v1beta1/blocks/latest' },
+  { label: 'THORNode Mimir', url: 'https://thornode.thorchain.network/thorchain/mimir?height=26799999' },
+  { label: 'THORNode RUNEPool accounting', url: 'https://thornode.thorchain.network/thorchain/runepool?height=26799999' },
+];
+
 function readinessResponse() {
   return {
     status: 'degraded',
@@ -110,6 +117,25 @@ function readinessResponse() {
             },
           ],
         },
+        runePoolPol: {
+          status: 'ok',
+          checkedAt: '2026-07-04T00:00:00.000Z',
+          source: { label: 'THORNode', url: 'https://thornode.thorchain.network/thorchain' },
+          sources: runePoolPolSources,
+          activePolPoolCount: 2,
+          depositMaturityBlocksState: 'present',
+          depositMaturityBlocksValue: 14400,
+          maxReserveBackstopState: 'present',
+          maxReserveBackstopValue: 2500000000000,
+          minRunePoolDepthState: 'present',
+          minRunePoolDepthValue: 1000000000000,
+          thorchainHeight: 26800000,
+          snapshotPinned: true,
+          thorchainBlockTime: '2026-07-04T00:00:00.000Z',
+          thorchainBlockAgeSeconds: 2,
+          sourceWarnings: [],
+          sourceWarningDetails: [],
+        },
       },
     },
   };
@@ -122,6 +148,8 @@ function readyResponse() {
   response.reasons = [];
   response.sources.thornode.dynamicFees.sourceWarnings = [];
   response.sources.thornode.dynamicFees.sourceWarningDetails = [];
+  response.sources.thornode.runePoolPol.sourceWarnings = [];
+  response.sources.thornode.runePoolPol.sourceWarningDetails = [];
   return response;
 }
 
@@ -132,6 +160,18 @@ describe('readiness runtime contract helper', () => {
 
   it('accepts warning-free ready responses', () => {
     expect(() => assertReadinessContract(readyResponse())).not.toThrow();
+  });
+
+  it('accepts null optional RUNEPool/POL Mimir config values', () => {
+    const response = readyResponse();
+    const runePoolPol = response.sources.thornode.runePoolPol as {
+      depositMaturityBlocksValue: number | null;
+      maxReserveBackstopValue: number | null;
+    };
+    runePoolPol.depositMaturityBlocksValue = null;
+    runePoolPol.maxReserveBackstopValue = null;
+
+    expect(() => assertReadinessContract(response)).not.toThrow();
   });
 
   it('rejects readiness responses that omit runtime diagnostics', () => {
@@ -168,6 +208,13 @@ describe('readiness runtime contract helper', () => {
     delete (response.sources.thornode as { dynamicFees?: unknown }).dynamicFees;
 
     expect(() => assertReadinessContract(response)).toThrow(/sources\.thornode\.dynamicFees must be an object/);
+  });
+
+  it('rejects readiness responses that omit RUNEPool/POL diagnostics', () => {
+    const response = readinessResponse();
+    delete (response.sources.thornode as { runePoolPol?: unknown }).runePoolPol;
+
+    expect(() => assertReadinessContract(response)).toThrow(/sources\.thornode\.runePoolPol must be an object/);
   });
 
   it('rejects contradictory ready status flags', () => {
@@ -234,6 +281,17 @@ describe('readiness runtime contract helper', () => {
     expect(() => assertReadinessContract(response)).toThrow(/dynamicFees\.source must share provider origin/);
   });
 
+  it('rejects ready responses with mixed THORNode and RUNEPool/POL providers', () => {
+    const response = readyResponse();
+    response.sources.thornode.source = { label: 'THORNode', url: 'https://thornode.thorchain.network/thorchain' };
+    response.sources.thornode.runePoolPol.source = {
+      label: 'Liquify THORNode',
+      url: 'https://gateway.liquify.com/chain/thorchain_api/thorchain',
+    };
+
+    expect(() => assertReadinessContract(response)).toThrow(/runePoolPol\.source must share provider origin/);
+  });
+
   it('rejects ready responses without exact THORNode network endpoint evidence', () => {
     const response = readyResponse();
     response.sources.thornode.sources = [
@@ -248,5 +306,12 @@ describe('readiness runtime contract helper', () => {
     response.sources.thornode.dynamicFees.sources = dynamicFeeSources.filter((source) => !source.url.includes('/dynamic_l1_fees_current'));
 
     expect(() => assertReadinessContract(response)).toThrow(/dynamicFees\.sources must include height-pinned \/dynamic_l1_fees_current/);
+  });
+
+  it('rejects ready responses without exact RUNEPool/POL endpoint evidence', () => {
+    const response = readyResponse();
+    response.sources.thornode.runePoolPol.sources = runePoolPolSources.filter((source) => !source.url.includes('/runepool'));
+
+    expect(() => assertReadinessContract(response)).toThrow(/runePoolPol\.sources must include height-pinned \/runepool/);
   });
 });

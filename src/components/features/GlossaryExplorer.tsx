@@ -1,7 +1,8 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { Search, X } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import { FreshnessMeta } from '@/components/ui/FreshnessMeta';
@@ -23,6 +24,13 @@ export interface GlossaryExplorerTerm {
 }
 
 const ALL_CATEGORIES = 'all';
+const QUERY_PARAM = 'q';
+const CATEGORY_PARAM = 'category';
+
+interface GlossaryFilterState {
+  query: string;
+  category: string;
+}
 
 function normalizeText(value: string) {
   return value
@@ -37,25 +45,54 @@ function queryWords(query: string) {
     .filter((word) => word.length > 1);
 }
 
-function termMatchesQuery(term: GlossaryExplorerTerm, query: string) {
+export function termMatchesQuery(term: GlossaryExplorerTerm, query: string) {
   const words = queryWords(query);
   if (words.length === 0) {
     return true;
   }
 
-  const haystack = normalizeText([
+  const searchableFields = [
+    term.id,
     term.term,
     term.definition,
     term.category,
     ...term.sources.map((source) => source.label),
-    ...term.relatedLinks.map((link) => link.label),
-  ].join(' '));
+    ...term.relatedLinks.flatMap((link) => [link.label, link.href]),
+  ].map(normalizeText);
 
-  return words.every((word) => haystack.includes(word));
+  return searchableFields.some((field) => words.every((word) => field.includes(word)));
 }
 
 function categoryLabel(category: string) {
   return category.charAt(0).toUpperCase() + category.slice(1);
+}
+
+function normalizeCategory(value: string | null, categories: string[]) {
+  return value && categories.includes(value) ? value : ALL_CATEGORIES;
+}
+
+function describeNoResults(query: string, category: string) {
+  const cleanedQuery = query.trim();
+  if (cleanedQuery && category !== ALL_CATEGORIES) {
+    return `No glossary terms match "${cleanedQuery}" inside ${categoryLabel(category)}.`;
+  }
+  if (cleanedQuery) {
+    return `No glossary terms match "${cleanedQuery}".`;
+  }
+  if (category !== ALL_CATEGORIES) {
+    return `No glossary terms are currently tagged as ${categoryLabel(category)}.`;
+  }
+
+  return 'No glossary terms match the current filters.';
+}
+
+function replaceUrlFromFilter(nextUrl: string) {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  window.history.replaceState(window.history.state, '', nextUrl);
+  window.dispatchEvent(new PopStateEvent('popstate', { state: window.history.state }));
 }
 
 function GlossaryTermCard({ term }: { term: GlossaryExplorerTerm }) {
@@ -91,13 +128,32 @@ function GlossaryTermCard({ term }: { term: GlossaryExplorerTerm }) {
 }
 
 export function GlossaryExplorer({ terms }: { terms: GlossaryExplorerTerm[] }) {
-  const [query, setQuery] = useState('');
-  const [category, setCategory] = useState(ALL_CATEGORIES);
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const searchParamString = searchParams.toString();
   const categories = useMemo(
     () => Array.from(new Set(terms.map((term) => term.category))).sort((left, right) => left.localeCompare(right)),
     [terms]
   );
+  const query = searchParams.get(QUERY_PARAM) ?? '';
+  const category = normalizeCategory(searchParams.get(CATEGORY_PARAM), categories);
+  const latestFiltersRef = useRef<GlossaryFilterState>({
+    query,
+    category,
+  });
+
+  useEffect(() => {
+    latestFiltersRef.current = {
+      query,
+      category,
+    };
+  }, [category, query]);
+
   const activeFilters = query.trim() !== '' || category !== ALL_CATEGORIES;
+  const activeFilterLabels = [
+    query.trim() !== '' ? `Search: ${query.trim()}` : null,
+    category !== ALL_CATEGORIES ? `Category: ${categoryLabel(category)}` : null,
+  ].filter((label): label is string => label !== null);
   const categoryCounts = useMemo(() => {
     const counts = new Map<string, number>(categories.map((value) => [value, 0]));
     for (const term of terms) {
@@ -116,9 +172,40 @@ export function GlossaryExplorer({ terms }: { terms: GlossaryExplorerTerm[] }) {
     }))
     .filter((group) => group.terms.length > 0);
 
+  const replaceFiltersInUrl = useCallback((nextFilters: GlossaryFilterState) => {
+    const nextParams = new URLSearchParams(searchParamString);
+    const normalizedNextQuery = nextFilters.query.trim();
+
+    if (normalizedNextQuery) {
+      nextParams.set(QUERY_PARAM, normalizedNextQuery);
+    } else {
+      nextParams.delete(QUERY_PARAM);
+    }
+
+    if (nextFilters.category === ALL_CATEGORIES) {
+      nextParams.delete(CATEGORY_PARAM);
+    } else {
+      nextParams.set(CATEGORY_PARAM, nextFilters.category);
+    }
+
+    const nextParamString = nextParams.toString();
+    replaceUrlFromFilter(nextParamString ? `${pathname}?${nextParamString}` : pathname);
+  }, [pathname, searchParamString]);
+
+  const updateFilters = (patch: Partial<GlossaryFilterState>) => {
+    const nextFilters = {
+      ...latestFiltersRef.current,
+      ...patch,
+    };
+    latestFiltersRef.current = nextFilters;
+    replaceFiltersInUrl(nextFilters);
+  };
+
   const resetFilters = () => {
-    setQuery('');
-    setCategory(ALL_CATEGORIES);
+    updateFilters({
+      query: '',
+      category: ALL_CATEGORIES,
+    });
   };
 
   return (
@@ -129,6 +216,9 @@ export function GlossaryExplorer({ terms }: { terms: GlossaryExplorerTerm[] }) {
             <h2 id="glossary-explorer" className="text-sm font-semibold text-slate-100">Term Finder</h2>
             <p aria-live="polite" className="mt-1 text-xs text-slate-400">
               Showing {filteredTerms.length} of {terms.length} source-backed terms.
+            </p>
+            <p className="mt-1 text-xs text-slate-500">
+              Searches terms, definitions, source labels, and related proof links.
             </p>
           </div>
           {activeFilters && (
@@ -151,7 +241,7 @@ export function GlossaryExplorer({ terms }: { terms: GlossaryExplorerTerm[] }) {
                 aria-label="Filter glossary terms"
                 type="search"
                 value={query}
-                onChange={(event) => setQuery(event.target.value)}
+                onChange={(event) => updateFilters({ query: event.target.value })}
                 placeholder="Filter terms..."
                 className="w-full rounded-lg border border-border bg-surface py-2.5 pl-9 pr-3 text-sm text-slate-100 shadow-sm transition-colors placeholder:text-slate-600 focus:border-accent/50 focus:outline-none focus:ring-1 focus:ring-accent/50"
               />
@@ -161,7 +251,7 @@ export function GlossaryExplorer({ terms }: { terms: GlossaryExplorerTerm[] }) {
           <nav aria-label="Glossary categories" className="flex flex-wrap gap-2 lg:max-w-xl lg:justify-end">
             <button
               type="button"
-              onClick={() => setCategory(ALL_CATEGORIES)}
+              onClick={() => updateFilters({ category: ALL_CATEGORIES })}
               aria-pressed={category === ALL_CATEGORIES}
               className={`rounded-md border px-3 py-1.5 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 ${
                 category === ALL_CATEGORIES
@@ -176,7 +266,7 @@ export function GlossaryExplorer({ terms }: { terms: GlossaryExplorerTerm[] }) {
               <button
                 key={option}
                 type="button"
-                onClick={() => setCategory(option)}
+                onClick={() => updateFilters({ category: option })}
                 aria-pressed={category === option}
                 className={`rounded-md border px-3 py-1.5 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 ${
                   category === option
@@ -190,6 +280,16 @@ export function GlossaryExplorer({ terms }: { terms: GlossaryExplorerTerm[] }) {
             ))}
           </nav>
         </div>
+        {activeFilterLabels.length > 0 && (
+          <div className="mt-4 flex flex-wrap gap-1.5" aria-label="Active glossary filters">
+            {activeFilterLabels.map((label) => (
+              <span key={label} className="rounded-md border border-accent/20 bg-accent/10 px-2 py-1 text-[11px] text-accent">
+                {label}
+              </span>
+            ))}
+            <span className="text-[11px] text-slate-500">This filtered view is reflected in the URL.</span>
+          </div>
+        )}
       </div>
 
       {visibleCategories.map((group) => (
@@ -205,15 +305,17 @@ export function GlossaryExplorer({ terms }: { terms: GlossaryExplorerTerm[] }) {
 
       {filteredTerms.length === 0 && (
         <div className="rounded-lg border border-border bg-surface-elevated p-6 text-sm text-slate-400">
-          No glossary terms match the current filters.
+          <p className="font-medium text-slate-300">{describeNoResults(query, category)}</p>
+          <p className="mt-1">
+            Try another term, source label, related page, or proof-link anchor.
+          </p>
           <button
             type="button"
             onClick={resetFilters}
-            className="ml-1 text-accent underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
+            className="mt-3 text-accent underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
           >
             Reset filters
           </button>
-          .
         </div>
       )}
     </section>

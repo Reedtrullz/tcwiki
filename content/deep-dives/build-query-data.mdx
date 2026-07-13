@@ -1,0 +1,115 @@
+# Build And Query THORChain Data
+
+Building on THORChain data starts with a source choice. Midgard, THORNode, Cosmos RPC, Tendermint RPC, and gRPC answer different questions, and a good integration should not treat them as interchangeable just because they are all "API data".
+
+Use this guide for query planning and source safety. Do not use it as transaction instructions.
+
+## Query Plan
+
+Start with the user-facing claim or product behavior:
+
+1. **Dashboard metric:** use Midgard, then show provider health and source freshness beside the number.
+2. **Current protocol state:** use THORNode for Mimirs, inbound addresses, quotes, node/version state, and exact current blockers.
+3. **Wallet or transaction construction:** use official developer docs for format, then use fresh THORNode quote and inbound-address data immediately before the user signs.
+4. **Consensus or node monitoring:** use Tendermint RPC, Cosmos RPC, or gRPC according to the data family, not Midgard dashboard endpoints.
+5. **Historical or indexed analysis:** label whether the result comes from Midgard intervals, an explorer, a local archive, or another model.
+
+If a feature needs more than one live endpoint, keep the evidence scoped. A Midgard pool list can help populate choices; it does not prove a concrete route is safe or currently executable.
+
+## Source Families
+
+The official developer docs describe five primary data sources:
+
+- **Midgard:** dashboard-friendly consumer data for swaps, pools, volume, users, network totals, and historical-looking time series.
+- **THORNode:** THORChain-specific state-machine data such as Mimirs, inbound addresses, quotes, transaction state, and node/version context.
+- **Cosmos RPC:** generic Cosmos SDK data such as balances and blocks.
+- **Tendermint RPC:** consensus and node-status data for monitoring and debugging.
+- **gRPC:** protobuf-based Cosmos SDK access for programmatic clients.
+
+For production apps, public endpoints should be treated as shared infrastructure. The official docs recommend identifying your application to Liquify with `x-client-id`, handling rate limits and overload responses with backoff, and running your own node for production uptime and trust needs.
+
+## Minimum Safe Query Sequence
+
+For a swap, wallet, or route-aware integration, a conservative query sequence is:
+
+1. Load available pool or asset choices from Midgard pools, and include Native RUNE where appropriate.
+2. Read THORNode inbound addresses for the source chain and inspect chain halt, router, gas-rate, dust-threshold, and LP-action fields relevant to the action.
+3. Read current Mimir or network diagnostics when the claim is about halts, pauses, enabled state, source warnings, or review-only unknown controls.
+4. Request a fresh THORNode quote for the route and amount when the claim is about executable swap behavior.
+5. Use the quote response fields for fees, expiry, recommended gas, recommended minimum input, memo, expected output, warning text, and timing.
+6. Re-check immediately before signing if the user paused, edited input, changed route, or crossed quote expiry.
+
+Do not silently carry a quote, inbound address, or gas rate from an old render into a later transaction flow.
+
+## Quotes, Inbound Addresses, And Caching
+
+Quotes and inbound addresses are short-lived operational evidence.
+
+The swap guide warns not to cache quote responses or send funds after quote expiry. It also calls out a quote endpoint rate limit of roughly one request per second per IP, so frontend inputs should debounce or throttle quote probing instead of firing on every keystroke.
+
+The querying guide is similarly strict about inbound addresses:
+
+- Inbound addresses change with vault churn.
+- A chain can be halted in the inbound-address response.
+- Router fields matter for token deposits on EVM-style chains.
+- Gas rate and dust threshold are part of the current source evidence.
+- Public Midgard can be phished or stale, so safety-sensitive flows should compare trusted sources or run their own node.
+
+For the wiki, this means a quote result is strong current evidence for that route and amount, but it is not a reusable transaction template or future availability proof.
+
+## Amounts, Assets, And Units
+
+Most THORChain and Midgard numeric amount fields use `1e8` base units unless a field explicitly says otherwise, such as a USD field. Do not parse large base-unit values through floating point math when exactness matters.
+
+Builder-facing checks:
+
+- Use THORChain asset notation such as `BTC.BTC`, `ETH.ETH`, or token forms from the official asset-notation docs.
+- Treat Midgard pool status as pool-list context. Only pools with available status are candidates for ordinary trading, but a pool list is not route execution proof.
+- Convert human input to base units before quote requests, and convert display output back from base units with clear labels.
+- Preserve `null`, `unavailable`, `insufficient samples`, and malformed fields as distinct states.
+- Do not render missing money, amount, APY, fee, or bps fields as zero.
+
+If an integration mixes native token decimals, THORChain base units, USD strings, and bps fields, name the unit in the UI and tests.
+
+## Error Handling And Provider Posture
+
+A safe integration should plan for upstream failure before the first request ships.
+
+Recommended behavior:
+
+- Handle `429` rate limits and `503` overload responses with backoff instead of tight retry loops.
+- Fail over only after validating response shape.
+- Keep source provider, checked time, block height, and warnings visible for trust-sensitive data.
+- Do not mix independent provider reads into one confident snapshot unless the UI says the sources differ.
+- Treat malformed Mimir values, duplicate scoped records, missing required fields, and unknown operation-like keys as degraded source posture.
+- Keep raw response bodies out of transaction instructions unless the user intentionally opens diagnostics.
+
+The goal is not to make every warning fatal. The goal is to show the known fact and the source-quality caveat at the same time.
+
+## What To Verify Before Shipping
+
+Before shipping a THORChain integration or public analysis, verify:
+
+1. Which source family owns each displayed claim.
+2. Whether live values use one provider, a failover provider, or mixed providers.
+3. Whether quotes are requested on demand, throttled, and discarded after expiry.
+4. Whether inbound addresses, router fields, gas rates, dust thresholds, and halts are fresh at signing time.
+5. Whether Midgard metrics are labeled as indexed dashboard data rather than raw protocol state.
+6. Whether base-unit parsing, large numbers, missing fields, and malformed responses fail safely.
+7. Whether error copy separates route unavailability, source unavailability, unsupported assets, and user-input problems.
+
+If those checks are not implemented, call the integration or analysis partial.
+
+## Non-Claims
+
+This page does not prove:
+
+- That any public endpoint will remain available, fast, or rate-limit free.
+- That one provider agrees with all other THORNode or Midgard providers.
+- That a quoted route is safe, cheap, competitive, or executable after expiry.
+- That an inbound address, memo, router, or gas rate copied from this wiki is safe to use.
+- That static developer docs prove a feature is live or unpaused right now.
+- That a third-party SDK, wallet, explorer, or interface is production-ready.
+- That Midgard indexed data is canonical protocol state.
+
+Use this page as a query plan. Use official docs, live diagnostics, fresh quote responses, and integration-specific tests before shipping.

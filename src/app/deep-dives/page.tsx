@@ -6,27 +6,158 @@ import { Badge } from '@/components/ui/Badge';
 import { FreshnessMeta } from '@/components/ui/FreshnessMeta';
 import { RouteSourcePosture } from '@/components/features/RouteSourcePosture';
 import { getConfidenceLabel, getConfidenceTone } from '@/lib/trust';
+import {
+  DeepDiveLibraryExplorer,
+  type DeepDiveLibraryArticle,
+  type DeepDiveLibraryTopic,
+} from '@/components/features/DeepDiveLibraryExplorer';
+import { getDeepDiveArticleClaimBoundary, getDeepDiveArticleUseCase } from '@/lib/deep-dive-posture';
 
 export const metadata = createRouteMetadata({
   title: 'THORChain Deep Dives | THORChain Wiki',
-  description: 'Long-form source-backed explainers for CLP, Bifrost, TSS, churning, slashing, RUNE settlement, and historical Savers/Lending.',
+  description: 'Long-form source-backed explainers for live data, builder query planning, CLP, liquidity actions, RUNEPool/POL evidence, swaps and refunds, Mimir halt controls, Bifrost, TSS, churning, slashing, RUNE settlement, App Layer, and historical THORFi topics.',
   path: '/deep-dives',
 });
 
 const entry = getContentEntry('deep-dives');
 
+const deepDiveStartingPoints = [
+  {
+    label: 'Learn the model',
+    href: '/deep-dives#deep-dive-path-new-to-thorchain',
+    badge: 'start here',
+    description: 'RUNE settlement, CLP, live data boundaries, Bifrost observation, and TSS vault signing.',
+  },
+  {
+    label: 'Check live availability',
+    href: '/network#network-diagnostics',
+    badge: 'current state',
+    description: 'Use network diagnostics before treating any article as proof that swaps, signing, LP, or app-layer actions are live.',
+  },
+  {
+    label: 'Build or query data',
+    href: '/deep-dives/build-query-data#query-plan',
+    badge: 'builder',
+    description: 'Endpoint choice, units, quotes, inbound addresses, source warnings, and failover posture.',
+  },
+  {
+    label: 'Debug swaps or refunds',
+    href: '/deep-dives/streaming-swaps-refunds#what-to-check-first',
+    badge: 'triage',
+    description: 'Fresh quote checks, memos, limits, fees, halt state, transaction evidence, and refund boundaries.',
+  },
+];
+
+const deepDiveLibraryTopics: DeepDiveLibraryTopic[] = [
+  {
+    id: 'data-builder',
+    label: 'Data & builders',
+    description: 'Source-family choices, endpoint sequencing, live-data evidence boundaries, and integration query plans.',
+    entryIds: ['deep-dive-midgard-thornode-data', 'deep-dive-build-query-data'],
+  },
+  {
+    id: 'swaps-liquidity',
+    label: 'Swaps & liquidity',
+    description: 'Settlement, CLP, LP actions, RUNEPool/POL accounting, refunds, incentives, and fee/economic boundaries.',
+    entryIds: [
+      'deep-dive-rune-settlement',
+      'deep-dive-clp',
+      'deep-dive-liquidity-actions',
+      'deep-dive-runepool-pol',
+      'deep-dive-streaming-swaps-refunds',
+      'deep-dive-incentive-pendulum',
+    ],
+  },
+  {
+    id: 'security-operations',
+    label: 'Security & ops',
+    description: 'Mimir halt controls, TSS, Bifrost observation, churning, slashing, and current-state safety boundaries.',
+    entryIds: [
+      'deep-dive-mimir-halt-controls',
+      'deep-dive-tss',
+      'deep-dive-bifrost',
+      'deep-dive-churning',
+      'deep-dive-slashing',
+    ],
+  },
+  {
+    id: 'apps-recovery',
+    label: 'Apps & recovery',
+    description: 'App Layer, secured assets, trade accounts, deprecated THORFi context, and TCY/recovery history.',
+    entryIds: ['deep-dive-app-layer', 'deep-dive-tcy-recovery-timeline', 'deep-dive-savers'],
+  },
+];
+
 export default function DeepDivesIndex() {
+  const deepDiveArticles: DeepDiveLibraryArticle[] = DEEP_DIVE_ENTRIES.map((dive) => {
+    const readerPaths = DEEP_DIVE_READER_PATHS.filter((path) => path.entryIds.includes(dive.id));
+
+    return {
+      id: dive.id,
+      title: dive.title,
+      href: dive.href,
+      description: dive.description,
+      searchText: dive.body,
+      tags: dive.tags,
+      confidence: dive.confidence,
+      reviewedAt: dive.reviewedAt,
+      nextReviewDue: dive.nextReviewDue,
+      sources: dive.sources,
+      useCase: getDeepDiveArticleUseCase(dive.id, dive.title, dive.confidence),
+      claimBoundary: getDeepDiveArticleClaimBoundary(dive.id, dive.confidence, readerPaths),
+      readerPaths: readerPaths.map((path) => ({
+        title: path.title,
+        href: `/deep-dives#deep-dive-path-${path.id}`,
+      })),
+    };
+  });
+
   return (
     <PageContainer>
       <h1 className="text-3xl font-bold tracking-tight mb-2">Deep Dives</h1>
       <p className="text-slate-400 max-w-3xl mb-6">
         In-depth explanations of core THORChain concepts and mechanisms.
       </p>
+
+      <section id="deep-dive-start-here" className="mb-8 scroll-mt-24">
+        <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-400">Look Here First</h2>
+            <p className="mt-1 max-w-3xl text-xs leading-relaxed text-slate-400">
+              Pick the job before picking the article. Long-form explanations stay separate from current live evidence.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs">
+            <Link href="/search#search-guided-answers" className="text-slate-400 transition-colors hover:text-slate-300">
+              Browse guided answers
+            </Link>
+            <a href="#deep-dive-library" className="text-accent transition-colors hover:text-accent/80">
+              Browse article library
+            </a>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+          {deepDiveStartingPoints.map((startingPoint) => (
+            <Link
+              key={startingPoint.href}
+              href={startingPoint.href}
+              className="block rounded-lg border border-border bg-surface-elevated p-4 transition-colors hover:border-accent/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
+            >
+              <div className="mb-3 flex flex-wrap items-center gap-2">
+                <Badge variant={startingPoint.badge === 'current state' ? 'warning' : 'info'}>{startingPoint.badge}</Badge>
+                <span className="text-sm font-semibold text-slate-100">{startingPoint.label}</span>
+              </div>
+              <p className="text-xs leading-relaxed text-slate-400">{startingPoint.description}</p>
+            </Link>
+          ))}
+        </div>
+      </section>
+
       <RouteSourcePosture
         entry={entry}
         className="mb-12"
         useFor={[
-          'Finding long-form explainers for CLP, Bifrost, TSS, churning, slashing, RUNE settlement, and historical THORFi topics.',
+          'Finding long-form explainers for live-data evidence, builder query planning, CLP, liquidity actions, RUNEPool/POL evidence, swap/refund triage, Mimir halt controls, Bifrost, TSS, churning, slashing, RUNE settlement, App Layer, and historical THORFi topics.',
           'Comparing confidence and review dates before reading a deeper article.',
         ]}
         verifyBeforeClaiming={[
@@ -114,30 +245,7 @@ export default function DeepDivesIndex() {
         </div>
       </section>
 
-      <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-slate-400">All Deep Dives</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {DEEP_DIVE_ENTRIES.map((dive) => (
-          <Link
-            key={dive.id}
-            href={dive.href}
-            className="block p-6 rounded-lg bg-surface-elevated border border-border hover:border-accent/30 transition-colors group"
-          >
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-lg font-semibold group-hover:text-accent transition-colors">{dive.title}</h3>
-              <Badge variant={getConfidenceTone(dive.confidence)}>
-                {getConfidenceLabel(dive.confidence)}
-              </Badge>
-            </div>
-            <p className="text-sm text-slate-400 leading-relaxed">{dive.description}</p>
-            <p className="mt-3 text-[11px] text-slate-400">Reviewed {dive.reviewedAt} · Review due {dive.nextReviewDue} · Sources: {dive.sources.map((source) => source.label).join(', ')}</p>
-            <div className="mt-4 text-xs text-accent group-hover:underline">Read deep dive →</div>
-          </Link>
-        ))}
-      </div>
-
-      <div className="mt-12 text-sm text-slate-400">
-        More deep dives coming soon. Interested in contributing? See the <Link href="https://github.com/Reedtrullz/tcwiki" className="underline hover:text-accent">GitHub repo</Link>.
-      </div>
+      <DeepDiveLibraryExplorer articles={deepDiveArticles} topics={deepDiveLibraryTopics} />
     </PageContainer>
   );
 }

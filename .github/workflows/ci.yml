@@ -32,6 +32,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
       - run: npm ci --include=optional
+      - run: npm run check:release-tracked
       - run: npm run audit:prod
       - name: Audit full dependency tree
         run: npm run audit:all
@@ -79,25 +80,12 @@ jobs:
       - name: Run Docker image for PR runtime check
         if: github.event_name == 'pull_request'
         env:
-          IMAGE_REF: ghcr.io/${{ github.repository }}@sha256:1111111111111111111111111111111111111111111111111111111111111111
-        run: |
-          container_id="$(docker run --rm -d \
-            -p 127.0.0.1:3011:3000 \
-            -e APP_VERSION=${{ github.sha }} \
-            -e VERSION=${{ github.sha }} \
-            -e COMMIT_SHA=${{ github.sha }} \
-            -e IMAGE_REF="$IMAGE_REF" \
-            -e RUNTIME_METADATA_REQUIRED=1 \
-            -e CSP_ENFORCE=1 \
-            tcwiki-pr:${{ github.sha }})"
-          trap 'docker rm -f "$container_id"' EXIT
-          CHECK_BASE_URL=http://127.0.0.1:3011 \
-            EXPECTED_VERSION=${{ github.sha }} \
-            EXPECTED_COMMIT_SHA=${{ github.sha }} \
-            EXPECTED_IMAGE_REF="$IMAGE_REF" \
-            REQUIRE_RUNTIME_METADATA=1 \
-            CSP_ENFORCE=1 \
-            npm run check:runtime-url
+          DOCKER_SMOKE_SKIP_BUILD: '1'
+          DOCKER_SMOKE_TAG: tcwiki-pr:${{ github.sha }}
+          DOCKER_SMOKE_COMMIT_SHA: ${{ github.sha }}
+          DOCKER_SMOKE_IMAGE_REF: ghcr.io/${{ github.repository }}@sha256:1111111111111111111111111111111111111111111111111111111111111111
+          DOCKER_SMOKE_PORT: '3011'
+        run: npm run smoke:docker
       - name: Install pinned Ansible for PR syntax check
         if: github.event_name == 'pull_request'
         run: |
@@ -209,9 +197,41 @@ jobs:
           echo "${{ steps.image.outputs.ref }}" >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
 
+  release-image-smoke:
+    name: Smoke published image
+    needs: [publish]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      - name: Login to GHCR
+        uses: docker/login-action@c99871dec2022cc055c062a10cc1a1310835ceb4 # v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - run: npm ci --include=optional
+      - run: npx playwright install --with-deps chromium
+      - name: Run published digest smoke
+        env:
+          DOCKER_SMOKE_SKIP_BUILD: '1'
+          DOCKER_SMOKE_PULL: '1'
+          DOCKER_SMOKE_TAG: ${{ needs.publish.outputs.image_ref }}
+          DOCKER_SMOKE_IMAGE_REF: ${{ needs.publish.outputs.image_ref }}
+          DOCKER_SMOKE_COMMIT_SHA: ${{ needs.publish.outputs.app_version }}
+          DOCKER_SMOKE_PORT: '3012'
+        run: npm run smoke:docker
+
   deploy:
     name: Deploy to VPS
-    needs: [publish]
+    needs: [publish, release-image-smoke]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     environment:
@@ -240,6 +260,7 @@ jobs:
           IMAGE_REF: ${{ needs.publish.outputs.image_ref }}
           APP_VERSION: ${{ needs.publish.outputs.app_version }}
           CSP_ENFORCE: '1'
+          REQUIRE_READY: '0'
         run: ansible-playbook -i inventory/hosts.yml ansible-playbook.yml
       - name: Verify public production readback
         env:

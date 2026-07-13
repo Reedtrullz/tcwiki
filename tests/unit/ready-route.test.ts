@@ -2,7 +2,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import MidgardAPI from '@/lib/api/midgard';
 import ThornodeAPI from '@/lib/api/thornode';
 import { GET } from '@/app/api/ready/route';
-import type { DynamicL1FeeStatus, HistoryItem, LiveDataResult, MidgardHealth, NetworkStats, NetworkStatus, Pool, SourceHealthSeverity } from '@/lib/types';
+import {
+  READINESS_SNAPSHOT_TTL_MS,
+  resetReadinessSnapshotCacheForTests,
+} from '@/lib/readiness-snapshot';
+import type { DynamicL1FeeStatus, HistoryItem, LiveDataResult, MidgardHealth, NetworkStats, NetworkStatus, Pool, RunePoolPolStatus, SourceHealthSeverity } from '@/lib/types';
 
 type DynamicFeeStatusWithOptionalWarnings = Omit<DynamicL1FeeStatus, 'sourceWarningDetails'> & {
   sourceWarningDetails?: DynamicL1FeeStatus['sourceWarningDetails'];
@@ -21,6 +25,7 @@ vi.mock('@/lib/api/thornode', () => ({
   default: {
     getNetworkStatus: vi.fn(),
     getDynamicL1FeeStatus: vi.fn(),
+    getRunePoolPolStatus: vi.fn(),
   },
 }));
 
@@ -39,6 +44,12 @@ const dynamicFeeSources = [
   { label: 'THORNode Mimir', url: 'https://thornode.thorchain.network/thorchain/mimir?height=100' },
   { label: 'THORNode dynamic L1 fee records', url: 'https://thornode.thorchain.network/thorchain/dynamic_l1_fees?height=100' },
   { label: 'THORNode dynamic L1 fee current epoch', url: 'https://thornode.thorchain.network/thorchain/dynamic_l1_fees_current?height=100' },
+];
+const runePoolPolSources = [
+  thornodeSource,
+  { label: 'THORNode latest block', url: 'https://thornode.thorchain.network/cosmos/base/tendermint/v1beta1/blocks/latest' },
+  { label: 'THORNode Mimir', url: 'https://thornode.thorchain.network/thorchain/mimir?height=100' },
+  { label: 'THORNode RUNEPool accounting', url: 'https://thornode.thorchain.network/thorchain/runepool?height=100' },
 ];
 
 function midgardHealth(severity: SourceHealthSeverity, reasons: string[] = []): LiveDataResult<MidgardHealth> {
@@ -147,6 +158,53 @@ function dynamicFeeStatus(overrides: Partial<DynamicL1FeeStatus> = {}): LiveData
   };
 }
 
+function runePoolPolStatus(overrides: Partial<RunePoolPolStatus> = {}): LiveDataResult<RunePoolPolStatus> {
+  return {
+    status: 'ok',
+    checkedAt: '2026-07-02T00:00:00.000Z',
+    source: thornodeSource,
+    sources: runePoolPolSources,
+    data: {
+      pol: {
+        runeDepositedBaseUnits: '100000000',
+        runeWithdrawnBaseUnits: '0',
+        valueRuneBaseUnits: '100000000',
+        pnlRuneBaseUnits: '0',
+        currentDepositRuneBaseUnits: '100000000',
+      },
+      providers: {
+        units: '1',
+        pendingUnits: '0',
+        pendingRuneBaseUnits: '0',
+        valueRuneBaseUnits: '0',
+        pnlRuneBaseUnits: '0',
+        currentDepositRuneBaseUnits: '0',
+      },
+      reserve: {
+        units: '1',
+        valueRuneBaseUnits: '0',
+        pnlRuneBaseUnits: '0',
+        currentDepositRuneBaseUnits: '0',
+      },
+      polPools: [{ key: 'POL-BTC', asset: 'BTC', value: 1, state: 'active' }],
+      activePolPoolCount: 1,
+      depositMaturityBlocks: { key: 'RUNEPoolDepositMaturityBlocks', value: 14400, state: 'present' },
+      maxReserveBackstop: { key: 'RUNEPoolMaxReserveBackstop', value: 2500000000000, state: 'present' },
+      minRunePoolDepth: { key: 'MINRUNEPOOLDEPTH', value: 1000000000000, state: 'present' },
+      sourceFreshness: {
+        thorchainHeight: 100,
+        thorchainBlockTime: '2026-07-02T00:00:00.000Z',
+        thorchainBlockAgeSeconds: 1,
+        snapshotPinned: true,
+      },
+      sourceWarnings: [],
+      sourceWarningDetails: [],
+      caveats: ['current-only', 'not-yield-proof', 'availability-separate'],
+      ...overrides,
+    },
+  };
+}
+
 function networkData(): LiveDataResult<NetworkStats> {
   return {
     status: 'ok',
@@ -199,24 +257,93 @@ function earningsData(): LiveDataResult<HistoryItem[]> {
   };
 }
 
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+
+  return { promise, resolve, reject };
+}
+
 describe('/api/ready', () => {
   afterEach(() => {
+    resetReadinessSnapshotCacheForTests();
+    vi.restoreAllMocks();
     vi.unstubAllEnvs();
   });
 
   beforeEach(() => {
+    resetReadinessSnapshotCacheForTests();
     vi.mocked(MidgardAPI.getHealth).mockReset();
     vi.mocked(MidgardAPI.getNetworkData).mockReset();
     vi.mocked(MidgardAPI.getPools).mockReset();
     vi.mocked(MidgardAPI.getHistory).mockReset();
     vi.mocked(ThornodeAPI.getNetworkStatus).mockReset();
     vi.mocked(ThornodeAPI.getDynamicL1FeeStatus).mockReset();
+    vi.mocked(ThornodeAPI.getRunePoolPolStatus).mockReset();
     vi.mocked(MidgardAPI.getHealth).mockResolvedValue(midgardHealth('ok'));
     vi.mocked(MidgardAPI.getNetworkData).mockResolvedValue(networkData());
     vi.mocked(MidgardAPI.getPools).mockResolvedValue(poolsData());
     vi.mocked(MidgardAPI.getHistory).mockResolvedValue(earningsData());
     vi.mocked(ThornodeAPI.getNetworkStatus).mockResolvedValue(thornodeStatus());
     vi.mocked(ThornodeAPI.getDynamicL1FeeStatus).mockResolvedValue(dynamicFeeStatus());
+    vi.mocked(ThornodeAPI.getRunePoolPolStatus).mockResolvedValue(runePoolPolStatus());
+  });
+
+  it('deduplicates concurrent readiness snapshots across anonymous requests', async () => {
+    const pendingHealth = deferred<LiveDataResult<MidgardHealth>>();
+    vi.mocked(MidgardAPI.getHealth).mockReturnValueOnce(pendingHealth.promise);
+
+    const firstResponsePromise = GET();
+    const secondResponsePromise = GET(new Request('http://localhost/api/ready?contract=strict'));
+
+    await vi.waitFor(() => {
+      expect(MidgardAPI.getHealth).toHaveBeenCalledTimes(1);
+      expect(MidgardAPI.getNetworkData).toHaveBeenCalledTimes(1);
+      expect(MidgardAPI.getPools).toHaveBeenCalledTimes(1);
+      expect(MidgardAPI.getHistory).toHaveBeenCalledTimes(1);
+      expect(ThornodeAPI.getNetworkStatus).toHaveBeenCalledTimes(1);
+      expect(ThornodeAPI.getDynamicL1FeeStatus).toHaveBeenCalledTimes(1);
+      expect(ThornodeAPI.getRunePoolPolStatus).toHaveBeenCalledTimes(1);
+    });
+
+    pendingHealth.resolve(midgardHealth('ok'));
+    const [firstResponse, secondResponse] = await Promise.all([firstResponsePromise, secondResponsePromise]);
+    const [firstBody, secondBody] = await Promise.all([firstResponse.json(), secondResponse.json()]);
+
+    expect(firstResponse.status).toBe(200);
+    expect(secondResponse.status).toBe(200);
+    expect(firstBody.checkedAt).toBe(secondBody.checkedAt);
+  });
+
+  it('reuses a short-lived snapshot and recomputes it after the server TTL', async () => {
+    const now = vi.spyOn(Date, 'now').mockReturnValue(1_000);
+
+    await GET();
+    await GET();
+    expect(MidgardAPI.getHealth).toHaveBeenCalledTimes(1);
+    expect(ThornodeAPI.getDynamicL1FeeStatus).toHaveBeenCalledTimes(1);
+
+    now.mockReturnValue(1_000 + READINESS_SNAPSHOT_TTL_MS + 1);
+    await GET();
+    expect(MidgardAPI.getHealth).toHaveBeenCalledTimes(2);
+    expect(ThornodeAPI.getDynamicL1FeeStatus).toHaveBeenCalledTimes(2);
+  });
+
+  it('briefly caches degraded snapshots instead of retrying every failing request', async () => {
+    vi.mocked(MidgardAPI.getHealth).mockRejectedValue(new Error('health provider unavailable'));
+
+    const firstResponse = await GET();
+    const secondResponse = await GET();
+    const firstBody = await firstResponse.json();
+
+    expect(firstResponse.status).toBe(503);
+    expect(secondResponse.status).toBe(503);
+    expect(firstBody.reasons).toContain('Midgard health readiness check failed: health provider unavailable');
+    expect(MidgardAPI.getHealth).toHaveBeenCalledTimes(1);
   });
 
   it('returns ready when Midgard and THORNode are both usable', async () => {
@@ -257,6 +384,59 @@ describe('/api/ready', () => {
     expect(body.sources.thornode.dynamicFees.snapshotPinned).toBe(true);
     expect(body.sources.thornode.dynamicFees.sourceWarnings).toEqual([]);
     expect(body.sources.thornode.dynamicFees.sourceWarningDetails).toEqual([]);
+    expect(body.sources.thornode.runePoolPol.status).toBe('ok');
+    expect(body.sources.thornode.runePoolPol.sources.map((source: { url: string }) => source.url)).toEqual(runePoolPolSources.map((source) => source.url));
+    expect(body.sources.thornode.runePoolPol.activePolPoolCount).toBe(1);
+    expect(body.sources.thornode.runePoolPol.depositMaturityBlocksState).toBe('present');
+    expect(body.sources.thornode.runePoolPol.depositMaturityBlocksValue).toBe(14400);
+    expect(body.sources.thornode.runePoolPol.maxReserveBackstopState).toBe('present');
+    expect(body.sources.thornode.runePoolPol.maxReserveBackstopValue).toBe(2500000000000);
+    expect(body.sources.thornode.runePoolPol.minRunePoolDepthState).toBe('present');
+    expect(body.sources.thornode.runePoolPol.minRunePoolDepthValue).toBe(1000000000000);
+    expect(body.sources.thornode.runePoolPol.thorchainHeight).toBe(100);
+    expect(body.sources.thornode.runePoolPol.snapshotPinned).toBe(true);
+    expect(body.sources.thornode.runePoolPol.sourceWarnings).toEqual([]);
+    expect(body.sources.thornode.runePoolPol.sourceWarningDetails).toEqual([]);
+  });
+
+  it('passes the strict readiness contract probe for usable readiness responses', async () => {
+    const response = await GET(new Request('http://localhost/api/ready?contract=strict'));
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('cache-control')).toBe('no-store');
+    expect(body.status).toBe('ready');
+    expect(body.ready).toBe(true);
+    expect(body.sources.thornode.dynamicFees.sourceWarnings).toEqual([]);
+    expect(body.sources.thornode.runePoolPol.sourceWarnings).toEqual([]);
+  });
+
+  it('fails closed when the strict readiness contract rejects the response body', async () => {
+    vi.mocked(ThornodeAPI.getDynamicL1FeeStatus).mockResolvedValue(dynamicFeeStatus({
+      sourceWarnings: ['Malformed strict-contract warning detail.'],
+      sourceWarningDetails: [
+        {
+          severity: 'warning',
+          category: 'unexpected-category' as DynamicL1FeeStatus['sourceWarningDetails'][number]['category'],
+          message: 'Malformed strict-contract warning detail.',
+          action: 'This should fail the readiness contract.',
+        },
+      ],
+    }));
+
+    const looseResponse = await GET();
+    const looseBody = await looseResponse.json();
+    expect(looseResponse.status).toBe(503);
+    expect(looseBody.sources.thornode.dynamicFees.sourceWarningDetails[0].category).toBe('unexpected-category');
+
+    const strictResponse = await GET(new Request('http://localhost/api/ready?contract=strict'));
+    const strictBody = await strictResponse.json();
+
+    expect(strictResponse.status).toBe(500);
+    expect(strictResponse.headers.get('cache-control')).toBe('no-store');
+    expect(strictBody.status).toBe('contract-failed');
+    expect(strictBody.ready).toBe(false);
+    expect(strictBody.error).toContain('sources.thornode.dynamicFees.sourceWarningDetails[0].category is unsupported');
   });
 
   it('keeps readiness healthy when strict runtime metadata is verified', async () => {
@@ -556,6 +736,81 @@ describe('/api/ready', () => {
         category: 'freshness',
         message: warning,
         action: 'Treat dynamic-fee readiness as degraded until THORNode returns a complete, pinned, warning-free dynamic-fee snapshot.',
+      },
+    ]);
+    expect(body.reasons).toEqual([warning]);
+  });
+
+  it('returns degraded when RUNEPool/POL status is unavailable', async () => {
+    vi.mocked(ThornodeAPI.getRunePoolPolStatus).mockResolvedValue({
+      status: 'degraded',
+      checkedAt: '2026-07-02T00:00:00.000Z',
+      sources: [
+        { label: 'Liquify THORNode', url: 'https://gateway.liquify.com/chain/thorchain_api/thorchain' },
+        { label: 'THORChain THORNode', url: 'https://thornode.thorchain.network/thorchain' },
+      ],
+      error: 'THORNode RUNEPool sources did not provide a usable snapshot',
+    });
+
+    const response = await GET();
+    const body = await response.json();
+
+    expect(response.status).toBe(503);
+    expect(body.status).toBe('degraded');
+    expect(body.ready).toBe(false);
+    expect(body.sources.thornode.runePoolPol.status).toBe('degraded');
+    expect(body.sources.thornode.runePoolPol.activePolPoolCount).toBeUndefined();
+    expect(body.sources.thornode.runePoolPol.sourceWarnings).toEqual([]);
+    expect(body.sources.thornode.runePoolPol.sourceWarningDetails).toEqual([]);
+    expect(body.reasons).toEqual(['THORNode RUNEPool sources did not provide a usable snapshot']);
+  });
+
+  it('returns degraded when RUNEPool/POL status omits exact pinned source evidence', async () => {
+    vi.mocked(ThornodeAPI.getRunePoolPolStatus).mockResolvedValue({
+      ...runePoolPolStatus(),
+      sources: runePoolPolSources.filter((source) => !source.url.includes('/runepool')),
+    });
+
+    const response = await GET();
+    const body = await response.json();
+
+    expect(response.status).toBe(503);
+    expect(body.sources.thornode.runePoolPol.sourceWarnings).toEqual([
+      'THORNode RUNEPool/POL sources do not include exact pinned endpoint evidence.',
+    ]);
+    expect(body.sources.thornode.runePoolPol.sourceWarningDetails).toEqual([
+      {
+        severity: 'warning',
+        category: 'source-shape',
+        message: 'THORNode RUNEPool/POL sources do not include exact pinned endpoint evidence.',
+        action: 'Treat RUNEPool/POL readiness as degraded until THORNode returns a complete, pinned, warning-free RUNEPool/POL snapshot.',
+      },
+    ]);
+    expect(body.reasons).toEqual([
+      'THORNode RUNEPool/POL sources do not include exact pinned endpoint evidence.',
+    ]);
+  });
+
+  it('returns degraded when RUNEPool/POL source warnings are present', async () => {
+    const warning = 'THORNode runepool.pol.value included an invalid RUNE base-unit value.';
+    vi.mocked(ThornodeAPI.getRunePoolPolStatus).mockResolvedValue(runePoolPolStatus({
+      sourceWarnings: [warning],
+    }));
+
+    const response = await GET();
+    const body = await response.json();
+
+    expect(response.status).toBe(503);
+    expect(body.status).toBe('degraded');
+    expect(body.ready).toBe(false);
+    expect(body.sources.thornode.runePoolPol.status).toBe('ok');
+    expect(body.sources.thornode.runePoolPol.sourceWarnings).toEqual([warning]);
+    expect(body.sources.thornode.runePoolPol.sourceWarningDetails).toEqual([
+      {
+        severity: 'warning',
+        category: 'other',
+        message: warning,
+        action: 'Treat RUNEPool/POL readiness as degraded until THORNode returns a complete, pinned, warning-free RUNEPool/POL snapshot.',
       },
     ]);
     expect(body.reasons).toEqual([warning]);

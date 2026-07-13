@@ -11,6 +11,7 @@ import {
   NetworkStats,
   NetworkStatus,
   Pool,
+  RunePoolPolStatus,
   SwapQuoteProbeResult,
   SwapQuoteRequest,
 } from '@/lib/types';
@@ -87,6 +88,15 @@ export function useDynamicL1FeeStatus() {
   const { data, error, isLoading } = useSWR<LiveDataResult<DynamicL1FeeStatus>>(
     'thornode:dynamic-l1-fee-status',
     () => ThornodeAPI.getDynamicL1FeeStatus(),
+    SWR_OPTIONS
+  );
+  return unwrapLiveResult(data, error, isLoading);
+}
+
+export function useRunePoolPolStatus() {
+  const { data, error, isLoading } = useSWR<LiveDataResult<RunePoolPolStatus>>(
+    'thornode:runepool-pol-status',
+    () => ThornodeAPI.getRunePoolPolStatus(),
     SWR_OPTIONS
   );
   return unwrapLiveResult(data, error, isLoading);

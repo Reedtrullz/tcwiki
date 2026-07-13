@@ -1,5 +1,6 @@
 import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import createMDX from "@next/mdx";
 import type { NextConfig } from "next";
 
 const rootDir = dirname(fileURLToPath(import.meta.url));
@@ -9,7 +10,9 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   pageExtensions: ['js', 'jsx', 'md', 'mdx', 'ts', 'tsx'],
   experimental: {
-    mdxRs: true,
+    mdxRs: {
+      mdxType: 'gfm',
+    },
   },
   turbopack: {
     root: rootDir,
@@ -45,4 +48,11 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+const withMDX = createMDX({
+  options: {
+    remarkPlugins: ['remark-gfm'],
+    rehypePlugins: [],
+  },
+});
+
+export default withMDX(nextConfig);

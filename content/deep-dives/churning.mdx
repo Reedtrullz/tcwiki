@@ -2,6 +2,8 @@
 
 Churning is the mechanism that keeps the THORChain validator set fresh, secure, and decentralized over time.
 
+This article explains the validator-life-cycle idea. It does not prove the current churn interval, next churn height, active set, readiness state, slash-point threshold, or bond-withdrawal availability.
+
 ## What is Churning?
 
 At configured churn intervals, active nodes can rotate out and standby nodes can rotate in. Official node docs describe the cadence as roughly 43,200 blocks, or about 2.5 days, but the interval is governed by protocol constants and Mimir overrides, so the exact value remains current-only data.
@@ -32,3 +34,29 @@ During a churn event:
 Nodes accumulate slash points for missing observations or failing to sign. High slash counts can force a node out of the active set even before its natural churn time.
 
 The combination of churning and economic penalties is intended to reduce long-lived validator and vault risk, but exact behavior should be checked against current protocol constants and Mimir state.
+
+## Vault Migration
+
+Churn is also a vault-management event. When the active validator set changes, new vault keys can be created and assets may migrate from older vaults to newer vaults. Official technology docs describe vault migration as a multi-round process designed to maintain service availability during validator-set changes.
+
+That makes churn relevant to users even if they never run a node: vault addresses, signing responsibility, outbound queues, and operational pause controls can all matter during sensitive migration windows.
+
+## What To Verify Before Claiming
+
+Before making a current churning or node-life-cycle claim, verify:
+
+1. The current network diagnostics state for `HALTCHURNING`, signing, chain halts, and source warnings.
+2. Current THORNode node status, churn height, and Mimir/constant values before quoting an interval.
+3. Whether a node is active, standby, ready, disabled, leaving, or eligible to unbond.
+4. Whether the claim is about normal scheduled churn, forced churn, vault migration, or incident recovery.
+5. Whether a dated incident or upgrade source still applies to the current release.
+
+## Non-Claims
+
+This page does not prove:
+
+- Current churn height, active-set size, node eligibility, or next rotation time.
+- That a node can safely unbond or leave now.
+- That a vault migration is complete or risk-free.
+- That all chain clients are synchronized and ready for churn.
+- That the current network is safe merely because churning exists.

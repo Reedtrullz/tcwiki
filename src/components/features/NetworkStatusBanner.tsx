@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useMemo, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { AlertTriangle, CheckCircle2, RadioTower } from 'lucide-react';
 import {
@@ -9,6 +9,7 @@ import {
   NetworkStatusSourceWarning,
   OperationalControlStatus,
   Pool,
+  SwapQuoteProbeResult,
   SwapQuoteRequest,
 } from '@/lib/types';
 import { Badge } from '@/components/ui/Badge';
@@ -19,8 +20,10 @@ import {
   AvailabilityCell,
   ChainAvailability,
   deriveChainAvailability,
+  deriveNodeOperatorActionControls,
   deriveNetworkWideControls,
   deriveRouteAvailability,
+  NATIVE_RUNE_ASSET,
 } from '@/lib/network-diagnostics';
 
 type NetworkStatusBannerVariant = 'compact' | 'diagnostic';
@@ -52,6 +55,59 @@ interface SwapStatusPresentation {
   summary: string;
   detail: string;
 }
+
+interface NodeOperationDefinition {
+  id: string;
+  label: string;
+  key: string;
+  activeLabel: string;
+  inactiveLabel: string;
+  description: string;
+}
+
+interface NodeOperationPresentation {
+  id: string;
+  label: string;
+  key: string;
+  description: string;
+  cell: AvailabilityCell;
+  reason: string;
+}
+
+const NODE_OPERATION_CONTROLS: NodeOperationDefinition[] = [
+  {
+    id: 'bonding',
+    label: 'Bonding',
+    key: 'PauseBond',
+    activeLabel: 'Paused',
+    inactiveLabel: 'No active gate',
+    description: 'New or additional node bond actions.',
+  },
+  {
+    id: 'unbonding',
+    label: 'Unbonding',
+    key: 'PauseUnbond',
+    activeLabel: 'Paused',
+    inactiveLabel: 'No active gate',
+    description: 'Node bond withdrawal and leave-related actions.',
+  },
+  {
+    id: 'rebonding',
+    label: 'Rebonding',
+    key: 'HaltRebond',
+    activeLabel: 'Halted',
+    inactiveLabel: 'No active gate',
+    description: 'Node rebond workflow availability.',
+  },
+  {
+    id: 'operator-rotation',
+    label: 'Operator rotation',
+    key: 'HaltOperatorRotate',
+    activeLabel: 'Halted',
+    inactiveLabel: 'No active gate',
+    description: 'Node operator address rotation.',
+  },
+];
 
 function uniqueStrings(values: string[]) {
   return Array.from(new Set(values));
@@ -322,6 +378,7 @@ function getActionSummary(status: NetworkStatus | undefined, chainAvailability: 
       ...chain.swapOut.reasons,
       ...chain.lpActions.reasons,
       ...chain.poolDeposits.reasons,
+      ...chain.scopedOperations.reasons,
     ]);
   return uniqueStrings([...activeControls, ...directChainActions]);
 }
@@ -346,7 +403,8 @@ function getUpperKeySet(keys: string[] | undefined) {
 
 function getSwapStatusPresentation(
   status: NetworkStatus | undefined,
-  chainAvailability: ChainAvailability[]
+  chainAvailability: ChainAvailability[],
+  sourceNeedsReview = false
 ): SwapStatusPresentation {
   if (!status) {
     return {
@@ -410,22 +468,32 @@ function getSwapStatusPresentation(
     };
   }
 
+  if (sourceNeedsReview) {
+    return {
+      tone: 'unknown',
+      label: 'Needs source review',
+      badge: 'needs review',
+      summary: 'No global swap halt is active in current THORNode data, but source warnings mean ordinary swap availability should not be called clean until diagnostics are reviewed.',
+      detail: 'No swap halt observed; source review needed',
+    };
+  }
+
   if (status.state === 'paused') {
     return {
       tone: 'open',
-      label: 'Swaps appear open',
-      badge: 'swap open',
-      summary: 'No global swap halt is active in current THORNode data; the active pauses are outside ordinary swap execution.',
-      detail: 'Other operations may be paused',
+      label: 'No global swap halt detected',
+      badge: 'no global halt',
+      summary: 'No global or direct swap halt is active in current THORNode data; the active pauses are outside ordinary swap execution.',
+      detail: 'Route still needs quote or pair-specific proof',
     };
   }
 
   return {
     tone: 'open',
-    label: 'Swaps appear open',
-    badge: 'swap open',
-    summary: 'No global swap halt is active in current THORNode data.',
-    detail: 'No swap halt observed',
+    label: 'No global swap halt detected',
+    badge: 'no global halt',
+    summary: 'No global or direct swap halt is active in current THORNode data. Use route checks for pair-specific availability.',
+    detail: 'Route still needs quote or pair-specific proof',
   };
 }
 
@@ -464,6 +532,104 @@ function renderStatusCell(cell: AvailabilityCell) {
   );
 }
 
+function nodeOperationCardClassName(cell: AvailabilityCell) {
+  switch (cell.state) {
+    case 'available':
+      return 'border-emerald-500/15 bg-emerald-500/5';
+    case 'limited':
+    case 'blocked':
+      return 'border-amber-500/25 bg-amber-500/5';
+    case 'needs-review':
+      return 'border-sky-500/25 bg-sky-500/5';
+    default:
+      return 'border-slate-700 bg-slate-900/40';
+  }
+}
+
+function deriveNodeOperationCell(
+  definition: NodeOperationDefinition,
+  pausedOrHalted: boolean | null | undefined,
+  control: OperationalControlStatus | undefined
+): { cell: AvailabilityCell; reason: string } {
+  if (control?.state === 'active' || pausedOrHalted === true) {
+    const reason = `${definition.key} is active in current Mimir.`;
+    return {
+      cell: { state: 'limited', label: definition.activeLabel, reasons: [reason] },
+      reason,
+    };
+  }
+
+  if (control?.state === 'scheduled') {
+    const reason = `${definition.key} is scheduled and depends on the checked THORChain height.`;
+    return {
+      cell: { state: 'needs-review', label: 'Scheduled', reasons: [reason] },
+      reason,
+    };
+  }
+
+  if (control?.state === 'unparseable') {
+    const reason = `${definition.key} was present but could not be parsed.`;
+    return {
+      cell: { state: 'needs-review', label: 'Review needed', reasons: [reason] },
+      reason,
+    };
+  }
+
+  if (control?.state === 'inactive' || pausedOrHalted === false) {
+    const reason = `${definition.key} is present and not active in current Mimir.`;
+    return {
+      cell: { state: 'available', label: definition.inactiveLabel, reasons: [reason] },
+      reason,
+    };
+  }
+
+  if (control?.state === 'not-monitored') {
+    const reason = `${definition.key} is absent from current Mimir; no pause was observed, but absence is weaker than explicit inactive evidence.`;
+    return {
+      cell: { state: 'unknown', label: 'Not observed', reasons: [reason] },
+      reason,
+    };
+  }
+
+  const reason = `No usable ${definition.key} status was available from the current source.`;
+  return {
+    cell: { state: 'unknown', label: 'Unavailable', reasons: [reason] },
+    reason,
+  };
+}
+
+function deriveNodeOperationPresentations(status: NetworkStatus | undefined): NodeOperationPresentation[] {
+  if (!status) {
+    return [];
+  }
+
+  const nodeControls = deriveNodeOperatorActionControls(status);
+  if (nodeControls.length === 0) {
+    return [];
+  }
+
+  const nodeControlsByKey = new Map(nodeControls.map((control) => [control.key.toUpperCase(), control]));
+  const pausedValues: Record<string, boolean | null | undefined> = {
+    PauseBond: status.bondPaused,
+    PauseUnbond: status.unbondPaused,
+    HaltRebond: status.rebondHalted,
+    HaltOperatorRotate: status.operatorRotateHalted,
+  };
+
+  return NODE_OPERATION_CONTROLS.map((definition) => {
+    const control = nodeControlsByKey.get(definition.key.toUpperCase());
+    const { cell, reason } = deriveNodeOperationCell(definition, pausedValues[definition.key], control);
+    return {
+      id: definition.id,
+      label: definition.label,
+      key: definition.key,
+      description: control?.description ?? definition.description,
+      cell,
+      reason,
+    };
+  });
+}
+
 function firstReasonText(reasons: string[]) {
   if (reasons.length === 0) {
     return 'No active chain-specific swap blocker observed.';
@@ -477,6 +643,15 @@ function firstSwapReasonText(chain: ChainAvailability) {
 
 const BASE_UNIT_DECIMALS = 8;
 const BASE_UNIT_SCALE = BigInt(100000000);
+const ROUTE_FROM_PARAM = 'from_asset';
+const ROUTE_TO_PARAM = 'to_asset';
+const ROUTE_AMOUNT_PARAM = 'amount';
+const NATIVE_RUNE_ROUTE_POOL: Pool = {
+  asset: NATIVE_RUNE_ASSET,
+  assetDepth: '0',
+  runeDepth: '0',
+  status: 'available',
+};
 
 function assetChain(asset: string) {
   return asset.split('.')[0]?.toUpperCase() ?? 'Other';
@@ -525,7 +700,8 @@ function formatQuoteExpiry(expiry: number | undefined) {
   if (expiry === undefined) {
     return 'Unavailable';
   }
-  return new Date(expiry * 1000).toLocaleTimeString();
+  const date = new Date(expiry * 1000);
+  return Number.isNaN(date.getTime()) ? 'Unavailable' : date.toLocaleTimeString();
 }
 
 function quoteStatusClassName(status: ReturnType<typeof deriveRouteAvailability>['status']) {
@@ -560,9 +736,38 @@ function groupPoolsByChain(pools: Pool[] | undefined) {
     ] as const);
 }
 
+function routeSelectablePools(pools: Pool[] | undefined) {
+  if (!pools) {
+    return undefined;
+  }
+  const availablePools = pools.filter((pool) => pool.asset && pool.status.toLowerCase() === 'available');
+  if (availablePools.length === 0 || availablePools.some((pool) => pool.asset === NATIVE_RUNE_ASSET)) {
+    return availablePools;
+  }
+  return [...availablePools, NATIVE_RUNE_ROUTE_POOL];
+}
+
 function pickDefaultAsset(pools: Pool[] | undefined, preferred: string, fallbackIndex: number) {
   const availablePools = (pools ?? []).filter((pool) => pool.status.toLowerCase() === 'available');
   return availablePools.find((pool) => pool.asset === preferred)?.asset ?? availablePools[fallbackIndex]?.asset ?? '';
+}
+
+function readRouteAssetParam(params: URLSearchParams, primaryKey: string, legacyKey: string, availableAssets: Set<string>) {
+  const value = params.get(primaryKey) ?? params.get(legacyKey);
+  return value && availableAssets.has(value) ? value : null;
+}
+
+function readRouteAmountParam(params: URLSearchParams) {
+  const value = params.get(ROUTE_AMOUNT_PARAM)?.trim() ?? '';
+  return value && quoteAmountToBaseUnits(value) ? value : null;
+}
+
+function routeQueryParamsPresent(params: URLSearchParams) {
+  return params.has(ROUTE_FROM_PARAM) ||
+    params.has(ROUTE_TO_PARAM) ||
+    params.has(ROUTE_AMOUNT_PARAM) ||
+    params.has('from') ||
+    params.has('to');
 }
 
 function routeFallbackStatusLabel(routeStatus: ReturnType<typeof deriveRouteAvailability>) {
@@ -576,42 +781,425 @@ function routeFallbackStatusLabel(routeStatus: ReturnType<typeof deriveRouteAvai
   );
 }
 
-function RouteQuoteChecker({ status }: { status: NetworkStatus | undefined }) {
+type RefundTriageState = 'present' | 'review' | 'missing';
+
+interface RefundTriageRow {
+  label: string;
+  state: RefundTriageState;
+  detail: string;
+}
+
+function triageStateClassName(state: RefundTriageState) {
+  switch (state) {
+    case 'present':
+      return 'border-emerald-500/20 bg-emerald-500/5 text-emerald-200';
+    case 'review':
+      return 'border-amber-500/25 bg-amber-500/10 text-amber-100';
+    case 'missing':
+      return 'border-slate-700 bg-slate-950/40 text-slate-300';
+  }
+}
+
+function triageStateLabel(state: RefundTriageState) {
+  switch (state) {
+    case 'present':
+      return 'Evidence present';
+    case 'review':
+      return 'Needs review';
+    case 'missing':
+      return 'Missing';
+  }
+}
+
+function getRouteTriageState(routeStatus: ReturnType<typeof deriveRouteAvailability>): RefundTriageState {
+  if (routeStatus.status === 'available' || routeStatus.status === 'limited' || routeStatus.status === 'blocked') {
+    return 'present';
+  }
+  if (routeStatus.status === 'needs-review') {
+    return 'review';
+  }
+  return 'missing';
+}
+
+function getRefundTriageIntro(
+  routeStatus: ReturnType<typeof deriveRouteAvailability>,
+  quoteData: SwapQuoteProbeResult | undefined,
+  quoteError: string | undefined,
+  isCheckingQuote: boolean
+) {
+  if (isCheckingQuote) {
+    return {
+      title: 'Checking current route evidence',
+      summary: 'The quote probe is still loading. Refund diagnosis remains insufficient until the current quote result and transaction evidence are available.',
+    };
+  }
+  if (quoteData?.quote) {
+    return {
+      title: 'Current route is quoteable; past refund still needs proof',
+      summary: 'A current quote is strong route evidence for this asset pair and amount, but it does not prove why an earlier transaction refunded.',
+    };
+  }
+  if (quoteData?.failure) {
+    return {
+      title: 'Current quote failed or was limited',
+      summary: 'The quote error is useful current route evidence. It only explains a past refund when the route, amount, quote flow, memo, and transaction evidence line up.',
+    };
+  }
+  if (quoteError) {
+    return {
+      title: 'Quote probe unusable; insufficient evidence',
+      summary: 'The attempted quote did not return usable route evidence, so the page can only show fallback network context.',
+    };
+  }
+  if (routeStatus.status === 'limited' || routeStatus.status === 'blocked') {
+    return {
+      title: 'Visible route blockers need review',
+      summary: 'Current network state shows a route blocker before a quote succeeds. A past refund still needs transaction-level evidence before assigning a cause.',
+    };
+  }
+  return {
+    title: 'Refund diagnosis: insufficient evidence',
+    summary: 'Run a fresh quote probe and compare it with the actual quote flow, memo, inbound transaction, and any refund transaction before naming a cause.',
+  };
+}
+
+function buildRefundTriageRows(
+  routeStatus: ReturnType<typeof deriveRouteAvailability>,
+  quoteData: SwapQuoteProbeResult | undefined,
+  quoteError: string | undefined
+): RefundTriageRow[] {
+  const quoteRow: RefundTriageRow = quoteData?.quote
+    ? {
+        label: 'Current quote result',
+        state: 'present',
+        detail: 'THORNode returned a quote for the selected route and amount. Treat it as current-only route evidence.',
+      }
+    : quoteData?.failure
+      ? {
+          label: 'Current quote result',
+          state: 'present',
+          detail: quoteData.failure.message,
+        }
+      : quoteError
+        ? {
+            label: 'Current quote result',
+            state: 'review',
+            detail: 'A quote was attempted, but the response could not be used as route proof.',
+          }
+        : {
+            label: 'Current quote result',
+            state: 'missing',
+            detail: 'No quote has been checked for this selected route and amount.',
+          };
+
+  const thresholdRow: RefundTriageRow = quoteData?.quote?.recommendedMinAmountIn
+    ? {
+        label: 'Amount threshold',
+        state: 'present',
+        detail: `Quote returned recommended_min_amount_in ${quoteData.quote.recommendedMinAmountIn}. Compare this with the actual signed inbound amount.`,
+      }
+    : quoteData?.quote
+      ? {
+          label: 'Amount threshold',
+          state: 'review',
+          detail: 'The quote loaded but did not expose recommended_min_amount_in, so do not infer a minimum amount from zero.',
+        }
+      : {
+          label: 'Amount threshold',
+          state: 'missing',
+          detail: 'Need the quote minimum amount and the inbound chain dust threshold before blaming amount size.',
+        };
+
+  return [
+    quoteRow,
+    {
+      label: 'Live route blockers',
+      state: getRouteTriageState(routeStatus),
+      detail: routeStatus.reasons.length > 0
+        ? routeStatus.reasons.slice(0, 2).join(' / ')
+        : 'No route blocker detail is available yet.',
+    },
+    thresholdRow,
+    {
+      label: 'Same quote-flow inputs',
+      state: 'missing',
+      detail: 'Need the inbound address or router, memo, and expiry from the same fresh quote flow. This wiki does not create wallet send instructions.',
+    },
+    {
+      label: 'Transaction and refund proof',
+      state: 'missing',
+      detail: 'Need the inbound transaction hash, observed memo, source and destination chains, and any refund or outbound transaction before assigning a refund cause.',
+    },
+  ];
+}
+
+function RefundTriagePanel({
+  activeQuoteData,
+  activeQuoteError,
+  isCheckingQuote,
+  routeStatus,
+}: {
+  activeQuoteData: SwapQuoteProbeResult | undefined;
+  activeQuoteError: string | undefined;
+  isCheckingQuote: boolean;
+  routeStatus: ReturnType<typeof deriveRouteAvailability>;
+}) {
+  const intro = getRefundTriageIntro(routeStatus, activeQuoteData, activeQuoteError, isCheckingQuote);
+  const rows = buildRefundTriageRows(routeStatus, activeQuoteData, activeQuoteError);
+
+  return (
+    <section className="mt-3 rounded-md border border-border bg-slate-950/30 p-3" aria-labelledby="refund-triage-heading">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h3 id="refund-triage-heading" className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+            Refund / failed swap triage
+          </h3>
+          <p className="mt-1 text-sm font-semibold text-slate-200">{intro.title}</p>
+          <p className="mt-1 max-w-3xl text-[11px] leading-relaxed text-slate-400">{intro.summary}</p>
+        </div>
+        <Link
+          href="/deep-dives/streaming-swaps-refunds#what-to-check-first"
+          className="text-xs font-semibold text-accent transition-colors hover:text-rune"
+        >
+          Triage guide
+        </Link>
+      </div>
+      <div className="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-5">
+        {rows.map((row) => (
+          <div key={row.label} className={`rounded-md border px-3 py-2 ${triageStateClassName(row.state)}`}>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">{row.label}</p>
+              <span className="rounded border border-current/20 px-1.5 py-0.5 text-[10px] font-semibold">
+                {triageStateLabel(row.state)}
+              </span>
+            </div>
+            <p className="mt-1 text-[11px] leading-relaxed text-slate-300/90">{row.detail}</p>
+          </div>
+        ))}
+      </div>
+      <p className="mt-3 text-[11px] leading-relaxed text-slate-400">
+        Result discipline: current quotes and halts can narrow the investigation, but a specific refund cause requires the actual transaction evidence.
+      </p>
+    </section>
+  );
+}
+
+function RouteQuoteChecker({ status, statusLoading }: { status: NetworkStatus | undefined; statusLoading: boolean }) {
   const { data: pools, result: poolsResult, isLoading: poolsLoading } = usePools();
-  const poolGroups = useMemo(() => groupPoolsByChain(pools), [pools]);
-  const defaultFromAsset = useMemo(() => pickDefaultAsset(pools, 'BTC.BTC', 0), [pools]);
-  const defaultToAsset = useMemo(() => pickDefaultAsset(pools?.filter((pool) => pool.asset !== defaultFromAsset), 'ETH.ETH', 0), [pools, defaultFromAsset]);
+  const routePools = useMemo(() => routeSelectablePools(pools), [pools]);
+  const poolGroups = useMemo(() => groupPoolsByChain(routePools), [routePools]);
+  const availableAssets = useMemo(() => new Set((routePools ?? [])
+    .filter((pool) => pool.asset && pool.status.toLowerCase() === 'available')
+    .map((pool) => pool.asset)), [routePools]);
+  const defaultFromAsset = useMemo(() => pickDefaultAsset(routePools, 'BTC.BTC', 0), [routePools]);
+  const defaultToAsset = useMemo(() => pickDefaultAsset(routePools?.filter((pool) => pool.asset !== defaultFromAsset), 'ETH.ETH', 0), [routePools, defaultFromAsset]);
   const [fromAsset, setFromAsset] = useState('');
   const [toAsset, setToAsset] = useState('');
   const [amount, setAmount] = useState('0.01');
   const [quoteRequest, setQuoteRequest] = useState<SwapQuoteRequest | null>(null);
   const [quoteRequestVersion, setQuoteRequestVersion] = useState(0);
-  const [lastSubmittedAt, setLastSubmittedAt] = useState(0);
   const [inputError, setInputError] = useState<string | null>(null);
+  const [quoteInvalidated, setQuoteInvalidated] = useState(false);
+  const routeQueryHydratedRef = useRef(false);
+  const routeQueryActiveRef = useRef(false);
+  const routeSectionRef = useRef<HTMLElement | null>(null);
+  const lastSubmittedAtRef = useRef(0);
   const selectedFromAsset = fromAsset || defaultFromAsset;
   const selectedToAsset = toAsset || defaultToAsset;
   const amountBaseUnits = quoteAmountToBaseUnits(amount);
   const quoteResult = useSwapQuoteProbe(quoteRequest, quoteRequest !== null, quoteRequestVersion);
   const quoteData = quoteResult.result?.data;
+  const activeQuoteRequest = quoteRequest &&
+    quoteRequest.fromAsset === selectedFromAsset &&
+    quoteRequest.toAsset === selectedToAsset &&
+    quoteRequest.amountBaseUnits === amountBaseUnits
+    ? quoteRequest
+    : undefined;
+  const activeQuoteResult = activeQuoteRequest ? quoteResult.result : undefined;
   const activeQuoteData = quoteData &&
     quoteData.request.fromAsset === selectedFromAsset &&
     quoteData.request.toAsset === selectedToAsset &&
     quoteData.request.amountBaseUnits === amountBaseUnits
     ? quoteData
     : undefined;
+  const activeQuoteError = activeQuoteResult && !activeQuoteData && activeQuoteResult.status === 'degraded'
+    ? activeQuoteResult.error ?? 'THORNode quote probe did not return usable route evidence.'
+    : undefined;
+  const activeQuoteIsLoading = Boolean(activeQuoteRequest && quoteResult.isLoading);
+  const sameAssetSelected = Boolean(selectedFromAsset && selectedToAsset && selectedFromAsset === selectedToAsset);
+  const amountValidationMessage = amount && !amountBaseUnits ? 'Enter a positive amount with up to 8 decimals.' : null;
+  const routeInputMessage = inputError ?? (sameAssetSelected ? 'Choose two different assets.' : amountValidationMessage);
   const routeStatus = deriveRouteAvailability(
     selectedFromAsset,
     selectedToAsset,
     status,
-    pools,
+    routePools,
     activeQuoteData
   );
-  const canSubmit = Boolean(selectedFromAsset && selectedToAsset && selectedFromAsset !== selectedToAsset && amountBaseUnits && !quoteResult.isLoading);
+  const canSubmit = Boolean(selectedFromAsset && selectedToAsset && !sameAssetSelected && amountBaseUnits && !activeQuoteIsLoading);
+
+  const replaceRouteQueryInUrl = useCallback((nextState: {
+    fromAsset: string;
+    toAsset: string;
+    amount: string;
+  }) => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    params.delete('from');
+    params.delete('to');
+
+    if (nextState.fromAsset) {
+      params.set(ROUTE_FROM_PARAM, nextState.fromAsset);
+    } else {
+      params.delete(ROUTE_FROM_PARAM);
+    }
+
+    if (nextState.toAsset) {
+      params.set(ROUTE_TO_PARAM, nextState.toAsset);
+    } else {
+      params.delete(ROUTE_TO_PARAM);
+    }
+
+    if (quoteAmountToBaseUnits(nextState.amount)) {
+      params.set(ROUTE_AMOUNT_PARAM, nextState.amount.trim());
+    } else {
+      params.delete(ROUTE_AMOUNT_PARAM);
+    }
+
+    const query = params.toString();
+    const hash = window.location.hash || '#check-a-route';
+    window.history.replaceState(window.history.state, '', `${window.location.pathname}${query ? `?${query}` : ''}${hash}`);
+  }, []);
+
+  const settleRouteAnchor = useCallback(() => {
+    if (typeof window === 'undefined' || window.location.hash !== '#check-a-route') {
+      return undefined;
+    }
+
+    const scrollToRouteChecker = () => {
+      const routeSection = routeSectionRef.current;
+      if (!routeSection) {
+        return;
+      }
+      const targetTop = Math.max(0, routeSection.getBoundingClientRect().top + window.scrollY - 88);
+      window.scrollTo({ top: targetTop, behavior: 'auto' });
+    };
+    scrollToRouteChecker();
+
+    const animationFrame = window.requestAnimationFrame(scrollToRouteChecker);
+    const timeoutIds = [75, 250, 750, 1500, 3000].map((delay) => window.setTimeout(scrollToRouteChecker, delay));
+
+    return () => {
+      window.cancelAnimationFrame(animationFrame);
+      timeoutIds.forEach((timeoutId) => window.clearTimeout(timeoutId));
+    };
+  }, []);
+
+  const activateShareableRouteState = useCallback((nextState: {
+    fromAsset: string;
+    toAsset: string;
+    amount: string;
+  }) => {
+    routeQueryActiveRef.current = true;
+    replaceRouteQueryInUrl(nextState);
+  }, [replaceRouteQueryInUrl]);
+
+  function clearQuoteProofForInputChange() {
+    setInputError(null);
+    if (quoteRequest) {
+      setQuoteRequest(null);
+      setQuoteInvalidated(true);
+    }
+  }
+
+  useEffect(() => {
+    if (routeQueryHydratedRef.current || availableAssets.size === 0 || typeof window === 'undefined') {
+      return;
+    }
+
+    const params = new URLSearchParams(window.location.search);
+    routeQueryHydratedRef.current = true;
+
+    if (!routeQueryParamsPresent(params)) {
+      return;
+    }
+
+    routeQueryActiveRef.current = true;
+    const nextFromAsset = readRouteAssetParam(params, ROUTE_FROM_PARAM, 'from', availableAssets) ?? defaultFromAsset;
+    const nextToAsset = readRouteAssetParam(params, ROUTE_TO_PARAM, 'to', availableAssets) ?? defaultToAsset;
+    const nextAmount = readRouteAmountParam(params) ?? amount;
+
+    let settleCleanup: (() => void) | undefined;
+    const timeoutId = window.setTimeout(() => {
+      setFromAsset(nextFromAsset);
+      setToAsset(nextToAsset);
+      setAmount(nextAmount);
+      replaceRouteQueryInUrl({
+        fromAsset: nextFromAsset,
+        toAsset: nextToAsset,
+        amount: nextAmount,
+      });
+      settleCleanup = settleRouteAnchor();
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      settleCleanup?.();
+    };
+  }, [amount, availableAssets, defaultFromAsset, defaultToAsset, replaceRouteQueryInUrl, settleRouteAnchor]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || window.location.hash !== '#check-a-route') {
+      return undefined;
+    }
+
+    const hasRouteQuery = routeQueryParamsPresent(new URLSearchParams(window.location.search));
+    if (hasRouteQuery && availableAssets.size === 0) {
+      return undefined;
+    }
+
+    return settleRouteAnchor();
+  }, [amount, availableAssets.size, selectedFromAsset, selectedToAsset, settleRouteAnchor, statusLoading]);
+
+  function updateFromAsset(value: string) {
+    clearQuoteProofForInputChange();
+    setFromAsset(value);
+    activateShareableRouteState({
+      fromAsset: value,
+      toAsset: selectedToAsset,
+      amount,
+    });
+  }
+
+  function updateToAsset(value: string) {
+    clearQuoteProofForInputChange();
+    setToAsset(value);
+    activateShareableRouteState({
+      fromAsset: selectedFromAsset,
+      toAsset: value,
+      amount,
+    });
+  }
+
+  function updateAmount(value: string) {
+    clearQuoteProofForInputChange();
+    setAmount(value);
+    if (routeQueryActiveRef.current) {
+      replaceRouteQueryInUrl({
+        fromAsset: selectedFromAsset,
+        toAsset: selectedToAsset,
+        amount: value,
+      });
+    }
+  }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const now = Date.now();
-    if (now - lastSubmittedAt < 1000) {
+    if (now - lastSubmittedAtRef.current < 1000) {
       setInputError('Quote checks are throttled to about one request per second.');
       return;
     }
@@ -619,7 +1207,7 @@ function RouteQuoteChecker({ status }: { status: NetworkStatus | undefined }) {
       setInputError('Choose two assets before checking a route.');
       return;
     }
-    if (selectedFromAsset === selectedToAsset) {
+    if (sameAssetSelected) {
       setInputError('Choose two different assets.');
       return;
     }
@@ -629,7 +1217,8 @@ function RouteQuoteChecker({ status }: { status: NetworkStatus | undefined }) {
     }
 
     setInputError(null);
-    setLastSubmittedAt(now);
+    setQuoteInvalidated(false);
+    lastSubmittedAtRef.current = now;
     setQuoteRequest({
       fromAsset: selectedFromAsset,
       toAsset: selectedToAsset,
@@ -639,18 +1228,18 @@ function RouteQuoteChecker({ status }: { status: NetworkStatus | undefined }) {
   }
 
   return (
-    <section className="mt-4 rounded-md border border-border bg-surface/60 p-3" aria-labelledby="route-check-heading">
+    <section ref={routeSectionRef} id="check-a-route" className="mt-4 scroll-mt-24 rounded-md border border-border bg-surface/60 p-3" aria-labelledby="route-check-heading">
       <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
         <div>
           <h3 id="route-check-heading" className="text-xs font-semibold uppercase tracking-wider text-slate-400">
             Check A Route
           </h3>
           <p className="mt-1 max-w-3xl text-[11px] leading-relaxed text-slate-400">
-            On-demand THORNode quote probe. It uses assets and amount only, does not collect a wallet address, and is not a send instruction.
+            On-demand THORNode quote probe. It uses Midgard available pools plus native RUNE as route choices, does not collect a wallet address, and is not a send instruction.
           </p>
         </div>
         <div className="min-w-52">
-          <LiveSourceMeta result={activeQuoteData ? quoteResult.result : poolsResult} />
+          <LiveSourceMeta result={activeQuoteRequest ? activeQuoteResult : poolsResult} />
         </div>
       </div>
 
@@ -659,7 +1248,7 @@ function RouteQuoteChecker({ status }: { status: NetworkStatus | undefined }) {
           <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-slate-500">From asset</span>
           <select
             value={selectedFromAsset}
-            onChange={(event) => setFromAsset(event.target.value)}
+            onChange={(event) => updateFromAsset(event.target.value)}
             className="w-full rounded-md border border-border bg-slate-950 px-3 py-2 text-sm text-slate-100 outline-none transition-colors focus:border-accent"
             disabled={poolsLoading || poolGroups.length === 0}
           >
@@ -678,7 +1267,7 @@ function RouteQuoteChecker({ status }: { status: NetworkStatus | undefined }) {
           <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-slate-500">To asset</span>
           <select
             value={selectedToAsset}
-            onChange={(event) => setToAsset(event.target.value)}
+            onChange={(event) => updateToAsset(event.target.value)}
             className="w-full rounded-md border border-border bg-slate-950 px-3 py-2 text-sm text-slate-100 outline-none transition-colors focus:border-accent"
             disabled={poolsLoading || poolGroups.length === 0}
           >
@@ -697,7 +1286,7 @@ function RouteQuoteChecker({ status }: { status: NetworkStatus | undefined }) {
           <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-slate-500">Amount</span>
           <input
             value={amount}
-            onChange={(event) => setAmount(event.target.value)}
+            onChange={(event) => updateAmount(event.target.value)}
             inputMode="decimal"
             className="w-full rounded-md border border-border bg-slate-950 px-3 py-2 text-sm text-slate-100 outline-none transition-colors focus:border-accent"
             aria-invalid={Boolean(inputError || (amount && !amountBaseUnits))}
@@ -709,18 +1298,34 @@ function RouteQuoteChecker({ status }: { status: NetworkStatus | undefined }) {
             disabled={!canSubmit}
             className="w-full rounded-md border border-accent/40 bg-accent/10 px-3 py-2 text-sm font-semibold text-accent transition-colors hover:border-rune hover:text-rune disabled:cursor-not-allowed disabled:border-slate-700 disabled:bg-slate-900 disabled:text-slate-500"
           >
-            {quoteResult.isLoading ? 'Checking' : 'Check route'}
+            {activeQuoteIsLoading ? 'Checking' : 'Check route'}
           </button>
         </div>
       </form>
 
-      {(inputError || (amount && !amountBaseUnits)) && (
-        <p className="mt-2 text-xs text-amber-200">{inputError ?? 'Enter a positive amount with up to 8 decimals.'}</p>
+      {routeInputMessage && (
+        <p className="mt-2 text-xs text-amber-200">{routeInputMessage}</p>
+      )}
+
+      {quoteInvalidated && (
+        <p className="mt-2 text-xs text-slate-400">
+          Previous quote result was cleared after route inputs changed. Check route again before treating this route as quoted.
+        </p>
       )}
 
       <div className="mt-3">
         {routeFallbackStatusLabel(routeStatus)}
       </div>
+
+      {activeQuoteError && (
+        <div className="mt-3 rounded-md border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-xs text-amber-100">
+          <p className="font-semibold">Quote probe unavailable</p>
+          <p className="mt-1 break-words text-amber-100/80">{activeQuoteError}</p>
+          <p className="mt-1 text-amber-100/70">
+            This was an attempted THORNode quote check for the selected route; do not treat the fallback route context as a successful quote.
+          </p>
+        </div>
+      )}
 
       {activeQuoteData?.quote && (
         <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
@@ -752,6 +1357,13 @@ function RouteQuoteChecker({ status }: { status: NetworkStatus | undefined }) {
           <p className="mt-1 text-amber-100/70">The route probe failed before wallet-specific send instructions were needed.</p>
         </div>
       )}
+
+      <RefundTriagePanel
+        activeQuoteData={activeQuoteData}
+        activeQuoteError={activeQuoteError}
+        isCheckingQuote={activeQuoteIsLoading}
+        routeStatus={routeStatus}
+      />
 
       {activeQuoteData && (
         <details className="mt-3 rounded-md border border-border bg-slate-950/30">
@@ -800,10 +1412,11 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
     : result;
   const chainAvailability = deriveChainAvailability(status);
   const networkWideControls = deriveNetworkWideControls(status);
+  const nodeOperationRows = deriveNodeOperationPresentations(status);
   const swapLimitedChains = chainAvailability.filter((chain) => chain.swapLimited);
   const operationAffectedChains = chainAvailability.filter((chain) => chain.operationLimited);
   const activeActions = getActionSummary(status, chainAvailability);
-  const swapStatus = getSwapStatusPresentation(status, chainAvailability);
+  const swapStatus = getSwapStatusPresentation(status, chainAvailability, isDegraded || hasSourceWarnings);
   const keyReviewCount = warningDetails
     .filter(hasKeyLikeWarning)
     .reduce((count, warning) => count + (warning.keys?.length ?? 0), 0);
@@ -897,10 +1510,12 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
               ? 'Some routes limited; source review needed'
               : swapStatus.tone === 'limited'
                 ? 'Some routes may be limited'
-                : isPaused && hasSourceWarnings
-                  ? 'Swaps appear open; other operations need review'
+                : swapStatus.tone === 'unknown' && (isDegraded || hasSourceWarnings)
+                  ? 'Ordinary swap status needs source review'
+                  : isPaused && hasSourceWarnings
+                  ? 'No global swap halt; other operations need review'
                   : isPaused
-                    ? 'Swaps appear open; other operations paused'
+                    ? 'No global swap halt; other operations paused'
                     : isDegraded || hasSourceWarnings
                       ? 'Ordinary swap status needs source review'
                       : hasScheduledMimirKeys
@@ -910,21 +1525,12 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
     ? 'Fetching THORNode Mimir, inbound-address, version, and block evidence.'
     : result?.error ?? (isUnavailable ? 'Current-only THORNode status is unavailable.' : swapStatus.summary);
   const compact = variant === 'compact';
-  const routeScopeValue = status
-    ? swapStatus.tone === 'paused'
-      ? 'Global swap halt'
-      : swapLimitedChains.length > 0
-        ? swapLimitedChains.map((chain) => chain.chain).join(', ')
-        : 'No swap-limited chains'
-    : 'Unavailable';
-  const routeScopeDetail = status
-    ? swapStatus.tone === 'paused'
-      ? operationAffectedChains.length > 0
-        ? `${operationAffectedChains.length} chain status${operationAffectedChains.length === 1 ? '' : 'es'} with direct operation impacts`
-        : 'Global control applies before per-chain routing'
-      : swapLimitedChains.length > 0
-        ? swapLimitedChains.map((chain) => `${chain.chain}: ${firstSwapReasonText(chain)}`).join(' / ')
-        : 'No chain-specific swap blockers observed'
+  const otherOperationsDetail = status
+    ? activeActions.length === 0
+      ? 'No LP, loans, churning, node, secured, TCY, trade, WASM, or app-layer pause observed'
+      : operationAffectedChains.length > 0
+        ? `${operationAffectedChains.length} chain status${operationAffectedChains.length === 1 ? '' : 'es'} with direct non-swap operation impacts`
+        : 'Network-wide or global controls; separate from ordinary swap execution'
     : null;
 
   return (
@@ -1018,15 +1624,15 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
             <p className="mt-1 text-sm font-semibold">
               {status ? activeActions.length > 0 ? activeActions.slice(0, 2).join(', ') : 'None observed' : 'Unavailable'}
             </p>
-            {status && routeScopeDetail && (
+            {status && otherOperationsDetail && (
               <p className="mt-1 text-[11px] leading-relaxed text-slate-500">
-                {routeScopeValue}
+                {otherOperationsDetail}
               </p>
             )}
           </div>
           <div className="rounded-md border border-border bg-surface/50 px-3 py-2">
             <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Data quality</p>
-            <p className="mt-1 text-sm font-semibold">{status ? warningDetails.length > 0 ? formatWarningCount(warningDetails.length) : 'Sources clean' : 'Pending'}</p>
+            <p className="mt-1 text-sm font-semibold">{status ? warningDetails.length > 0 ? formatWarningCount(warningDetails.length) : 'No source warnings' : 'Pending'}</p>
           </div>
         </div>
       </div>
@@ -1046,12 +1652,68 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
         </div>
       )}
 
+      {!compact && (
+        <section id="node-operator-actions" className="mt-4 rounded-md border border-border bg-slate-900/35 p-3" aria-labelledby="node-operator-actions-heading">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h3 id="node-operator-actions-heading" className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+                Node operator actions
+              </h3>
+              <p className="mt-1 text-[11px] leading-relaxed text-slate-400">
+                Current Mimir controls for bonding, unbonding, rebonding, and operator rotation. These action gates are separate from ordinary swaps and LP availability.
+              </p>
+            </div>
+            <span className="inline-flex w-fit rounded border border-slate-700 bg-slate-950 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+              current-only
+            </span>
+          </div>
+          {nodeOperationRows.length > 0 ? (
+            <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+              {nodeOperationRows.map((operation) => (
+                <div key={operation.id} className={`rounded-md border p-3 ${nodeOperationCardClassName(operation.cell)}`}>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="text-sm font-semibold text-slate-200">{operation.label}</span>
+                    {renderStatusCell(operation.cell)}
+                  </div>
+                  <p className="mt-2 text-[11px] leading-relaxed text-slate-400">{operation.description}</p>
+                  <div className="mt-3 flex flex-wrap items-center gap-2 text-[10px] uppercase tracking-wider text-slate-500">
+                    <span>Control</span>
+                    <code className="break-all rounded border border-slate-700 bg-slate-950 px-1.5 py-1 font-mono text-[10px] normal-case tracking-normal text-slate-300">
+                      {operation.key}
+                    </code>
+                  </div>
+                  <p className="mt-2 text-[11px] leading-relaxed text-slate-400">
+                    <span className="font-semibold text-slate-300">Why: </span>
+                    {operation.reason}
+                  </p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="mt-3 rounded-md border border-slate-700 bg-slate-950/40 px-3 py-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant={isLoading ? 'default' : 'danger'}>{isLoading ? 'Checking' : 'Unavailable'}</Badge>
+                <span className="text-sm font-semibold text-slate-200">Node operation controls are not available</span>
+              </div>
+              <p className="mt-2 text-[11px] leading-relaxed text-slate-400">
+                {isLoading
+                  ? 'Waiting for current THORNode Mimir controls for bonding, unbonding, rebonding, and operator rotation.'
+                  : 'No clean optional node-operation Mimir controls were returned; do not infer node-action availability from their absence.'}
+              </p>
+            </div>
+          )}
+          <p className="mt-3 text-[11px] leading-relaxed text-slate-400">
+            This panel is about network-level action gates. It does not prove a specific node can leave safely; node state, churn timing, slash points, and operator tooling still matter.
+          </p>
+        </section>
+      )}
+
       {compact && (
         <div className="mt-4 flex flex-col gap-2 border-t border-border pt-3 text-xs text-slate-400 sm:flex-row sm:items-center sm:justify-between">
           <span>
             Compact view hides raw Mimir keys. Use Network diagnostics for exact evidence and grouped controls.
           </span>
-          <Link href="/network" className="font-semibold text-accent transition-colors hover:text-rune">
+          <Link href="/network#network-diagnostics" className="font-semibold text-accent transition-colors hover:text-rune">
             Open diagnostics
           </Link>
         </div>
@@ -1134,7 +1796,7 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
                 Chain availability
               </h3>
               <p className="mt-1 text-[11px] leading-relaxed text-slate-400">
-                Swap columns show chain-level route blockers. LP columns are separate because LP pauses are not the same as an ordinary swap halt.
+                Swap columns show chain-level route blockers. LP and secured/asym columns are separate because those controls are not the same as an ordinary swap halt; network-wide LP controls are named once above.
               </p>
             </div>
           </div>
@@ -1162,6 +1824,14 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
                     <p className="text-[10px] uppercase tracking-wider text-slate-500">Pool deposits</p>
                     <div className="mt-1">{renderStatusCell(chain.poolDeposits)}</div>
                   </div>
+                  <div className="col-span-2">
+                    <p className="text-[10px] uppercase tracking-wider text-slate-500">Secured / asym withdrawals</p>
+                    <div className="mt-1">{renderStatusCell(chain.scopedOperations)}</div>
+                  </div>
+                  <div className="col-span-2">
+                    <p className="text-[10px] uppercase tracking-wider text-slate-500">Data quality</p>
+                    <div className="mt-1">{renderStatusCell(chain.dataQuality)}</div>
+                  </div>
                 </div>
                 <p className="mt-3 text-[11px] leading-relaxed text-slate-400">
                   <span className="font-semibold text-slate-300">Why: </span>
@@ -1171,7 +1841,7 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
             ))}
           </div>
           <div className="hidden overflow-x-auto rounded-md border border-border md:block">
-            <table className="min-w-[900px] w-full text-left text-[11px]">
+            <table className="min-w-[1040px] w-full text-left text-[11px]">
               <caption className="sr-only">Per-chain live operation state</caption>
               <thead className="bg-slate-950/30 text-slate-400">
                 <tr>
@@ -1180,6 +1850,7 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
                   <th scope="col" className="whitespace-nowrap px-3 py-2 font-semibold">Swap out</th>
                   <th scope="col" className="whitespace-nowrap px-3 py-2 font-semibold">LP actions</th>
                   <th scope="col" className="whitespace-nowrap px-3 py-2 font-semibold">Pool deposits</th>
+                  <th scope="col" className="whitespace-nowrap px-3 py-2 font-semibold">Secured / asym</th>
                   <th scope="col" className="whitespace-nowrap px-3 py-2 font-semibold">Data quality</th>
                   <th scope="col" className="px-3 py-2 font-semibold">Why</th>
                 </tr>
@@ -1192,6 +1863,7 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
                     <td className="whitespace-nowrap px-3 py-2">{renderStatusCell(chain.swapOut)}</td>
                     <td className="whitespace-nowrap px-3 py-2">{renderStatusCell(chain.lpActions)}</td>
                     <td className="whitespace-nowrap px-3 py-2">{renderStatusCell(chain.poolDeposits)}</td>
+                    <td className="whitespace-nowrap px-3 py-2">{renderStatusCell(chain.scopedOperations)}</td>
                     <td className="whitespace-nowrap px-3 py-2">{renderStatusCell(chain.dataQuality)}</td>
                     <td className="px-3 py-2 text-slate-400">{firstReasonText(chain.reasons)}</td>
                   </tr>
@@ -1203,7 +1875,7 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
       )}
 
       {!compact && showQuoteChecker && (
-        <RouteQuoteChecker status={status} />
+        <RouteQuoteChecker status={status} statusLoading={isLoading} />
       )}
 
       {!compact && evidenceRows.length > 0 && (
@@ -1359,7 +2031,8 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
           )}
           <p className="mt-2 text-[11px] text-slate-400">
             Current actions depend on these controls and per-chain flags; check live sources before assuming swaps,
-            signing, LP actions, asymmetric withdrawals, TCY, trade-account, secured-asset, bank-send, or app-layer availability.
+            signing, LP actions, asymmetric withdrawals, TCY, trade-account, secured-asset, bank-send, app-layer,
+            bonding, unbonding, rebonding, or operator-rotation availability.
           </p>
         </div>
       )}

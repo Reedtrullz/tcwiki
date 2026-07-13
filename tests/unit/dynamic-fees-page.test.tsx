@@ -100,23 +100,42 @@ describe('DynamicFeesView', () => {
     expect(html).toContain('Current-only');
     expect(html).toContain('Look Here First');
     expect(html).toContain('Revenue signal');
+    expect(html).toContain('Coverage Check');
+    expect(html).toContain('Partial coverage');
+    expect(html).toContain('Current epoch rows');
+    expect(html).toContain('1 current accumulator');
+    expect(html).toContain('Rows with sealed record');
+    expect(html).toContain('1 / 1');
+    expect(html).toContain('Sealed history');
+    expect(html).toContain('1 samples / 1 epochs');
     expect(html).toContain('Volume is demand context, not proof that the lower floor won routing flow.');
     expect(html).toContain('Historical Results');
+    expect(html).toContain('Pair Movement Snapshot');
     expect(html).toContain('Show pair-level history details');
     expect(html).toContain('Interpretation Notes');
     expect(html).toContain('Keep these as guardrails for the live numbers.');
     expect(html).toContain('L1-to-L1 scope');
     expect(html).toContain('Affiliate attribution versus applied floor');
-    expect(html).toContain('ADR-026 dynamic L1 min fee per thorname');
+    expect(html).toContain('ADR-026 dynamic L1 fee model');
+    expect(html).toContain('Source retrieved 2026-07-04');
+    expect(html).toContain('THORChain Devs ADR-026 discussion');
+    expect(html).toContain('Source retrieved 2026-07-05');
     expect(html).toContain('THORNode');
     expect(html).toContain('L1DynamicFeeEnabled');
     expect(html).toContain('L1DynamicFeeWindowEpochs');
     expect(html).toContain('10% default');
     expect(html).toContain('DYNAMICFEE-WHITELIST-SS');
     expect(html).toContain('THOR.RUNE|THOR.TCY');
+    expect(html).toContain('Search tracked records');
+    expect(html).toContain('Whitelist');
+    expect(html).toContain('Bps position');
+    expect(html).toContain('Current epoch');
+    expect(html).toContain('Showing 1 of 1');
     expect(html).toContain('1 bps');
-    expect(html).toContain('$1.24');
-    expect(html).toContain('$1,856.42');
+    expect(html).toContain('1.24 TOR');
+    expect(html).toContain('1.9K TOR');
+    expect(html).not.toContain('$1.24');
+    expect(html).not.toContain('$1,856.42');
     expect(html).toContain('fees_tor');
     expect(html).toContain('volume_tor');
     expect(html).toContain('Insufficient samples for trend');
@@ -126,6 +145,126 @@ describe('DynamicFeesView', () => {
     expect(html).toContain('Current records and sparse sealed history do not prove revenue lift');
     expect(html).not.toContain('Evidence Boundary');
     expect(html).not.toContain('Remaining Non-Claims');
+  });
+
+  it('renders route source posture before the live tracker when provided', () => {
+    const html = renderToStaticMarkup(
+      <DynamicFeesView result={liveResult} status={status}>
+        <section aria-label="Page Source Posture">Route source boundary</section>
+      </DynamicFeesView>
+    );
+
+    expect(html.indexOf('Route source boundary')).toBeGreaterThan(-1);
+    expect(html.indexOf('id="dynamic-fees-live"')).toBeGreaterThan(-1);
+    expect(html.indexOf('Route source boundary')).toBeLessThan(html.indexOf('id="dynamic-fees-live"'));
+    expect(html.indexOf('Route source boundary')).toBeLessThan(html.indexOf('Experiment Context'));
+  });
+
+  it('summarizes pair-level movement without turning it into revenue proof', () => {
+    const pairStatus: DynamicL1FeeStatus = {
+      ...status,
+      records: [
+        status.records[0],
+        {
+          ...status.records[0],
+          thorname: 'symbiosis',
+          pair: 'BTC.BTC|ETH.ETH',
+          dynamicBps: 4,
+          latestFeesTorBaseUnits: '1800000000',
+        },
+      ],
+      currentEntries: [
+        status.currentEntries[0],
+      ],
+      histories: [
+        {
+          ...status.histories[0],
+          pairs: [
+            {
+              ...status.histories[0].pairs[0],
+              history: [
+                {
+                  epoch: 1862,
+                  volumeTorBaseUnits: '100000000000',
+                  feesTorBaseUnits: '100000000',
+                  bpsAtClose: 3,
+                },
+                {
+                  epoch: 1863,
+                  volumeTorBaseUnits: '185642164687',
+                  feesTorBaseUnits: '123938141',
+                  bpsAtClose: 1,
+                },
+              ],
+            },
+          ],
+        },
+        {
+          thorname: 'symbiosis',
+          whitelistValue: 1,
+          whitelistState: 'active',
+          pairs: [
+            {
+              thorname: 'symbiosis',
+              pair: 'BTC.BTC|ETH.ETH',
+              dynamicBps: 4,
+              whitelistValue: 1,
+              whitelistState: 'active',
+              lastActiveEpoch: 1864,
+              history: [
+                {
+                  epoch: 1862,
+                  volumeTorBaseUnits: '200000000000',
+                  feesTorBaseUnits: '200000000',
+                  bpsAtClose: 6,
+                },
+                {
+                  epoch: 1864,
+                  volumeTorBaseUnits: '300000000000',
+                  feesTorBaseUnits: '300000000',
+                  bpsAtClose: 4,
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+    const html = renderToStaticMarkup(<DynamicFeesView result={{ ...liveResult, data: pairStatus }} status={pairStatus} />);
+
+    expect(html).toContain('Pair Movement Snapshot');
+    expect(html).toContain('Bps moved');
+    expect(html).toContain('2 / 2');
+    expect(html).toContain('Current activity');
+    expect(html).toContain('1 / 2');
+    expect(html).toContain('Moved down 2 bps');
+    expect(html).toContain('Top sealed pairs');
+    expect(html).toContain('Current accumulator');
+    expect(html).toContain('Pair movement is controller evidence, not proof of revenue lift or partner attribution quality.');
+    expect(html).not.toContain('Pair movement proves revenue lift');
+  });
+
+  it('renders absent dynamic-fee enablement as default disabled instead of unknown', () => {
+    const absentEnabledStatus: DynamicL1FeeStatus = {
+      ...status,
+      mimir: {
+        ...status.mimir,
+        enabled: {
+          key: 'L1DynamicFeeEnabled',
+          value: null,
+          defaultValue: 0,
+          effectiveValue: 0,
+          state: 'absent',
+        },
+      },
+    };
+    const html = renderToStaticMarkup(
+      <DynamicFeesView result={{ ...liveResult, data: absentEnabledStatus }} status={absentEnabledStatus} />
+    );
+
+    expect(html).toContain('Disabled by default');
+    expect(html).toContain('<code>L1DynamicFeeEnabled</code>: absent (default 0)');
+    expect(html).not.toContain('Controller</span><span>Unknown');
   });
 
   it('renders missing TOR data as insufficient samples instead of zero', () => {
@@ -171,7 +310,8 @@ describe('DynamicFeesView', () => {
     };
     const html = renderToStaticMarkup(<DynamicFeesView result={{ ...liveResult, data: subCentStatus }} status={subCentStatus} />);
 
-    expect(html).toContain('&lt;$0.01');
+    expect(html).toContain('&lt;0.01 TOR');
+    expect(html).not.toContain('$0.01');
     expect(html).not.toContain('$0.00');
   });
 
@@ -217,11 +357,17 @@ describe('DynamicFeesView', () => {
     expect(html).not.toContain('Infinity');
   });
 
-  it('fails closed for TOR totals too large for safe chart math', () => {
-    const tooLargeCents = BigInt(Number.MAX_SAFE_INTEGER) + BigInt(1);
-    const tooLargeTorBaseUnits = (tooLargeCents * BigInt(1000000)).toString();
+  it('formats TOR totals too large for chart math without rendering unsafe numbers', () => {
+    const tooLargeWholeTor = BigInt(Number.MAX_SAFE_INTEGER) + BigInt(1);
+    const tooLargeTorBaseUnits = (tooLargeWholeTor * BigInt(100000000)).toString();
     const hugeStatus: DynamicL1FeeStatus = {
       ...status,
+      records: [
+        {
+          ...status.records[0],
+          latestFeesTorBaseUnits: tooLargeTorBaseUnits,
+        },
+      ],
       currentEntries: [
         {
           ...status.currentEntries[0],
@@ -249,10 +395,36 @@ describe('DynamicFeesView', () => {
     };
     const html = renderToStaticMarkup(<DynamicFeesView result={{ ...liveResult, data: hugeStatus }} status={hugeStatus} />);
 
-    expect(html).toContain('Insufficient samples');
+    expect(html).toContain('9,007,199,254,740,992 TOR');
+    expect(html).toContain('fees_tor unavailable for chart math');
+    expect(html).not.toContain('$9,007,199,254,740,992');
     expect(html).not.toContain('$0.00');
     expect(html).not.toContain('$NaN');
     expect(html).not.toContain('Infinity');
+  });
+
+  it('keeps the bps distribution CSP-compatible without inline style attributes', () => {
+    const html = renderToStaticMarkup(<DynamicFeesView result={liveResult} status={status} />);
+
+    expect(html).toContain('w-[100%]');
+    expect(html).not.toContain('style="width:');
+  });
+
+  it('counts tracked thorname-pair records independently when pairs overlap', () => {
+    const overlappingStatus: DynamicL1FeeStatus = {
+      ...status,
+      records: [
+        ...status.records,
+        {
+          ...status.records[0],
+          thorname: 'symbiosis',
+        },
+      ],
+    };
+    const html = renderToStaticMarkup(<DynamicFeesView result={{ ...liveResult, data: overlappingStatus }} status={overlappingStatus} />);
+
+    expect(html).toContain('Tracked thorname-pair records');
+    expect(html).toMatch(/Tracked thorname-pair records[\s\S]*>2<\/p>/);
   });
 
   it('keeps caveat-resolution copy from overclaiming protocol or community evidence', () => {
@@ -292,6 +464,25 @@ describe('DynamicFeesView', () => {
     expect(html).toContain('/dynamic_l1_fees_current');
   });
 
+  it('summarizes unknown Mimir keys in live source posture', () => {
+    const warnedStatus: DynamicL1FeeStatus = {
+      ...status,
+      sourceWarnings: ['Unknown operation-like Mimir keys need review: PRIVATE-KEY-A, PRIVATE-KEY-B.'],
+      sourceWarningDetails: [
+        {
+          severity: 'review',
+          category: 'unknown-operation',
+          message: 'Unknown operation-like Mimir keys need review: PRIVATE-KEY-A, PRIVATE-KEY-B.',
+          action: 'Review the operation-like key family before interpreting it as non-pausing.',
+          keys: ['PRIVATE-KEY-A', 'PRIVATE-KEY-B'],
+        },
+      ],
+    };
+    const html = renderToStaticMarkup(<DynamicFeesView result={{ ...liveResult, data: warnedStatus }} status={warnedStatus} />);
+
+    expect(html).toContain('First: unknown-operation / 2 operation-like Mimir keys need review.');
+  });
+
   it('renders current accumulators even when no sealed record exists yet', () => {
     const pendingStatus: DynamicL1FeeStatus = {
       ...status,
@@ -320,10 +511,14 @@ describe('DynamicFeesView', () => {
     const html = renderToStaticMarkup(<DynamicFeesView result={{ ...liveResult, data: pendingStatus }} status={pendingStatus} />);
 
     expect(html).toContain('Current accumulators without sealed records');
+    expect(html).toContain('2 current accumulators');
+    expect(html).toContain('1 / 2');
+    expect(html).toContain('1 current row lack a matching /dynamic_l1_fees record.');
+    expect(html).toContain('headline numbers remain partial');
     expect(html).toContain('symbiosis');
     expect(html).toContain('BTC.BTC|THOR.RUNE');
-    expect(html).toContain('$13.77');
-    expect(html).toContain('$45,935.47');
+    expect(html).toContain('13.76758445 TOR');
+    expect(html).toContain('45,935.46591197 TOR');
   });
 
   it('keeps degraded live data visible without hiding the static explainer', () => {
@@ -338,11 +533,29 @@ describe('DynamicFeesView', () => {
 
     expect(html).toContain('Degraded');
     expect(html).toContain('THORNode dynamic fee sources did not provide a usable snapshot');
-    expect(html).toContain('Sources loading');
-    expect(html).toContain('Live proof loading');
+    expect(html).toContain('Sources unavailable');
+    expect(html).toContain('Coverage unavailable');
+    expect(html).toContain('Live proof unavailable');
+    expect(html).toMatch(/Controller[\s\S]*Unavailable/);
+    expect(html).toMatch(/Whitelisted[\s\S]*Unavailable/);
+    expect(html).toMatch(/Current epoch[\s\S]*Unavailable/);
     expect(html).toContain('No sealed samples');
     expect(html).not.toContain('Sources clean');
+    expect(html).not.toMatch(/Sources loading|Coverage loading|Live proof loading/);
     expect(html).toContain('How the Experiment Works');
     expect(html).toContain('No sealed dynamic-fee records are available');
+    expect(html.indexOf('THORNode dynamic fee sources did not provide a usable snapshot')).toBeLessThan(html.indexOf('Look Here First'));
+  });
+
+  it('reserves loading labels for an in-flight snapshot', () => {
+    const html = renderToStaticMarkup(<DynamicFeesView isLoading />);
+
+    expect(html).toContain('Sources loading');
+    expect(html).toContain('Coverage loading');
+    expect(html).toContain('Live proof loading');
+    expect(html).toMatch(/Controller[\s\S]*Loading/);
+    expect(html).toMatch(/Whitelisted[\s\S]*Loading/);
+    expect(html).toMatch(/Current epoch[\s\S]*Loading/);
+    expect(html).not.toContain('Sources unavailable');
   });
 });

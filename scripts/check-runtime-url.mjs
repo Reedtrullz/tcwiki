@@ -1,3 +1,4 @@
+import './require-node22.mjs';
 import { setTimeout as wait } from 'node:timers/promises';
 import { assertReadinessContract } from './lib/readiness-contract.mjs';
 import { assertRuntimeMetadataContract } from './lib/runtime-metadata-contract.mjs';

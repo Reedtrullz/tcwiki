@@ -21,7 +21,7 @@ describe('MidgardAPI', () => {
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce(makeResponse(false, {}, 500, 'Server Error'))
-      .mockResolvedValueOnce(makeResponse(true, [{ asset: 'BTC.BTC', poolAPY: '0.12', synthUnits: '0', synthSupply: '0', units: '1', assetDepth: '1', runeDepth: '1', price: '1', status: 'available', assetPriceUSD: '1', runePriceUSD: '1', liquidityUSD: '1', volume24h: '1', volume24hUSD: '1', pool: 'BTC.BTC', earnings: '0', rewards: '0' }]));
+      .mockResolvedValueOnce(makeResponse(true, [{ asset: 'BTC.BTC', poolAPY: '0.12', synthUnits: '0', synthSupply: '0', units: '1', assetDepth: '1', runeDepth: '1', price: '1', status: 'available', assetPriceUSD: '1', runePriceUSD: '1', liquidityInUSD: '1', volume24h: '1', pool: 'BTC.BTC', earnings: '0', rewards: '0' }]));
 
     vi.stubGlobal('fetch', fetchMock);
     const result = await MidgardAPI.getPools();
@@ -36,6 +36,26 @@ describe('MidgardAPI', () => {
       url: 'https://midgard.thorchain.network/v2/pools?status=available',
       retrievedAt: result.checkedAt,
     });
+  });
+
+  it('preserves canonical live Midgard pool liquidity and RUNE volume fields', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(makeResponse(true, [{
+      asset: 'AVAX.AVAX',
+      assetDepth: '2101068965099',
+      runeDepth: '132314140943190',
+      status: 'available',
+      liquidityInUSD: '1046552.4742136128',
+      volume24h: '29109830445174',
+      poolAPY: '0',
+    }])));
+
+    const result = await MidgardAPI.getPools();
+
+    expect(result.status).toBe('ok');
+    expect(result.data?.[0]).toEqual(expect.objectContaining({
+      liquidityInUSD: '1046552.4742136128',
+      volume24h: '29109830445174',
+    }));
   });
 
   it('returns degraded when all endpoints fail', async () => {

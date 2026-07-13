@@ -1,8 +1,10 @@
+import './require-node22.mjs';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createJiti } from 'jiti';
 import ts from 'typescript';
+import { findDeepDiveTocTitleMismatches } from './lib/deep-dive-toc.mjs';
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const jiti = createJiti(import.meta.url, {
@@ -12,11 +14,13 @@ const jiti = createJiti(import.meta.url, {
   moduleCache: false,
 });
 const { SEARCH_DOCUMENTS: actualSearchDocuments } = await jiti.import(join(root, 'src/lib/search/registry.ts'));
+const sharedSources = await jiti.import(join(root, 'src/lib/sources.ts'));
 const {
   DEEP_DIVE_READER_PATHS: actualDeepDiveReaderPaths,
   DEEP_DIVE_TOC: actualDeepDiveToc,
   HOME_DECISION_LINKS: actualHomeDecisionLinks,
   JOURNEY_LINKS: actualJourneyLinks,
+  ROUTE_SOURCE_POSTURE_ENTRY_IDS: actualRouteSourcePostureEntryIds,
   SOURCE_CHOICE_DECISIONS: actualSourceChoiceDecisions,
   TASK_INTENT_GUIDES: actualTaskIntentGuides,
 } = await jiti.import(join(root, 'src/lib/content/registry.ts'));
@@ -50,23 +54,75 @@ const forbiddenChainCodes = new Set(['TRX', 'ARB', 'MATIC', 'OP']);
 const liveInboundUrl = 'https://thornode.thorchain.network/thorchain/inbound_addresses';
 const contentCheckToday = process.env.CONTENT_CHECK_TODAY ?? new Date().toISOString().slice(0, 10);
 const allowOverdueContent = process.env.ALLOW_OVERDUE_CONTENT === '1';
-const routeSourcePostureEntryIds = new Set([
-  'protocol',
-  'economics',
-  'rune',
-  'tcy',
-  'ecosystem',
-  'governance',
-  'network',
-  'dynamic-fees',
-  'docs',
-  'deep-dives',
-  'glossary',
-  'stats',
-]);
+const routeSourcePostureEntryIds = new Set(actualRouteSourcePostureEntryIds);
 
 function fail(path, message) {
   failures.push(`${path}: ${message}`);
+}
+
+const sharedSourceUrlOwners = new Map(
+  Object.entries(sharedSources)
+    .filter(([, source]) => source && typeof source === 'object' && typeof source.url === 'string')
+    .map(([name, source]) => [source.url, name])
+);
+
+function typeReferenceName(type) {
+  if (!type || !ts.isTypeReferenceNode(type) || !ts.isIdentifier(type.typeName)) {
+    return undefined;
+  }
+
+  return type.typeName.text;
+}
+
+function objectLiteralStringProperty(expression, propertyName) {
+  if (!ts.isObjectLiteralExpression(expression)) {
+    return undefined;
+  }
+
+  for (const property of expression.properties) {
+    if (!ts.isPropertyAssignment(property)) {
+      continue;
+    }
+    const name = ts.isIdentifier(property.name) || ts.isStringLiteral(property.name)
+      ? property.name.text
+      : undefined;
+    if (name !== propertyName) {
+      continue;
+    }
+    if (ts.isStringLiteral(property.initializer) || ts.isNoSubstitutionTemplateLiteral(property.initializer)) {
+      return property.initializer.text;
+    }
+  }
+
+  return undefined;
+}
+
+function validateSharedSourceReuse(sourceFile, filePath) {
+  sourceFile.forEachChild((node) => {
+    if (!ts.isVariableStatement(node)) {
+      return;
+    }
+
+    for (const declaration of node.declarationList.declarations) {
+      if (typeReferenceName(declaration.type) !== 'SourceMeta' || !declaration.initializer) {
+        continue;
+      }
+
+      const localName = declarationName(declaration);
+      const url = objectLiteralStringProperty(declaration.initializer, 'url');
+      if (!url) {
+        continue;
+      }
+
+      const sharedName = sharedSourceUrlOwners.get(url);
+      if (sharedName) {
+        fail(
+          `${filePath}.${localName ?? 'anonymous'}.url`,
+          `duplicates @/lib/sources ${sharedName}; import/spread the shared source instead`
+        );
+      }
+    }
+  });
 }
 
 function validateReviewDueDate(value, path) {
@@ -101,6 +157,37 @@ const registryDeclarations = collectConstDeclarations(registryFile);
 const glossaryDeclarations = collectConstDeclarations(glossaryFile);
 const searchRegistryDeclarations = collectConstDeclarations(searchRegistryFile);
 const generatedSearchDeclarations = collectConstDeclarations(generatedSearchFile);
+
+function collectImportedSourceScope(sourceFile) {
+  const scope = {};
+
+  sourceFile.forEachChild((node) => {
+    if (
+      !ts.isImportDeclaration(node) ||
+      !ts.isStringLiteral(node.moduleSpecifier) ||
+      node.moduleSpecifier.text !== '@/lib/sources'
+    ) {
+      return;
+    }
+
+    const namedBindings = node.importClause?.namedBindings;
+    if (!namedBindings || !ts.isNamedImports(namedBindings)) {
+      return;
+    }
+
+    for (const specifier of namedBindings.elements) {
+      const importedName = specifier.propertyName?.text ?? specifier.name.text;
+      const localName = specifier.name.text;
+      const source = sharedSources[importedName];
+      if (!source || typeof source !== 'object' || typeof source.url !== 'string') {
+        throw new Error(`@/lib/sources import ${importedName} must be a SourceMeta object`);
+      }
+      scope[localName] = source;
+    }
+  });
+
+  return scope;
+}
 
 function slugifyFragment(value) {
   return value
@@ -142,6 +229,14 @@ function evaluate(expression, scope, path) {
   if (ts.isObjectLiteralExpression(expression)) {
     const value = {};
     for (const property of expression.properties) {
+      if (ts.isSpreadAssignment(property)) {
+        const spreadValue = evaluate(property.expression, scope, `${path}.spread`);
+        if (!spreadValue || typeof spreadValue !== 'object' || Array.isArray(spreadValue)) {
+          throw new Error(`${path}: object spread target must be an object`);
+        }
+        Object.assign(value, spreadValue);
+        continue;
+      }
       if (!ts.isPropertyAssignment(property)) {
         throw new Error(`${path}: unsupported object property`);
       }
@@ -213,42 +308,41 @@ function getDataConfidences() {
   return new Set(value);
 }
 
-function getNextReviewDueDefault() {
-  const initializer = staticDeclarations.get('checkedFreshness');
-  if (!initializer || !ts.isArrowFunction(initializer)) {
-    throw new Error('Missing checkedFreshness arrow function');
-  }
-  const defaultExpression = initializer.parameters[1]?.initializer;
-  if (!defaultExpression) {
-    throw new Error('checkedFreshness must define a nextReviewDue default');
-  }
-  const value = evaluate(defaultExpression, {}, 'checkedFreshness.nextReviewDue');
-  if (typeof value !== 'string') {
-    throw new Error('checkedFreshness nextReviewDue default must be a string');
-  }
-  return value;
-}
+function getLiteralSourceScope(declarations, importedScope = {}) {
+  const scope = { ...importedScope };
+  let madeProgress = true;
 
-function getLiteralSourceScope(declarations) {
-  const scope = {};
-  for (const [name, initializer] of declarations) {
-    if (!name.endsWith('Source') && !name.endsWith('Docs')) {
-      continue;
-    }
-    try {
-      const value = evaluate(initializer, scope, name);
-      if (value && typeof value === 'object' && typeof value.url === 'string') {
-        scope[name] = value;
+  while (madeProgress) {
+    madeProgress = false;
+    for (const [name, initializer] of declarations) {
+      if (Object.prototype.hasOwnProperty.call(scope, name)) {
+        continue;
       }
-    } catch {
-      // Non-literal constants are ignored; record validation will fail if they are referenced.
+
+      try {
+        const value = evaluate(initializer, scope, name);
+        if (
+          value === null ||
+          typeof value === 'string' ||
+          typeof value === 'number' ||
+          typeof value === 'boolean' ||
+          Array.isArray(value) ||
+          (typeof value === 'object' && value !== null)
+        ) {
+          scope[name] = value;
+          madeProgress = true;
+        }
+      } catch {
+        // Non-literal constants are ignored; record validation will fail if they are referenced.
+      }
     }
   }
+
   return scope;
 }
 
 function getSourceScope() {
-  return getLiteralSourceScope(staticDeclarations);
+  return getLiteralSourceScope(staticDeclarations, collectImportedSourceScope(staticFile));
 }
 
 function recordKey(record, index) {
@@ -264,7 +358,7 @@ function recordKey(record, index) {
   return String(index);
 }
 
-function readRecordArray(name, scope, staticDataLastUpdated, nextReviewDue) {
+function readRecordArray(name, scope) {
   const initializer = staticDeclarations.get(name);
   if (!initializer || !ts.isArrayLiteralExpression(initializer)) {
     throw new Error(`${name} must be an array literal`);
@@ -278,12 +372,16 @@ function readRecordArray(name, scope, staticDataLastUpdated, nextReviewDue) {
     if (!dataExpression || !sourcesExpression) {
       throw new Error(`${name}[${index}] must include data and sources`);
     }
+    if (!freshnessOptionsExpression) {
+      throw new Error(`${name}[${index}] must include explicit freshness options`);
+    }
+    if (ts.isIdentifier(freshnessOptionsExpression) && freshnessOptionsExpression.text === 'STATIC_DATA_BASE_FRESHNESS') {
+      throw new Error(`${name}[${index}] must not use catch-all STATIC_DATA_BASE_FRESHNESS`);
+    }
     const data = evaluate(dataExpression, scope, `${name}[${index}].data`);
     const sources = evaluate(sourcesExpression, scope, `${name}[${index}].sources`);
     const confidence = confidenceExpression ? evaluate(confidenceExpression, scope, `${name}[${index}].confidence`) : 'curated';
-    const freshnessOptions = freshnessOptionsExpression
-      ? evaluate(freshnessOptionsExpression, scope, `${name}[${index}].freshnessOptions`)
-      : {};
+    const freshnessOptions = evaluate(freshnessOptionsExpression, scope, `${name}[${index}].freshnessOptions`);
     if (!freshnessOptions || typeof freshnessOptions !== 'object' || Array.isArray(freshnessOptions)) {
       throw new Error(`${name}[${index}].freshnessOptions must be an object literal`);
     }
@@ -296,16 +394,16 @@ function readRecordArray(name, scope, staticDataLastUpdated, nextReviewDue) {
         throw new Error(`${name}[${index}].freshnessOptions.${optionName} must be a string`);
       }
     }
-    const checkedAt = typeof freshnessOptions.checkedAt === 'string'
-      ? freshnessOptions.checkedAt
-      : staticDataLastUpdated;
-    const recordNextReviewDue = typeof freshnessOptions.nextReviewDue === 'string'
-      ? freshnessOptions.nextReviewDue
-      : nextReviewDue;
+    if (typeof freshnessOptions.checkedAt !== 'string') {
+      throw new Error(`${name}[${index}].freshnessOptions.checkedAt must be explicit`);
+    }
+    if (typeof freshnessOptions.nextReviewDue !== 'string') {
+      throw new Error(`${name}[${index}].freshnessOptions.nextReviewDue must be explicit`);
+    }
     const freshness = {
-      checkedAt,
+      checkedAt: freshnessOptions.checkedAt,
       confidence,
-      nextReviewDue: recordNextReviewDue,
+      nextReviewDue: freshnessOptions.nextReviewDue,
     };
     if (typeof freshnessOptions.reviewedBy === 'string') {
       freshness.reviewedBy = freshnessOptions.reviewedBy;
@@ -336,17 +434,34 @@ function readGlossaryTerms(scope) {
   return initializer.elements.map((element, index) => evaluate(element, scope, `GLOSSARY_TERMS[${index}]`));
 }
 
-function readConstArray(declarations, name) {
+function readGlossaryDefinitionPaths(scope) {
+  const initializer = glossaryDeclarations.get('GLOSSARY_DEFINITION_PATHS');
+  if (!initializer || !ts.isArrayLiteralExpression(initializer)) {
+    throw new Error('GLOSSARY_DEFINITION_PATHS must be an array literal');
+  }
+
+  return initializer.elements.map((element, index) => evaluate(element, scope, `GLOSSARY_DEFINITION_PATHS[${index}]`));
+}
+
+function readConstArray(declarations, name, scope = {}) {
   const initializer = declarations.get(name);
   if (!initializer || !ts.isArrayLiteralExpression(initializer)) {
     throw new Error(`${name} must be an array literal`);
   }
 
-  return evaluate(initializer, {}, name);
+  return evaluate(initializer, scope, name);
 }
 
 function readOperationalSearchDocuments() {
-  return readConstArray(searchRegistryDeclarations, 'OPERATIONAL_HALT_SEARCH_DOCUMENTS');
+  const scope = collectImportedSourceScope(searchRegistryFile);
+  // The operational halt document content is derived from the shared
+  // operational-control catalog. Coverage validation only needs id/href/type.
+  scope.OPERATIONAL_CONTROL_SEARCH_CONTENT = '';
+  return readConstArray(
+    searchRegistryDeclarations,
+    'OPERATIONAL_HALT_SEARCH_DOCUMENTS',
+    scope
+  );
 }
 
 function readGeneratedSearchDocuments() {
@@ -398,6 +513,60 @@ function validateNonEmptyStringArray(value, path) {
   });
 }
 
+function validateSourceRetrieval(source, path, checkedAt, checkedAtPath) {
+  if (!source || typeof source !== 'object' || !Object.prototype.hasOwnProperty.call(source, 'retrievedAt')) {
+    return;
+  }
+  if (!isIsoDate(source.retrievedAt)) {
+    fail(`${path}.retrievedAt`, 'must be YYYY-MM-DD when present');
+    return;
+  }
+  if (source.retrievedAt > contentCheckToday) {
+    fail(`${path}.retrievedAt`, `must not be in the future relative to ${contentCheckToday}`);
+  }
+  if (isIsoDate(checkedAt) && source.retrievedAt > checkedAt) {
+    fail(`${path}.retrievedAt`, `must not be after ${checkedAtPath} (${checkedAt})`);
+  }
+}
+
+function collectReviewTargets(value, basePath, targets = []) {
+  if (typeof value === 'string') {
+    for (const match of value.matchAll(/\breview\s+target\s+(\d{4}-\d{2}-\d{2})\b/gi)) {
+      targets.push({ date: match[1], path: basePath });
+    }
+    return targets;
+  }
+  if (!value || typeof value !== 'object') {
+    return targets;
+  }
+  if (Array.isArray(value)) {
+    value.forEach((item, index) => collectReviewTargets(item, `${basePath}[${index}]`, targets));
+    return targets;
+  }
+  Object.entries(value).forEach(([key, item]) => {
+    collectReviewTargets(item, `${basePath}.${key}`, targets);
+  });
+  return targets;
+}
+
+function validateRecordReviewTargets(record, path) {
+  if (!record?.data || !record?.freshness) {
+    return;
+  }
+  collectReviewTargets(record.data, `${path}.data`).forEach((target) => {
+    if (!isIsoDate(target.date)) {
+      fail(target.path, `contains unsupported review target date ${target.date}`);
+      return;
+    }
+    if (isIsoDate(record.freshness.nextReviewDue) && record.freshness.nextReviewDue > target.date) {
+      fail(
+        `${path}.freshness.nextReviewDue`,
+        `must be no later than visible review target ${target.date} from ${target.path}`
+      );
+    }
+  });
+}
+
 function validateRecord(collectionName, record, index, allowedConfidences, staticDataLastUpdated) {
   const key = recordKey(record, index);
   const path = `${collectionName}[${key}]`;
@@ -426,6 +595,12 @@ function validateRecord(collectionName, record, index, allowedConfidences, stati
       fail(`${sourcePath}.url`, 'duplicates another source URL in this record');
     }
     sourceUrls.add(source.url);
+    if (
+      Object.prototype.hasOwnProperty.call(source, 'notes') &&
+      (typeof source.notes !== 'string' || source.notes.trim() === '')
+    ) {
+      fail(`${sourcePath}.notes`, 'must be a non-empty string when present');
+    }
   }
 
   if (!record.freshness || typeof record.freshness !== 'object') {
@@ -455,6 +630,10 @@ function validateRecord(collectionName, record, index, allowedConfidences, stati
   ) {
     fail(`${path}.freshness.reviewedBy`, 'must be a non-empty string when present');
   }
+  record.sources.forEach((source, sourceIndex) => {
+    validateSourceRetrieval(source, `${path}.sources[${sourceIndex}]`, record.freshness.checkedAt, `${path}.freshness.checkedAt`);
+  });
+  validateRecordReviewTargets(record, path);
 }
 
 function requireUrlInSources(collectionName, record, index, fieldName) {
@@ -496,6 +675,9 @@ function validateEcosystemChains(records) {
     const path = `ECOSYSTEM_PROJECT_RECORDS[${recordKey(record, index)}]`;
     if (!isHttpsUrl(record.data.url)) {
       fail(`${path}.data.url`, 'must be a valid https project URL');
+    }
+    if (Object.hasOwn(record.data, 'status')) {
+      fail(`${path}.data.status`, 'must not claim project activity; use record freshness confidence for source posture');
     }
     if (!Array.isArray(record.data.chains) || record.data.chains.length === 0) {
       fail(`${path}.data.chains`, 'must include at least one chain');
@@ -558,6 +740,23 @@ function validateSecurityIncidentTrackerStatus(records) {
   }
 }
 
+function validateGovernanceTrackerStatus(records) {
+  const allowedTrackerStatuses = new Set(['current', 'needs-review']);
+  for (const [index, record] of records.entries()) {
+    const path = `GOVERNANCE_PROPOSAL_RECORDS[${recordKey(record, index)}].data`;
+    const status = record.data?.trackerStatus;
+    if (status === undefined) {
+      continue;
+    }
+    if (!allowedTrackerStatuses.has(status)) {
+      fail(`${path}.trackerStatus`, `unsupported tracker status ${status}`);
+    }
+    if (record.data?.type !== 'Recovery') {
+      fail(`${path}.trackerStatus`, 'governance tracker status is reserved for recovery records');
+    }
+  }
+}
+
 function splitInternalHref(href) {
   if (typeof href !== 'string') {
     return { path: href, anchor: undefined, hasExtraFragment: false };
@@ -604,12 +803,26 @@ function mdxHeadingForSlug(slug) {
 }
 
 function mdxAnchorsForSlug(slug) {
+  return mdxAnchorDetailsForSlug(slug).anchors;
+}
+
+function mdxAnchorDetailsForSlug(slug) {
   const source = readFileSync(mdxPathForSlug(slug), 'utf8');
   const anchors = new Set();
+  const headingsByAnchor = new Map();
+  const duplicates = [];
   for (const match of source.matchAll(/^#{2,3}\s+(.+)$/gm)) {
-    anchors.add(slugifyHeading(match[1]));
+    const heading = match[1].trim();
+    const anchor = slugifyHeading(heading);
+    const firstHeading = headingsByAnchor.get(anchor);
+    if (firstHeading) {
+      duplicates.push({ anchor, firstHeading, heading });
+    } else {
+      headingsByAnchor.set(anchor, heading);
+    }
+    anchors.add(anchor);
   }
-  return anchors;
+  return { anchors, duplicates, headingsByAnchor };
 }
 
 function slugifyHeading(value) {
@@ -641,6 +854,15 @@ function validateRegistrySource(source, path, sourceUrls) {
     fail(`${path}.url`, 'duplicates another source URL in this entry');
   }
   sourceUrls.add(source.url);
+  if (
+    Object.prototype.hasOwnProperty.call(source, 'notes') &&
+    (typeof source.notes !== 'string' || source.notes.trim() === '')
+  ) {
+    fail(`${path}.notes`, 'must be a non-empty string when present');
+  }
+  if (Object.prototype.hasOwnProperty.call(source, 'retrievedAt') && !isIsoDate(source.retrievedAt)) {
+    fail(`${path}.retrievedAt`, 'must be YYYY-MM-DD when present');
+  }
 }
 
 function validateRegistryEntryShape(entry, index, allowedConfidences) {
@@ -667,7 +889,13 @@ function validateRegistryEntryShape(entry, index, allowedConfidences) {
     fail(`${path}.sources`, 'must include at least one source');
   } else {
     const sourceUrls = new Set();
-    entry.sources.forEach((source, sourceIndex) => validateRegistrySource(source, `${path}.sources[${sourceIndex}]`, sourceUrls));
+    entry.sources.forEach((source, sourceIndex) => {
+      const sourcePath = `${path}.sources[${sourceIndex}]`;
+      validateRegistrySource(source, sourcePath, sourceUrls);
+      if (!source || typeof source !== 'object' || !Object.prototype.hasOwnProperty.call(source, 'retrievedAt')) {
+        fail(`${sourcePath}.retrievedAt`, 'must be YYYY-MM-DD for visible page source posture');
+      }
+    });
   }
   if (!isIsoDate(entry.reviewedAt)) {
     fail(`${path}.reviewedAt`, 'must be YYYY-MM-DD');
@@ -678,6 +906,11 @@ function validateRegistryEntryShape(entry, index, allowedConfidences) {
     fail(`${path}.nextReviewDue`, 'must not be before reviewedAt');
   } else {
     validateReviewDueDate(entry.nextReviewDue, `${path}.nextReviewDue`);
+  }
+  if (Array.isArray(entry.sources)) {
+    entry.sources.forEach((source, sourceIndex) => {
+      validateSourceRetrieval(source, `${path}.sources[${sourceIndex}]`, entry.reviewedAt, `${path}.reviewedAt`);
+    });
   }
   if (typeof entry.href === 'string') {
     if (!entry.href.startsWith('/')) {
@@ -734,12 +967,34 @@ function validateRegistryDeepDive(entry, deepDiveMdxSlugs, deepDiveRouteSlugs) {
     fail(`${path}.title`, `does not appear to match MDX heading "${heading}"`);
   }
 
-  const toc = actualDeepDiveToc?.[entry.id] ?? [];
+  const anchorDetails = mdxAnchorDetailsForSlug(slug);
+  anchorDetails.duplicates.forEach((duplicate) => {
+    fail(
+      `${relative(root, mdxPathForSlug(slug))}#${duplicate.anchor}`,
+      `duplicate MDX heading anchor generated by "${duplicate.firstHeading}" and "${duplicate.heading}"`
+    );
+  });
+
+  if (!actualDeepDiveToc || typeof actualDeepDiveToc !== 'object' || Array.isArray(actualDeepDiveToc)) {
+    fail('DEEP_DIVE_TOC', 'must be an object keyed by deep-dive entry id');
+    return;
+  }
+  if (!Object.prototype.hasOwnProperty.call(actualDeepDiveToc, entry.id)) {
+    fail(`${path}.toc`, `missing DEEP_DIVE_TOC["${entry.id}"]`);
+    return;
+  }
+
+  const toc = actualDeepDiveToc[entry.id];
   if (!Array.isArray(toc)) {
     fail(`${path}.toc`, 'deep-dive table of contents must be an array');
     return;
   }
-  const mdxAnchors = mdxAnchorsForSlug(slug);
+  if (toc.length === 0) {
+    fail(`${path}.toc`, 'deep-dive table of contents must include at least one item');
+  }
+  const tocAnchors = new Set();
+  const mdxAnchors = anchorDetails.anchors;
+  const tocItemsWithKnownAnchors = [];
   toc.forEach((item, itemIndex) => {
     const tocPath = `DEEP_DIVE_TOC[${entry.id}][${itemIndex}]`;
     if (!item || typeof item !== 'object') {
@@ -754,9 +1009,25 @@ function validateRegistryDeepDive(entry, deepDiveMdxSlugs, deepDiveRouteSlugs) {
       return;
     }
     const anchor = item.href.slice(1);
+    if (tocAnchors.has(anchor)) {
+      fail(`${tocPath}.href`, `duplicates earlier TOC anchor ${item.href}`);
+    }
+    tocAnchors.add(anchor);
     if (!mdxAnchors.has(anchor)) {
       fail(`${tocPath}.href`, `unknown MDX heading anchor ${item.href} in ${relative(root, mdxPathForSlug(slug))}`);
+      return;
     }
+    tocItemsWithKnownAnchors.push(item);
+  });
+
+  findDeepDiveTocTitleMismatches({
+    headingsByAnchor: anchorDetails.headingsByAnchor,
+    tocItems: tocItemsWithKnownAnchors,
+  }).forEach((mismatch) => {
+    fail(
+      `${path}.toc#${mismatch.anchor}`,
+      `TOC title "${mismatch.actualTitle}" must match MDX heading "${mismatch.expectedTitle}" in ${relative(root, mdxPathForSlug(slug))}`
+    );
   });
 }
 
@@ -765,6 +1036,7 @@ function validateContentRegistry(entries, allowedConfidences) {
   const hrefs = new Map();
   const deepDiveMdxSlugs = new Set(readDeepDiveSlugsFromMdx());
   const deepDiveRouteSlugs = new Set(readDeepDiveSlugsFromRoutes());
+  const deepDiveRegistryIds = new Set();
   const deepDiveRegistrySlugs = new Set();
 
   entries.forEach((entry, index) => {
@@ -794,6 +1066,9 @@ function validateContentRegistry(entries, allowedConfidences) {
 
     if (entry.category === 'deep-dive' && typeof entry.href === 'string') {
       const slug = entry.href.replace('/deep-dives/', '');
+      if (typeof entry.id === 'string') {
+        deepDiveRegistryIds.add(entry.id);
+      }
       deepDiveRegistrySlugs.add(slug);
       validateRegistryDeepDive(entry, deepDiveMdxSlugs, deepDiveRouteSlugs);
     } else if (typeof entry.href === 'string' && entry.href.startsWith('/deep-dives/')) {
@@ -812,6 +1087,14 @@ function validateContentRegistry(entries, allowedConfidences) {
     }
     if (!deepDiveMdxSlugs.has(slug)) {
       fail(`content/deep-dives/${slug}.mdx`, `missing MDX for ${relative(root, routePathForHref(`/deep-dives/${slug}`))}`);
+    }
+  }
+
+  if (actualDeepDiveToc && typeof actualDeepDiveToc === 'object' && !Array.isArray(actualDeepDiveToc)) {
+    for (const entryId of Object.keys(actualDeepDiveToc)) {
+      if (!deepDiveRegistryIds.has(entryId)) {
+        fail(`DEEP_DIVE_TOC[${entryId}]`, 'must match a deep-dive CONTENT_ENTRIES id');
+      }
     }
   }
 }
@@ -1054,10 +1337,15 @@ function validateTaskIntentGuides(guides, allowedConfidences, collections, gloss
     } else {
       validateReviewDueDate(guide.nextReviewDue, `${path}.nextReviewDue`);
     }
+    if (Array.isArray(guide.sources)) {
+      guide.sources.forEach((source, sourceIndex) => {
+        validateSourceRetrieval(source, `${path}.sources[${sourceIndex}]`, guide.reviewedAt, `${path}.reviewedAt`);
+      });
+    }
   });
 }
 
-function validateDeepDiveReaderPaths(paths, contentEntries, allowedConfidences) {
+function validateDeepDiveReaderPaths(paths, contentEntries, allowedConfidences, anchorsByRoute) {
   if (!Array.isArray(paths) || paths.length === 0) {
     fail('DEEP_DIVE_READER_PATHS', 'must include at least one reader path');
     return;
@@ -1111,16 +1399,7 @@ function validateDeepDiveReaderPaths(paths, contentEntries, allowedConfidences) 
           }
         }
         if (typeof link?.href === 'string') {
-          if (!link.href.startsWith('/')) {
-            fail(`${linkPath}.href`, 'must start with /');
-          }
-          if (link.href.includes('?')) {
-            fail(`${linkPath}.href`, 'must not include query strings');
-          }
-          const routePath = routePathForHref(link.href);
-          if (!existsSync(routePath)) {
-            fail(`${linkPath}.href`, `missing route ${relative(root, routePath)}`);
-          }
+          validateInternalHref(link.href, `${linkPath}.href`, anchorsByRoute);
         }
       });
     }
@@ -1142,6 +1421,11 @@ function validateDeepDiveReaderPaths(paths, contentEntries, allowedConfidences) 
       fail(`${path}.nextReviewDue`, 'must not be before reviewedAt');
     } else {
       validateReviewDueDate(readerPath.nextReviewDue, `${path}.nextReviewDue`);
+    }
+    if (Array.isArray(readerPath.sources)) {
+      readerPath.sources.forEach((source, sourceIndex) => {
+        validateSourceRetrieval(source, `${path}.sources[${sourceIndex}]`, readerPath.reviewedAt, `${path}.reviewedAt`);
+      });
     }
   });
 }
@@ -1181,9 +1465,77 @@ function validateGlossaryTerms(terms, allowedConfidences) {
     }
     if (!Array.isArray(term.sources) || term.sources.length === 0) {
       fail(`${path}.sources`, 'must include at least one source');
+    } else {
+      const sourceUrls = new Set();
+      term.sources.forEach((source, sourceIndex) => {
+        const sourcePath = `${path}.sources[${sourceIndex}]`;
+        validateRegistrySource(source, sourcePath, sourceUrls);
+        validateSourceRetrieval(source, sourcePath, term.reviewedAt, `${path}.reviewedAt`);
+      });
     }
     if (!Array.isArray(term.relatedHrefs) || term.relatedHrefs.length === 0) {
       fail(`${path}.relatedHrefs`, 'must include at least one related route');
+    }
+  });
+}
+
+function validateGlossaryDefinitionPaths(paths, glossaryTerms, collections, deepDiveReaderPaths) {
+  if (!Array.isArray(paths) || paths.length === 0) {
+    fail('GLOSSARY_DEFINITION_PATHS', 'must include at least one definition path');
+    return;
+  }
+
+  const glossaryTermIds = new Set(glossaryTerms.map((term) => term.id));
+  const anchorsByRoute = collectKnownRouteAnchors(collections, glossaryTerms, deepDiveReaderPaths);
+  const seenTitles = new Map();
+  const seenTermIds = new Map();
+  const allowedBadges = new Set(['operations', 'economics', 'developer', 'history']);
+
+  paths.forEach((definitionPath, index) => {
+    const path = `GLOSSARY_DEFINITION_PATHS[${definitionPath?.title ?? index}]`;
+    if (!definitionPath || typeof definitionPath !== 'object') {
+      fail(path, 'definition path must be an object');
+      return;
+    }
+    for (const field of ['title', 'badge', 'description', 'verifyHref', 'verifyLabel', 'boundary']) {
+      if (typeof definitionPath[field] !== 'string' || definitionPath[field].trim() === '') {
+        fail(`${path}.${field}`, 'must be a non-empty string');
+      }
+    }
+    if (typeof definitionPath.title === 'string') {
+      if (seenTitles.has(definitionPath.title)) {
+        fail(`${path}.title`, `duplicates GLOSSARY_DEFINITION_PATHS[${seenTitles.get(definitionPath.title)}].title`);
+      }
+      seenTitles.set(definitionPath.title, index);
+    }
+    if (typeof definitionPath.badge === 'string' && !allowedBadges.has(definitionPath.badge)) {
+      fail(`${path}.badge`, `unsupported badge ${definitionPath.badge}`);
+    }
+    if (typeof definitionPath.verifyHref === 'string') {
+      validateInternalHref(definitionPath.verifyHref, `${path}.verifyHref`, anchorsByRoute);
+    }
+    if (!Array.isArray(definitionPath.termIds) || definitionPath.termIds.length === 0) {
+      fail(`${path}.termIds`, 'must include at least one glossary term id');
+    } else {
+      const pathTermIds = new Set();
+      definitionPath.termIds.forEach((termId, termIndex) => {
+        const termPath = `${path}.termIds[${termIndex}]`;
+        if (typeof termId !== 'string' || termId.trim() === '') {
+          fail(termPath, 'must be a non-empty glossary term id');
+          return;
+        }
+        if (!glossaryTermIds.has(termId)) {
+          fail(termPath, `unknown glossary term id ${termId}`);
+        }
+        if (pathTermIds.has(termId)) {
+          fail(termPath, `duplicates another term in ${path}.termIds`);
+        }
+        pathTermIds.add(termId);
+        if (seenTermIds.has(termId)) {
+          fail(termPath, `duplicates ${seenTermIds.get(termId)}`);
+        }
+        seenTermIds.set(termId, termPath);
+      });
     }
   });
 }
@@ -1197,6 +1549,9 @@ function addRouteAnchor(anchorsByRoute, route, anchor) {
 
 function collectKnownRouteAnchors(collections, glossaryTerms, deepDiveReaderPaths) {
   const anchorsByRoute = new Map();
+
+  addRouteAnchor(anchorsByRoute, '/network', 'check-a-route');
+  addRouteAnchor(anchorsByRoute, '/network', 'node-operator-actions');
 
   for (const record of collections.SECURITY_INCIDENT_RECORDS) {
     addRouteAnchor(anchorsByRoute, '/governance', recordAnchor('incident', record.data.id));
@@ -1347,7 +1702,11 @@ function validateSearchDocumentMetadata(doc, path, allowedConfidences) {
     return;
   }
   const sourceUrls = new Set();
-  doc.sources.forEach((source, sourceIndex) => validateRegistrySource(source, `${path}.sources[${sourceIndex}]`, sourceUrls));
+  doc.sources.forEach((source, sourceIndex) => {
+    const sourcePath = `${path}.sources[${sourceIndex}]`;
+    validateRegistrySource(source, sourcePath, sourceUrls);
+    validateSourceRetrieval(source, sourcePath, doc.reviewedAt, `${path}.reviewedAt`);
+  });
 }
 
 function buildExpectedAnchoredSearchDocuments(collections, glossaryTerms, deepDiveReaderPaths) {
@@ -1642,6 +2001,17 @@ function validateSearchSurface(collections, contentEntries, taskGuides, glossary
     const path = `SEARCH_DOCUMENTS[${doc.id}]`;
     validateSearchDocumentMetadata(doc, path, allowedConfidences);
     validateInternalHref(doc.href, `${path}.href`, anchorsByRoute);
+    if (doc.type === 'ecosystem') {
+      if (!doc.content.includes('Directory posture:')) {
+        fail(`${path}.content`, 'must include ecosystem directory posture');
+      }
+      if (!doc.content.includes('Source confidence:')) {
+        fail(`${path}.content`, 'must include ecosystem source confidence');
+      }
+      if (/Status: (?:Active|Needs review)\./.test(doc.content)) {
+        fail(`${path}.content`, 'must not index unverified project activity as ecosystem status');
+      }
+    }
   });
   validateExpectedSearchCoverage(searchDocuments, collections, contentEntries, taskGuides, glossaryTerms, deepDiveReaderPaths);
 
@@ -1682,24 +2052,26 @@ function validateSearchSurface(collections, contentEntries, taskGuides, glossary
 }
 
 const staticDataLastUpdated = getStringConst('STATIC_DATA_LAST_UPDATED');
-const nextReviewDue = getNextReviewDueDefault();
 const allowedConfidences = getDataConfidences();
 const scope = getSourceScope();
-const registryScope = getLiteralSourceScope(registryDeclarations);
-const glossaryScope = getLiteralSourceScope(glossaryDeclarations);
+const registryScope = getLiteralSourceScope(registryDeclarations, collectImportedSourceScope(registryFile));
+const glossaryScope = getLiteralSourceScope(glossaryDeclarations, collectImportedSourceScope(glossaryFile));
 
-const chainRecords = readRecordArray('CHAIN_RECORDS', scope, staticDataLastUpdated, nextReviewDue);
+validateSharedSourceReuse(staticFile, 'src/lib/data/static.ts');
+validateSharedSourceReuse(registryFile, 'src/lib/content/registry.ts');
+
+const chainRecords = readRecordArray('CHAIN_RECORDS', scope);
 scope.chainCodes = chainRecords.map((record) => record.data.chain);
 
 const collections = {
   CHAIN_RECORDS: chainRecords,
-  ECOSYSTEM_PROJECT_RECORDS: readRecordArray('ECOSYSTEM_PROJECT_RECORDS', scope, staticDataLastUpdated, nextReviewDue),
-  RESEARCH_REPORT_RECORDS: readRecordArray('RESEARCH_REPORT_RECORDS', scope, staticDataLastUpdated, nextReviewDue),
-  SECURITY_INCIDENT_RECORDS: readRecordArray('SECURITY_INCIDENT_RECORDS', scope, staticDataLastUpdated, nextReviewDue),
-  GOVERNANCE_PROPOSAL_RECORDS: readRecordArray('GOVERNANCE_PROPOSAL_RECORDS', scope, staticDataLastUpdated, nextReviewDue),
-  PROTOCOL_MILESTONE_RECORDS: readRecordArray('PROTOCOL_MILESTONE_RECORDS', scope, staticDataLastUpdated, nextReviewDue),
-  TOKENOMICS_RECORDS: readRecordArray('TOKENOMICS_RECORDS', scope, staticDataLastUpdated, nextReviewDue),
-  SOURCE_MAP_SECTION_RECORDS: readRecordArray('SOURCE_MAP_SECTION_RECORDS', scope, staticDataLastUpdated, nextReviewDue),
+  ECOSYSTEM_PROJECT_RECORDS: readRecordArray('ECOSYSTEM_PROJECT_RECORDS', scope),
+  RESEARCH_REPORT_RECORDS: readRecordArray('RESEARCH_REPORT_RECORDS', scope),
+  SECURITY_INCIDENT_RECORDS: readRecordArray('SECURITY_INCIDENT_RECORDS', scope),
+  GOVERNANCE_PROPOSAL_RECORDS: readRecordArray('GOVERNANCE_PROPOSAL_RECORDS', scope),
+  PROTOCOL_MILESTONE_RECORDS: readRecordArray('PROTOCOL_MILESTONE_RECORDS', scope),
+  TOKENOMICS_RECORDS: readRecordArray('TOKENOMICS_RECORDS', scope),
+  SOURCE_MAP_SECTION_RECORDS: readRecordArray('SOURCE_MAP_SECTION_RECORDS', scope),
 };
 
 if (!isIsoDate(staticDataLastUpdated)) {
@@ -1715,8 +2087,10 @@ validateChains(collections.CHAIN_RECORDS);
 validateEcosystemChains(collections.ECOSYSTEM_PROJECT_RECORDS);
 validateSourceMapSections(collections.SOURCE_MAP_SECTION_RECORDS);
 validateSecurityIncidentTrackerStatus(collections.SECURITY_INCIDENT_RECORDS);
+validateGovernanceTrackerStatus(collections.GOVERNANCE_PROPOSAL_RECORDS);
 const contentEntries = readContentEntries(registryScope);
 const glossaryTerms = readGlossaryTerms(glossaryScope);
+const glossaryDefinitionPaths = readGlossaryDefinitionPaths(glossaryScope);
 
 validateContentRegistry(contentEntries, allowedConfidences);
 validateRouteSourcePostureUsage(contentEntries);
@@ -1724,8 +2098,10 @@ validateJourneyLinks(actualJourneyLinks, collections, glossaryTerms, actualDeepD
 validateHomeDecisionLinks(actualHomeDecisionLinks, collections, glossaryTerms, actualDeepDiveReaderPaths);
 validateSourceChoiceDecisions(actualSourceChoiceDecisions, collections, glossaryTerms, actualDeepDiveReaderPaths);
 validateTaskIntentGuides(actualTaskIntentGuides, allowedConfidences, collections, glossaryTerms, actualDeepDiveReaderPaths);
-validateDeepDiveReaderPaths(actualDeepDiveReaderPaths, contentEntries, allowedConfidences);
+const knownAnchorsByRoute = collectKnownRouteAnchors(collections, glossaryTerms, actualDeepDiveReaderPaths);
+validateDeepDiveReaderPaths(actualDeepDiveReaderPaths, contentEntries, allowedConfidences, knownAnchorsByRoute);
 validateGlossaryTerms(glossaryTerms, allowedConfidences);
+validateGlossaryDefinitionPaths(glossaryDefinitionPaths, glossaryTerms, collections, actualDeepDiveReaderPaths);
 validateSearchSurface(collections, contentEntries, actualTaskIntentGuides, glossaryTerms, actualDeepDiveReaderPaths, allowedConfidences);
 
 collections.RESEARCH_REPORT_RECORDS.forEach((record, index) => requireUrlInSources('RESEARCH_REPORT_RECORDS', record, index, 'url'));

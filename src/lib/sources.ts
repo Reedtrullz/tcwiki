@@ -1,0 +1,330 @@
+import type { SourceMeta } from '@/lib/types';
+
+export const thorchainDocsSource: SourceMeta = {
+  label: 'THORChain Docs',
+  url: 'https://docs.thorchain.org',
+  retrievedAt: '2026-07-02',
+  notes: 'Official documentation root used for curated protocol background; pair with live endpoints for current state.',
+};
+
+export const thorchainDevDocsSource: SourceMeta = {
+  label: 'THORChain Dev Docs',
+  url: 'https://dev.thorchain.org',
+  retrievedAt: '2026-07-02',
+  notes: 'Official developer documentation root used for API and integration concepts; pair with live endpoints for current state.',
+};
+
+export const liquidityProvidersSource: SourceMeta = {
+  label: 'Liquidity Providers',
+  url: 'https://docs.thorchain.org/technical-documentation/understanding-thorchain/roles/liquidity-providers',
+  retrievedAt: '2026-07-05',
+  notes: 'Official LP role, deposit modes, withdrawal framing, yield factors, and risk caveats; current LP availability and APY claims still need live evidence.',
+};
+
+export const continuousLiquidityPoolsSource: SourceMeta = {
+  label: 'Continuous Liquidity Pools',
+  url: 'https://docs.thorchain.org/technical-documentation/thorchain-finance/continuous-liquidity-pools',
+  retrievedAt: '2026-07-05',
+  notes: 'Official CLP mechanism reference; current route, depth, and yield claims need live source labels.',
+};
+
+export const runeDocsSource: SourceMeta = {
+  label: 'THORChain RUNE docs',
+  url: 'https://docs.thorchain.org/technical-documentation/understanding-thorchain/rune',
+  retrievedAt: '2026-07-05',
+  notes: 'Official RUNE role, settlement, liquidity, security, and incentive framing.',
+};
+
+export const nativeSwapsSource: SourceMeta = {
+  label: 'Native cross-chain swaps',
+  url: 'https://docs.thorchain.org/native-cross-chain-swaps',
+  retrievedAt: '2026-07-05',
+  notes: 'Official user-facing explanation of cross-chain swaps routing through RUNE-paired pools.',
+};
+
+export const liquidityProviderFaqSource: SourceMeta = {
+  label: 'Liquidity Providers FAQ',
+  url: 'https://docs.thorchain.org/thornodes/frequently-asked-questions/liquidity-providers',
+  retrievedAt: '2026-07-06',
+  notes: 'Official FAQ for asymmetric deposit and withdrawal rules, fees, and position ownership caveats.',
+};
+
+export const cosmWasmSource: SourceMeta = {
+  label: 'CosmWasm',
+  url: 'https://docs.thorchain.org/technical-documentation/technology/cosmwasm',
+  retrievedAt: '2026-07-04',
+  notes: 'Official app-layer technology reference; current contract availability depends on live controls.',
+};
+
+export const queryingThorchainSource: SourceMeta = {
+  label: 'Querying THORChain',
+  url: 'https://dev.thorchain.org/concepts/querying-thorchain.html',
+  retrievedAt: '2026-07-05',
+  notes: 'Developer docs reference for THORNode and Midgard endpoint usage.',
+};
+
+export const connectingThorchainSource: SourceMeta = {
+  label: 'Connecting to THORChain',
+  url: 'https://dev.thorchain.org/concepts/connecting-to-thorchain.html',
+  retrievedAt: '2026-07-06',
+  notes: 'Official source-family guide for Midgard, THORNode, Cosmos RPC, Tendermint RPC, gRPC, rate limits, x-client-id, and production node guidance.',
+};
+
+export const swapGuideSource: SourceMeta = {
+  label: 'THORChain Swap Guide',
+  url: 'https://dev.thorchain.org/swap-guide/quickstart-guide.html',
+  retrievedAt: '2026-07-06',
+  notes: 'Official quote, expiry, streaming swap, refund-address, recommended minimum input, and swap error-handling guidance.',
+};
+
+export const memosSource: SourceMeta = {
+  label: 'THORChain transaction memos',
+  url: 'https://dev.thorchain.org/concepts/memos.html',
+  retrievedAt: '2026-07-06',
+  notes: 'Official memo format, memo-size, dust-threshold, function, refund-address, affiliate, and transaction-intent guidance.',
+};
+
+export const constantsMimirSource: SourceMeta = {
+  label: 'THORChain constants and Mimirs',
+  url: 'https://dev.thorchain.org/mimir.html',
+  retrievedAt: '2026-07-05',
+  notes: 'Official constants and Mimir reference; live Mimir reads still own current override state.',
+};
+
+export const networkHaltsSource: SourceMeta = {
+  label: 'THORChain Network Halts',
+  url: 'https://dev.thorchain.org/concepts/network-halts.html',
+  retrievedAt: '2026-07-02',
+  notes: 'Official halt-control reference; live Mimir and inbound-address reads still own current availability.',
+};
+
+export const feesSource: SourceMeta = {
+  label: 'THORChain fees developer docs',
+  url: 'https://dev.thorchain.org/concepts/fees.html',
+  retrievedAt: '2026-07-04',
+  notes: 'Official fee reference for fee categories and quote fields; exact values remain live/current-only.',
+};
+
+export const runePoolDocsSource: SourceMeta = {
+  label: 'THORChain RUNEPool docs',
+  url: 'https://docs.thorchain.org/technical-documentation/thorchain-finance/runepool',
+  retrievedAt: '2026-07-06',
+  notes: 'Official RUNEPool overview describing aggregate protocol-owned-liquidity participation and RUNEPool units.',
+};
+
+export const runePoolDevSource: SourceMeta = {
+  label: 'RUNEPool developer docs',
+  url: 'https://dev.thorchain.org/concepts/rune-pool.html',
+  retrievedAt: '2026-07-06',
+  notes: 'Developer source for RUNEPool mechanics, POL-enabled pools, provider endpoints, global PnL fields, and impermanent-loss caveats.',
+};
+
+export const runePoolEndpointSource: SourceMeta = {
+  label: 'THORNode runepool endpoint',
+  url: 'https://thornode.thorchain.network/thorchain/runepool',
+  retrievedAt: '2026-07-06',
+  notes: 'Current-only THORNode snapshot for global RUNEPool, provider, reserve, value, PnL, and deposit fields.',
+};
+
+export const adr026DynamicFeesSource: SourceMeta = {
+  label: 'ADR-026 dynamic L1 fee model',
+  url: 'https://gitlab.com/thorchain/thornode/-/raw/develop/docs/architecture/adr-026-dynamic-l1-min-fee-per-thorname.md',
+  retrievedAt: '2026-07-04',
+  notes: 'Architecture decision text currently labeled proposed; compare with live THORNode state before making current claims.',
+};
+
+export const assetNotationSource: SourceMeta = {
+  label: 'Asset Notation',
+  url: 'https://dev.thorchain.org/concepts/asset-notation.html',
+  retrievedAt: '2026-07-04',
+  notes: 'Official asset-notation reference for chain and asset identifiers used in docs, quotes, pools, and memos.',
+};
+
+export const thornameGuideSource: SourceMeta = {
+  label: 'THORName affiliate guide',
+  url: 'https://dev.thorchain.org/affiliate-guide/thorname-guide.html',
+  retrievedAt: '2026-07-04',
+  notes: 'Official THORName affiliate reference; current dynamic-fee attribution still needs live THORNode evidence.',
+};
+
+export const liveInboundSource: SourceMeta = {
+  label: 'THORNode inbound_addresses',
+  url: 'https://thornode.thorchain.network/thorchain/inbound_addresses',
+  retrievedAt: '2026-07-04',
+  notes: 'Current-only chain availability, router, halt, and inbound-address snapshot; not durable uptime proof.',
+};
+
+export const thornodeMimirSource: SourceMeta = {
+  label: 'THORNode Mimir endpoint',
+  url: 'https://thornode.thorchain.network/thorchain/mimir',
+  retrievedAt: '2026-07-04',
+  notes: 'Current-only operational controls; malformed values must not be treated as inactive.',
+};
+
+export const midgardHealthSource: SourceMeta = {
+  label: 'Midgard v2 Health',
+  url: 'https://midgard.thorchain.network/v2/health',
+  retrievedAt: '2026-07-04',
+  notes: 'Current-only Midgard provider health, sync state, and lag for rendered live metrics.',
+};
+
+export const midgardNetworkSource: SourceMeta = {
+  label: 'Midgard v2 Network',
+  url: 'https://midgard.thorchain.network/v2/network',
+  retrievedAt: '2026-07-05',
+  notes: 'Current-only network totals; pair with visible source freshness before treating values as live.',
+};
+
+export const midgardPoolsSource: SourceMeta = {
+  label: 'Midgard v2 Pools',
+  url: 'https://midgard.thorchain.network/v2/pools?status=available',
+  retrievedAt: '2026-07-05',
+  notes: 'Current-only available-pool snapshot; not durable pool uptime proof.',
+};
+
+export const midgardEarningsSource: SourceMeta = {
+  label: 'Midgard v2 Earnings',
+  url: 'https://midgard.thorchain.network/v2/history/earnings?interval=day&count=30',
+  retrievedAt: '2026-07-05',
+  notes: 'Current-only earnings intervals as returned by Midgard, not protocol revenue attribution proof.',
+};
+
+export const dynamicL1FeesSource: SourceMeta = {
+  label: 'THORNode dynamic_l1_fees',
+  url: 'https://thornode.thorchain.network/thorchain/dynamic_l1_fees',
+  retrievedAt: '2026-07-04',
+  notes: 'Current-only sealed dynamic L1 fee records.',
+};
+
+export const dynamicL1FeesCurrentSource: SourceMeta = {
+  label: 'THORNode dynamic_l1_fees_current',
+  url: 'https://thornode.thorchain.network/thorchain/dynamic_l1_fees_current',
+  retrievedAt: '2026-07-04',
+  notes: 'Current-only in-progress epoch accumulators.',
+};
+
+export const thorchainEcosystemSource: SourceMeta = {
+  label: 'THORChain Ecosystem',
+  url: 'https://docs.thorchain.org/ecosystem',
+  retrievedAt: '2026-06-18',
+  notes: 'Official ecosystem directory reference; listings are not wallet-security audits, route guarantees, or current app-availability proof.',
+};
+
+export const tokenomicsSource: SourceMeta = {
+  label: 'RUNE and TCY tokenomics',
+  url: 'https://docs.thorchain.org/tokenomics-rune-tcy',
+  retrievedAt: '2026-07-05',
+  notes: 'Official RUNE and TCY tokenomics overview, including TCY supply, revenue share, and no-governance-rights caveat.',
+};
+
+export const tcyGuideSource: SourceMeta = {
+  label: 'TCY Developer Guide',
+  url: 'https://dev.thorchain.org/concepts/tcy.html',
+  retrievedAt: '2026-07-05',
+  notes: 'Developer-facing TCY mechanics, claim, staking, and recovery caveats.',
+};
+
+export const appLayerSource: SourceMeta = {
+  label: 'THORChain Application Layer docs',
+  url: 'https://docs.thorchain.org/application-layer',
+  retrievedAt: '2026-07-05',
+  notes: 'Official app-layer overview; current app-layer, WASM, secured-asset, and trade-account availability still needs live controls.',
+};
+
+export const securedAssetsSource: SourceMeta = {
+  label: 'THORChain Secured Assets docs',
+  url: 'https://docs.thorchain.org/technical-documentation/thorchain-finance/secured-assets',
+  retrievedAt: '2026-07-05',
+  notes: 'Official secured-asset overview; current secured-asset operations still depend on live protocol controls.',
+};
+
+export const securedAssetsDevSource: SourceMeta = {
+  label: 'THORChain secured assets developer docs',
+  url: 'https://dev.thorchain.org/concepts/secured-assets.html',
+  retrievedAt: '2026-07-05',
+  notes: 'Developer reference for secured-asset mechanics and integration boundaries.',
+};
+
+export const archivedSaversLendingSource: SourceMeta = {
+  label: 'Archived Savers and Lending docs',
+  url: 'https://docs.thorchain.org/thornodes/archived',
+  retrievedAt: '2026-07-05',
+  notes: 'Official archived feature index marking Savers, Lending, and Savers FAQ as deprecated.',
+};
+
+export const thorfiUnwindSource: SourceMeta = {
+  label: 'THORFi Unwind Announcement',
+  url: 'https://medium.com/thorchain/thorfi-unwind-96b46dff72c0',
+  retrievedAt: '2026-07-05',
+  notes: 'Dated THORFi unwind postmortem with January-February 2025 liability, pause, and Proposal 6 milestones.',
+};
+
+export const exploitReport1Source: SourceMeta = {
+  label: 'THORChain Exploit Report #1',
+  url: 'https://blog.thorchain.org/thorchain-exploit-report-1',
+  retrievedAt: '2026-07-05',
+  notes: 'Official first May 2026 exploit report and ADR-028 recovery-path framing.',
+};
+
+export const exploitReport2Source: SourceMeta = {
+  label: 'THORChain Exploit Report #2',
+  url: 'https://blog.thorchain.org/thorchain-exploit-report-2',
+  retrievedAt: '2026-07-04',
+  notes: 'Official root-cause report for the May 2026 GG20/TSS vault exploit.',
+};
+
+export const protocolUpgradeV319Source: SourceMeta = {
+  label: 'Protocol Upgrade v3.19.0',
+  url: 'https://blog.thorchain.org/protocol-upgrade-v3-19-0',
+  retrievedAt: '2026-07-04',
+  notes: 'Official release summary for the post-exploit restart and recovery/security patch set.',
+};
+
+export const asgardTssChurnSource: SourceMeta = {
+  label: 'Under the Hood: Asgard Vaults, TSS and Node Churns',
+  url: 'https://blog.thorchain.org/under-the-hood-asgard-vaults-tss-and-node-churns',
+  retrievedAt: '2026-07-04',
+  notes: 'Historical educational explainer for Asgard vault, TSS, and churn mechanics.',
+};
+
+export const bifrostTssVaultsSource: SourceMeta = {
+  label: 'Bifrost, TSS and Vaults',
+  url: 'https://docs.thorchain.org/technical-documentation/technology/bifrost-tss-and-vaults',
+  retrievedAt: '2026-07-05',
+  notes: 'Official technology docs for Bifrost, TSS, Asgard vaults, vault migration, and churn-related mechanics.',
+};
+
+export const thornodeStackSource: SourceMeta = {
+  label: 'THORNode Stack',
+  url: 'https://docs.thorchain.org/thornodes/overview/thornode-stack',
+  retrievedAt: '2026-07-05',
+  notes: 'Official node-stack overview describing Bifrost as the chain-client daemon for observation, signing, and broadcasting.',
+};
+
+export const nodeRisksRewardsSource: SourceMeta = {
+  label: 'THORNode risks, costs and rewards',
+  url: 'https://docs.thorchain.org/thornodes/overview/risks-costs-and-rewards',
+  retrievedAt: '2026-07-05',
+  notes: 'Official node-operator source for slash points, bond rewards, operator fees, and node reward mechanics.',
+};
+
+export const nodeManagingSource: SourceMeta = {
+  label: 'Managing THORNodes',
+  url: 'https://docs.thorchain.org/thornodes/managing',
+  retrievedAt: '2026-07-05',
+  notes: 'Official node operations guidance for slash troubleshooting, sync checks, and operational risk.',
+};
+
+export const economicModelSource: SourceMeta = {
+  label: 'THORChain economic model',
+  url: 'https://docs.thorchain.org/technical-documentation/technical-deep-dive/economic-model',
+  retrievedAt: '2026-07-05',
+  notes: 'Official economic model docs covering the Incentive Pendulum, emission schedule, and reserve flows.',
+};
+
+export const networkSecurityGovernanceSource: SourceMeta = {
+  label: 'Network security and governance',
+  url: 'https://docs.thorchain.org/network-security-governance',
+  retrievedAt: '2026-07-05',
+  notes: 'Official security/governance overview, including the Incentive Pendulum target ratio framing.',
+};

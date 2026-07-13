@@ -13,6 +13,7 @@ export interface RelatedCheck {
 interface RelatedChecksProps {
   checks: RelatedCheck[];
   className?: string;
+  id?: string;
   title?: string;
   description?: string;
   badgeLabel?: string;
@@ -21,15 +22,18 @@ interface RelatedChecksProps {
 export function RelatedChecks({
   checks,
   className,
+  id,
   title = 'Related Checks',
   description = 'Use these before turning current dashboard values into a broader claim.',
   badgeLabel = 'current-only',
 }: RelatedChecksProps) {
+  const headingId = id ? `${id}-heading` : 'related-checks-heading';
+
   return (
-    <section className={cn('rounded-lg border border-border bg-surface-elevated p-4', className)} aria-labelledby="related-checks-heading">
+    <section id={id} className={cn('rounded-lg border border-border bg-surface-elevated p-4', className)} aria-labelledby={headingId}>
       <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h2 id="related-checks-heading" className="text-sm font-semibold text-slate-100">{title}</h2>
+          <h2 id={headingId} className="text-sm font-semibold text-slate-100">{title}</h2>
           <p className="mt-1 max-w-3xl text-xs leading-relaxed text-slate-400">{description}</p>
         </div>
         <Badge variant="info" className="self-start">{badgeLabel}</Badge>

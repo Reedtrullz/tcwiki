@@ -7,6 +7,7 @@ interface NetworkCurrentOnlyStateOptions {
   networkStatus?: NetworkStatus;
   controlKeys?: string[];
   invalidKeyPatterns?: RegExp[];
+  clearLabel?: string;
 }
 
 function hasUnparseableControl(networkStatus: NetworkStatus | undefined, controlKeys: string[]) {
@@ -37,6 +38,7 @@ export function getNetworkCurrentOnlyStateLabel({
   networkStatus,
   controlKeys = [],
   invalidKeyPatterns = [],
+  clearLabel = 'No active halt',
 }: NetworkCurrentOnlyStateOptions) {
   if (statusLoading) {
     return 'Checking';
@@ -65,7 +67,7 @@ export function getNetworkCurrentOnlyStateLabel({
   if (networkStatus?.state === 'degraded' || (networkStatus?.sourceWarnings.length ?? 0) > 0) {
     return 'Source warning';
   }
-  return 'Open';
+  return clearLabel;
 }
 
 export function getSecuredAssetsSummaryPaused(networkStatus: NetworkStatus | undefined) {
