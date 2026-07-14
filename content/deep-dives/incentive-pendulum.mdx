@@ -19,16 +19,16 @@ This article cannot, by itself, prove a current-state claim. If the claim uses w
 THORChain needs two things to function:
 
 1. **Security** — Enough bonded RUNE to secure the network via node operators.
-2. **Liquidity** — Enough pooled RUNE to enable deep, efficient cross-chain swaps.
+2. **Liquidity** — Enough pooled capital, including the RUNE side paired with external assets, to support useful cross-chain markets.
 
 If either side gets too low, the system becomes vulnerable or unusable.
 
 ## How the Pendulum Works
 
-The protocol continuously measures the ratio of bonded RUNE vs. pooled RUNE.
+Official docs describe the mechanism in terms of bonded RUNE versus pooled liquidity or staked capital. Because those pages use slightly different shorthand, treat `2:1` as a design target rather than a license to substitute any one dashboard field for the full ratio.
 
-- **When bonded RUNE is low** (relative to pooled RUNE): More block rewards flow to node operators. This incentivizes more bonding, increasing security.
-- **When pooled RUNE is low** (relative to bonded RUNE): More rewards flow to liquidity providers. This attracts capital into pools, increasing liquidity and swap efficiency.
+- **When bonded security is low relative to pooled liquidity:** The model shifts more of the reward allocation toward node operators.
+- **When pooled liquidity is low relative to bonded security:** The model shifts more of the reward allocation toward liquidity providers.
 
 This creates a self-correcting feedback loop — the "pendulum" swings toward whichever side the network needs most at any given time.
 
@@ -40,9 +40,9 @@ Without this mechanism, maintaining healthy bonding and liquidity ratios would r
 
 ## Practical Effects
 
-- During bull markets with high liquidity demand, LPs receive a larger share of rewards.
-- During periods of low bonding, node operators are strongly incentivized to bond more RUNE.
-- Historical reward allocation has moved with network conditions, but current reward split and APY values should be read from live sources.
+- The intended direction is toward whichever side the model treats as comparatively under-supplied.
+- A current reward split, bond ratio, or APY must be read from current source-labeled data rather than inferred from market regime.
+- The economic-model page still carries original `500M` maximum-supply framing, while the newer tokenomics page gives an approximate `425M and burning` supply. Neither number is an output of the pendulum, and the two source contexts should remain visibly separate.
 
 The Incentive Pendulum is best treated as an incentive-alignment mechanism rather than a guarantee of network health or returns.
 

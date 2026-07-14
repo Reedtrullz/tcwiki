@@ -421,16 +421,16 @@ describe('source and freshness labels', () => {
 
   it('backs the earliest August glossary review batch with claim-specific sources', () => {
     const expectedSources = new Map([
-      ['CLP', 'https://docs.thorchain.org/technical-documentation/thorchain-finance/continuous-liquidity-pools'],
-      ['Current-only', 'https://dev.thorchain.org/concepts/querying-thorchain.html'],
-      ['Mimir', 'https://dev.thorchain.org/concepts/network-halts.html'],
+      ['CLP', ['https://docs.thorchain.org/technical-documentation/thorchain-finance/continuous-liquidity-pools', '2026-07-14', '2026-08-14']],
+      ['Current-only', ['https://dev.thorchain.org/concepts/querying-thorchain.html', '2026-07-13', '2026-08-13']],
+      ['Mimir', ['https://dev.thorchain.org/concepts/network-halts.html', '2026-07-13', '2026-08-13']],
     ]);
 
-    for (const [termName, sourceUrl] of expectedSources) {
+    for (const [termName, [sourceUrl, reviewedAt, nextReviewDue]] of expectedSources) {
       const term = GLOSSARY_TERMS.find(({ term }) => term === termName);
       expect(term?.sources.some(({ url }) => url === sourceUrl), termName).toBe(true);
-      expect(term?.reviewedAt, termName).toBe('2026-07-13');
-      expect(term?.nextReviewDue, termName).toBe('2026-08-13');
+      expect(term?.reviewedAt, termName).toBe(reviewedAt);
+      expect(term?.nextReviewDue, termName).toBe(nextReviewDue);
     }
   });
 
@@ -480,7 +480,7 @@ describe('source and freshness labels', () => {
     }
 
     const beginnerPath = DEEP_DIVE_READER_PATHS.find(({ id }) => id === 'new-to-thorchain');
-    expect(beginnerPath).toEqual(expect.objectContaining({ reviewedAt: '2026-07-13', nextReviewDue: '2026-08-13' }));
+    expect(beginnerPath).toEqual(expect.objectContaining({ reviewedAt: '2026-07-14', nextReviewDue: '2026-08-14' }));
     expect(beginnerPath?.sources.map(({ url }) => url)).toEqual([
       'https://docs.thorchain.org/native-cross-chain-swaps',
       'https://docs.thorchain.org/technical-documentation/understanding-thorchain/rune',
@@ -698,8 +698,8 @@ describe('source and freshness labels', () => {
     expect(html).toContain('href="/deep-dives#deep-dive-path-network-security"');
     expect(html).toContain('href="/network#network-diagnostics"');
     expect(html).toContain('href="/docs#current-protocol-state"');
-    expect(html).toContain('Wiki reviewed 2026-07-13');
-    expect(html).toContain('Review due 2026-08-13');
+    expect(html).toContain('Wiki reviewed 2026-07-14');
+    expect(html).toContain('Review due 2026-08-14');
 
     const historicalHtml = renderToStaticMarkup(
       <DeepDiveShell entryId="deep-dive-savers" editPath="content/deep-dives/savers.mdx">

@@ -59,36 +59,36 @@ export const xchainJsSource: SourceMeta = {
 export const liquidityProvidersSource: SourceMeta = {
   label: 'Liquidity Providers',
   url: 'https://docs.thorchain.org/technical-documentation/understanding-thorchain/roles/liquidity-providers',
-  retrievedAt: '2026-07-05',
-  notes: 'Official LP role, deposit modes, withdrawal framing, yield factors, and risk caveats; current LP availability and APY claims still need live evidence.',
+  retrievedAt: '2026-07-14',
+  notes: 'Official LP role, symmetric/asymmetric deposit framing, withdrawal model, fee income, and impermanent-loss risk; current LP controls and APY still need live evidence.',
 };
 
 export const continuousLiquidityPoolsSource: SourceMeta = {
   label: 'Continuous Liquidity Pools',
   url: 'https://docs.thorchain.org/technical-documentation/thorchain-finance/continuous-liquidity-pools',
-  retrievedAt: '2026-07-05',
-  notes: 'Official CLP mechanism reference; current route, depth, and yield claims need live source labels.',
+  retrievedAt: '2026-07-14',
+  notes: 'Official CLP mechanism and historical IL-protection reference; it explicitly says IL protection was removed, while current route, depth, and yield claims still need live evidence.',
 };
 
 export const runeDocsSource: SourceMeta = {
   label: 'THORChain RUNE docs',
   url: 'https://docs.thorchain.org/technical-documentation/understanding-thorchain/rune',
-  retrievedAt: '2026-07-05',
-  notes: 'Official RUNE role, settlement, liquidity, security, and incentive framing.',
+  retrievedAt: '2026-07-14',
+  notes: 'Official RUNE settlement, liquidity, security, governance, and incentive framing; broad value/security statements remain design claims rather than current market or safety proof.',
 };
 
 export const nativeSwapsSource: SourceMeta = {
   label: 'Native cross-chain swaps',
   url: 'https://docs.thorchain.org/native-cross-chain-swaps',
-  retrievedAt: '2026-07-05',
-  notes: 'Official user-facing explanation of cross-chain swaps routing through RUNE-paired pools.',
+  retrievedAt: '2026-07-14',
+  notes: 'Official user-facing explanation of native cross-chain swaps routing internally through RUNE-paired pools; current execution still needs quote and operational evidence.',
 };
 
 export const liquidityProviderFaqSource: SourceMeta = {
   label: 'Liquidity Providers FAQ',
   url: 'https://docs.thorchain.org/thornodes/frequently-asked-questions/liquidity-providers',
-  retrievedAt: '2026-07-06',
-  notes: 'Official FAQ for asymmetric deposit and withdrawal rules, fees, and position ownership caveats.',
+  retrievedAt: '2026-07-14',
+  notes: 'Official FAQ for asymmetric deposit and withdrawal rules, fees, liquidity-unit ownership, and position caveats; live controls own current action availability.',
 };
 
 export const cosmWasmSource: SourceMeta = {
@@ -164,22 +164,22 @@ export const feesSource: SourceMeta = {
 export const runePoolDocsSource: SourceMeta = {
   label: 'THORChain RUNEPool docs',
   url: 'https://docs.thorchain.org/technical-documentation/thorchain-finance/runepool',
-  retrievedAt: '2026-07-06',
-  notes: 'Official RUNEPool overview describing aggregate protocol-owned-liquidity participation and RUNEPool units.',
+  retrievedAt: '2026-07-14',
+  notes: 'Official RUNEPool overview for aggregate POL participation, units, deposits, withdrawals, and PnL fields; its fixed pool-count prose is not current POL-scope proof.',
 };
 
 export const runePoolDevSource: SourceMeta = {
   label: 'RUNEPool developer docs',
   url: 'https://dev.thorchain.org/concepts/rune-pool.html',
-  retrievedAt: '2026-07-06',
-  notes: 'Developer source for RUNEPool mechanics, POL-enabled pools, provider endpoints, global PnL fields, and impermanent-loss caveats.',
+  retrievedAt: '2026-07-14',
+  notes: 'Developer source for RUNEPool mechanics, POL-enabled pools, provider endpoints, potentially negative current_deposit/PnL fields, and aggregate impermanent-loss exposure.',
 };
 
 export const runePoolEndpointSource: SourceMeta = {
-  label: 'THORNode runepool endpoint',
-  url: 'https://thornode.thorchain.network/thorchain/runepool',
-  retrievedAt: '2026-07-06',
-  notes: 'Current-only THORNode snapshot for global RUNEPool, provider, reserve, value, PnL, and deposit fields.',
+  label: 'Liquify THORNode runepool endpoint',
+  url: 'https://gateway.liquify.com/chain/thorchain_api/thorchain/runepool',
+  retrievedAt: '2026-07-14',
+  notes: 'Current-only RUNEPool accounting endpoint; production evidence pins it to the same Liquify provider and THORChain height as Mimir before interpreting global, provider, reserve, value, PnL, or deposit fields.',
 };
 
 export const adr026DynamicFeesSource: SourceMeta = {
@@ -479,13 +479,13 @@ export const thornodeVaultBehaviorsSource: SourceMeta = {
 export const economicModelSource: SourceMeta = {
   label: 'THORChain economic model',
   url: 'https://docs.thorchain.org/technical-documentation/technical-deep-dive/economic-model',
-  retrievedAt: '2026-07-05',
-  notes: 'Official economic model docs covering the Incentive Pendulum, emission schedule, and reserve flows.',
+  retrievedAt: '2026-07-14',
+  notes: 'Official Incentive Pendulum, emission, and reserve-flow design; its original 500M maximum-supply framing must not be presented as the newer tokenomics page\'s current approximate supply.',
 };
 
 export const networkSecurityGovernanceSource: SourceMeta = {
   label: 'Network security and governance',
   url: 'https://docs.thorchain.org/network-security-governance',
-  retrievedAt: '2026-07-05',
-  notes: 'Official security/governance overview, including the Incentive Pendulum target ratio framing.',
+  retrievedAt: '2026-07-14',
+  notes: 'Official security/governance overview for the Incentive Pendulum and approximate 2:1 bonded-security-to-liquidity target; live ratios and reward splits need current evidence.',
 };

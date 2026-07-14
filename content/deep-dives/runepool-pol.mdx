@@ -11,7 +11,7 @@ This page can help you say what kind of proof a RUNEPool/POL statement needs:
 1. **Mechanism:** RUNEPool is aggregate exposure to POL-enabled pools, not a user-selected single pool.
 2. **Current accounting:** `/thorchain/runepool` can show global POL, provider, and reserve fields such as `value`, `pnl`, and `current_deposit` in RUNE base units.
 3. **Current availability:** Mimir and network diagnostics can show whether RUNEPool is enabled or whether RUNEPool deposits and withdrawals are halted.
-4. **Pool scope:** `POL-<Asset>` style Mimir keys identify POL-enabled pools; the exact list is live Mimir evidence, not a static wiki guarantee.
+4. **Pool scope:** `POL-<Asset>` style Mimir keys identify POL-enabled pools; the exact list is live Mimir evidence, not the fixed pool count printed in an overview page or a static wiki guarantee.
 
 If the question is "can I deposit or withdraw now?", start with `/network#network-diagnostics`. If the question is "what is the position worth?", use the [live RUNEPool/POL snapshot](/economics#runepool-pol-live), the current THORNode RUNEPool endpoint, and the checked time attached.
 
@@ -31,7 +31,7 @@ Use the narrowest evidence that matches the claim:
 
 1. **Define the claim:** mechanism explanation, current availability, current accounting, historical PnL, or investment/yield interpretation.
 2. **Check operation state:** use Network diagnostics for `RUNEPOOLENABLED`, RUNEPool deposit/withdraw halts, source warnings, provider, height, and block age.
-3. **Check accounting state:** use `/thorchain/runepool` for global `pol`, `providers`, and `reserve` fields; treat missing or malformed money fields as unavailable, not zero.
+3. **Check accounting state:** use a same-provider, same-height `/thorchain/runepool` read for global `pol`, `providers`, and `reserve` fields; treat missing or malformed money fields as unavailable, not zero.
 4. **Check pool scope:** use Mimir for the current `POL-<Asset>` set; use Midgard pools only for dashboard context, not as proof that POL is active in every pool.
 5. **Check user-specific position:** use the per-provider RUNEPool endpoint only for a specific THOR address and keep it out of public examples unless the address is intentionally shared.
 
@@ -58,6 +58,8 @@ The global RUNEPool endpoint can report three accounting buckets:
 - **`reserve`:** reserve-side units, value, PnL, and current deposit.
 
 Those fields are RUNE-denominated base-unit values. A dashboard can display them if it keeps source freshness and field availability visible. It should not turn a missing `pnl` or `value` into zero, and it should not use one current snapshot as proof that RUNEPool is profitable, safe, or outperforming ordinary LP positions.
+
+The developer docs also state that `current_deposit` is `rune_deposited - rune_withdrawn` and can be negative. A negative value is therefore valid accounting evidence, not a parser error or an instruction to clamp the field to zero.
 
 ## Common Misreadings
 

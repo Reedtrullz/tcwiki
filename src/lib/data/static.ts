@@ -21,6 +21,7 @@ import {
   cosmWasmSource as cosmwasmSource,
   dynamicL1FeesCurrentSource,
   dynamicL1FeesSource,
+  economicModelSource,
   exploitReport1Source as exploitReportSource,
   exploitReport2Source,
   feesSource,
@@ -509,8 +510,8 @@ export const SOURCE_MAP_SECTION_RECORDS: SourcedRecord<SourceMapSection>[] = [
     id: 'runepool-pol-evidence',
     title: 'RUNEPool/POL Evidence',
     decision: 'Is this RUNEPool accounting, POL scope, or RUNEPool deposit/withdraw availability?',
-    use: 'Use the live RUNEPool/POL snapshot for current THORNode `/runepool` accounting, POL-enabled pool Mimirs, and RUNEPool caveat keys. Pair it with Network diagnostics when the claim is about whether deposits or withdrawals are usable now.',
-    caveat: 'RUNEPool accounting is a current-only snapshot. It does not prove future yield, profitability, route health, deposit support, withdrawal support, or user-specific position outcomes.',
+    use: 'Use the live RUNEPool/POL snapshot for same-provider, height-pinned THORNode `/runepool` accounting, POL-enabled pool Mimirs, and RUNEPool caveat keys. Pair it with Network diagnostics when the claim is about whether deposits or withdrawals are usable now.',
+    caveat: 'RUNEPool accounting is a current-only snapshot. Fixed pool counts in overview prose are not current POL scope, and valid PnL or current-deposit fields can be negative. The snapshot does not prove future yield, profitability, route health, action support, or user-specific outcomes.',
     claimExamples: [
       'Current global RUNEPool value, PnL, provider, reserve, and current-deposit fields from THORNode.',
       'Current POL-enabled pool scope from `POL-<Asset>` Mimir keys.',
@@ -525,15 +526,15 @@ export const SOURCE_MAP_SECTION_RECORDS: SourcedRecord<SourceMapSection>[] = [
     ],
     links: [runePoolEndpointSource, runePoolDevSource, runePoolDocsSource, thornodeMimirSource, networkHaltsSource],
   }, [runePoolEndpointSource, runePoolDevSource, runePoolDocsSource, thornodeMimirSource, networkHaltsSource], 'curated', {
-    checkedAt: '2026-07-06',
-    nextReviewDue: '2026-08-06',
+    checkedAt: '2026-07-14',
+    nextReviewDue: '2026-08-14',
   }),
   record({
     id: 'rune-tokenomics-and-value',
     title: 'RUNE Tokenomics And Value Claims',
     decision: 'Which source family should back a RUNE number, supply framing, security constant, or value claim?',
     use: 'Use official tokenomics and protocol docs for dated RUNE supply and role framing, Stats for current Midgard network metrics, and THORNode/Mimir evidence for current security constants such as minimum bond or slash settings.',
-    caveat: 'The wiki does not provide price targets, fair-value models, investment suitability, market-cap proof, exchange float, or guaranteed-yield conclusions. Keep dated tokenomics, current live metrics, and market analysis separate.',
+    caveat: 'The newer tokenomics page gives approximate `425M and burning` supply framing while the economic-model page still presents the original `500M` maximum and genesis distribution. Keep those dated source contexts, live metrics, and market analysis separate; the wiki does not provide price targets, fair-value models, market-cap proof, exchange float, or guaranteed-yield conclusions.',
     claimExamples: [
       'Dated RUNE supply, reserve, circulating-supply, burn, or TCY-context framing from the tokenomics source.',
       'Which live dashboard surface owns pooled RUNE, reserve, bond, node-count, earnings, or APY-style metrics.',
@@ -546,10 +547,10 @@ export const SOURCE_MAP_SECTION_RECORDS: SourcedRecord<SourceMapSection>[] = [
       'Future yield, protocol revenue lift, recovery value, or guaranteed return.',
       'That one RUNE number can be reused across settlement, security, liquidity, tokenomics, and market-value claims.',
     ],
-    links: [tokenomicsSource, officialDocs, developerDocs, midgardNetworkSource, thornodeMimirSource],
-  }, [tokenomicsSource, officialDocs, developerDocs, midgardNetworkSource, thornodeMimirSource], 'curated', {
-    checkedAt: '2026-07-06',
-    nextReviewDue: '2026-08-06',
+    links: [tokenomicsSource, economicModelSource, officialDocs, developerDocs, midgardNetworkSource, thornodeMimirSource],
+  }, [tokenomicsSource, economicModelSource, officialDocs, developerDocs, midgardNetworkSource, thornodeMimirSource], 'curated', {
+    checkedAt: '2026-07-14',
+    nextReviewDue: '2026-08-14',
   }),
   record({
     id: 'developer-integration',
@@ -723,19 +724,19 @@ export const TOKENOMICS_RECORDS: SourcedRecord<TokenomicsSnapshot>[] = [
   record({
     id: 'rune-supply-framing',
     title: 'RUNE Supply Framing',
-    summary: 'As reviewed on 2026-07-05, the official tokenomics source frames RUNE around a reduced supply near 425M, circulating supply near 350M, reserve near 75M, and ongoing burn mechanics.',
+    summary: 'As reviewed on 2026-07-14, the newer official tokenomics page gives approximate figures near 425M total, 350M circulating, and 75M reserve with ongoing burns. The economic-model page still shows the original 500M maximum and genesis distribution; keep that as historical cap context rather than combining it with the newer approximate snapshot.',
     figures: [
-      { label: 'Original Cap Context', value: '500M RUNE', tone: 'historical' },
-      { label: 'Current Supply Framing', value: '~425M and burning', tone: 'source-backed' },
-      { label: 'Circulating Supply', value: '~350M source figure', tone: 'source-backed' },
-      { label: 'Reserve', value: '~75M source figure', tone: 'source-backed' },
+      { label: 'Original Cap Context', value: '500M economic-model figure', tone: 'historical' },
+      { label: 'Tokenomics Page Total', value: '~425M and burning', tone: 'source-backed' },
+      { label: 'Tokenomics Page Circulating', value: '~350M', tone: 'source-backed' },
+      { label: 'Tokenomics Page Reserve', value: '~75M', tone: 'source-backed' },
       { label: 'Network Income', value: 'Fees, emissions, burns, TCY share', tone: 'dynamic' },
       { label: 'Bond Requirement', value: 'Check constants + Mimir', tone: 'current-only' },
       { label: 'Slash Penalty', value: 'Check constants + Mimir', tone: 'current-only' },
     ],
-  }, [tokenomicsSource], 'official', {
-    checkedAt: '2026-07-05',
-    nextReviewDue: '2026-08-05',
+  }, [tokenomicsSource, economicModelSource], 'official', {
+    checkedAt: '2026-07-14',
+    nextReviewDue: '2026-08-14',
   }),
   record({
     id: 'tcy-recovery-context',

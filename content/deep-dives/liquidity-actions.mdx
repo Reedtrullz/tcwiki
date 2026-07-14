@@ -15,6 +15,8 @@ Start with the action, then choose the source:
 
 If any source is stale, degraded, warning-backed, or missing the relevant field, say that the LP claim needs review instead of rendering zero or healthy.
 
+Official LP overview pages describe permissionless deposits and withdrawals as the product model. They do not override live `PAUSELP`, chain/pool controls, `LiquidityLockUpBlocks`, pending-liquidity rules, outbound signing state, or interface-specific transaction requirements. Likewise, the CLP page's impermanent-loss-protection section is historical: the same page explicitly says IL protection was removed.
+
 ## LP Actions Versus Swaps
 
 The most common display bug is treating every pause as a swap pause. THORChain docs distinguish liquidity-provider pauses from trading halts:
@@ -81,6 +83,7 @@ This page does not prove:
 - That APY, pool depth, or 30-day earnings prove future yield, profitability, or investment suitability.
 - That a pool listed in Midgard is available for every LP action.
 - That current LP controls explain a historical failed transaction without transaction-level evidence.
+- That historical impermanent-loss protection is available to a current ordinary LP position.
 - That archived Savers/Lending mechanics are current LP products.
 
 LP claims should stay scoped to the action, pool or chain, source, and checked time.
