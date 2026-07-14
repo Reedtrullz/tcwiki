@@ -12,7 +12,7 @@ import { NetworkStatusBanner } from '@/components/features/NetworkStatusBanner';
 import { LiveSourceMeta } from '@/components/ui/LiveSourceMeta';
 import { getNetworkCurrentOnlyStateLabel, getSecuredAssetsSummaryPaused } from '@/lib/network-status-summary';
 import { RelatedChecks, type RelatedCheck } from '@/components/features/RelatedChecks';
-import { nodeManagingSource, nodeRisksRewardsSource } from '@/lib/sources';
+import { nodeLeavingSource, nodeManagingSource, nodeOperationsSource, nodeRisksRewardsSource } from '@/lib/sources';
 
 const networkRelatedChecks: RelatedCheck[] = [
   {
@@ -272,7 +272,7 @@ export default function NetworkPageClient({ children }: NetworkPageClientProps) 
         and maintenance, while this page separates current controls, node lifecycle, bond
         risk, and rewards context so a guide search does not look like live action proof.
       </p>
-      <div className="grid gap-3 lg:grid-cols-3">
+      <div className="grid gap-3 lg:grid-cols-2">
         <Card padding="sm" className="flex flex-col gap-3">
           <div>
             <div className="mb-2 flex flex-wrap items-center gap-2">
@@ -305,10 +305,29 @@ export default function NetworkPageClient({ children }: NetworkPageClientProps) 
           <div>
             <div className="mb-2 flex flex-wrap items-center gap-2">
               <Badge variant="default">context</Badge>
-              <h3 className="text-sm font-semibold text-slate-100">Lifecycle, rewards, and risk</h3>
+              <h3 className="text-sm font-semibold text-slate-100">Lifecycle and leaving</h3>
             </div>
             <p className="text-xs leading-relaxed text-slate-400">
-              Churning, slashing, and incentive docs explain the operator model. They do not prove current eligibility, current rewards, or bond-withdrawal safety.
+              Whitelisted, Standby, Ready, Active, and Disabled are distinct states. Only a Standby node outside vault migration may unbond; current state still needs direct node evidence.
+            </p>
+          </div>
+          <div className="mt-auto flex flex-wrap gap-x-4 gap-y-2">
+            <a href={nodeOperationsSource.url} className="text-xs font-semibold text-accent underline-offset-4 hover:underline" target="_blank" rel="noopener noreferrer">
+              {nodeOperationsSource.label}
+            </a>
+            <a href={nodeLeavingSource.url} className="text-xs font-semibold text-accent underline-offset-4 hover:underline" target="_blank" rel="noopener noreferrer">
+              {nodeLeavingSource.label}
+            </a>
+          </div>
+        </Card>
+        <Card padding="sm" className="flex flex-col gap-3">
+          <div>
+            <div className="mb-2 flex flex-wrap items-center gap-2">
+              <Badge variant="default">context</Badge>
+              <h3 className="text-sm font-semibold text-slate-100">Rewards and slash exposure</h3>
+            </div>
+            <p className="text-xs leading-relaxed text-slate-400">
+              Slash points reduce rewards; separately defined security events can slash bond principal. Documentation examples do not prove a node&apos;s current balance, parameters, or incident outcome.
             </p>
           </div>
           <a href={nodeRisksRewardsSource.url} className="mt-auto text-xs font-semibold text-accent underline-offset-4 hover:underline" target="_blank" rel="noopener noreferrer">
@@ -340,14 +359,15 @@ export default function NetworkPageClient({ children }: NetworkPageClientProps) 
       {nodeOperatorGuide}
 
       <SectionHeader>Node Types</SectionHeader>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-12">
+      <div className="grid grid-cols-1 gap-3 mb-12 sm:grid-cols-2 lg:grid-cols-5">
         {[
-          { type: 'Active', color: 'text-green-400', desc: 'Currently in the validator set. Active nodes observe chains, sign outbound transactions when signing is not halted, and participate in consensus.' },
-          { type: 'Standby', color: 'text-amber-400', desc: 'Ready to join the active set. Promotion depends on bond ranking, node state, and churn rules.' },
-          { type: 'Ready', color: 'text-slate-400', desc: 'Synced but not active. A ready node can become standby or active when it satisfies current requirements.' },
-          { type: 'Whitelisted', color: 'text-blue-400', desc: 'A node address that has sent an initial BOND deposit and can continue setup before ready/standby status.' },
+          { type: 'Whitelisted', color: 'text-blue-400', desc: 'Bonded, but required node keys have not yet been set; operator setup is incomplete.' },
+          { type: 'Standby', color: 'text-amber-400', desc: 'Bonded but not active. Current requirements are evaluated during churn; only Standby nodes outside vault migration may unbond.' },
+          { type: 'Ready', color: 'text-slate-300', desc: 'Passed current preflight requirements and is eligible for churn selection; a node cannot unbond while Ready.' },
+          { type: 'Active', color: 'text-green-400', desc: 'Participates in consensus, observation, and signing; it cannot unbond until churned to Standby and clear of vault migration.' },
+          { type: 'Disabled', color: 'text-red-300', desc: 'Completed the permanent-leave path while Standby and cannot rejoin with the same node account.' },
         ].map((node) => (
-          <Card key={node.type}>
+          <Card key={node.type} data-node-status={node.type}>
             <h3 className={`text-sm font-semibold mb-1.5 ${node.color}`}>{node.type}</h3>
             <p className="text-xs text-slate-400 leading-relaxed">{node.desc}</p>
           </Card>

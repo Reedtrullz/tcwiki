@@ -26,6 +26,13 @@ test.describe('THORChain Wiki Network Smoke Tests', () => {
     await expect(page.getByText(/Verify Elsewhere Before Claiming/i)).toBeVisible();
     await expect(page.getByRole('heading', { name: /Related Checks/i })).toBeVisible();
     await expect(page.getByRole('link', { name: /Mimir halt guide/i })).toHaveAttribute('href', '/deep-dives/mimir-halt-controls#what-mimirs-can-prove');
+    const nodeTypesHeading = page.getByRole('heading', { name: 'Node Types', exact: true });
+    await expect(nodeTypesHeading).toBeVisible();
+    const nodeTypes = nodeTypesHeading.locator('xpath=following-sibling::div[1]');
+    await expect(nodeTypes.locator('[data-node-status="Standby"]')).toContainText(/only Standby nodes outside vault migration may unbond/i);
+    await expect(nodeTypes.locator('[data-node-status="Ready"]')).toContainText(/eligible for churn selection.*cannot unbond while Ready/i);
+    await expect(nodeTypes.locator('[data-node-status="Active"]')).toContainText(/cannot unbond until churned to Standby/i);
+    await expect(nodeTypes.locator('[data-node-status="Disabled"]')).toContainText(/cannot rejoin with the same node account/i);
   });
 
   test('network status module has compact and diagnostic tiers @docker-smoke', async ({ page, isMobile }) => {

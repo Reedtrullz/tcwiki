@@ -24,6 +24,10 @@ import {
   liquifyThornodeMimirSource,
   liquidityProvidersSource,
   liveInboundSource,
+  nodeLeavingSource,
+  nodeOperationsSource,
+  thornodeBifrostHowItWorksSource,
+  thornodeVaultBehaviorsSource,
 } from '@/lib/sources';
 
 vi.mock('next/navigation', () => ({
@@ -295,6 +299,75 @@ describe('source and freshness labels', () => {
     expect(adr028?.data.description).toContain('not proof that every loss was restored');
   });
 
+  it('locks the node-operator safety cohort to the July 14 primary-source review', () => {
+    const reviewedAt = '2026-07-14';
+    const nextReviewDue = '2026-08-14';
+    const expectedEntryIds = [
+      'network',
+      'deep-dive-bifrost',
+      'deep-dive-churning',
+      'deep-dive-slashing',
+    ];
+
+    for (const id of expectedEntryIds) {
+      expect(CONTENT_ENTRIES.find((entry) => entry.id === id), id).toEqual(
+        expect.objectContaining({ reviewedAt, nextReviewDue })
+      );
+    }
+
+    expect(DEEP_DIVE_READER_PATHS.find(({ id }) => id === 'network-security')).toEqual(
+      expect.objectContaining({ reviewedAt, nextReviewDue })
+    );
+
+    for (const id of ['node-operator-guide', 'node-operator-actions']) {
+      expect(TASK_INTENT_GUIDES.find((guide) => guide.id === id), id).toEqual(
+        expect.objectContaining({ reviewedAt, nextReviewDue })
+      );
+    }
+
+    for (const termName of ['Asgard vault', 'Bifrost']) {
+      expect(GLOSSARY_TERMS.find(({ term }) => term === termName), termName).toEqual(
+        expect.objectContaining({ reviewedAt, nextReviewDue })
+      );
+    }
+
+    expect(nodeOperationsSource).toEqual(expect.objectContaining({
+      url: 'https://docs.thorchain.org/thornodes/overview/node-operations',
+      retrievedAt: reviewedAt,
+    }));
+    expect(nodeLeavingSource).toEqual(expect.objectContaining({
+      url: 'https://docs.thorchain.org/thornodes/leaving',
+      retrievedAt: reviewedAt,
+    }));
+    expect(thornodeBifrostHowItWorksSource).toEqual(expect.objectContaining({
+      url: 'https://gitlab.com/thorchain/thornode/-/blob/e76a394b451f143d91e12666e42eea3948962278/docs/bifrost/how-bifrost-works.md',
+      retrievedAt: reviewedAt,
+    }));
+    expect(thornodeVaultBehaviorsSource).toEqual(expect.objectContaining({
+      url: 'https://gitlab.com/thorchain/thornode/-/blob/e76a394b451f143d91e12666e42eea3948962278/docs/bifrost/vault-behaviors.md',
+      retrievedAt: reviewedAt,
+    }));
+
+    expect(GLOSSARY_TERMS.find(({ term }) => term === 'Asgard vault')?.sources).toEqual(
+      expect.arrayContaining([thornodeVaultBehaviorsSource])
+    );
+    expect(GLOSSARY_TERMS.find(({ term }) => term === 'Bifrost')?.sources).toEqual(
+      expect.arrayContaining([thornodeBifrostHowItWorksSource])
+    );
+
+    const churnSources = CONTENT_ENTRIES.find(({ id }) => id === 'deep-dive-churning')?.sources.map(({ url }) => url);
+    expect(churnSources).toEqual(expect.arrayContaining([nodeOperationsSource.url, nodeLeavingSource.url]));
+
+    const bifrostSources = CONTENT_ENTRIES.find(({ id }) => id === 'deep-dive-bifrost')?.sources.map(({ url }) => url);
+    expect(bifrostSources).toEqual(expect.arrayContaining([
+      thornodeBifrostHowItWorksSource.url,
+      thornodeVaultBehaviorsSource.url,
+    ]));
+
+    const slashingSources = CONTENT_ENTRIES.find(({ id }) => id === 'deep-dive-slashing')?.sources.map(({ url }) => url);
+    expect(slashingSources).toEqual(expect.arrayContaining([thornodeVaultBehaviorsSource.url]));
+  });
+
   it('renders route-level source posture from registry metadata without hiding non-claims', () => {
     const entry = getContentEntry('protocol');
     const html = renderToStaticMarkup(
@@ -347,8 +420,6 @@ describe('source and freshness labels', () => {
 
   it('backs the earliest August glossary review batch with claim-specific sources', () => {
     const expectedSources = new Map([
-      ['Asgard vault', 'https://docs.thorchain.org/technical-documentation/technology/bifrost-tss-and-vaults'],
-      ['Bifrost', 'https://docs.thorchain.org/technical-documentation/technology/bifrost-tss-and-vaults'],
       ['CLP', 'https://docs.thorchain.org/technical-documentation/thorchain-finance/continuous-liquidity-pools'],
       ['Current-only', 'https://dev.thorchain.org/concepts/querying-thorchain.html'],
       ['Mimir', 'https://dev.thorchain.org/concepts/network-halts.html'],
