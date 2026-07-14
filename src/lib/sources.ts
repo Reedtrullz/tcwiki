@@ -94,8 +94,8 @@ export const liquidityProviderFaqSource: SourceMeta = {
 export const cosmWasmSource: SourceMeta = {
   label: 'CosmWasm',
   url: 'https://docs.thorchain.org/technical-documentation/technology/cosmwasm',
-  retrievedAt: '2026-07-04',
-  notes: 'Official app-layer technology reference; current contract availability depends on live controls.',
+  retrievedAt: '2026-07-14',
+  notes: 'Official app-layer technology reference for the permissioned mainnet model and contract sandbox boundary; current contract availability still depends on live scoped controls.',
 };
 
 export const queryingThorchainSource: SourceMeta = {
@@ -339,22 +339,22 @@ export const tcyGuideSource: SourceMeta = {
 export const appLayerSource: SourceMeta = {
   label: 'THORChain Application Layer docs',
   url: 'https://docs.thorchain.org/application-layer',
-  retrievedAt: '2026-07-05',
-  notes: 'Official app-layer overview; current app-layer, WASM, secured-asset, and trade-account availability still needs live controls.',
+  retrievedAt: '2026-07-14',
+  notes: 'Official high-level app-layer overview; economic examples are design framing, while current WASM, secured-asset, and trade-account availability still needs live controls.',
 };
 
 export const securedAssetsSource: SourceMeta = {
   label: 'THORChain Secured Assets docs',
   url: 'https://docs.thorchain.org/technical-documentation/thorchain-finance/secured-assets',
-  retrievedAt: '2026-07-05',
-  notes: 'Official secured-asset overview; current secured-asset operations still depend on live protocol controls.',
+  retrievedAt: '2026-07-14',
+  notes: 'Official high-level secured-asset overview, which says secured assets replace Trade Assets; compare the developer guide terminology and live controls before making module or availability claims.',
 };
 
 export const securedAssetsDevSource: SourceMeta = {
   label: 'THORChain secured assets developer docs',
   url: 'https://dev.thorchain.org/concepts/secured-assets.html',
-  retrievedAt: '2026-07-05',
-  notes: 'Developer reference for secured-asset mechanics and integration boundaries.',
+  retrievedAt: '2026-07-14',
+  notes: 'Developer reference for secured-asset share mechanics, SECURE memo syntax, conversion exclusions, and a different "replace Trade Accounts" wording; syntax is not current action availability proof.',
 };
 
 export const tradeAssetsSource: SourceMeta = {
@@ -369,6 +369,27 @@ export const archivedSaversLendingSource: SourceMeta = {
   url: 'https://docs.thorchain.org/thornodes/archived',
   retrievedAt: '2026-07-05',
   notes: 'Official archived feature index marking Savers and Lending as deprecated, no longer available, and preserved only for historical reference.',
+};
+
+export const archivedSaversSource: SourceMeta = {
+  label: 'Archived Savers docs',
+  url: 'https://docs.thorchain.org/thornodes/archived/savers',
+  retrievedAt: '2026-07-14',
+  notes: 'Official historical Savers mechanics and explicit permanent-deprecation date of 2025-01-04; not current deposit, yield, synth, or redemption instructions.',
+};
+
+export const archivedLendingSource: SourceMeta = {
+  label: 'Archived Lending docs',
+  url: 'https://docs.thorchain.org/thornodes/archived/lending',
+  retrievedAt: '2026-07-14',
+  notes: 'Official historical Lending mechanics and explicit permanent-deprecation date of 2025-01-04; not current borrow, repay, collateral, or TOR instructions.',
+};
+
+export const thorSwapDocsSource: SourceMeta = {
+  label: 'THORSwap documentation',
+  url: 'https://docs.thorswap.finance/thorswap',
+  retrievedAt: '2026-07-14',
+  notes: 'Project-maintained multi-protocol aggregator overview covering THORChain, NEAR Intents, Maya Protocol, and Chainflip; current routes, assets, fees, and interface safety require an app-specific quote and review.',
 };
 
 export const thorfiUnwindSource: SourceMeta = {

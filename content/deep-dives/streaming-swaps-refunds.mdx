@@ -65,12 +65,13 @@ Memos are user intent. They tell THORChain what action to attempt and include ro
 The risk surface is bigger than the visible route:
 
 - Memos have size limits, and UTXO chains have tighter practical constraints.
+- A memo handler can remain in developer documentation after the related product or action is deprecated. Documented syntax proves a message shape, not current feature availability.
 - Dust thresholds can cause tiny inbound transactions to be ignored.
 - A custom refund address must be valid for the inbound asset.
 - `liquidity_tolerance_bps` is preferred for user-facing price protection because it accounts for swap and outbound fees; older or narrower tolerance fields can cause avoidable failures.
 - Multiple affiliates and affiliate bps values must be aligned with protocol rules and memo length constraints.
 
-For real transactions, use a fresh official quote flow or interface implementation. Do not copy a memo example from the wiki into a wallet.
+For real transactions, use a fresh official quote flow or interface implementation, and re-fetch the inbound address rather than caching or reusing it across churns. Do not copy a memo example from the wiki into a wallet.
 
 ## Evidence Ladder
 

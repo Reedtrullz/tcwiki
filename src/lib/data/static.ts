@@ -14,7 +14,9 @@ import type {
 import {
   adr026DynamicFeesSource,
   adr028ExploitConciliationSource,
+  archivedLendingSource,
   archivedSaversLendingSource as archivedFeaturesSource,
+  archivedSaversSource,
   assetNotationSource,
   chainClientsSource,
   connectingThorchainSource,
@@ -51,6 +53,7 @@ import {
   thorchainDevDocsSource as developerDocs,
   thorchainDocsSource as officialDocs,
   thorchainFaqSource,
+  thorSwapDocsSource,
   thorfiUnwindSource,
   thornameGuideSource,
   thornodeMimirSource,
@@ -644,19 +647,21 @@ export const SOURCE_MAP_SECTION_RECORDS: SourcedRecord<SourceMapSection>[] = [
     use: 'Use for Savers/Lending deprecation, THORFi unwind, incident reports, recovery records, and source-dated historical context.',
     caveat: 'Historical records should not be converted into current availability claims without live or newly reviewed sources.',
     claimExamples: [
-      'Savers/Lending deprecation and THORFi unwind history.',
-      'Official exploit-report root cause, remediation, restart, and recovery context.',
+      'Savers and Lending were permanently deprecated on 2025-01-04; archived mechanics are historical context, not reusable instructions.',
+      'Official exploit-report root cause, remediation, restart, and recovery context, with v3.19.0 restart controls kept distinct from the v3.19.1 incident-class patch.',
       'Which current TCY controls need review before making claim, stake, distribution, unstake, claim-swap, or trading availability claims.',
       'Dated milestones or incident lessons where the source itself supports the claim.',
     ],
     nonClaims: [
       'That historical products are available now.',
+      'That a memo handler still appearing in developer documentation proves the corresponding product or action is enabled.',
       'That TCY claiming, staking, trading, distributions, user eligibility, or interface support is currently available without live controls and official-interface evidence.',
       'Current solvency, safety, or recovery completion beyond dated sources.',
       'Financial advice, recovery-value expectations, or investment outcomes.',
     ],
     links: [
-      archivedFeaturesSource,
+      archivedSaversSource,
+      archivedLendingSource,
       tcyGuideSource,
       thorfiUnwindSource,
       exploitReportSource,
@@ -664,15 +669,16 @@ export const SOURCE_MAP_SECTION_RECORDS: SourcedRecord<SourceMapSection>[] = [
       protocolUpgradeV319Source,
     ],
   }, [
-    archivedFeaturesSource,
+    archivedSaversSource,
+    archivedLendingSource,
     tcyGuideSource,
     thorfiUnwindSource,
     exploitReportSource,
     exploitReport2Source,
     protocolUpgradeV319Source,
   ], 'historical', {
-    checkedAt: '2026-07-08',
-    nextReviewDue: '2026-08-08',
+    checkedAt: '2026-07-14',
+    nextReviewDue: '2026-08-14',
   }),
   record({
     id: 'external-analytics-and-explorers',
@@ -810,21 +816,22 @@ export const ECOSYSTEM_PROJECT_RECORDS: SourcedRecord<EcosystemProject>[] = [
     id: 'thorswap',
     name: 'THORSwap',
     category: 'Interface',
-    description: 'Multi-chain DEX aggregator and THORChain interface. Deprecated Savers/Lending products should be treated as historical.',
+    description: 'Third-party multi-protocol DEX aggregator and flagship THORChain interface; its maintained docs also describe routes through NEAR Intents, Maya Protocol, and Chainflip.',
     url: 'https://app.thorswap.finance',
     logo: '/logos/thorswap.svg',
     chains: chainCodes,
     useFor: [
-      'Third-party swap, aggregation, and THORChain interface research.',
-      'Comparing route options and interface support across many listed chains.',
+      'Inspecting a third-party swap interface where THORChain may be one of several route providers.',
+      'Comparing app-provided routes, recipients, fees, and execution details at quote time.',
     ],
     verifyBeforeUse: [
-      'Treat product availability, terms, compliance controls, and routed quotes as current third-party state.',
-      'Do not infer that historical Savers or Lending features are available; verify any product shown by the app.',
+      'Confirm which protocol actually provides the selected route; this catalog and its chain badges do not prove current THORSwap asset or route support.',
+      'Treat product availability, terms, fees, compliance controls, recipients, and routed quotes as current third-party state, not an official endorsement or safety review.',
+      'Do not infer that historical Savers or Lending features are available from old interface or memo documentation.',
     ],
-  }, [ecosystemSource, archivedFeaturesSource], 'curated', {
-    checkedAt: '2026-07-05',
-    nextReviewDue: '2026-08-05',
+  }, [thorSwapDocsSource, ecosystemSource, archivedSaversSource, archivedLendingSource], 'curated', {
+    checkedAt: '2026-07-14',
+    nextReviewDue: '2026-08-14',
   }),
   record({
     id: 'shapeshift',
@@ -1231,20 +1238,20 @@ export const PROTOCOL_MILESTONE_RECORDS = [
     nextReviewDue: '2026-08-13',
   }),
   record({
-    date: '2025-01',
+    date: '2025-01-04',
     title: 'Savers and Lending Deprecated',
-    description: 'Archived THORChain docs mark Savers and Lending as deprecated and no longer available.',
-  }, [archivedFeaturesSource], 'official', {
-    checkedAt: '2026-07-05',
-    nextReviewDue: '2026-08-05',
+    description: 'Official archived pages say Savers and Lending were permanently deprecated on January 4, 2025, are no longer available, and remain documented only for historical reference.',
+  }, [archivedSaversSource, archivedLendingSource], 'official', {
+    checkedAt: '2026-07-14',
+    nextReviewDue: '2026-08-14',
   }),
   record({
     date: '2026-05-15',
     title: 'GG20 Vault Exploit and Emergency Halt',
-    description: 'Official reports say one vault was drained through a GG20/TSS cryptographic attack; v3.19.0 carried restart recovery/security changes, and later reporting described v3.19.1 patching plus migration planning away from GG20.',
-  }, [exploitReport2Source, protocolUpgradeV319Source, exploitReportSource], 'official', {
-    checkedAt: '2026-07-05',
-    nextReviewDue: '2026-08-05',
+    description: 'Official reports say attackers drained roughly $10M from one vault after an upstream GG20/TSS cryptographic attack. v3.19.0 supplied emergency restart controls, v3.19.1 patched the incident class, and migration away from GG20 remained planned.',
+  }, [exploitReport2Source, protocolUpgradeV319Source, exploitReportSource, postRestartSecuritySource], 'official', {
+    checkedAt: '2026-07-14',
+    nextReviewDue: '2026-08-14',
   }),
 ];
 

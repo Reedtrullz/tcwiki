@@ -238,7 +238,6 @@ describe('source and freshness labels', () => {
     const expectedEntryIds = ['deep-dive-tss', 'deep-dive-tcy-recovery-timeline'];
     const expectedGuideIds = ['tss-security-claims', 'tcy-recovery'];
     const expectedGlossaryTerms = [
-      'Savers',
       'TCY',
       'DKLS',
       'Schnorr',
@@ -437,11 +436,8 @@ describe('source and freshness labels', () => {
   it('refreshes the August 4 review batch from claim-specific primary evidence', () => {
     const glossaryTerms = [
       'Affiliate fee',
-      'App Layer',
-      'CosmWasm',
       'Dynamic L1 fee',
       'Outbound fee',
-      'Secured asset',
       'Trade asset',
     ];
 
@@ -531,7 +527,6 @@ describe('source and freshness labels', () => {
       'dynamic-fees',
       'ecosystem',
       'stats',
-      'deep-dive-streaming-swaps-refunds',
       'deep-dive-mimir-halt-controls',
     ];
     for (const id of contentIds) {
