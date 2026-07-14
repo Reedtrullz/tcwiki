@@ -226,10 +226,10 @@ describe('SEARCH_DOCUMENTS', () => {
   it('includes deep-dive bodies and curated records', () => {
     const runeSettlement = SEARCH_DOCUMENTS.find((doc) => doc.slug === '/deep-dives/rune-settlement');
 
-    expect(docsMatching('self-correcting').some((doc) => doc.slug === '/deep-dives/incentive-pendulum')).toBe(true);
+    expect(docsMatching('design target 2:1 bond-to-stake ratio').some((doc) => doc.slug === '/deep-dives/incentive-pendulum')).toBe(true);
     expect(docsMatching('Current node APY, LP APY, RUNE value').some((doc) => doc.slug === '/deep-dives/incentive-pendulum')).toBe(true);
     expect(docsMatching('Reward distribution and revenue attribution are different claims').some((doc) => doc.slug === '/deep-dives/incentive-pendulum')).toBe(true);
-    expect(docsMatching('Midgard health source mismatch evidence ladder common misreadings').some((doc) => doc.slug === '/deep-dives/incentive-pendulum')).toBe(true);
+    expect(docsMatching('Midgard health source mismatch').some((doc) => doc.slug === '/deep-dives/incentive-pendulum')).toBe(true);
     expect(docsMatching('Observation is not the same thing as execution').some((doc) => doc.slug === '/deep-dives/bifrost')).toBe(true);
     expect(docsMatching('Current churn height, active set size').some((doc) => doc.slug === '/deep-dives/churning')).toBe(true);
     expect(docsMatching('bond was confiscated').some((doc) => doc.slug === '/deep-dives/slashing')).toBe(true);
@@ -242,8 +242,8 @@ describe('SEARCH_DOCUMENTS', () => {
     expect(docsMatching('What CLP Can Prove').some((doc) => doc.slug === '/deep-dives/clp')).toBe(true);
     expect(docsMatching('If a statement jumps from the formula straight to a present tense action').some((doc) => doc.slug === '/deep-dives/clp')).toBe(true);
     expect(docsMatching('A route is currently quoteable, executable, cheap, or safe').some((doc) => doc.slug === '/deep-dives/clp')).toBe(true);
-    expect(runeSettlement?.reviewedAt).toBe('2026-07-05');
-    expect(runeSettlement?.nextReviewDue).toBe('2026-08-05');
+    expect(runeSettlement?.reviewedAt).toBe('2026-07-14');
+    expect(runeSettlement?.nextReviewDue).toBe('2026-08-14');
     expect(runeSettlement?.sources.map((source) => source.label)).toContain('THORChain RUNE docs');
     expect(runeSettlement?.sources.map((source) => source.label)).toContain('Native cross-chain swaps');
     expect(docsMatching('Build And Query THORChain Data').some((doc) => doc.slug === '/deep-dives/build-query-data')).toBe(true);
@@ -379,7 +379,7 @@ describe('SEARCH_DOCUMENTS', () => {
     expect(tcyRecovery?.confidence).toBe('official');
     expect(tcyRecovery?.content).toContain('Full recovery Not guaranteed');
     expect(tcyRecovery?.sources.map((source) => source.label)).toContain('TCY Developer Guide');
-    expect(docsMatching('reduced supply near 425M').some((doc) => doc.id === 'tokenomics:rune-supply-framing')).toBe(true);
+    expect(docsMatching('approximate figures near 425M').some((doc) => doc.id === 'tokenomics:rune-supply-framing')).toBe(true);
     expect(docsMatching('full debt recovery is market dependent').some((doc) => doc.id === 'tokenomics:tcy-recovery-context')).toBe(true);
   });
 
@@ -459,7 +459,7 @@ describe('SEARCH_DOCUMENTS', () => {
     expect(gg20Incident?.nextReviewDue).toBe('2026-08-13');
     expect(dynamicFeeSourceMap?.reviewedAt).toBe('2026-07-13');
     expect(dynamicFeeSourceMap?.nextReviewDue).toBe('2026-08-13');
-    expect(SEARCH_DOCUMENTS.find((doc) => doc.id === 'tokenomics:rune-supply-framing')?.reviewedAt).toBe('2026-07-05');
+    expect(SEARCH_DOCUMENTS.find((doc) => doc.id === 'tokenomics:rune-supply-framing')?.reviewedAt).toBe('2026-07-14');
     expect(SEARCH_DOCUMENTS.find((doc) => doc.id === 'tokenomics:tcy-recovery-context')).toEqual(
       expect.objectContaining({ confidence: 'official', reviewedAt: '2026-07-13', nextReviewDue: '2026-08-13' })
     );
@@ -535,7 +535,7 @@ describe('SEARCH_DOCUMENTS', () => {
     expect(docsMatching('economic claim checks').some((doc) => doc.id === 'economics')).toBe(true);
     expect(docsMatching('current metric claim').some((doc) => doc.id === 'economics')).toBe(true);
     expect(docsMatching('fee revenue claim').some((doc) => doc.id === 'economics')).toBe(true);
-    expect(docsMatching('RUNEPool POL current snapshot read this snapshot first can I deposit').some((doc) => doc.id === 'economics')).toBe(true);
+    expect(docsMatching('RUNEPool POL current snapshot same provider same height').some((doc) => doc.id === 'economics')).toBe(true);
     expect(docsMatching('which value matters no yield proof').some((doc) => doc.id === 'economics')).toBe(true);
     expect(docsMatching('revenue lift route competitiveness').some((doc) => doc.id === 'economics')).toBe(true);
     expect(docsMatching('governance claim checks').some((doc) => doc.id === 'governance')).toBe(true);
@@ -605,7 +605,7 @@ describe('SEARCH_DOCUMENTS', () => {
     expect(docsMatching('per-thorname, per-pair').some((doc) => doc.id === 'glossary:dynamic-l1-fee')).toBe(true);
     expect(docsMatching('protocol-owned liquidity').some((doc) => doc.id === 'glossary:protocol-owned-liquidity')).toBe(true);
     expect(docsMatching('pool-share accounting').some((doc) => doc.id === 'glossary:liquidity-provider')).toBe(true);
-    expect(docsMatching('pool ownership share').some((doc) => doc.id === 'glossary:liquidity-units')).toBe(true);
+    expect(docsMatching('proportional pool ownership').some((doc) => doc.id === 'glossary:liquidity-units')).toBe(true);
     expect(docsMatching('one side of a pool').some((doc) => doc.id === 'glossary:asymmetric-withdrawal')).toBe(true);
     expect(docsMatching('purchasing-power risk').some((doc) => doc.id === 'glossary:impermanent-loss')).toBe(true);
     expect(docsMatching('IL protection has been removed').some((doc) => doc.id === 'glossary:impermanent-loss-protection')).toBe(true);

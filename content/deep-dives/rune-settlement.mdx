@@ -10,9 +10,9 @@ For an external-asset swap, THORChain routes through RUNE-paired pools. A BTC to
 BTC -> RUNE -> ETH
 ```
 
-The important point is not that the user must hold RUNE manually. It is that the protocol can price and settle supported external assets through RUNE as the intermediate asset:
+The important point is not that the user must hold RUNE manually or submit two user-visible transactions. It is that the base swap engine can price an external-asset route as two internal pool legs through RUNE:
 
-- Each normal liquidity pool pairs an external asset with RUNE.
+- Each base-layer liquidity pool in this settlement model pairs an external asset with RUNE.
 - Cross-pool swaps use the input asset's RUNE pool and the output asset's RUNE pool.
 - Pool depth, current fees, slip, halts, and outbound conditions still determine whether a specific live swap is practical or available.
 
@@ -33,7 +33,7 @@ This is the main architectural claim this article can support: RUNE is the commo
 The RUNE settlement model supports a few source-backed claims:
 
 - THORChain's base AMM design uses RUNE-paired liquidity rather than direct pools for every external-asset pair.
-- A cross-chain swap can be explained as two pool movements through RUNE, even when the user experience looks like one native-asset swap.
+- A cross-chain swap can be explained as two internal pool movements through RUNE, even when the user experience and transaction intent look like one native-asset swap.
 - RUNE links liquidity, incentives, and security because it appears in pools, node bonding, fee payments, and reward flows.
 
 Those claims are architectural. They do not automatically tell you whether today's route is healthy, cheap, liquid, or safe to use.

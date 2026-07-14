@@ -9,7 +9,7 @@ CLP explains how THORChain prices a pool-based swap and why larger trades pay mo
 1. THORChain pools pair external assets with RUNE rather than isolated asset-to-asset order books.
 2. The CLP formula links input size, pool depth, slip, liquidity fee, and output amount.
 3. RUNE-paired pools let a cross-chain route compose through shared settlement liquidity.
-4. Slip-based pricing protects liquidity providers from depth-consuming trades.
+4. Slip-based pricing makes depth-consuming trades progressively more expensive and directs the liquidity fee to pool capital; it does not eliminate LP risk.
 
 It does not, by itself, prove that a current route is quoteable, cheap, available, or safe to execute. Current execution still depends on a fresh quote, live pool depth, inbound address state, chain/trading/signing controls, outbound fee economics, memo validity, and source quality.
 
@@ -28,7 +28,7 @@ Where `x` is the input amount, `X` is the input-side pool depth, and `Y` is the 
 ## Key Properties
 
 - **Quoteable through pool depth**: CLP pricing can produce a quote across available pool depth, but execution still depends on current halt state, quote limits, outbound fees, recommended minimums, and refund rules.
-- **Progressive slippage**: Larger trades pay proportionally more, protecting LPs from manipulation.
+- **Progressive slippage**: Larger trades pay proportionally more, making abrupt pool-price movement more expensive without guaranteeing LP protection or route safety.
 - **Separate LP action availability**: Pool mechanics do not prove that LP adds, withdrawals, pool-specific deposits, or asymmetric withdrawals are currently open. Use the [Liquidity Actions](/deep-dives/liquidity-actions#what-to-check-first) evidence guide before turning CLP mechanics into LP workflow claims.
 - **Historical single-sided products**: Savers previously offered single-asset exposure, but official archived docs now mark Savers and Lending as deprecated.
 
@@ -63,7 +63,7 @@ For operational triage, use the dedicated [Streaming Swaps And Refunds](/deep-di
 
 ## Comparison to Traditional AMMs
 
-Unlike constant-product AMMs (Uniswap v2 style), CLP's continuous nature and RUNE as universal settlement asset creates unified liquidity across supported chains. Current chain availability should be checked from live inbound-address and pool status, not from a hard-coded chain count.
+THORChain's CLP is a constant-function pool design with slip-based pricing, adapted to native cross-chain settlement through RUNE-paired pools. Its distinctive claim is the shared RUNE settlement graph and native-asset execution model, not an escape from constant-product-style pool economics. Current chain availability should be checked from live inbound-address and pool status, not from a hard-coded chain count.
 
 ## What To Verify Before Claiming
 
