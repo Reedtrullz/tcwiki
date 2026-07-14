@@ -147,7 +147,7 @@ test.describe('THORChain Wiki Docs And Glossary Smoke Tests', () => {
     await expect(page.locator('#term-tss')).toBeVisible();
     await expect(page.locator('#term-bifrost')).toBeVisible();
     await expect(page.locator('#term-liquidity-units')).toBeVisible();
-    await expect(page.getByText(/not wallet instructions, settlement proof, or durable route availability/i)).toBeVisible();
+    await expect(page.getByText(/does not sign, broadcast, or prove settlement/i)).toBeVisible();
     await expect(page.locator('#term-dynamic-l1-fee')).toBeVisible();
     await expect(page.locator('#term-inbound-address')).toBeVisible();
     await expect(page.getByRole('link', { name: /Dynamic-fee live tracker/i }).first()).toHaveAttribute('href', '/dynamic-fees#dynamic-fees-live');
@@ -170,13 +170,13 @@ test.describe('THORChain Wiki Docs And Glossary Smoke Tests', () => {
     await expect(compromisedVaultTerm.getByText(/A vault treated as unsafe or excluded after key-compromise evidence/i)).toBeVisible();
     await filterInput.fill('quote expiry');
     await expect(page.locator('#term-quote-expiry')).toBeVisible();
-    await expect(page.getByText(/Expired quotes need a fresh quote/i)).toBeVisible();
+    await expect(page.getByText(/valid for only ten minutes/i)).toBeVisible();
     await filterInput.fill('recommended_min_amount_in');
     await expect(page.locator('#term-recommended-min-amount-in')).toBeVisible();
-    await expect(page.getByText(/current quote constraint/i)).toBeVisible();
+    await expect(page.getByText(/not an execution guarantee/i)).toBeVisible();
     await filterInput.fill('network-diagnostics');
     await expect(page.locator('#term-quote')).toBeVisible();
-    await expect(page.getByText(/short-lived THORNode swap response/i)).toBeVisible();
+    await expect(page.getByText(/short-lived THORNode simulation response/i)).toBeVisible();
     await filterInput.fill('not a thorchain term');
     await expect(page.getByText(/No glossary terms match "not a thorchain term"/i)).toBeVisible();
     await expect(page.getByText(/Try another term, source label, related page, or proof-link anchor/i)).toBeVisible();

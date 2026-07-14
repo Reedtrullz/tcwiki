@@ -388,7 +388,7 @@ describe('source and freshness labels', () => {
     expect(html).toContain(`Review due ${entry.nextReviewDue}`);
     expect(html).toContain('THORChain Docs');
     expect(html).toContain('Source retrieved 2026-07-05');
-    expect(html).toContain('+6 sources');
+    expect(html).toContain('+9 sources');
   });
 
   it('resolves tokenomics page records by exact id and fails closed when missing', () => {
