@@ -593,8 +593,8 @@ describe('SEARCH_DOCUMENTS', () => {
     expect(mimir?.type).toBe('glossary');
     expect(mimir?.confidence).toBe('official');
     expect(SEARCH_DOCUMENTS.filter((doc) => doc.type === 'glossary')).toHaveLength(GLOSSARY_TERMS.length);
-    expect(docsMatching('pause-state record').some((doc) => doc.id === 'glossary:inbound-address')).toBe(true);
-    expect(docsMatching('protocol messages').some((doc) => doc.id === 'glossary:memo')).toBe(true);
+    expect(docsMatching('must not be cached or reused across churns').some((doc) => doc.id === 'glossary:inbound-address')).toBe(true);
+    expect(docsMatching('deprecated handlers can remain documented').some((doc) => doc.id === 'glossary:memo')).toBe(true);
     expect(docsMatching('wallet instructions, settlement proof').some((doc) => doc.id === 'glossary:quote')).toBe(true);
     expect(docsMatching('Expired quotes need a fresh quote').some((doc) => doc.id === 'glossary:quote-expiry')).toBe(true);
     expect(docsMatching('current quote constraint').some((doc) => doc.id === 'glossary:recommended-min-amount-in')).toBe(true);

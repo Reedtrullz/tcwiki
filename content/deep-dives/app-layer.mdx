@@ -35,8 +35,9 @@ App Layer language gets risky when one sentence tries to cover contracts, secure
 This article can support a few narrow claims:
 
 - THORChain App Layer contracts are CosmWasm contracts running in THORNode's Cosmos SDK environment.
+- CosmWasm contracts are sandboxed from THORChain vault logic; an app-layer failure is not evidence of direct vault authority, and the sandbox is not proof that a particular contract is safe.
 - App Layer availability is controlled by scoped live controls, not by one broad "contracts are live" switch.
-- Secured assets, trade accounts, and contract-moved tokens are separate concepts with different evidence needs.
+- Secured assets, trade assets, trade accounts, and contract-moved tokens are separate concepts with different evidence needs. The reviewed official sources use inconsistent "replaces" wording, so this page preserves that divergence instead of inferring a completed module migration.
 - Static docs can explain design and notation, while current use needs THORNode/Mimir, route, source-freshness, and interface-specific evidence.
 
 It cannot prove that a specific contract, interface, secured asset, wallet path, or arbitrage flow works right now. For that, use the evidence ladder below.
@@ -58,6 +59,8 @@ If a claim jumps from "this feature exists in docs" to "a user can use it now," 
 - **"No global WASM halt means every contract is usable."** Scoped deployer, checksum, contract, oracle, signing, chain, and source-warning evidence can still limit a path.
 - **"Secured assets are just pooled assets."** They are native THORChain asset balances backed by deposited L1 assets, with their own controls and security-budget caveats.
 - **"Trade assets, trade accounts, and secured assets are interchangeable."** Older terminology appears in integrations and controls, but contract movement and secured-asset redemption need separate checks.
+- **"The secured-asset docs prove exactly which older module was replaced."** The high-level page says "Trade Assets," while the developer guide says "Trade Accounts." That is source terminology drift, not enough evidence to claim either module was removed or migrated.
+- **"A documented `SECURE+` or `SECURE-` memo is a current transaction instruction."** Those examples explain integration syntax. Current chain, inbound-address, quote, halt, signing, interface, and asset evidence still own usability.
 - **"A wallet or app listing is a safety review."** Ecosystem listings and docs are starting points; they do not prove implementation quality, download integrity, memo construction, or current route availability.
 - **"Absent halt keys prove health."** Absence is only useful when the source is fresh, pinned, source-labeled, and the relevant scoped control family is known.
 
@@ -70,6 +73,7 @@ The App Layer adds a contract environment on top of that foundation:
 - CosmWasm runs inside THORNode through the Cosmos SDK `x/wasm` module.
 - Contracts can build application behavior such as orderbooks, lending, perps, launchpads, liquidations, and other DeFi workflows.
 - Contracts can use THORChain liquidity and normal THORChain account capabilities, but they should not be described as having privileged access to vault logic.
+- Official CosmWasm docs explicitly place contracts in a sandbox that cannot touch vault logic. That limits authority; it does not audit contract code or guarantee safe outcomes.
 - Mainnet contract deployment is permissioned unless live Mimir says otherwise. Approved deployers, code checksums, and contract instances are the relevant control surfaces.
 
 The practical reader takeaway: App Layer claims need two layers of evidence. Static docs explain the intended design. Live THORNode/Mimir evidence explains whether the relevant action, contract family, or asset flow is currently enabled.
@@ -98,8 +102,10 @@ They are not the same as pooled L1 assets, synthetic assets, or historical trade
 
 - A user deposits an L1 asset and receives a secured-asset balance representing a share claim on that deposited asset.
 - Secured assets can be swapped, sent, used by smart contracts, and redeemed back out to the represented L1 asset.
-- Official developer docs describe secured assets as replacing trade accounts for fast professional-trader and arbitrage flows.
+- The official source set is inconsistent about replacement terminology: the high-level secured-assets page says they replace Trade Assets, while the developer guide says they replace Trade Accounts for professional-trader and arbitrage flows. Preserve both statements as source wording; do not infer that either older module is absent from current code or controls.
 - RUNE, synthetics, and trade assets should not be described as convertible into secured assets.
+
+The developer guide also documents `SECURE+` and `SECURE-` memo forms. They are useful for understanding the designed deposit and withdrawal interface, but this wiki does not turn static memo examples into current user instructions. A usable action still needs a freshly fetched inbound address, current quote or interface construction, chain and secured-asset controls, signing health, and transaction-specific review.
 
 The security caveat is important. Because secured assets are not simply the pool balance itself, official docs tie them to network security budget checks and the broader Layer1-asset-versus-bond framing. A wiki page should not infer current capacity, live limits, or safety margins without checking current protocol state.
 
@@ -137,8 +143,9 @@ Before saying an App Layer or secured-asset action is available, verify:
 1. The current `/network#network-diagnostics` state for App Layer, secured-asset, trade-account, oracle, signing, trading, and chain-specific controls.
 2. The exact Mimir keys involved, especially scoped `HaltWasm*` and `HaltSecured*` keys.
 3. The destination and asset notation in official developer docs before giving memo or integration guidance.
-4. The interface-specific implementation, because a listed wallet or app is not an endorsement or proof of current support.
-5. The source freshness date. Static docs explain design; live endpoint evidence explains current availability.
+4. Whether apparently conflicting source terminology is merely wording drift or is supported by current code, endpoints, and controls; do not resolve it by assumption.
+5. The interface-specific implementation, because a listed wallet or app is not an endorsement or proof of current support.
+6. The source freshness date. Static docs explain design; live endpoint evidence explains current availability.
 
 ## Non-Claims
 

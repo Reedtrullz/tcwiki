@@ -202,8 +202,8 @@ test.describe('THORChain Wiki Deep Dive Smoke Tests', () => {
     await expect(articlePaths.getByRole('heading', { name: /Reader Paths For This Article/i })).toBeVisible();
     await expect(articlePaths.getByRole('link', { name: 'Network Security' })).toHaveAttribute('href', '/deep-dives#deep-dive-path-network-security');
     await expect(articlePaths.getByText(/Current signing, observation, trading/i)).toBeVisible();
-    await expect(articlePaths.getByText(/Wiki reviewed 2026-07-05/i).first()).toBeVisible();
-    await expect(articlePaths.getByText(/Review due 2026-08-05/i).first()).toBeVisible();
+    await expect(articlePaths.getByText(/Wiki reviewed 2026-07-14/i).first()).toBeVisible();
+    await expect(articlePaths.getByText(/Review due 2026-08-14/i).first()).toBeVisible();
     await expect(articlePaths.getByRole('link', { name: 'Network diagnostics' }).first()).toHaveAttribute('href', '/network#network-diagnostics');
     const networkSecurityPath = articlePaths.locator('#article-reader-path-network-security');
     await expect(networkSecurityPath.getByText('Step 2 of 5', { exact: true })).toBeVisible();
