@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { NetworkStatusSourceWarning } from '@/lib/types';
 
 const { assertReadinessContract } = await import('../../scripts/lib/readiness-contract.mjs') as {
   assertReadinessContract: (json: unknown) => void;
@@ -49,15 +50,15 @@ function readinessResponse() {
         'Runtime image metadata is missing or not an immutable sha256 digest ref.',
       ],
     },
-    warnings: [],
+    warnings: [] as string[],
     reasons: ['THORNode dynamic fee state is stale.'],
     sources: {
       midgard: {
         status: 'ok',
         source: { label: 'Midgard', url: 'https://midgard.thorchain.network/v2' },
         healthWarnings: [],
-        sourceWarnings: [],
-        sourceWarningDetails: [],
+        sourceWarnings: [] as string[],
+        sourceWarningDetails: [] as NetworkStatusSourceWarning[],
         visibleData: {
           network: {
             status: 'ok',
@@ -88,8 +89,8 @@ function readinessResponse() {
         chainStatuses: [],
         monitoredControls: [],
         invalidMimirKeys: [],
-        sourceWarnings: [],
-        sourceWarningDetails: [],
+        sourceWarnings: [] as string[],
+        sourceWarningDetails: [] as NetworkStatusSourceWarning[],
         dynamicFees: {
           status: 'ok',
           checkedAt: '2026-07-04T00:00:00.000Z',
@@ -160,6 +161,119 @@ describe('readiness runtime contract helper', () => {
 
   it('accepts warning-free ready responses', () => {
     expect(() => assertReadinessContract(readyResponse())).not.toThrow();
+  });
+
+  it('accepts ready responses with fully disclosed review-only Mimir support warnings', () => {
+    const response = readyResponse();
+    const warning = 'Known operational-support Mimir keys present: BURNSYNTHS, SCHEDULEDMIGRATION.';
+    response.warnings = [warning];
+    response.sources.thornode.sourceWarnings = [warning];
+    response.sources.thornode.sourceWarningDetails = [
+      {
+        severity: 'review',
+        category: 'mimir-support',
+        message: warning,
+        action: 'Inspect these support keys before inferring a user-facing pause.',
+        keys: ['BURNSYNTHS', 'SCHEDULEDMIGRATION'],
+      },
+    ];
+
+    expect(() => assertReadinessContract(response)).not.toThrow();
+  });
+
+  it.each([
+    {
+      label: 'an unknown operation review warning',
+      warning: 'Unknown operation-like Mimir keys present: NEWPAUSE.',
+      detail: {
+        severity: 'review',
+        category: 'unknown-operation',
+        message: 'Unknown operation-like Mimir keys present: NEWPAUSE.',
+        action: 'Review this key before treating readiness as clean.',
+      } satisfies NetworkStatusSourceWarning,
+    },
+    {
+      label: 'a warning-severity Mimir support warning',
+      warning: 'Known operational-support Mimir keys present: BURNSYNTHS.',
+      detail: {
+        severity: 'warning',
+        category: 'mimir-support',
+        message: 'Known operational-support Mimir keys present: BURNSYNTHS.',
+        action: 'Review this key before treating readiness as clean.',
+      } satisfies NetworkStatusSourceWarning,
+    },
+  ])('rejects ready responses with $label', ({ warning, detail }) => {
+    const response = readyResponse();
+    response.warnings = [warning];
+    response.sources.thornode.sourceWarnings = [warning];
+    response.sources.thornode.sourceWarningDetails = [detail];
+
+    expect(() => assertReadinessContract(response)).toThrow(/review-only mimir-support/);
+  });
+
+  it('rejects ready responses when a support warning is not mirrored in top-level warnings', () => {
+    const response = readyResponse();
+    const warning = 'Known operational-support Mimir keys present: SCHEDULEDMIGRATION.';
+    response.sources.thornode.sourceWarnings = [warning];
+    response.sources.thornode.sourceWarningDetails = [
+      {
+        severity: 'review',
+        category: 'mimir-support',
+        message: warning,
+        action: 'Inspect this support key before inferring a user-facing pause.',
+      },
+    ];
+
+    expect(() => assertReadinessContract(response)).toThrow(/top-level warnings must include/);
+  });
+
+  it('rejects ready responses when a support detail is absent from source warning strings', () => {
+    const response = readyResponse();
+    const warning = 'Known operational-support Mimir keys present: SCHEDULEDMIGRATION.';
+    response.sources.thornode.sourceWarningDetails = [
+      {
+        severity: 'review',
+        category: 'mimir-support',
+        message: warning,
+        action: 'Inspect this support key before inferring a user-facing pause.',
+      },
+    ];
+
+    expect(() => assertReadinessContract(response)).toThrow(/sourceWarnings must include every/);
+  });
+
+  it('normalizes warning-message whitespace before matching ready-response disclosures', () => {
+    const response = readyResponse();
+    const warning = 'Known operational-support Mimir keys present: SCHEDULEDMIGRATION.';
+    response.warnings = [` ${warning} `];
+    response.sources.thornode.sourceWarnings = [warning];
+    response.sources.thornode.sourceWarningDetails = [
+      {
+        severity: 'review',
+        category: 'mimir-support',
+        message: `  ${warning}`,
+        action: 'Inspect this support key before inferring a user-facing pause.',
+      },
+    ];
+
+    expect(() => assertReadinessContract(response)).not.toThrow();
+  });
+
+  it('rejects ready responses when a raw source warning lacks a matching support detail', () => {
+    const response = readyResponse();
+    const warning = 'Known operational-support Mimir keys present: SCHEDULEDMIGRATION.';
+    response.warnings = [warning, 'Unclassified warning.'];
+    response.sources.thornode.sourceWarnings = [warning, 'Unclassified warning.'];
+    response.sources.thornode.sourceWarningDetails = [
+      {
+        severity: 'review',
+        category: 'mimir-support',
+        message: warning,
+        action: 'Inspect this support key before inferring a user-facing pause.',
+      },
+    ];
+
+    expect(() => assertReadinessContract(response)).toThrow(/matching review-only mimir-support detail/);
   });
 
   it('accepts null optional RUNEPool/POL Mimir config values', () => {
