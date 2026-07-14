@@ -133,6 +133,13 @@ export const swapGuideSource: SourceMeta = {
   notes: 'Official quote, expiry, streaming swap, refund-address, recommended minimum input, and swap error-handling guidance.',
 };
 
+export const streamingSwapsSource: SourceMeta = {
+  label: 'THORChain Streaming Swaps',
+  url: 'https://dev.thorchain.org/swap-guide/streaming-swaps.html',
+  retrievedAt: '2026-07-14',
+  notes: 'Official advanced-queue streaming behavior, interval and quantity semantics, partial execution, refund behavior, and live Mimir-controlled limits.',
+};
+
 export const memosSource: SourceMeta = {
   label: 'THORChain transaction memos',
   url: 'https://dev.thorchain.org/concepts/memos.html',

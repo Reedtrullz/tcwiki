@@ -179,13 +179,13 @@ const currentStateControlCards = [
 const swapLifecycleCards = [
   {
     title: 'Inbound',
-    desc: 'A user sends a native asset to the current inbound address with a memo describing the intended action.',
+    desc: 'Request a fresh quote immediately before submission, then use its inbound address, memo, expiry, dust threshold, and recommended minimum rather than cached transaction inputs.',
     href: '/deep-dives/build-query-data#quotes-inbound-addresses-and-caching',
     linkLabel: 'Check quote timing',
   },
   {
     title: 'Execution',
-    desc: 'The state machine prices the swap through RUNE-paired pools, applying slip/liquidity fees and current protocol rules.',
+    desc: 'The state machine prices the swap through RUNE-paired pools. Under the advanced queue, market swaps can auto-stream; the quote and memo own limits, interval, and quantity while live controls own availability.',
     href: '/network#check-a-route',
     linkLabel: 'Check a live route',
   },

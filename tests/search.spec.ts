@@ -363,7 +363,7 @@ test.describe('THORChain Wiki Search Smoke Tests', () => {
     await page.goto('/search?q=quote%20expiry');
     const quoteExpiryResult = page.locator('main article').first().locator('a[href="/glossary#term-quote-expiry"]');
     await expect(quoteExpiryResult).toBeVisible();
-    await expect(page.getByText(/Expired quotes need a fresh quote/i).first()).toBeVisible();
+    await expect(page.getByText(/valid for only ten minutes/i).first()).toBeVisible();
 
     await page.goto('/search?q=wallet%20safety');
     await expect(page.locator('main article').first().locator('a[href="/ecosystem#interface-use-checklist"]')).toBeVisible();
