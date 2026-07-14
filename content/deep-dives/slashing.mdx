@@ -8,36 +8,36 @@ The safest wiki wording separates reward slash points from bond-at-risk events, 
 
 THORChain uses two related penalty ideas that should not be collapsed together:
 
-- **Slash points** reduce earned rewards for reliability failures such as missed observations, missed signing participation, or keygen failures.
-- **Bond slashing** burns bonded RUNE for security-critical behavior such as unauthorized outflows or theft.
+- **Slash points** reduce earned rewards for reliability failures such as missed observations, missed block signing, double block signing, or TSS ceremony failures.
+- **Bond-principal slashing** burns bonded RUNE for separately defined security-critical behavior such as an unauthorized vault outflow.
 
 Bonded RUNE is the "skin in the game" that makes attacks economically irrational, but not every operator fault directly confiscates bond.
 
 ## Types of Slashing Events
 
-- **Reward slash points**: Missed observations, missed signing participation, failed keygen, or other reliability failures that reduce rewards.
-- **Bond slashing**: Unauthorized outbound transactions, theft, or other security-critical vault behavior.
-- **Consensus faults**: Double signing or equivocation can put bond at risk according to current protocol rules.
+- **Observation and signing slash points**: Late or missing observations, missed block signing, and TSS keygen/keysign blame can reduce rewards and may affect churn selection or jailing.
+- **Double block signing**: Double block signing adds slash points under the current source-tree vault documentation; it does not by itself prove a bond-principal slash. The operator risk page also documents a separate double-sign capital penalty, so classify the exact event and current implementation before stating which balance was affected.
+- **Bond-principal slashing**: An observed outbound that does not match an approved THORChain instruction can slash signing nodes' bonded RUNE and trigger additional chain-safety handling.
 
 ## Slash Rate
 
-Slash constants and minimum bond values can be overridden by live Mimir parameters. The wiki should describe the economic purpose of slashing, then point to THORNode constants and Mimir for current values rather than freezing a rate in prose.
+Slash constants, jail periods, churn thresholds, and minimum bond values can be overridden by live Mimir parameters. The wiki should describe the economic purpose and event class, then point to THORNode constants, Mimir, node state, and transaction evidence for current values rather than freezing a rate in prose.
 
 ## Churn and Unbonding
 
-Nodes that accumulate too many slash points can be forced out of the active set during churn. Unbonding and leaving are state-dependent: active nodes must churn out first, standby nodes can unbond, and operators should verify node state before assuming bond is withdrawable.
+Nodes whose slash points cross the current bad-validator threshold can be marked for churn-out. Unbonding and leaving are state-dependent: only Standby nodes outside vault migration may unbond, while Ready and Active nodes cannot.
 
 ## Why This Matters
 
 Without strong slashing, a rational actor could attempt to steal funds or disrupt the network if the expected value of the attack exceeded the bond at risk. Bond ranges, minimum bond, and slash multipliers are live/current-only parameters and should be checked before being quoted.
 
-The system has been tested through multiple real-world incidents and has continued to evolve its monitoring and response mechanisms.
+Current source-tree documentation also separates vault-lifecycle security, observation consensus, and capital penalties. That separation matters when an incident report uses the broad word “slashed” without identifying the affected ledger or event family.
 
 ## Operator Evidence Ladder
 
 For a current operator or incident claim, use the strongest evidence available:
 
-1. Current node status, bond, and slash-point data from THORNode or operator tooling.
+1. Current node status, bond, slash-point, jail, and vault-membership data from THORNode or operator tooling.
 2. Current Mimir and constants when the claim depends on thresholds or enabled/paused behavior.
 3. Exact observation, signing, keygen, or outbound evidence for a specific event.
 4. Dated incident reports or upgrade notes for historical root-cause and patch wording.
@@ -61,6 +61,6 @@ This page does not prove:
 
 - Current slash-point totals, bond balances, or active node risk.
 - That a particular operator fault burned bond rather than reduced rewards.
-- Current slash multipliers, minimum bond, or unbonding availability.
+- Current slash multipliers, jail periods, minimum bond, churn eligibility, or unbonding availability.
 - That every incident is automatically made whole by slashing.
 - That slashing alone proves present-day network safety.

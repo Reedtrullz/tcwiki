@@ -434,6 +434,34 @@ export const nodeManagingSource: SourceMeta = {
   notes: 'Official node operations guidance for slash troubleshooting, sync checks, and operational risk.',
 };
 
+export const nodeOperationsSource: SourceMeta = {
+  label: 'THORNode node operations',
+  url: 'https://docs.thorchain.org/thornodes/overview/node-operations',
+  retrievedAt: '2026-07-14',
+  notes: 'Official node lifecycle and churn reference for Whitelisted, Standby, Ready, Active, and Disabled status, churn-out criteria, and the Standby-only unbond boundary.',
+};
+
+export const nodeLeavingSource: SourceMeta = {
+  label: 'Leaving THORChain as a node operator',
+  url: 'https://docs.thorchain.org/thornodes/leaving',
+  retrievedAt: '2026-07-14',
+  notes: 'Official LEAVE and UNBOND procedure reference; a node must be Standby and outside vault migration before unbonding, and the original operator address controls the action.',
+};
+
+export const thornodeBifrostHowItWorksSource: SourceMeta = {
+  label: 'THORNode Bifrost transaction flow',
+  url: 'https://gitlab.com/thorchain/thornode/-/blob/e76a394b451f143d91e12666e42eea3948962278/docs/bifrost/how-bifrost-works.md',
+  retrievedAt: '2026-07-14',
+  notes: 'Pinned official THORNode source-tree snapshot for observer/signer roles, Active and Retiring vault observations, 67% consensus, finality, re-orgs, and outbound evidence.',
+};
+
+export const thornodeVaultBehaviorsSource: SourceMeta = {
+  label: 'THORNode vault behaviors',
+  url: 'https://gitlab.com/thorchain/thornode/-/blob/e76a394b451f143d91e12666e42eea3948962278/docs/bifrost/vault-behaviors.md',
+  retrievedAt: '2026-07-14',
+  notes: 'Pinned official THORNode source-tree snapshot for physical-vault lifecycle, inbound-vault selection, migration, and the distinction between slash points and bond-principal slashing.',
+};
+
 export const economicModelSource: SourceMeta = {
   label: 'THORChain economic model',
   url: 'https://docs.thorchain.org/technical-documentation/technical-deep-dive/economic-model',

@@ -6,7 +6,7 @@ This article explains the validator-life-cycle idea. It does not prove the curre
 
 ## What is Churning?
 
-At configured churn intervals, active nodes can rotate out and standby nodes can rotate in. Official node docs describe the cadence as roughly 43,200 blocks, or about 2.5 days, but the interval is governed by protocol constants and Mimir overrides, so the exact value remains current-only data.
+At configured churn intervals, active nodes can rotate out and eligible Ready nodes can rotate in. Official node docs currently describe the normal cadence as roughly 43,200 blocks, or about 2.5 days, but `ChurnInterval`, `HaltChurning`, failed keygen, and migration state can change or delay what happens. Treat the quoted cadence as a documentation snapshot, not a next-churn promise.
 
 During a churn event:
 - A churned-out node moves back to standby; its bond is not automatically returned.
@@ -17,21 +17,23 @@ During a churn event:
 
 **Security through rotation**: Regular key rotation limits the window for key compromise accumulation.
 
-**Economic incentives**: Standby nodes are constantly competing to bond more RUNE to earn the right to churn in. This creates strong pressure for honest behavior.
+**Economic incentives**: Ready nodes can compete for selection through bond and current eligibility, while churn-out rules can consider leave requests, bans, age, bad performance, low version, and low bond. The exact selection set remains protocol-state dependent.
 
 **Fault tolerance**: If a node becomes unresponsive or malicious, churn and slash-point mechanics can remove it from the active set, subject to current protocol state.
 
 ## Node Lifecycle
 
-1. **Whitelisted** → A node address has sent an initial BOND deposit and can continue setup.
-2. **Ready** → Bonded, synced, and passing preflight checks for churn eligibility.
-3. **Standby** → Bonded and waiting for churn selection, usually competing by bond and current readiness.
-4. **Active** → Currently in the validator set (highest rewards, highest responsibility).
-5. **Churned to standby / leaving** → Removed from active set; unbonding or leaving depends on the node's current state and follow-up memos.
+The documented progression is **Whitelisted → Standby → Ready → Active**, with **Disabled** as the permanent-leave state for that node account:
+
+1. **Whitelisted** → Bonded, but required node keys have not yet been set.
+2. **Standby** → Bonded but not active; current requirements are evaluated during churn. Only a Standby node outside vault migration may unbond.
+3. **Ready** → Passed current preflight requirements and is eligible for churn selection. A Ready node cannot unbond.
+4. **Active** → Participates in consensus, observation, and signing. An Active node cannot unbond; a LEAVE request marks it for churn-out handling.
+5. **Disabled** → A Standby node that completed the permanent-leave path; it cannot rejoin with the same node account.
 
 ## Slash Points and Forced Churn
 
-Nodes accumulate slash points for missing observations or failing to sign. High slash counts can force a node out of the active set even before its natural churn time.
+Nodes accumulate slash points for failures such as missing observations, block signing, keygen, or keysign participation. `MinSlashPointsForBadValidator` is one churn-out input, alongside other current criteria; slash points do not prove immediate removal or bond-principal confiscation.
 
 The combination of churning and economic penalties is intended to reduce long-lived validator and vault risk, but exact behavior should be checked against current protocol constants and Mimir state.
 
@@ -39,7 +41,7 @@ The combination of churning and economic penalties is intended to reduce long-li
 
 Churn is also a vault-management event. When the active validator set changes, new vault keys can be created and assets may migrate from older vaults to newer vaults. Official technology docs describe vault migration as a multi-round process designed to maintain service availability during validator-set changes.
 
-That makes churn relevant to users even if they never run a node: vault addresses, signing responsibility, outbound queues, and operational pause controls can all matter during sensitive migration windows.
+That makes churn relevant to users even if they never run a node: vault addresses, signing responsibility, outbound queues, and operational pause controls can all matter during sensitive migration windows. A churned-out node returning to Standby is still not automatically free to unbond while its key remains part of a migrating vault.
 
 ## What To Verify Before Claiming
 
@@ -47,8 +49,8 @@ Before making a current churning or node-life-cycle claim, verify:
 
 1. The current network diagnostics state for `HALTCHURNING`, signing, chain halts, and source warnings.
 2. Current THORNode node status, churn height, and Mimir/constant values before quoting an interval.
-3. Whether a node is active, standby, ready, disabled, leaving, or eligible to unbond.
-4. Whether the claim is about normal scheduled churn, forced churn, vault migration, or incident recovery.
+3. Whether a node is Whitelisted, Standby, Ready, Active, Disabled, marked to leave, or still part of a migrating vault.
+4. Whether the claim is about normal scheduled churn, a churn-out criterion, failed keygen, vault migration, or incident recovery.
 5. Whether a dated incident or upgrade source still applies to the current release.
 
 ## Non-Claims
@@ -56,7 +58,7 @@ Before making a current churning or node-life-cycle claim, verify:
 This page does not prove:
 
 - Current churn height, active-set size, node eligibility, or next rotation time.
-- That a node can safely unbond or leave now.
+- That a node can safely unbond or leave now merely because it is not Active.
 - That a vault migration is complete or risk-free.
 - That all chain clients are synchronized and ready for churn.
 - That the current network is safe merely because churning exists.

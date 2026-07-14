@@ -915,6 +915,23 @@ describe('SEARCH_DOCUMENTS', () => {
     expect(docsMatching('provider failover same-provider evidence').some((doc) => doc.id === 'deep-dive-midgard-thornode-data')).toBe(true);
     expect(docsMatching('TCY recovery timeline').some((doc) => doc.id === 'deep-dive-tcy-recovery-timeline')).toBe(true);
 
+    const bifrost = SEARCH_DOCUMENTS.find((doc) => doc.id === 'deep-dive-bifrost');
+    const churning = SEARCH_DOCUMENTS.find((doc) => doc.id === 'deep-dive-churning');
+    const slashing = SEARCH_DOCUMENTS.find((doc) => doc.id === 'deep-dive-slashing');
+    for (const doc of [bifrost, churning, slashing]) {
+      expect(doc?.reviewedAt, doc?.id).toBe('2026-07-14');
+      expect(doc?.nextReviewDue, doc?.id).toBe('2026-08-14');
+    }
+    expect(bifrost?.content).toContain('Active and Retiring vaults');
+    expect(bifrost?.content).toContain('67%');
+    expect(bifrost?.content).toContain('Never send funds to a retired or inactive vault address');
+    expect(churning?.content).toContain('Whitelisted → Standby → Ready → Active');
+    expect(churning?.content).toContain('Only a Standby node outside vault migration may unbond');
+    expect(churning?.content).not.toContain('Whitelisted → Ready → Standby');
+    expect(slashing?.content).toContain('Double block signing adds slash points');
+    expect(slashing?.content).toContain('does not by itself prove a bond principal slash');
+    expect(slashing?.content).not.toContain('Consensus faults: Double signing or equivocation can put bond at risk');
+
     for (const path of DEEP_DIVE_READER_PATHS) {
       expect(path.entryIds.length, `${path.id} entries`).toBeGreaterThan(0);
       expect(path.verifyBeforeClaiming.length, `${path.id} verification`).toBeGreaterThan(0);
