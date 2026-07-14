@@ -84,7 +84,9 @@ When a view needs several live endpoints, the safest pattern is:
 
 Same-provider evidence matters because one endpoint can be fresh while another provider is stale, lagging, malformed, or missing fields. If the page combines a Midgard pool count from one provider with a health check from another, the source label should say so or the source should degrade.
 
-THORNode pinned snapshots are even stricter. If a dashboard needs `/mimir`, `/inbound_addresses`, `/dynamic_l1_fees`, and `/dynamic_l1_fees_current` for one checked block, it should avoid mixing providers or heights in a way that makes the evidence look more coherent than it is.
+THORNode pinned snapshots are even stricter. If a dashboard needs `/mimir`, `/inbound_addresses`, `/dynamic_l1_fees`, and `/dynamic_l1_fees_current` for one checked block, fetch those reads from the same provider and the same checked height. If that cannot be done, expose the differing providers or heights and degrade the combined claim rather than making the evidence look more coherent than it is.
+
+A static supported-chain list does not own current dust thresholds, gas rates, routers, halt fields, or route availability. Those are live THORNode inputs. The catalog can establish that a chain was present in a reviewed inbound-address set; transaction code must still refresh the operational fields immediately before use.
 
 ## What Source Warnings Mean
 

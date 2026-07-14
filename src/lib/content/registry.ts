@@ -201,39 +201,51 @@ const connectingThorchainSource: SourceMeta = {
   notes: 'Developer docs distinction between Midgard as dashboard-friendly consumer data and THORNode as raw protocol state.',
 };
 
+const midgardDataConnectingSource: SourceMeta = {
+  ...baseConnectingThorchainSource,
+  retrievedAt: '2026-07-14',
+  notes: 'Official distinction between Midgard consumer data, THORNode protocol state, Cosmos RPC, Tendermint RPC, and gRPC, including public-provider and historical-endpoint guidance.',
+};
+
 const buildQueryConnectingSource: SourceMeta = {
   ...baseConnectingThorchainSource,
-  retrievedAt: '2026-07-06',
-  notes: 'Official source-family guide for Midgard, THORNode, Cosmos RPC, Tendermint RPC, gRPC, rate limits, x-client-id, and production node guidance.',
+  retrievedAt: '2026-07-14',
+  notes: 'Official source-family guide for Midgard, THORNode, Cosmos RPC, Tendermint RPC, gRPC, hard-fork routing, rate limits, x-client-id, and production node guidance.',
 };
 
 const buildQueryQueryingSource: SourceMeta = {
   ...queryingThorchainSource,
-  retrievedAt: '2026-07-06',
+  retrievedAt: '2026-07-14',
   notes: 'Official inbound-address, pool-list, supported-address, halt, gas-rate, dust-threshold, base-unit, and router guidance.',
 };
 
 const buildQuerySwapGuideSource: SourceMeta = {
   ...baseSwapGuideSource,
-  retrievedAt: '2026-07-06',
+  retrievedAt: '2026-07-14',
   notes: 'Official quote response, quote expiry, quote rate-limit, recommended minimum input, fees, warning, memo, and timing guidance.',
 };
 
 const buildQueryMemosSource: SourceMeta = {
   ...baseMemosSource,
-  retrievedAt: '2026-07-06',
+  retrievedAt: '2026-07-14',
   notes: 'Official memo format, memo-size, dust-threshold, function, refund-address, affiliate, and transaction-intent guidance.',
 };
 
 const buildQueryFeesSource: SourceMeta = {
   ...feesSource,
-  retrievedAt: '2026-07-06',
+  retrievedAt: '2026-07-14',
   notes: 'Official fee categories, fee ordering, gas-rate source, affiliate-fee, liquidity-fee, outbound-fee, and refund-risk guidance.',
+};
+
+const ordinaryFeeDocsSource: SourceMeta = {
+  ...feesSource,
+  retrievedAt: '2026-07-09',
+  notes: 'Official fee categories, fee ordering, gas-rate source, affiliate-fee, liquidity-fee, outbound-fee, and refund-risk guidance for ordinary quote triage.',
 };
 
 const buildQueryAssetNotationSource: SourceMeta = {
   ...assetNotationSource,
-  retrievedAt: '2026-07-06',
+  retrievedAt: '2026-07-14',
   notes: 'Official asset-notation reference for chain.asset and token identifiers used in quotes, pools, and memos.',
 };
 
@@ -348,7 +360,7 @@ export const CONTENT_ENTRIES: ContentEntry[] = [
     category: 'section',
     confidence: 'curated',
     description: 'Architecture, swaps, TSS, Bifrost, Mimir, halts, app layer, and supported chains.',
-    body: 'THORChain protocol architecture protocol claim checks architecture explanation current availability claim security vault claim developer integration claim native cross-chain swaps Bifrost observers TSS vaults Mimir halts inbound addresses swap lifecycle refunds refund reasons streaming swaps StreamingSwapPause HaltMemoless RUNEPoolHaltDeposit app layer CosmWasm live diagnostics current availability vault safety developer sources supported chains supported chain finder chain catalog boundary catalog listed is not availability address formats EIP-55 Base58 Bech32 CashAddr X-address dust threshold EdDSA Solana Check a route route quoteability.',
+    body: 'THORChain protocol architecture protocol claim checks architecture explanation current availability claim security vault claim developer integration claim native cross-chain swaps Bifrost observers TSS vaults Mimir halts inbound addresses swap lifecycle refunds refund reasons streaming swaps StreamingSwapPause HaltMemoless RUNEPoolHaltDeposit app layer CosmWasm live diagnostics current availability vault safety developer sources supported chains supported chain finder chain catalog boundary catalog listed is not availability address formats EIP-55 Base58 Bech32 CashAddr Classic Base58 live dust threshold EdDSA Solana Check a route route quoteability.',
     tags: ['architecture', 'swaps', 'mimir', 'halts', 'supported chains'],
     reviewedAt: '2026-07-06',
     nextReviewDue: '2026-08-06',
@@ -556,12 +568,12 @@ export const CONTENT_ENTRIES: ContentEntry[] = [
     category: 'deep-dive',
     confidence: 'curated',
     description: 'How to choose between Midgard dashboard data and THORNode raw protocol state without overclaiming live evidence, route availability, or recovery state.',
-    body: 'Midgard THORNode data live data guide data source guide Midgard guide THORNode guide Midgard vs THORNode THORNode vs Midgard which source should I use Midgard or THORNode dashboard metrics versus raw protocol state live sources source map what this guide can prove claim to source matrix current-only provider failover same-provider evidence pinned snapshots dashboard metrics raw protocol state Midgard health Midgard network Midgard pools Midgard earnings available pools pool depth earnings APY THORNode mimir inbound_addresses quote swap route availability halt pause operation state dynamic_l1_fees source warnings provider mismatch stale unpinned missing fields malformed base units unavailable insufficient samples not zero data quality readiness degraded endpoint family source labels dashboard evidence rules incident recovery deprecated product history.',
+    body: 'Midgard THORNode data live data guide data source guide Midgard guide THORNode guide Midgard vs THORNode THORNode vs Midgard which source should I use Midgard or THORNode dashboard metrics versus raw protocol state live sources source map what this guide can prove claim to source matrix current-only provider failover same-provider evidence same-height evidence pinned snapshots dashboard metrics raw protocol state Midgard health Midgard network Midgard pools Midgard earnings available pools pool depth earnings APY THORNode mimir inbound_addresses quote swap route availability halt pause operation state dynamic_l1_fees source warnings provider mismatch stale unpinned missing fields malformed base units unavailable insufficient samples not zero static supported chain list live dust threshold data quality readiness degraded endpoint family source labels dashboard evidence rules incident recovery deprecated product history.',
     tags: ['data', 'midgard', 'thornode', 'sources'],
-    reviewedAt: '2026-07-06',
-    nextReviewDue: '2026-08-06',
+    reviewedAt: '2026-07-14',
+    nextReviewDue: '2026-08-14',
     sources: [
-      connectingThorchainSource,
+      midgardDataConnectingSource,
       queryingThorchainSource,
       midgardHealthPageSource,
       midgardNetworkPageSource,
@@ -579,10 +591,10 @@ export const CONTENT_ENTRIES: ContentEntry[] = [
     category: 'deep-dive',
     confidence: 'curated',
     description: 'A builder-focused query plan for choosing THORChain data sources, quotes, inbound addresses, units, errors, and provider posture without overclaiming.',
-    body: 'Build And Query THORChain Data build query guide developer integration Midgard API THORNode API Midgard vs THORNode THORNode vs Midgard which endpoint which source should I use Midgard or THORNode Cosmos RPC Tendermint RPC gRPC query plan source families x-client-id rate limits 429 503 backoff run own node production public endpoints inbound_addresses inbound address quote swap quote expiry do not cache quotes one request per second quote rate limit recommended_min_amount_in expected_amount_out fees slippage_bps total_bps memo dust_threshold gas_rate router Mimir halt source warnings asset notation 1e8 base units available pools provider failover response shape malformed fields not zero not transaction instructions.',
+    body: 'Build And Query THORChain Data build query guide developer integration Midgard API THORNode API Midgard vs THORNode THORNode vs Midgard which endpoint which source should I use Midgard or THORNode Cosmos RPC Tendermint RPC gRPC HTTP2 query plan source families x-client-id 50000 requests rate limits 429 503 backoff run own node production public endpoints pre-hard-fork post-hard-fork archive inbound_addresses inbound address quote swap quote expiry do not cache quotes one request per second quote rate limit recommended_min_amount_in expected_amount_out fees slippage_bps total_bps memo live dust_threshold gas_rate router Mimir halt source warnings asset notation 1e8 base units available pools provider failover response shape malformed fields not zero not transaction instructions.',
     tags: ['data', 'developer', 'midgard', 'thornode'],
-    reviewedAt: '2026-07-06',
-    nextReviewDue: '2026-08-06',
+    reviewedAt: '2026-07-14',
+    nextReviewDue: '2026-08-14',
     sources: [
       buildQueryConnectingSource,
       buildQueryQueryingSource,
@@ -951,10 +963,10 @@ export const DEEP_DIVE_READER_PATHS: DeepDiveReaderPath[] = [
         description: 'Check live THORNode evidence before treating a route, chain, or LP action as currently available.',
       },
     ],
-    searchTerms: ['build query path', 'developer data integration', 'Midgard API', 'THORNode API', 'inbound_addresses', 'quote swap', 'source warning', 'same-provider', 'recommended_min_amount_in', 'liquidity_tolerance_bps', 'memo'],
+    searchTerms: ['build query path', 'developer data integration', 'Midgard API', 'THORNode API', 'inbound_addresses', 'quote swap', 'source warning', 'same-provider', 'same-height', 'historical endpoint', 'hard fork data', 'recommended_min_amount_in', 'liquidity_tolerance_bps', 'memo'],
     confidence: 'curated',
-    reviewedAt: '2026-07-06',
-    nextReviewDue: '2026-08-06',
+    reviewedAt: '2026-07-14',
+    nextReviewDue: '2026-08-14',
     sources: [buildQueryConnectingSource, buildQueryQueryingSource, buildQuerySwapGuideSource, buildQueryMemosSource, buildQueryFeesSource, buildQueryAssetNotationSource],
   },
   {
@@ -1593,10 +1605,10 @@ export const TASK_INTENT_GUIDES: TaskIntentGuide[] = [
     question: 'Which docs or live endpoints should I use before building against THORChain data?',
     href: '/deep-dives/build-query-data#query-plan',
     description: 'Start with the build/query plan before using Midgard, THORNode, inbound addresses, Mimir, quote, memo, or explorer data in an app or analysis.',
-    searchTerms: ['build query', 'build query guide', 'Midgard API', 'THORNode API', 'Midgard vs THORNode', 'THORNode vs Midgard', 'which endpoint', 'which source should I use Midgard or THORNode', 'inbound addresses', 'inbound_addresses', 'current inbound address', 'fresh inbound address', 'latest inbound address', 'developer docs', 'live endpoint', 'Mimir endpoint', 'quote swap', 'quote cache', 'do not cache quote', 'quote warning', 'quote response warning', 'quote rate limit', '429 quote', 'quote endpoint rate limit', 'recommended_min_amount_in', 'integration data'],
+    searchTerms: ['build query', 'build query guide', 'Midgard API', 'THORNode API', 'Midgard vs THORNode', 'THORNode vs Midgard', 'which endpoint', 'which source should I use Midgard or THORNode', 'Cosmos RPC', 'Tendermint RPC', 'gRPC HTTP2', 'hard fork data', 'historical endpoint', 'inbound addresses', 'inbound_addresses', 'current inbound address', 'fresh inbound address', 'latest inbound address', 'live dust threshold', 'developer docs', 'live endpoint', 'Mimir endpoint', 'quote swap', 'quote cache', 'do not cache quote', 'quote warning', 'quote response warning', 'quote rate limit', '429 quote', 'quote endpoint rate limit', 'recommended_min_amount_in', 'integration data'],
     confidence: 'curated',
-    reviewedAt: '2026-07-06',
-    nextReviewDue: '2026-08-06',
+    reviewedAt: '2026-07-14',
+    nextReviewDue: '2026-08-14',
     sources: [buildQueryConnectingSource, buildQueryQueryingSource, buildQuerySwapGuideSource, buildQueryMemosSource, buildQueryFeesSource, buildQueryAssetNotationSource],
   },
   {
@@ -1786,7 +1798,7 @@ export const TASK_INTENT_GUIDES: TaskIntentGuide[] = [
     confidence: 'curated',
     reviewedAt: '2026-07-09',
     nextReviewDue: '2026-08-09',
-    sources: [swapGuideSource, memosSource, buildQueryFeesSource, networkHaltsSource],
+    sources: [swapGuideSource, memosSource, ordinaryFeeDocsSource, networkHaltsSource],
   },
   {
     id: 'fees-and-adr026',
@@ -2005,6 +2017,7 @@ export const DEEP_DIVE_TOC: Record<string, DeepDiveTocItem[]> = {
   'deep-dive-build-query-data': [
     tocItem('Query Plan'),
     tocItem('Source Families'),
+    tocItem('Current And Historical Endpoint Routing'),
     tocItem('Minimum Safe Query Sequence'),
     tocItem('Quotes, Inbound Addresses, And Caching'),
     tocItem('Amounts, Assets, And Units'),

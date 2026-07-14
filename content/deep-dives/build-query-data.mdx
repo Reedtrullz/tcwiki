@@ -24,9 +24,19 @@ The official developer docs describe five primary data sources:
 - **THORNode:** THORChain-specific state-machine data such as Mimirs, inbound addresses, quotes, transaction state, and node/version context.
 - **Cosmos RPC:** generic Cosmos SDK data such as balances and blocks.
 - **Tendermint RPC:** consensus and node-status data for monitoring and debugging.
-- **gRPC:** protobuf-based Cosmos SDK access for programmatic clients.
+- **gRPC:** protobuf-based Cosmos SDK access for programmatic clients. gRPC uses protocol buffers over HTTP/2, so it needs a gRPC client rather than an ordinary browser or `curl` JSON request.
 
-For production apps, public endpoints should be treated as shared infrastructure. The official docs recommend identifying your application to Liquify with `x-client-id`, handling rate limits and overload responses with backoff, and running your own node for production uptime and trust needs.
+For production apps, public endpoints should be treated as shared infrastructure. At this review, the official guide publishes a Liquify limit of 50,000 requests per day per IP, recommends identifying the application with `x-client-id`, and requires exponential backoff for `429` rate limits or `503` overload responses. The same guide recommends running your own THORNode when production uptime and trust requirements exceed shared-endpoint guarantees.
+
+## Current And Historical Endpoint Routing
+
+Do not assume one URL family owns every historical block. The official connection guide documents the mainnet hard-fork boundary explicitly:
+
+- Use the current THORNode and Tendermint endpoint families for blocks at or above `4,786,560`.
+- Historical requests for blocks at or below `4,786,559` may require the pre-hard-fork THORNode or Tendermint endpoint families.
+- Liquify says its main gateway smart-routes archive requests, but an integration should still test the exact historical query and keep the requested height in its evidence.
+
+This boundary is about where historical data can be queried. It does not imply that a pre-hard-fork response describes current protocol behavior.
 
 ## Minimum Safe Query Sequence
 
@@ -56,6 +66,8 @@ The querying guide is similarly strict about inbound addresses:
 - Public Midgard can be phished or stale, so safety-sensitive flows should compare trusted sources or run their own node.
 
 For the wiki, this means a quote result is strong current evidence for that route and amount, but it is not a reusable transaction template or future availability proof.
+
+Dust thresholds are live transaction inputs. The supported-chain catalog intentionally does not copy numeric dust thresholds because current `inbound_addresses` values can differ from old examples or a previous review. Read the selected chain's current `dust_threshold`, gas-rate units, router, and halt fields from the same fresh transaction evidence used for the quote.
 
 ## Amounts, Assets, And Units
 
@@ -93,7 +105,7 @@ Before shipping a THORChain integration or public analysis, verify:
 1. Which source family owns each displayed claim.
 2. Whether live values use one provider, a failover provider, or mixed providers.
 3. Whether quotes are requested on demand, throttled, and discarded after expiry.
-4. Whether inbound addresses, router fields, gas rates, dust thresholds, and halts are fresh at signing time.
+4. Whether inbound addresses, router fields, gas rates, dust thresholds, and halts are fresh at signing time rather than copied from a static chain list.
 5. Whether Midgard metrics are labeled as indexed dashboard data rather than raw protocol state.
 6. Whether base-unit parsing, large numbers, missing fields, and malformed responses fail safely.
 7. Whether error copy separates route unavailability, source unavailability, unsupported assets, and user-input problems.

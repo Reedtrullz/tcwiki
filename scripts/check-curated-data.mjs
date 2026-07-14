@@ -51,7 +51,10 @@ const failures = [];
 const contentCategories = new Set(['section', 'deep-dive', 'resource']);
 const expectedChains = ['BTC', 'ETH', 'BSC', 'AVAX', 'GAIA', 'DOGE', 'LTC', 'BCH', 'TRON', 'BASE', 'SOL', 'XRP'];
 const forbiddenChainCodes = new Set(['TRX', 'ARB', 'MATIC', 'OP']);
-const liveInboundUrl = 'https://thornode.thorchain.network/thorchain/inbound_addresses';
+const liveInboundUrls = new Set([
+  'https://gateway.liquify.com/chain/thorchain_api/thorchain/inbound_addresses',
+  'https://thornode.thorchain.network/thorchain/inbound_addresses',
+]);
 const contentCheckToday = process.env.CONTENT_CHECK_TODAY ?? new Date().toISOString().slice(0, 10);
 const allowOverdueContent = process.env.ALLOW_OVERDUE_CONTENT === '1';
 const routeSourcePostureEntryIds = new Set(actualRouteSourcePostureEntryIds);
@@ -663,7 +666,7 @@ function validateChains(records) {
     if (forbiddenChainCodes.has(record.data.chain)) {
       fail(`${path}.data.chain`, 'uses a stale or unsupported chain code');
     }
-    if (record.data.supported === true && !record.sources.some((source) => source.url === liveInboundUrl)) {
+    if (record.data.supported === true && !record.sources.some((source) => liveInboundUrls.has(source.url))) {
       fail(`${path}.sources`, 'supported chain records must include live inbound_addresses source');
     }
   }

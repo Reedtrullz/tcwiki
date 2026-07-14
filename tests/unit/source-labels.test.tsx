@@ -101,7 +101,7 @@ describe('source and freshness labels', () => {
     expect(html).toContain('Open diagnostics');
     expect(html).toContain('Read source map');
     expect(html).toContain('Check live diagnostics');
-    expect(html).toContain('Live inbound status must be checked before describing BTC swaps as open.');
+    expect(html).toContain('Use the live inbound-address dust threshold and halt fields before constructing or describing a BTC transaction.');
   });
 
   it('surfaces ecosystem records that need source review as an explicit warning', () => {
@@ -161,11 +161,11 @@ describe('source and freshness labels', () => {
 
   it('renders the protocol chain finder without turning catalog records into live availability', () => {
     const html = renderToStaticMarkup(
-      <ProtocolChainFinder chainRecords={CHAIN_RECORDS.slice(0, 3)} catalogReviewedAt="2026-07-06" />
+      <ProtocolChainFinder chainRecords={CHAIN_RECORDS.slice(0, 3)} catalogReviewedAt="2026-07-14" />
     );
 
     expect(html).toContain('Supported Chain Finder');
-    expect(html).toContain('Showing 3 of 3 catalog chain records from the 2026-07-06 review.');
+    expect(html).toContain('Showing 3 of 3 catalog chain records from the 2026-07-14 review.');
     expect(html).toContain('Find supported chains');
     expect(html).toContain('Address format');
     expect(html).toContain('Review notes');
@@ -174,7 +174,8 @@ describe('source and freshness labels', () => {
     expect(html).toContain('It does not prove swaps, signing, LP actions, gas, or a route are open now.');
     expect(html).toContain('Check live state');
     expect(html).toContain('Check a route');
-    expect(html).toContain('Live inbound status must be checked before describing BTC swaps as open.');
+    expect(html).toContain('Use the live inbound-address dust threshold and halt fields before constructing or describing a BTC transaction.');
+    expect(html).toContain('Live inbound_addresses only');
   });
 
   it('renders source notes, retrieved timestamps, and reviewer metadata', () => {

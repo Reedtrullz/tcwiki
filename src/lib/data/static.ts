@@ -16,6 +16,8 @@ import {
   adr028ExploitConciliationSource,
   archivedSaversLendingSource as archivedFeaturesSource,
   assetNotationSource,
+  chainClientsSource,
+  connectingThorchainSource,
   cosmWasmSource as cosmwasmSource,
   dynamicL1FeesCurrentSource,
   dynamicL1FeesSource,
@@ -39,6 +41,8 @@ import {
   runePoolDevSource,
   runePoolDocsSource,
   runePoolEndpointSource,
+  supportedBlockchainsSource,
+  swapGuideSource,
   swapkitDocsSource,
   tcyGuideSource,
   thorchainEcosystemSource as ecosystemSource,
@@ -151,15 +155,15 @@ const liquifyThornodeVersionSource: SourceMeta = {
 const runescanSource: SourceMeta = {
   label: 'RuneScan',
   url: 'https://runescan.io',
-  retrievedAt: '2026-07-05',
-  notes: 'External explorer reference; indexing and labels are not canonical protocol state.',
+  retrievedAt: '2026-07-14',
+  notes: 'External explorer responded during this review; indexing and labels are not canonical protocol state.',
 };
 
 const viewblockSource: SourceMeta = {
   label: 'ViewBlock THORChain',
   url: 'https://viewblock.io/thorchain',
-  retrievedAt: '2026-07-05',
-  notes: 'External explorer reference; reconcile with THORNode or dated evidence before making protocol claims.',
+  retrievedAt: '2026-07-14',
+  notes: 'Direct source returned a Cloudflare challenge from this review environment; reconcile with THORNode and verify in a browser before relying on its indexing.',
 };
 
 const viewblockNeedsReviewSource: SourceMeta = {
@@ -195,43 +199,43 @@ const dynamicL1FeesCurrentReviewedAt20260708: SourceMeta = {
 const messariReportsSource: SourceMeta = {
   label: 'Messari THORChain Reports',
   url: 'https://messari.io/project/thorchain',
-  retrievedAt: '2026-07-05',
-  notes: 'External analytics and research reference; not canonical protocol state.',
+  retrievedAt: '2026-07-14',
+  notes: 'External analytics source returned a rate-limit response from this review environment; not canonical protocol state or verified current coverage.',
 };
 
 const thorchainGithubSource: SourceMeta = {
   label: 'THORChain GitHub',
   url: 'https://github.com/thorchain',
-  retrievedAt: '2026-07-05',
-  notes: 'Open-source repository reference; code state still needs branch, commit, and deployment context.',
+  retrievedAt: '2026-07-14',
+  notes: 'Open-source organization responded during this review; code claims still need repository, branch, commit, and deployment context.',
 };
 
 const discordSource: SourceMeta = {
   label: 'Discord',
   url: 'https://discord.com/invite/thorchaincommunity',
-  retrievedAt: '2026-07-05',
-  notes: 'Community channel reference; useful context, not canonical protocol proof.',
+  retrievedAt: '2026-07-14',
+  notes: 'Community invite responded during this review; useful context, not canonical protocol proof.',
 };
 
 const twitterSource: SourceMeta = {
   label: 'Twitter/X',
   url: 'https://x.com/thorchain_org',
-  retrievedAt: '2026-07-05',
-  notes: 'Social channel reference; announcements still need source and date context.',
+  retrievedAt: '2026-07-14',
+  notes: 'Social profile responded during this review; announcements still need source and date context.',
 };
 
 const telegramSource: SourceMeta = {
   label: 'Telegram',
   url: 'https://t.me/thorchain_org',
-  retrievedAt: '2026-07-05',
-  notes: 'Community channel reference; useful context, not canonical protocol proof.',
+  retrievedAt: '2026-07-14',
+  notes: 'The review environment could not resolve the Telegram host; retain only as a community pointer pending a browser check.',
 };
 
 const redditSource: SourceMeta = {
   label: 'Reddit',
   url: 'https://reddit.com/r/THORChain',
-  retrievedAt: '2026-07-05',
-  notes: 'Community discussion reference; sentiment needs careful sampling and date boundaries.',
+  retrievedAt: '2026-07-14',
+  notes: 'Community discussion page responded during this review; sentiment needs careful sampling and date boundaries.',
 };
 
 interface StaticRecordFreshnessOptions {
@@ -315,17 +319,36 @@ const runescanSourceReviewedAt20260708: SourceMeta = {
   retrievedAt: '2026-07-08',
 };
 
-const SUPPORTED_CHAIN_CATALOG_REVIEWED_AT = '2026-07-06';
-const SUPPORTED_CHAIN_CATALOG_NEXT_REVIEW_DUE = '2026-08-06';
+const SUPPORTED_CHAIN_CATALOG_REVIEWED_AT = '2026-07-14';
+const SUPPORTED_CHAIN_CATALOG_NEXT_REVIEW_DUE = '2026-08-14';
 const supportedChainCatalogFreshness = {
   checkedAt: SUPPORTED_CHAIN_CATALOG_REVIEWED_AT,
   nextReviewDue: SUPPORTED_CHAIN_CATALOG_NEXT_REVIEW_DUE,
 };
 const supportedChainInboundSource: SourceMeta = {
-  ...liveInboundSource,
+  ...liquifyLiveInboundSource,
   retrievedAt: SUPPORTED_CHAIN_CATALOG_REVIEWED_AT,
-  notes: 'Supported-chain catalog refresh against live inbound_addresses; chain presence is not swap, signing, LP-action, or route-availability proof.',
+  notes: 'Current-only review at THORChain height 26994861 confirmed this record in the 12-chain inbound-address set. Presence is not swap, signing, LP-action, or route-availability proof.',
 };
+
+const supportedChainAddressFormatsSource: SourceMeta = {
+  ...queryingThorchainSource,
+  retrievedAt: SUPPORTED_CHAIN_CATALOG_REVIEWED_AT,
+  notes: 'Official address-format guidance. Dust thresholds, gas rates, routers, and halt fields remain live inbound-address values and are intentionally not copied into this static catalog.',
+};
+
+const supportedChainCatalogSources = [
+  supportedChainInboundSource,
+  supportedChainAddressFormatsSource,
+];
+
+const supportedChainSolSources = [
+  supportedChainInboundSource,
+  supportedChainAddressFormatsSource,
+  supportedBlockchainsSource,
+  chainClientsSource,
+  exploitReport2Source,
+];
 
 export const CHAIN_RECORDS: SourcedRecord<Chain>[] = [
   record({
@@ -333,10 +356,9 @@ export const CHAIN_RECORDS: SourcedRecord<Chain>[] = [
     chain: 'BTC',
     explorer: 'https://mempool.space/block',
     addressFormats: ['P2WSH (preferred)', 'P2WPKH', 'P2PKH', 'P2SH', 'P2TR'],
-    dustThreshold: 546,
     supported: true,
-    statusNote: 'Live inbound status must be checked before describing BTC swaps as open.',
-  }, [supportedChainInboundSource, developerDocs], 'official', supportedChainCatalogFreshness),
+    statusNote: 'Use the live inbound-address dust threshold and halt fields before constructing or describing a BTC transaction.',
+  }, supportedChainCatalogSources, 'official', supportedChainCatalogFreshness),
   record({
     name: 'Ethereum',
     chain: 'ETH',
@@ -344,86 +366,98 @@ export const CHAIN_RECORDS: SourcedRecord<Chain>[] = [
     addressFormats: ['EIP-55'],
     supported: true,
     statusNote: 'Router/inbound status is live-state dependent.',
-  }, [supportedChainInboundSource, developerDocs], 'official', supportedChainCatalogFreshness),
+  }, supportedChainCatalogSources, 'official', supportedChainCatalogFreshness),
   record({
     name: 'BNB Chain',
     chain: 'BSC',
     explorer: 'https://bscscan.com/block',
     addressFormats: ['EIP-55'],
     supported: true,
-  }, [supportedChainInboundSource], 'official', supportedChainCatalogFreshness),
+  }, supportedChainCatalogSources, 'official', supportedChainCatalogFreshness),
   record({
     name: 'Avalanche',
     chain: 'AVAX',
     explorer: 'https://snowtrace.io/block',
     addressFormats: ['EIP-55'],
     supported: true,
-  }, [supportedChainInboundSource], 'official', supportedChainCatalogFreshness),
+  }, supportedChainCatalogSources, 'official', supportedChainCatalogFreshness),
   record({
     name: 'Cosmos Hub',
     chain: 'GAIA',
     explorer: 'https://www.mintscan.io/cosmos/blocks',
-    addressFormats: ['Bech32'],
+    addressFormats: ['Bech32 (Secp256k1 or Ed25519)'],
     supported: true,
-  }, [supportedChainInboundSource], 'official', supportedChainCatalogFreshness),
+  }, supportedChainCatalogSources, 'official', supportedChainCatalogFreshness),
   record({
     name: 'Dogecoin',
     chain: 'DOGE',
     explorer: 'https://blockchair.com/dogecoin/block',
     addressFormats: ['Bech32', 'P2PKH'],
-    dustThreshold: 1000000,
     supported: true,
-  }, [supportedChainInboundSource], 'official', supportedChainCatalogFreshness),
+  }, supportedChainCatalogSources, 'official', supportedChainCatalogFreshness),
   record({
     name: 'Litecoin',
     chain: 'LTC',
     explorer: 'https://blockchair.com/litecoin/block',
     addressFormats: ['Bech32', 'P2PKH'],
-    dustThreshold: 100000,
     supported: true,
-  }, [supportedChainInboundSource], 'official', supportedChainCatalogFreshness),
+    statusNote: 'MWEB addresses are not supported by the official address-format guide.',
+  }, supportedChainCatalogSources, 'official', supportedChainCatalogFreshness),
   record({
     name: 'Bitcoin Cash',
     chain: 'BCH',
     explorer: 'https://blockchair.com/bitcoin-cash/block',
     addressFormats: ['CashAddr', 'P2PKH'],
-    dustThreshold: 1000,
     supported: true,
-  }, [supportedChainInboundSource], 'official', supportedChainCatalogFreshness),
+    statusNote: 'The official guide labels BCH as Bech32; current inbound addresses use CashAddr, which is Bech32-inspired but not BIP-173 Bech32.',
+  }, supportedChainCatalogSources, 'official', supportedChainCatalogFreshness),
   record({
     name: 'Tron',
     chain: 'TRON',
     explorer: 'https://tronscan.org/#/block',
     addressFormats: ['Base58'],
     supported: true,
-  }, [supportedChainInboundSource], 'official', supportedChainCatalogFreshness),
+  }, supportedChainCatalogSources, 'official', supportedChainCatalogFreshness),
   record({
     name: 'Base',
     chain: 'BASE',
     explorer: 'https://basescan.org/block',
     addressFormats: ['EIP-55'],
     supported: true,
-  }, [supportedChainInboundSource], 'official', supportedChainCatalogFreshness),
+  }, supportedChainCatalogSources, 'official', supportedChainCatalogFreshness),
   record({
     name: 'Solana',
     chain: 'SOL',
     explorer: 'https://solscan.io/block',
     addressFormats: ['Base58'],
     supported: true,
-    statusNote: 'SOL uses EdDSA signing; Exploit Report #2 says EdDSA chains such as Solana were not exposed to the GG20/Paillier attack path.',
-  }, [supportedChainInboundSource, exploitReport2Source], 'official', supportedChainCatalogFreshness),
+    statusNote: 'Live inbound and chain-client sources include SOL even though the high-level supported-blockchains overview omitted it at review time. SOL uses EdDSA signing; Exploit Report #2 says EdDSA chains such as Solana were not exposed to the GG20/Paillier attack path.',
+  }, supportedChainSolSources, 'official', supportedChainCatalogFreshness),
   record({
     name: 'XRP Ledger',
     chain: 'XRP',
     explorer: 'https://xrpscan.com/ledger',
-    addressFormats: ['Classic address', 'X-address'],
+    addressFormats: ['Classic Base58'],
     supported: true,
-  }, [supportedChainInboundSource], 'official', supportedChainCatalogFreshness),
+    statusNote: 'Use a destination tag only when the receiving wallet requires it. The official guide lists Classic Base58 and does not list X-address as a supported format.',
+  }, supportedChainCatalogSources, 'official', supportedChainCatalogFreshness),
 ];
 
 export const CHAINS: Chain[] = CHAIN_RECORDS.map(unwrapRecord);
 
 const chainCodes = CHAINS.map((chain) => chain.chain);
+
+const developerIntegrationSwapSource: SourceMeta = {
+  ...swapGuideSource,
+  retrievedAt: '2026-07-14',
+  notes: 'Official quote-expiry, inbound-address, fee, minimum-input, warning, memo, and transaction-timing guidance.',
+};
+
+const developerIntegrationLiveInboundSource: SourceMeta = {
+  ...liquifyLiveInboundSource,
+  retrievedAt: '2026-07-14',
+  notes: 'Current-only endpoint for chain presence, current vault addresses, routers, gas rates, dust thresholds, and halt fields; never a static transaction template.',
+};
 
 export const SOURCE_MAP_SECTION_RECORDS: SourcedRecord<SourceMapSection>[] = [
   record({
@@ -521,22 +555,23 @@ export const SOURCE_MAP_SECTION_RECORDS: SourcedRecord<SourceMapSection>[] = [
     id: 'developer-integration',
     title: 'Developer Integration',
     decision: 'How should an app or integration talk to THORChain?',
-    use: 'Use these for integration behavior, API concepts, asset notation, fees, memos, and querying guidance.',
-    caveat: 'Developer docs explain intended interfaces; still check live endpoints for current halts, fees, and chain availability.',
+    use: 'Choose the source family that owns the claim: Midgard for indexed consumer data, THORNode for current protocol state, Cosmos or Tendermint RPC for their respective data families, and gRPC clients for protobuf access.',
+    caveat: 'Developer docs describe interfaces, not live transaction inputs. Refresh quotes, inbound addresses, routers, gas rates, dust thresholds, and halt fields before signing; public providers require rate-limit and failure handling.',
     claimExamples: [
-      'Memo, asset notation, fee, quote, and API-query concepts.',
-      'Developer-facing behavior for swaps, affiliates, and current endpoint shapes.',
-      'Which source should be used before implementing or documenting integration behavior.',
+      'Which of Midgard, THORNode, Cosmos RPC, Tendermint RPC, or gRPC should own a product claim.',
+      'Memo, asset notation, fee, quote, endpoint, hard-fork routing, and API-query concepts.',
+      'Which live transaction inputs must be refreshed before constructing or signing a transaction.',
     ],
     nonClaims: [
       'That a feature is live and unpaused right now.',
+      'That a static chain list or copied dust threshold is safe transaction input.',
       'That every third-party interface implements the behavior safely.',
       'That static docs supersede current THORNode halt or Mimir state.',
     ],
-    links: [developerDocs, queryingThorchainSource, feesSource, assetNotationSource],
-  }, [developerDocs, queryingThorchainSource, feesSource, assetNotationSource], 'official', {
-    checkedAt: '2026-07-05',
-    nextReviewDue: '2026-08-05',
+    links: [connectingThorchainSource, queryingThorchainSource, developerIntegrationSwapSource, developerIntegrationLiveInboundSource, feesSource, assetNotationSource],
+  }, [connectingThorchainSource, queryingThorchainSource, developerIntegrationSwapSource, developerIntegrationLiveInboundSource, feesSource, assetNotationSource], 'official', {
+    checkedAt: '2026-07-14',
+    nextReviewDue: '2026-08-14',
   }),
   record({
     id: 'third-party-interfaces-wallets',
@@ -598,8 +633,8 @@ export const SOURCE_MAP_SECTION_RECORDS: SourcedRecord<SourceMapSection>[] = [
     ],
     links: [officialDocs, networkHaltsSource, tokenomicsSource, cosmwasmSource],
   }, [officialDocs, networkHaltsSource, tokenomicsSource, cosmwasmSource], 'official', {
-    checkedAt: '2026-07-05',
-    nextReviewDue: '2026-08-05',
+    checkedAt: '2026-07-14',
+    nextReviewDue: '2026-08-14',
   }),
   record({
     id: 'historical-features-and-recovery',
@@ -656,8 +691,8 @@ export const SOURCE_MAP_SECTION_RECORDS: SourcedRecord<SourceMapSection>[] = [
     ],
     links: [runescanSource, viewblockSource, messariReportsSource, thorchainGithubSource],
   }, [runescanSource, viewblockSource, messariReportsSource, thorchainGithubSource], 'curated', {
-    checkedAt: '2026-07-05',
-    nextReviewDue: '2026-08-05',
+    checkedAt: '2026-07-14',
+    nextReviewDue: '2026-08-14',
   }),
   record({
     id: 'community-channels',
@@ -677,8 +712,8 @@ export const SOURCE_MAP_SECTION_RECORDS: SourcedRecord<SourceMapSection>[] = [
     ],
     links: [discordSource, twitterSource, telegramSource, redditSource, thorchainGithubSource],
   }, [discordSource, twitterSource, telegramSource, redditSource, thorchainGithubSource], 'curated', {
-    checkedAt: '2026-07-05',
-    nextReviewDue: '2026-08-05',
+    checkedAt: '2026-07-14',
+    nextReviewDue: '2026-08-14',
   }),
 ];
 

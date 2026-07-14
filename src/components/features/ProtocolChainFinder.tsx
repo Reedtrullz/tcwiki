@@ -54,7 +54,7 @@ function noteFilterLabel(notes: NoteFilter) {
 
 function formatDustThreshold(value: number | undefined) {
   if (typeof value !== 'number') {
-    return 'Not listed in catalog';
+    return 'Live inbound_addresses only';
   }
 
   return value.toLocaleString('en-US');
@@ -212,7 +212,7 @@ export function ProtocolChainFinder({ chainRecords, catalogReviewedAt }: Protoco
               Showing {filteredRecords.length} of {chainRecords.length} catalog chain records from the {catalogReviewedAt} review.
             </p>
             <p className="mt-1 text-xs text-slate-500">
-              Search by chain, code, asset notation, address format, source/freshness text, dust threshold, or review note. Live availability still belongs in Network diagnostics.
+              Search by chain, code, asset notation, address format, source/freshness text, or review note. Live dust thresholds and availability belong in current THORNode evidence.
             </p>
           </div>
           {activeFilters && (

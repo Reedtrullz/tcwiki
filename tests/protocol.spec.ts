@@ -7,7 +7,7 @@ test.describe('THORChain Wiki Protocol Smoke Tests', () => {
     await expect(page.getByText(/Page Source Posture/i)).toBeVisible();
     await expect(page.getByText(/Verify Elsewhere Before Claiming/i)).toBeVisible();
     await expect(page.getByText(/Threshold Signature Schemes/i)).toBeVisible();
-    await expect(page.getByText(/2026-07-06 chain-catalog review/i)).toBeVisible();
+    await expect(page.getByText(/2026-07-14 chain-catalog review/i)).toBeVisible();
     await expect(page.getByText(/Availability, routing, signing, LP actions, and pause state remain live\/current-only/i)).toBeVisible();
     await expect(page.locator('#chain-catalog-boundary')).toBeVisible();
     await expect(page.getByText('catalog is not availability')).toBeVisible();
@@ -19,8 +19,11 @@ test.describe('THORChain Wiki Protocol Smoke Tests', () => {
     await expect(chainFinder).toBeVisible();
     await expect(page.getByText(/Showing 12 of 12 catalog chain records/i)).toBeVisible();
     await expect(page.locator('#chain-sol')).toBeVisible();
-    await expect(page.locator('#chain-sol').getByText(/EdDSA/i)).toBeVisible();
+    await expect(page.locator('#chain-sol').getByText(/Live inbound and chain-client sources include SOL.*EdDSA/i)).toBeVisible();
+    await expect(page.locator('#chain-sol').getByText(/high-level supported-blockchains overview omitted it/i)).toBeVisible();
     await expect(page.locator('#chain-sol').getByText(/catalog listed/i)).toBeVisible();
+    await expect(page.locator('#chain-btc').getByText('Live inbound_addresses only', { exact: true })).toBeVisible();
+    await expect(page.locator('#chain-xrp').getByText('Classic Base58', { exact: true })).toBeVisible();
     await expect(page.locator('#chain-sol').getByRole('link', { name: /Check live state/i })).toHaveAttribute('href', '/network#network-diagnostics');
     await expect(page.locator('#chain-sol').getByRole('link', { name: /Check a route/i })).toHaveAttribute('href', '/network?from_asset=SOL.SOL&to_asset=BTC.BTC&amount=0.01#check-a-route');
     await expect(page.locator('#chain-btc').getByRole('link', { name: /Check a route/i })).toHaveAttribute('href', '/network?from_asset=BTC.BTC&to_asset=ETH.ETH&amount=0.01#check-a-route');
@@ -99,8 +102,8 @@ test.describe('THORChain Wiki Protocol Smoke Tests', () => {
     await expect(page.locator('#supported-chain-finder')).toBeVisible();
     await expect(page.getByLabel('Active supported-chain filters').getByText('Search: sol')).toBeVisible();
     await expect(page.locator('#chain-sol')).toBeVisible();
-    await expect(page.locator('#chain-sol').getByText(/Catalog Boundary/i)).toBeVisible();
-    await expect(page.locator('#chain-sol').getByText(/EdDSA/i)).toBeVisible();
+    await expect(page.locator('#chain-sol').getByText('Catalog Boundary', { exact: true })).toBeVisible();
+    await expect(page.locator('#chain-sol').getByText(/Live inbound and chain-client sources include SOL.*EdDSA/i)).toBeVisible();
 
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
     expect(overflow).toBe(false);
