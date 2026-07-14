@@ -639,6 +639,151 @@ describe('/api/ready', () => {
     expect(body.reasons).toEqual(['1 monitored Mimir key could not be parsed.']);
   });
 
+  it('keeps readiness ready while disclosing known review-only Mimir support keys', async () => {
+    const warning = 'Known operational-support Mimir keys present: BURNSYNTHS, SCHEDULEDMIGRATION.';
+    vi.mocked(ThornodeAPI.getNetworkStatus).mockResolvedValue(thornodeStatus({
+      sourceWarnings: [warning],
+      sourceWarningDetails: [
+        {
+          severity: 'review',
+          category: 'mimir-support',
+          message: warning,
+          action: 'Inspect these support keys before inferring a user-facing pause.',
+          keys: ['BURNSYNTHS', 'SCHEDULEDMIGRATION'],
+        },
+      ],
+    }));
+
+    const response = await GET(new Request('http://localhost/api/ready?contract=strict'));
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.status).toBe('ready');
+    expect(body.ready).toBe(true);
+    expect(body.reasons).toEqual([]);
+    expect(body.warnings).toEqual([warning]);
+    expect(body.sources.thornode.sourceWarnings).toEqual([warning]);
+    expect(body.sources.thornode.sourceWarningDetails).toEqual([
+      {
+        severity: 'review',
+        category: 'mimir-support',
+        message: warning,
+        action: 'Inspect these support keys before inferring a user-facing pause.',
+        keys: ['BURNSYNTHS', 'SCHEDULEDMIGRATION'],
+      },
+    ]);
+  });
+
+  it('accepts a warning-backed THORNode degraded state only when support warnings are non-blocking', async () => {
+    const warning = 'Known operational-support Mimir keys present: SCHEDULEDMIGRATION.';
+    vi.mocked(ThornodeAPI.getNetworkStatus).mockResolvedValue(thornodeStatus({
+      state: 'degraded',
+      summary: 'Current-only live sources do not show active halt flags, but source warnings need review.',
+      sourceWarnings: [warning],
+      sourceWarningDetails: [
+        {
+          severity: 'review',
+          category: 'mimir-support',
+          message: warning,
+          action: 'Inspect this support key before inferring a user-facing pause.',
+        },
+      ],
+    }));
+
+    const response = await GET();
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.ready).toBe(true);
+    expect(body.sources.thornode.state).toBe('degraded');
+    expect(body.warnings).toEqual([warning]);
+    expect(body.reasons).toEqual([]);
+  });
+
+  it('mirrors detail-only support warnings into ready response strings', async () => {
+    const warning = 'Known operational-support Mimir keys present: SCHEDULEDMIGRATION.';
+    vi.mocked(ThornodeAPI.getNetworkStatus).mockResolvedValue(thornodeStatus({
+      state: 'degraded',
+      sourceWarnings: [],
+      sourceWarningDetails: [
+        {
+          severity: 'review',
+          category: 'mimir-support',
+          message: warning,
+          action: 'Inspect this support key before inferring a user-facing pause.',
+        },
+      ],
+    }));
+
+    const response = await GET(new Request('http://localhost/api/ready?contract=strict'));
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.ready).toBe(true);
+    expect(body.warnings).toEqual([warning]);
+    expect(body.sources.thornode.sourceWarnings).toEqual([warning]);
+    expect(body.reasons).toEqual([]);
+  });
+
+  it.each([
+    {
+      label: 'unknown review keys',
+      warning: 'Unknown operation-like Mimir keys present: NEWPAUSE.',
+      severity: 'review' as const,
+      category: 'unknown-operation' as const,
+    },
+    {
+      label: 'warning-severity support keys',
+      warning: 'Known operational-support Mimir keys present: BURNSYNTHS.',
+      severity: 'warning' as const,
+      category: 'mimir-support' as const,
+    },
+  ])('keeps $label blocking', async ({ warning, severity, category }) => {
+    vi.mocked(ThornodeAPI.getNetworkStatus).mockResolvedValue(thornodeStatus({
+      sourceWarnings: [warning],
+      sourceWarningDetails: [
+        {
+          severity,
+          category,
+          message: warning,
+          action: 'Review this key before treating readiness as clean.',
+        },
+      ],
+    }));
+
+    const response = await GET();
+    const body = await response.json();
+
+    expect(response.status).toBe(503);
+    expect(body.ready).toBe(false);
+    expect(body.reasons).toEqual([warning]);
+    expect(body.warnings).toEqual([]);
+  });
+
+  it('fails closed when a raw warning is not covered by the review-only support detail', async () => {
+    const supportWarning = 'Known operational-support Mimir keys present: SCHEDULEDMIGRATION.';
+    const unclassifiedWarning = 'A new unclassified THORNode warning appeared.';
+    vi.mocked(ThornodeAPI.getNetworkStatus).mockResolvedValue(thornodeStatus({
+      sourceWarnings: [supportWarning, unclassifiedWarning],
+      sourceWarningDetails: [
+        {
+          severity: 'review',
+          category: 'mimir-support',
+          message: supportWarning,
+          action: 'Inspect this support key before inferring a user-facing pause.',
+        },
+      ],
+    }));
+
+    const response = await GET();
+    const body = await response.json();
+
+    expect(response.status).toBe(503);
+    expect(body.ready).toBe(false);
+    expect(body.reasons).toEqual([unclassifiedWarning]);
+    expect(body.warnings).toEqual([supportWarning]);
+  });
+
   it('returns degraded when THORNode status omits exact pinned source evidence', async () => {
     vi.mocked(ThornodeAPI.getNetworkStatus).mockResolvedValue({
       ...thornodeStatus(),

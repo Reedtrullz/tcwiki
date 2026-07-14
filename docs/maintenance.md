@@ -23,7 +23,7 @@
 - Before claiming production readiness, verify the immutable image ref and read back `/api/health`, `/api/version`, and `/api/ready`.
 - `/api/health` is liveness-only. `/api/ready` is the upstream readiness and source-confidence endpoint for visible Midgard datasets, THORNode operation state, the dynamic L1 fee tracker, RUNEPool/POL status, RUNEPool/POL source posture at `sources.thornode.runePoolPol`, and strict runtime metadata when `RUNTIME_METADATA_REQUIRED=1`.
 - `/api/health`, `/api/version`, and `/api/ready` include `runtime` diagnostics. Production evidence should show `runtime.verified: true`, commit metadata shaped like a git SHA, and image metadata shaped like an immutable `@sha256:` ref.
-- `/api/ready` `reasons` and `sourceWarnings` remain string-compatible for simple monitors; top-level `warnings` carries non-blocking source caveats, and `sourceWarningDetails` carries structured category/action/key context for diagnostics.
+- `/api/ready` `reasons` and `sourceWarnings` remain string-compatible for simple monitors; top-level `warnings` carries non-blocking source caveats, and `sourceWarningDetails` carries structured category/action/key context for diagnostics. A ready response may retain THORNode warnings only when every retained warning has an exact `severity: review` / `category: mimir-support` detail and is mirrored in top-level `warnings`. Unknown review keys, unmatched warning strings, and every `warning` or `critical` detail still fail readiness closed.
 - Readiness responses remain `Cache-Control: no-store`; the server deduplicates concurrent probes and reuses the seven-check upstream snapshot for at most 10 seconds. Compare `checkedAt` before treating two responses as independent source reads.
 - Release-shaped smoke and deploy checks should validate `/api/ready` shape, metadata, and reasons. Ansible accepts degraded source confidence by default (`REQUIRE_READY=0`), while `REQUIRE_READY=1` makes degraded candidate or deployed readiness fail closed and trigger the existing rollback path.
 - Do not reintroduce mutable `latest` deploys; deploys must use digest image refs.
@@ -44,7 +44,7 @@ sudo journalctl -u tcwiki-readiness-monitor.service -n 20 --no-pager
 printf 'systemctl start exit: %s\n' "$status"
 ```
 
-Exit `0` means at least one sample was ready. A nonzero result is acceptable proof only when `latest.json` reports `status: fail`, its failure reason matches the samples, and the timer remains enabled and active. It is not proof of an application outage.
+Exit `0` means at least one sample was ready, including a source-usable sample that retains fully disclosed review-only `mimir-support` caveats. A nonzero result is acceptable proof only when `latest.json` reports `status: fail`, its failure reason matches the samples, and the timer remains enabled and active. It is not proof of an application outage.
 
 Stop scheduling without changing the application:
 

@@ -1,6 +1,7 @@
 import { getReadinessUpstreamSnapshot } from '@/lib/readiness-snapshot';
 import { getRuntimeMetadata } from '@/lib/runtime-metadata';
 import { assertReadinessContract } from '../../../../scripts/lib/readiness-contract.mjs';
+import { partitionReadinessWarnings } from '../../../../scripts/lib/readiness-warning-policy.mjs';
 import type {
   DynamicL1FeeStatus,
   LiveDataResult,
@@ -431,6 +432,10 @@ export async function GET(request?: Request) {
     ...(thornode.data?.sourceWarnings ?? []),
     ...thornodeSourceWarningDetails.map((detail) => detail.message),
   ]);
+  const thornodeWarningDisposition = partitionReadinessWarnings(
+    thornodeSourceWarnings,
+    thornodeSourceWarningDetails
+  );
   const dynamicFeeClientWarningDetails = dynamicFees.data?.sourceWarningDetails?.length
     ? dynamicFees.data.sourceWarningDetails
     : getDynamicFeeWarningDetails(dynamicFees.data?.sourceWarnings ?? []);
@@ -463,11 +468,15 @@ export async function GET(request?: Request) {
     midgard.data.severity !== 'unknown';
   const midgardReady = midgardHealthReady && midgardSourceWarnings.length === 0;
   const visibleMidgardReady = dataReady(midgardNetwork) && nonEmptyDataReady(midgardPools) && nonEmptyDataReady(midgardEarnings);
-  const thornodeHasUsableState = thornodeStateReady(thornode.data?.state);
+  const thornodeHasUsableState = thornodeStateReady(thornode.data?.state) || (
+    thornode.data?.state === 'degraded' &&
+    thornodeWarningDisposition.nonBlocking.length > 0 &&
+    thornodeWarningDisposition.blocking.length === 0
+  );
   const thornodeReady = thornode.status === 'ok' &&
     thornode.data !== undefined &&
     thornodeHasUsableState &&
-    thornodeSourceWarnings.length === 0;
+    thornodeWarningDisposition.blocking.length === 0;
   const dynamicFeesReady = dynamicFees.status === 'ok' &&
     dynamicFees.data !== undefined &&
     dynamicFeeSourceWarnings.length === 0;
@@ -496,8 +505,8 @@ export async function GET(request?: Request) {
   if (thornode.status === 'ok' && thornode.data !== undefined && !thornodeHasUsableState) {
     reasons.push(`THORNode network status is ${thornode.data.state}.`);
   }
-  if (thornodeSourceWarnings.length) {
-    reasons.push(...thornodeSourceWarnings);
+  if (thornodeWarningDisposition.blocking.length) {
+    reasons.push(...thornodeWarningDisposition.blocking);
   }
   if (dynamicFees.status !== 'ok' || dynamicFees.data === undefined) {
     reasons.push(degradedReason('THORNode dynamic fee status', dynamicFees));
@@ -523,7 +532,10 @@ export async function GET(request?: Request) {
     ready,
     checkedAt,
     ...metadata,
-    warnings: midgardHealthWarnings,
+    warnings: uniqueStrings([
+      ...midgardHealthWarnings,
+      ...thornodeWarningDisposition.nonBlocking,
+    ]),
     sources: {
       midgard: {
         status: midgard.status,

@@ -1,4 +1,8 @@
 import { runtimeMetadataWarnings } from './runtime-metadata-contract.mjs';
+import {
+  isNonBlockingReadinessWarning,
+  normalizeReadinessWarningMessage,
+} from './readiness-warning-policy.mjs';
 
 const allowedReadinessStatuses = new Set(['ready', 'degraded']);
 const allowedSourceStatuses = new Set(['ok', 'degraded']);
@@ -128,6 +132,35 @@ function assertWarningDetails(value, path) {
 function assertEmptyArray(value, path) {
   assert(Array.isArray(value), `${path} must be an array`);
   assert(value.length === 0, `${path} must be empty when readiness is ready`);
+}
+
+function assertReadyThornodeWarnings(sourceWarnings, sourceWarningDetails, topLevelWarnings) {
+  sourceWarningDetails.forEach((detail, index) => {
+    const message = normalizeReadinessWarningMessage(detail.message);
+    assert(
+      isNonBlockingReadinessWarning(detail),
+      `sources.thornode.sourceWarningDetails[${index}] must be a review-only mimir-support warning when readiness is ready`
+    );
+    assert(
+      message.length > 0 && sourceWarnings.some((warning) => normalizeReadinessWarningMessage(warning) === message),
+      `sources.thornode.sourceWarnings must include every review-only mimir-support detail message`
+    );
+  });
+
+  sourceWarnings.forEach((warning, index) => {
+    const message = normalizeReadinessWarningMessage(warning);
+    assert(
+      sourceWarningDetails.some((detail) => (
+        isNonBlockingReadinessWarning(detail) &&
+        normalizeReadinessWarningMessage(detail.message) === message
+      )),
+      `sources.thornode.sourceWarnings[${index}] must have a matching review-only mimir-support detail when readiness is ready`
+    );
+    assert(
+      message.length > 0 && topLevelWarnings.some((entry) => normalizeReadinessWarningMessage(entry) === message),
+      `top-level warnings must include every non-blocking THORNode source warning`
+    );
+  });
 }
 
 function assertReadySource(value, path) {
@@ -315,8 +348,7 @@ export function assertReadinessContract(json) {
     assertEmptyArray(midgard.sourceWarningDetails, 'sources.midgard.sourceWarningDetails');
     assertReadySource(thornode, 'sources.thornode');
     assertExactThornodeNetworkSources(thornode.sources, 'sources.thornode.sources');
-    assertEmptyArray(thornode.sourceWarnings, 'sources.thornode.sourceWarnings');
-    assertEmptyArray(thornode.sourceWarningDetails, 'sources.thornode.sourceWarningDetails');
+    assertReadyThornodeWarnings(thornode.sourceWarnings, thornode.sourceWarningDetails, json.warnings);
     assertSameReadySourceGroup(thornode.source, dynamicFees, 'sources.thornode.dynamicFees', 'sources.thornode.source');
     assertExactDynamicFeeSources(dynamicFees.sources, 'sources.thornode.dynamicFees.sources');
     assertEmptyArray(dynamicFees.sourceWarnings, 'sources.thornode.dynamicFees.sourceWarnings');

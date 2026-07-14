@@ -47,18 +47,18 @@ Expected:
 - `commit` matches the deployed commit SHA.
 - `image` is an immutable `@sha256:` digest ref when set by deployment.
 - `runtime.verified` is `true` and `runtime.warnings` is empty for deployed production checks.
-- `/api/ready?contract=strict` returns `ready: true` and `status: ready` before claiming upstream readiness.
+- `/api/ready?contract=strict` returns `ready: true` and `status: ready` before claiming upstream readiness. Ready means the app has usable, contract-valid source data; it does not mean THORChain has no active operational controls or review caveats.
 - `/api/ready` can intentionally return `503 degraded`; use a body-preserving command so the JSON diagnostics are still visible.
 - `/api/ready` checks visible Midgard datasets, THORNode operation state, the dynamic L1 fee tracker source contract, and RUNEPool/POL status/source posture through `sources.thornode.runePoolPol`.
 - `/api/ready` keeps HTTP responses `no-store`, but concurrent and repeated requests share one server-side upstream snapshot for up to 10 seconds. Use `checkedAt` as the snapshot time; a repeated value inside that window is intentional request deduplication, not proof that the endpoint is stuck.
 - `/api/ready` degrades on runtime identity problems only when `RUNTIME_METADATA_REQUIRED=1`; production containers set this so missing commit/image provenance is not treated as clean readiness.
-- `/api/ready` keeps `reasons` and `sourceWarnings` as simple strings for probes, exposes top-level `warnings` for non-blocking source caveats, and includes `sourceWarningDetails` with severity, category, action, keys, and scopes when warnings need operator review.
+- `/api/ready` keeps `reasons` and `sourceWarnings` as simple strings for probes, exposes top-level `warnings` for non-blocking source caveats, and includes `sourceWarningDetails` with severity, category, action, keys, and scopes when warnings need operator review. Only exact THORNode `severity: review` / `category: mimir-support` details are non-blocking, and their messages remain in both the THORNode warning arrays and top-level `warnings`. Unknown review keys, warning/critical details, conflicting classifications, and raw warnings without a matching support detail remain blocking `reasons`.
 
 ## Scheduled Operational Monitoring
 
 `.github/workflows/operations.yml` samples public strict readiness twice per hour at off-peak minutes 23 and 53. The redundant schedule reduces the chance that a delayed or dropped GitHub `schedule` event leaves an hour unobserved. Each run takes three observations one minute apart and probes the configured THORNode latest-block endpoints directly from the runner. The bounded JSON artifact therefore distinguishes app-observed source posture from runner-observed provider height and freshness without storing raw Mimir, inbound-address, or accounting payloads.
 
-The monitor fails only when the full sampling window has no ready observation. A failure opens one deduplicated `Production readiness monitor degraded` issue; a later successful window closes it with recovery evidence. This alert does not authorize changing `REQUIRE_READY`, suppressing warnings, or treating a degraded 503 as an application outage. Investigate the run artifact, provider path, and VPS network first.
+The monitor fails only when the full sampling window has no ready observation. A failure opens one deduplicated `Production readiness monitor degraded` issue; a later successful window closes it with recovery evidence. A sample with only fully disclosed review-only `mimir-support` caveats is ready and keeps those caveats in the artifact's warning categories; this is source usability, not a claim that every protocol operation is available. This alert does not authorize changing `REQUIRE_READY`, suppressing warnings, or treating a degraded 503 as an application outage. Investigate the run artifact, provider path, and VPS network first.
 
 THORNode latest-block discovery appends a unique `tcwiki_cache_bust` query value to each request. This bypasses stale intermediary cache entries observed on a geo-routed Liquify backend while keeping displayed provenance URLs canonical; the resulting state reads remain pinned to the conservative `latest - 1` height. Do not replace this with a fixed query value, a provider-IP pin, or weaker freshness thresholds.
 
