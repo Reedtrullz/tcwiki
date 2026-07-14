@@ -338,17 +338,19 @@ describe('SEARCH_DOCUMENTS', () => {
     const base = SEARCH_DOCUMENTS.find((doc) => doc.id === 'chain:base');
 
     expect(chainDocs).toHaveLength(CHAIN_RECORDS.length);
-    expect(chainDocs.every((doc) => doc.reviewedAt === '2026-07-06')).toBe(true);
-    expect(chainDocs.every((doc) => doc.nextReviewDue === '2026-08-06')).toBe(true);
+    expect(chainDocs.every((doc) => doc.reviewedAt === '2026-07-14')).toBe(true);
+    expect(chainDocs.every((doc) => doc.nextReviewDue === '2026-08-14')).toBe(true);
     expect(chainDocs.every((doc) => (
       doc.sources.some((source) => (
-        source.label === 'THORNode inbound_addresses' &&
-        source.retrievedAt === '2026-07-06' &&
+        source.label === 'Liquify THORNode inbound_addresses' &&
+        source.url === 'https://gateway.liquify.com/chain/thorchain_api/thorchain/inbound_addresses' &&
+        source.retrievedAt === '2026-07-14' &&
         source.notes?.includes('not swap')
       ))
     ))).toBe(true);
     expect(sol?.href).toBe('/protocol#chain-sol');
     expect(sol?.content).toContain('EdDSA');
+    expect(sol?.sources.map((source) => source.label)).toContain('THORChain Chain Clients');
     expect(sol?.sources.map((source) => source.label)).toContain('THORChain Exploit Report #2');
     expect(xrp?.title).toBe('XRP Ledger (XRP) supported chain');
     expect(base?.content).toContain('EIP-55');

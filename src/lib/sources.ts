@@ -112,6 +112,20 @@ export const connectingThorchainSource: SourceMeta = {
   notes: 'Official source-family guide for Midgard, THORNode, Cosmos RPC, Tendermint RPC, gRPC, rate limits, x-client-id, and production node guidance.',
 };
 
+export const chainClientsSource: SourceMeta = {
+  label: 'THORChain Chain Clients',
+  url: 'https://dev.thorchain.org/chain-clients/',
+  retrievedAt: '2026-07-14',
+  notes: 'Official Bifrost chain-client reference showing the current client families, including the Solana client and its EdDSA Base58 address derivation.',
+};
+
+export const supportedBlockchainsSource: SourceMeta = {
+  label: 'THORChain supported blockchains overview',
+  url: 'https://docs.thorchain.org/what-is-thorchain-and-rune#supported-blockchains',
+  retrievedAt: '2026-07-14',
+  notes: 'Official high-level list contained eleven chains and omitted Solana at review time; use live inbound-address evidence and the chain-client reference for the current catalog boundary.',
+};
+
 export const swapGuideSource: SourceMeta = {
   label: 'THORChain Swap Guide',
   url: 'https://dev.thorchain.org/swap-guide/quickstart-guide.html',
