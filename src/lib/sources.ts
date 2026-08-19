@@ -517,3 +517,24 @@ export const networkSecurityGovernanceSource: SourceMeta = {
   retrievedAt: '2026-07-14',
   notes: 'Official security/governance overview for the Incentive Pendulum and approximate 2:1 bonded-security-to-liquidity target; live ratios and reward splits need current evidence.',
 };
+
+export const mayaProtocolDocsSource: SourceMeta = {
+  label: 'Maya Protocol Docs',
+  url: 'https://docs.mayaprotocol.com',
+  retrievedAt: '2026-08-19',
+  notes: 'Maya Protocol documentation root; a THORChain fork with its own CACAO/MAYA/AZTEC token economics and node set.',
+};
+
+export const mayaMidgardSource: SourceMeta = {
+  label: 'Maya Midgard',
+  url: 'https://midgard.mayachain.info/v2',
+  retrievedAt: '2026-08-19',
+  notes: 'Maya Protocol Midgard API for live network, pool, and node data. Same API shape as THORChain Midgard.',
+};
+
+export const mayaNodeDocsSource: SourceMeta = {
+  label: 'Maya Node Operators',
+  url: 'https://docs.mayaprotocol.com/node-docs/mayanodes/overview',
+  retrievedAt: '2026-08-19',
+  notes: 'Official Maya node operator documentation for setup, bonding, and lifecycle.',
+};

@@ -282,6 +282,28 @@ export interface Node {
   };
 }
 
+export interface MayaNode {
+  nodeAddress: string;
+  address: string;
+  bond?: string;
+  status?: string;
+  version?: string;
+  slashPoints?: number;
+  isActive?: boolean;
+  ipaddress?: string;
+}
+
+export interface MayaNetworkStats {
+  totalPooledRune: string;
+  totalReserve: string;
+  activeNodeCount: number;
+  standbyNodeCount: number;
+  bondingAPY: string;
+  liquidityAPY: string;
+  nextChurnHeight: number;
+  bondMetrics: Record<string, unknown>;
+}
+
 export interface Transaction {
   hash: string;
   height: number;
