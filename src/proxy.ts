@@ -20,7 +20,7 @@ function contentSecurityPolicy(nonce: string) {
     `style-src 'self' 'nonce-${nonce}'`,
     "img-src 'self' data: https:",
     "font-src 'self'",
-    "connect-src 'self' https://gateway.liquify.com https://midgard.thorchain.network https://thornode.thorchain.network",
+    "connect-src 'self' https://gateway.liquify.com https://midgard.thorchain.network https://thornode.thorchain.network https://midgard.mayachain.info",
     "frame-ancestors 'none'",
     "report-uri /api/csp-report",
   ].join('; ');

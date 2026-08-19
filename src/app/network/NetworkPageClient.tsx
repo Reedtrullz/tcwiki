@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/Card';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { useMidgardHealth, useNetworkData, useNetworkStatus } from '@/lib/hooks/useMidgard';
+import { MayaNodePanel } from '@/components/features/MayaNodePanel';
 import { NetworkStatusBanner } from '@/components/features/NetworkStatusBanner';
 import { LiveSourceMeta } from '@/components/ui/LiveSourceMeta';
 import { getNetworkCurrentOnlyStateLabel, getSecuredAssetsSummaryPaused } from '@/lib/network-status-summary';
@@ -343,7 +344,8 @@ export default function NetworkPageClient({ children }: NetworkPageClientProps) 
       <h1 className="text-3xl font-bold tracking-tight mb-2">Network & Security</h1>
       <p className="text-slate-400 max-w-3xl mb-8">
         THORChain secures cross-chain assets through bonded node operators, threshold signatures,
-        Mimir-controlled operations, solvency checks, and economic penalties.
+        Mimir-controlled operations, solvency checks, and economic penalties. Maya Protocol node
+        data is shown alongside for cross-protocol visibility.
       </p>
 
       <div id="network-diagnostics" className="scroll-mt-24 mb-12">
@@ -390,6 +392,8 @@ export default function NetworkPageClient({ children }: NetworkPageClientProps) 
           </Card>
         ))}
       </div>
+
+      <MayaNodePanel />
 
     </PageContainer>
   );
