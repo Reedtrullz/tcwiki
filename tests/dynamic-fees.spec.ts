@@ -171,7 +171,7 @@ test.describe('THORChain Wiki Dynamic Fees Smoke Tests', () => {
     await expect(page.getByRole('heading', { name: /Dynamic L1 Fees/i })).toBeVisible();
     await expect(page.getByText(/ADR-026 replaces one global L1 minimum slip floor/i)).toBeVisible();
     await expect(page.getByText(/Current-only/i).first()).toBeVisible();
-    const sourcePosture = page.getByRole('region', { name: 'Page Source Posture' });
+    const sourcePosture = page.getByRole('region', { name: 'Source and freshness' });
     await expect(sourcePosture).toBeVisible();
     const sourcePosturePrecedesLiveTracker = await sourcePosture.evaluate((posture) => {
       const liveTracker = document.querySelector('#dynamic-fees-live');

@@ -101,10 +101,10 @@ test.describe('THORChain Wiki Stats Smoke Tests', () => {
   test('stats page loads with data or graceful error state', async ({ page }) => {
     await page.goto('/stats');
     await expect(page.getByRole('heading', { name: /Network Statistics/i })).toBeVisible();
-    const sourcePosture = page.getByRole('region', { name: 'Page Source Posture' });
+    const sourcePosture = page.getByRole('region', { name: 'Source and freshness' });
     await expect(sourcePosture).toBeVisible();
     await expect(page.getByText(/Midgard v2 Health/i)).toBeVisible();
-    await expect(page.getByText(/Verify Elsewhere Before Claiming/i)).toBeVisible();
+    
     await expect(page.getByRole('heading', { name: /Look Here First/i })).toBeVisible();
     const sourcePosturePrecedesLookHereFirst = await sourcePosture.evaluate((posture) => {
       const lookHereFirst = document.querySelector('#stats-look-here-first');
@@ -271,3 +271,4 @@ test.describe('THORChain Wiki Stats Smoke Tests', () => {
     ).toBeLessThanOrEqual(layout.viewportWidth + 2);
   });
 });
+

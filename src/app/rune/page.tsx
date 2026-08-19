@@ -344,6 +344,7 @@ export default function RunePage() {
         badgeLabel="claim path"
       />
 
+      <div id={supplyAnchor} className="scroll-mt-24" />
       <SectionHeader id="rune-token-economics" level="primary" className="scroll-mt-24">Token Economics</SectionHeader>
       <p className="mb-4 text-sm text-slate-400">
         {supplyRecord.data.summary} Recheck live/source data before quoting exact balances.

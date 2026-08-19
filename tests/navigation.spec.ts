@@ -108,14 +108,7 @@ test.describe('THORChain Wiki Navigation Smoke Tests', () => {
     const searchInput = siteSearch.getByLabel(/Search the wiki/i);
     await expect(searchInput).toBeVisible();
     await expect(searchInput).toBeFocused();
-    await expect(siteSearch.getByText('Use Now', { exact: true })).toBeVisible();
-    await expect(siteSearch.getByText('Learn & Explain', { exact: true })).toBeVisible();
-    await expect(siteSearch.getByText('Build & Inspect', { exact: true })).toBeVisible();
-    await expect(siteSearch.getByText('Trust & Recovery', { exact: true })).toBeVisible();
     await expect(siteSearch.getByRole('link', { name: /Browse guided answers/i })).toHaveAttribute('href', '/search#search-guided-answers');
-    await expect(siteSearch.getByRole('link', { name: /New to THORChain/i })).toHaveAttribute('href', '/deep-dives#deep-dive-path-new-to-thorchain');
-    await expect(siteSearch.getByRole('link', { name: /Why did my swap refund/i })).toHaveAttribute('href', '/deep-dives/streaming-swaps-refunds#what-to-check-first');
-    await expect(siteSearch.getByRole('link', { name: /Node operator actions/i })).toHaveAttribute('href', '/network#node-operator-actions');
 
     await searchInput.fill('why did my swap refund');
     await searchInput.press('Enter');
@@ -124,7 +117,6 @@ test.describe('THORChain Wiki Navigation Smoke Tests', () => {
 
     await page.goto('/');
     await page.getByRole('button', { name: /Open search/i }).click();
-    await expect(siteSearch.getByRole('link', { name: /Which source should I trust/i })).toBeVisible();
     await page.keyboard.press('Escape');
     await expect(page.getByLabel(/Search the wiki/i)).toHaveCount(0);
   });

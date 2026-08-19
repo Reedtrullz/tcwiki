@@ -21,9 +21,9 @@ test.describe('THORChain Wiki Network Smoke Tests', () => {
     await expect(managingNodesLink).toHaveAttribute('rel', 'noopener noreferrer');
     await expect(page.getByRole('heading', { name: /Swap execution/i })).toBeVisible();
     await expect(page.getByRole('heading', { name: /TCY and RUNEPool/i })).toBeVisible();
-    await expect(page.getByText(/Page Source Posture/i)).toBeVisible();
-    await expect(page.getByText(/Use This Page For/i)).toBeVisible();
-    await expect(page.getByText(/Verify Elsewhere Before Claiming/i)).toBeVisible();
+    await expect(page.getByRole('region', { name: 'Source and freshness' })).toBeVisible();
+    
+    
     await expect(page.getByRole('heading', { name: /Related Checks/i })).toBeVisible();
     await expect(page.getByRole('link', { name: /Mimir halt guide/i })).toHaveAttribute('href', '/deep-dives/mimir-halt-controls#what-mimirs-can-prove');
     const nodeTypesHeading = page.getByRole('heading', { name: 'Node Types', exact: true });
@@ -259,3 +259,4 @@ test.describe('THORChain Wiki Network Smoke Tests', () => {
     expect(quoteRequests).toBe(2);
   });
 });
+

@@ -4,8 +4,7 @@ test.describe('THORChain Wiki Protocol Smoke Tests', () => {
   test('protocol page renders key content', async ({ page }) => {
     await page.goto('/protocol');
     await expect(page.getByRole('heading', { name: /Protocol Overview/i })).toBeVisible();
-    await expect(page.getByText(/Page Source Posture/i)).toBeVisible();
-    await expect(page.getByText(/Verify Elsewhere Before Claiming/i)).toBeVisible();
+    await expect(page.getByRole('region', { name: 'Source and freshness' })).toBeVisible();
     await expect(page.getByText(/Threshold Signature Schemes/i)).toBeVisible();
     await expect(page.getByText(/2026-07-14 chain-catalog review/i)).toBeVisible();
     await expect(page.getByText(/Availability, routing, signing, LP actions, and pause state remain live\/current-only/i)).toBeVisible();
@@ -109,3 +108,4 @@ test.describe('THORChain Wiki Protocol Smoke Tests', () => {
     expect(overflow).toBe(false);
   });
 });
+

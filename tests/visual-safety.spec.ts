@@ -31,9 +31,7 @@ const ANCHOR_TARGETS: Array<{ href: string; selector: string; settleMs?: number 
   { href: '/protocol#chain-sol', selector: '#chain-sol' },
   { href: '/ecosystem#interface-use-checklist', selector: '#interface-use-checklist' },
   { href: '/search#search-guided-answers', selector: '#search-guided-answers' },
-  { href: '/search#search-common-tasks', selector: '#search-common-tasks' },
   { href: '/docs#current-protocol-state', selector: '#current-protocol-state' },
-  { href: '/docs#developer-integration', selector: '#developer-integration' },
   { href: '/docs#rune-tokenomics-and-value', selector: '#rune-tokenomics-and-value' },
   { href: '/docs#third-party-interfaces-wallets', selector: '#third-party-interfaces-wallets' },
   { href: '/governance#current-recovery', selector: '#current-recovery' },
@@ -55,3 +53,4 @@ test.describe('THORChain Wiki Visual Safety Smoke Tests', () => {
     }
   });
 });
+

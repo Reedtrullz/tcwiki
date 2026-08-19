@@ -371,7 +371,7 @@ export default function GovernancePage() {
         badgeLabel="claim path"
       />
 
-      <details id="governance-claim-checks" className="mb-12 rounded-lg border border-border bg-surface-elevated px-4 py-3">
+      <div id="governance-claim-checks" className="scroll-mt-24"><details className="mb-12 rounded-lg border border-border bg-surface-elevated px-4 py-3">
         <summary className="cursor-pointer list-none text-sm font-semibold text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60">
           Claim checks by type
         </summary>
@@ -393,6 +393,7 @@ export default function GovernancePage() {
           ))}
         </ul>
       </details>
+      </div>
 
       <section id="current-recovery" className="scroll-mt-24 mb-12">
         <SectionHeader level="primary">Current Incident & Recovery Tracker</SectionHeader>

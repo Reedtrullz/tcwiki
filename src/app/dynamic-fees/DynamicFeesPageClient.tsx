@@ -1894,8 +1894,9 @@ export function DynamicFeesView({
         floorBps={floorBps}
         ceilingBps={ceilingBps}
       />
+      <div id="dynamic-fee-orphan-accumulators" className="scroll-mt-24" />
       {status && status.records.length > 0 && orphanCurrentEntries.length > 0 && (
-        <Card id="dynamic-fee-orphan-accumulators" className="mb-10">
+        <Card className="mb-10">
           <h2 className="mb-2 text-sm font-semibold text-amber-300">Current accumulators without sealed records</h2>
           <p className="mb-3 text-sm text-slate-400">
             THORNode is exposing in-progress TOR volume or fees for these pairs before a matching sealed record is available in this snapshot.

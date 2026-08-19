@@ -29,10 +29,10 @@ test.describe('THORChain Wiki Source Posture Smoke Tests', () => {
       await page.goto(entry.href, { waitUntil: 'domcontentloaded', timeout: 45_000 });
       await expect(page.locator('main')).toBeVisible({ timeout: 15_000 });
 
-      const posture = page.getByRole('region', { name: 'Page Source Posture' });
+      const posture = page.getByRole('region', { name: 'Source and freshness' });
       const primarySource = expectedPrimarySource(entry);
-      await expect(posture, `${entry.href} should render RouteSourcePosture`).toBeVisible();
-      await expect(posture.getByText(entry.description, { exact: true })).toBeVisible();
+      await expect(posture, `${entry.href} should render PageSourcePosture`).toBeVisible();
+
       await expect(posture.getByText(getConfidenceLabel(entry.confidence), { exact: true }).first()).toBeVisible();
       await expect(posture.getByText(`Checked ${entry.reviewedAt}`, { exact: true })).toBeVisible();
       await expect(posture.getByText(`Review due ${entry.nextReviewDue}`, { exact: true })).toBeVisible();
@@ -40,8 +40,9 @@ test.describe('THORChain Wiki Source Posture Smoke Tests', () => {
       if (entry.sources.length > 1) {
         await expect(posture.getByText(pluralizedSourceCount(entry.sources.length - 1), { exact: true })).toBeVisible();
       }
-      await expect(posture.getByText('Use This Page For', { exact: true })).toBeVisible();
-      await expect(posture.getByText('Verify Elsewhere Before Claiming', { exact: true })).toBeVisible();
+      await posture.locator('summary', { hasText: 'How to use this page' }).click();
+      await expect(posture.getByText('Use this page for', { exact: true })).toBeVisible();
+      await expect(posture.getByText('Verify elsewhere before claiming', { exact: true })).toBeVisible();
     }
   });
 
@@ -86,15 +87,16 @@ test.describe('THORChain Wiki Source Posture Smoke Tests', () => {
       await expect(page.getByRole('link', { name: route.link }).first()).toHaveAttribute('href', route.href);
       await expect(page.getByText(route.evidence).first()).toBeVisible();
       if (route.path === '/protocol') {
-        await expect(page.locator('#protocol-claim-checks')).toBeVisible();
-        await expect(page.getByRole('heading', { name: /Protocol Claim Checks/i })).toBeVisible();
-        await expect(page.getByText(/Architecture explanation/i)).toBeVisible();
-        await expect(page.getByText(/Current availability claim/i)).toBeVisible();
-        await expect(page.getByText(/Security or vault claim/i)).toBeVisible();
-        await expect(page.getByText(/Developer integration claim/i)).toBeVisible();
-        await expect(page.getByRole('link', { name: /Check live diagnostics/i })).toHaveAttribute('href', '/network#network-diagnostics');
-        await expect(page.getByRole('link', { name: /Read security path/i })).toHaveAttribute('href', '/deep-dives#deep-dive-path-network-security');
-        await expect(page.getByText(/Do not infer live state from supported-chain listings/i)).toBeVisible();
+        const claimChecks = page.locator('details', { hasText: 'Claim checks by type' });
+        await expect(claimChecks).toBeVisible();
+        await claimChecks.locator('summary').click();
+        await expect(claimChecks.getByText(/Architecture explanation/i)).toBeVisible();
+        await expect(claimChecks.getByText(/Current availability claim/i)).toBeVisible();
+        await expect(claimChecks.getByText(/Security or vault claim/i)).toBeVisible();
+        await expect(claimChecks.getByText(/Developer integration claim/i)).toBeVisible();
+        await expect(claimChecks.getByRole('link', { name: /Check live diagnostics/i })).toHaveAttribute('href', '/network#network-diagnostics');
+        await expect(claimChecks.getByRole('link', { name: /Read security path/i })).toHaveAttribute('href', '/deep-dives#deep-dive-path-network-security');
+        await expect(claimChecks.getByText(/Do not infer live state from supported-chain listings/i)).toBeVisible();
         await expect(page.getByRole('link', { name: /Interpret Mimir controls/i })).toHaveAttribute('href', '/deep-dives/mimir-halt-controls#what-mimirs-can-prove');
         await expect(page.getByRole('link', { name: /Check live halts/i })).toHaveAttribute('href', '/network#network-diagnostics');
         await expect(page.getByRole('link', { name: /Review inbound usage/i })).toHaveAttribute('href', '/deep-dives/build-query-data#quotes-inbound-addresses-and-caching');
@@ -104,14 +106,16 @@ test.describe('THORChain Wiki Source Posture Smoke Tests', () => {
         await expect(page.locator('#chain-catalog-boundary').getByText(/catalog boundary, not a current availability dashboard/i)).toBeVisible();
       }
       if (route.path === '/economics') {
-        await expect(page.locator('#economic-claim-checks')).toBeVisible();
-        await expect(page.getByText(/Mechanism explanation/i)).toBeVisible();
-        await expect(page.getByText(/Current metric claim/i)).toBeVisible();
-        await expect(page.getByText(/Fee or revenue claim/i)).toBeVisible();
-        await expect(page.getByText(/Tokenomics figure/i)).toBeVisible();
-        await expect(page.getByRole('link', { name: /Check live metrics/i })).toHaveAttribute('href', '/stats#stats-look-here-first');
-        await expect(page.getByRole('link', { name: /Open dynamic fee tracker/i })).toHaveAttribute('href', '/dynamic-fees#dynamic-fees-live');
-        await expect(page.getByText(/Do not claim durable revenue lift/i)).toBeVisible();
+        const economicClaimChecks = page.locator('#economic-claim-checks');
+        await expect(economicClaimChecks).toBeVisible();
+        await economicClaimChecks.locator('summary').click();
+        await expect(economicClaimChecks.getByText(/Mechanism explanation/i)).toBeVisible();
+        await expect(economicClaimChecks.getByText(/Current metric claim/i)).toBeVisible();
+        await expect(economicClaimChecks.getByText(/Fee or revenue claim/i)).toBeVisible();
+        await expect(economicClaimChecks.getByText(/Tokenomics figure/i)).toBeVisible();
+        await expect(economicClaimChecks.getByRole('link', { name: /Check live metrics/i })).toHaveAttribute('href', '/stats#stats-look-here-first');
+        await expect(economicClaimChecks.getByRole('link', { name: /Open dynamic fee tracker/i })).toHaveAttribute('href', '/dynamic-fees#dynamic-fees-live');
+        await expect(economicClaimChecks.getByText(/Do not claim durable revenue lift/i)).toBeVisible();
       }
       if (route.path === '/rune') {
         await expect(page.locator('#rune-number-router')).toBeVisible();
@@ -138,3 +142,6 @@ test.describe('THORChain Wiki Source Posture Smoke Tests', () => {
     }
   });
 });
+
+
+

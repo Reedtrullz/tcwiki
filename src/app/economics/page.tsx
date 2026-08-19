@@ -149,7 +149,7 @@ export default function EconomicsPage() {
         badgeLabel="claim path"
       />
 
-            <details className="mb-12 rounded-lg border border-border bg-surface-elevated px-4 py-3">
+            <details id="economic-claim-checks" className="mb-12 rounded-lg border border-border bg-surface-elevated px-4 py-3 scroll-mt-24">
         <summary className="cursor-pointer list-none text-sm font-semibold text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60">
           Economic claim checks
         </summary>
@@ -172,7 +172,7 @@ export default function EconomicsPage() {
         </ul>
       </details>
 
-      <details className="mb-12 rounded-lg border border-border bg-surface-elevated px-4 py-3">
+      <details id="runepool-pol-state" className="mb-12 rounded-lg border border-border bg-surface-elevated px-4 py-3 scroll-mt-24">
         <summary className="cursor-pointer list-none text-sm font-semibold text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60">
           Current RUNEPool / POL state
         </summary>

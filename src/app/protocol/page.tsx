@@ -265,7 +265,7 @@ export default function ProtocolPage() {
             ]}
           />
 
-          <details className="mb-6 rounded-lg border border-border bg-surface-elevated px-4 py-3">
+          <details id="protocol-claim-checks" className="mb-6 rounded-lg border border-border bg-surface-elevated px-4 py-3 scroll-mt-24">
             <summary className="cursor-pointer list-none text-sm font-semibold text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60">
               Claim checks by type
             </summary>

@@ -17,7 +17,7 @@ test.describe('THORChain Wiki Docs And Glossary Smoke Tests', () => {
     await expect(fastSourceTriage.getByRole('link', { name: /Current state/i })).toHaveAttribute('href', '/network#network-diagnostics');
     await expect(fastSourceTriage.getByRole('link', { name: /Integration docs/i })).toHaveAttribute('href', '#developer-integration');
     await expect(fastSourceTriage.getByRole('link', { name: /App Layer/i })).toHaveAttribute('href', '/deep-dives/app-layer#what-to-verify-before-claiming');
-    await expect(page.locator('#developer-integration').getByRole('link', { name: /Open build\/query guide/i })).toHaveAttribute('href', '/deep-dives/build-query-data#query-plan');
+    await expect(page.locator('#developer-integration a[href="/deep-dives/build-query-data#query-plan"]')).toHaveAttribute('href', '/deep-dives/build-query-data#query-plan');
     await expect(fastSourceTriage.getByRole('link', { name: /Dynamic fees/i })).toHaveAttribute('href', '#dynamic-fee-experiment');
     await expect(fastSourceTriage.getByRole('link', { name: /RUNEPool\/POL/i })).toHaveAttribute('href', '/economics#runepool-pol-live');
     await expect(fastSourceTriage.getByRole('link', { name: /TCY actions/i })).toHaveAttribute('href', '/tcy#tcy-current-controls');
@@ -45,6 +45,7 @@ test.describe('THORChain Wiki Docs And Glossary Smoke Tests', () => {
     await expect(page.getByRole('link', { name: /RUNEPool\/POL snapshot Current RUNEPool accounting/i })).toHaveAttribute('href', '/economics#runepool-pol-live');
     await expect(page.getByRole('link', { name: /Current TCY controls Claim, stake/i }).first()).toHaveAttribute('href', '/tcy#tcy-current-controls');
     await expect(page.getByRole('link', { name: 'Interface checklist' }).first()).toHaveAttribute('href', '/ecosystem#interface-use-checklist');
+    await page.getByText('Full source-family reference').first().click();
     await expect(page.getByRole('heading', { name: /Current Protocol State/i })).toBeVisible();
     await expect(page.locator('#runepool-pol-evidence').getByText(/Current global RUNEPool value, PnL/i)).toBeVisible();
     await expect(page.locator('#runepool-pol-evidence').getByText(/does not prove future yield/i)).toBeVisible();

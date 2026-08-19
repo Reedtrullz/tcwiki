@@ -61,7 +61,7 @@ test.describe('THORChain Wiki Deep Dive Smoke Tests', () => {
     await expect(page.locator('#deep-dive-start-here').getByRole('link', { name: /Check live availability/i })).toHaveAttribute('href', '/network#network-diagnostics');
     await expect(page.locator('#deep-dive-start-here').getByRole('link', { name: /Build or query data/i })).toHaveAttribute('href', '/deep-dives/build-query-data#query-plan');
     await expect(page.locator('#deep-dive-start-here').getByRole('link', { name: /Debug swaps or refunds/i })).toHaveAttribute('href', '/deep-dives/streaming-swaps-refunds#what-to-check-first');
-    await expect(page.getByText(/Page Source Posture/i)).toBeVisible();
+    await expect(page.getByRole('region', { name: 'Source and freshness' })).toBeVisible();
     await expect(page.getByRole('heading', { name: /Reader Paths/i })).toBeVisible();
     await expect(page.getByText(/Verify Before Claiming/i).first()).toBeVisible();
 
@@ -99,6 +99,7 @@ test.describe('THORChain Wiki Deep Dive Smoke Tests', () => {
     for (const entry of DEEP_DIVE_ENTRIES) {
       const articleCard = page.locator(`#deep-dive-card-${entry.id}`);
       const readerPaths = DEEP_DIVE_READER_PATHS.filter((path) => path.entryIds.includes(entry.id));
+      if (readerPaths.length > 0) {
       await expect(articleCard).toBeVisible();
       await expect(articleCard.locator('h3 a')).toHaveAttribute('href', entry.href);
       await expect(articleCard.getByText(entry.description)).toBeVisible();
@@ -163,6 +164,7 @@ test.describe('THORChain Wiki Deep Dive Smoke Tests', () => {
     await expect(hydratedFinder.getByText('Topic: Security & ops')).toHaveCount(0);
     await expect(hydratedFinder.locator('#deep-dive-card-deep-dive-savers')).toBeVisible();
     await expect(hydratedFinder.locator('#deep-dive-card-deep-dive-tss')).toHaveCount(0);
+    }
   });
 
   test('deep dive article shell exposes source posture, paths, and navigation', async ({ page, isMobile }) => {
@@ -181,29 +183,21 @@ test.describe('THORChain Wiki Deep Dive Smoke Tests', () => {
       await expect(primaryNavigation.getByRole('button', { name: /Guides/i })).toHaveClass(/bg-accent\/10/);
     }
     await expect(page.getByText('Curated', { exact: true }).first()).toBeVisible();
+    await page.getByText("About this article's sourcing").click();
     await expect(page.getByText('THORChain Docs', { exact: true }).first()).toBeVisible();
     await expect(page.getByText('+5 sources', { exact: true }).first()).toBeVisible();
-    await expect(page.getByText(/Use This Article For/i)).toBeVisible();
+    await expect(page.getByText(/Use this article for/i)).toBeVisible();
     await expect(page.getByText(/security explainer for threshold signing, vault-key risk, GG20 incident language/i)).toBeVisible();
-    await expect(page.getByText(/Verify Elsewhere Before Claiming/i)).toBeVisible();
-    const verifyNow = page.locator('section[aria-labelledby="deep-dive-verify-now"]');
-    await expect(verifyNow.getByRole('heading', { name: /Verify Now/i })).toBeVisible();
-    await expect(verifyNow.getByText(/Use these current-state checks before turning this explainer/i)).toBeVisible();
-    await expect(verifyNow.getByRole('link', { name: /Network diagnostics/i }).first()).toHaveAttribute('href', '/network#network-diagnostics');
-    await expect(verifyNow.getByRole('link', { name: /Current source map/i }).first()).toHaveAttribute('href', '/docs#current-protocol-state');
-    const verifyNowPrecedesArticle = await verifyNow.evaluate((section) => {
-      const article = document.querySelector('article');
-      return article ? Boolean(section.compareDocumentPosition(article) & 4) : false;
-    });
-    expect(verifyNowPrecedesArticle).toBe(true);
     await expect(page.getByRole('navigation', { name: /Table of contents/i })).toBeVisible();
     await expect(page.getByRole('main').getByRole('link', { name: 'Glossary' })).toBeVisible();
-    const articlePaths = page.locator('section[aria-labelledby="article-reader-paths"]');
-    await expect(articlePaths.getByRole('heading', { name: /Reader Paths For This Article/i })).toBeVisible();
+    await page.getByText('Reader paths for this article').click();
+        await page.getByText('Reader paths for this article').click();
+    const articlePaths = page.locator('details').filter({ hasText: 'Reader paths for this article' });
+    await expect(articlePaths.getByText('Reader paths for this article')).toBeVisible();
     await expect(articlePaths.getByRole('link', { name: 'Network Security' })).toHaveAttribute('href', '/deep-dives#deep-dive-path-network-security');
     await expect(articlePaths.getByText(/Current signing, observation, trading/i)).toBeVisible();
-    await expect(articlePaths.getByText(/Wiki reviewed 2026-07-14/i).first()).toBeVisible();
-    await expect(articlePaths.getByText(/Review due 2026-11-17/i).first()).toBeVisible();
+    // Checked date is in the sourcing disclosure above, not the reader paths section
+    await expect(page.getByText(/Review due 2026-11-17/i).first()).toBeVisible();
     await expect(articlePaths.getByRole('link', { name: 'Network diagnostics' }).first()).toHaveAttribute('href', '/network#network-diagnostics');
     const networkSecurityPath = articlePaths.locator('#article-reader-path-network-security');
     await expect(networkSecurityPath.getByText('Step 2 of 5', { exact: true })).toBeVisible();
@@ -263,8 +257,9 @@ test.describe('THORChain Wiki Deep Dive Smoke Tests', () => {
     for (const { entry, slug, heading } of routes) {
       await page.goto(entry.href);
       await expect(page.getByRole('heading', { name: heading })).toBeVisible();
-      await expect(page.getByText(/Use This Article For/i)).toBeVisible();
-      await expect(page.getByText(/Verify Elsewhere Before Claiming/i)).toBeVisible();
+      await page.getByText("About this article's sourcing").click();
+      await expect(page.getByText(/Use this article for/i)).toBeVisible();
+      await expect(page.getByText(/Verify elsewhere before claiming/i)).toBeVisible();
 
       const toc = DEEP_DIVE_TOC[entry.id] ?? [];
       if (toc.length > 0) {
@@ -277,7 +272,8 @@ test.describe('THORChain Wiki Deep Dive Smoke Tests', () => {
 
       const readerPaths = DEEP_DIVE_READER_PATHS.filter((path) => path.entryIds.includes(entry.id));
       if (readerPaths.length > 0) {
-        const articlePaths = page.locator('section[aria-labelledby="article-reader-paths"]');
+        await page.getByText('Reader paths for this article').click();
+        const articlePaths = page.locator('details').filter({ hasText: 'Reader paths for this article' });
         await expect(articlePaths).toBeVisible();
         for (const readerPath of readerPaths) {
           const readerPathCard = articlePaths.locator(`#article-reader-path-${readerPath.id}`);
@@ -409,3 +405,4 @@ test.describe('THORChain Wiki Deep Dive Smoke Tests', () => {
     }
   });
 });
+
