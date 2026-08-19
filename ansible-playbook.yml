@@ -4,6 +4,7 @@
   vars:
     container_name: "tcwiki"
     candidate_container_name: "tcwiki-candidate"
+    candidate_port: "3009"
     image_ref: "{{ lookup('env', 'IMAGE_REF') }}"
     app_version: "{{ lookup('env', 'APP_VERSION') }}"
     csp_enforce: "{{ lookup('env', 'CSP_ENFORCE') | default('1', true) }}"
@@ -182,11 +183,13 @@
           set_fact:
             deployment_replaced: false
 
-        - name: Force remove any container binding port 3004
+        - name: Force remove any stale container binding candidate port
           shell: |
-            for cid in $(docker ps -aq --filter publish=127.0.0.1:3004); do
-              docker stop "$cid" 2>/dev/null || true
-              docker rm -f "$cid" 2>/dev/null || true
+            for cid in $(docker ps -q); do
+              if docker port "$cid" 2>/dev/null | grep -q ":{{ candidate_port }}->"; then
+                docker stop "$cid" 2>/dev/null || true
+                docker rm -f "$cid" 2>/dev/null || true
+              fi
             done
           changed_when: false
           failed_when: false
@@ -204,7 +207,7 @@
             state: started
             restart_policy: "no"
             ports:
-              - "127.0.0.1:3004:3000"
+              - "127.0.0.1:{{ candidate_port }}:3000"
             log_driver: "json-file"
             log_options:
               max-size: "10m"
@@ -228,7 +231,7 @@
 
         - name: Wait for candidate health
           uri:
-            url: "http://localhost:3004/api/health"
+            url: "http://localhost:{{ candidate_port }}/api/health"
             return_content: yes
             timeout: 5
           register: candidate_health_check
@@ -238,7 +241,7 @@
 
         - name: Verify candidate version
           uri:
-            url: "http://localhost:3004/api/version"
+            url: "http://localhost:{{ candidate_port }}/api/version"
             return_content: yes
             timeout: 5
           register: candidate_version_check
@@ -252,7 +255,7 @@
 
         - name: Verify candidate CSP header
           uri:
-            url: "http://localhost:3004/"
+            url: "http://localhost:{{ candidate_port }}/"
             return_content: no
             timeout: 5
           register: candidate_csp_check
@@ -281,7 +284,7 @@
 
         - name: Verify candidate readiness contract
           uri:
-            url: "http://localhost:3004/api/ready?contract=strict"
+            url: "http://localhost:{{ candidate_port }}/api/ready?contract=strict"
             return_content: yes
             timeout: 10
             status_code: [200, 503]
