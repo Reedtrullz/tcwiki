@@ -4,7 +4,8 @@ import { SectionHeader } from '@/components/ui/SectionHeader';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { Badge } from '@/components/ui/Badge';
 import { FreshnessMeta } from '@/components/ui/FreshnessMeta';
-import { RouteSourcePosture } from '@/components/features/RouteSourcePosture';
+import { PageSourcePosture } from '@/components/features/PageSourcePosture';
+import { PageTableOfContents, type TocItem } from '@/components/layout/PageTableOfContents';
 import { RelatedChecks, type RelatedCheck } from '@/components/features/RelatedChecks';
 import { getTokenomicsRecord } from '@/lib/data/static';
 import { getContentEntry } from '@/lib/content/registry';
@@ -19,6 +20,17 @@ export const metadata = createRouteMetadata({
 });
 
 const entry = getContentEntry('economics');
+
+const economicsToc: TocItem[] = [
+  { id: 'economic-claim-checks', label: 'Claim checks' },
+  { id: 'runepool-pol-state', label: 'Current RUNEPool / POL' },
+  { id: 'economics-rune', label: 'RUNE token' },
+  { id: 'supply-emission', label: 'Supply & emission' },
+  { id: 'fee-structure', label: 'Fee structure' },
+  { id: 'incentive-pendulum', label: 'Incentive pendulum' },
+  { id: 'runepool-pol-trade', label: 'RUNEPool, POL, trade' },
+  { id: 'clp-formula', label: 'CLP formula' },
+];
 const supplyRecord = getTokenomicsRecord('rune-supply-framing');
 
 const economicsRelatedChecks: RelatedCheck[] = [
@@ -114,7 +126,10 @@ export default function EconomicsPage() {
       <p className="text-slate-400 max-w-3xl mb-6">
         RUNE settlement, CLP pricing, fees, incentive design, RUNEPool/POL, trade assets, and current-only protocol parameters.
       </p>
-      <RouteSourcePosture
+
+      <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_200px] lg:gap-10">
+        <div className="min-w-0">
+      <PageSourcePosture
         entry={entry}
         className="mb-6"
         useFor={[
@@ -134,45 +149,42 @@ export default function EconomicsPage() {
         badgeLabel="claim path"
       />
 
-      <section id="economic-claim-checks" className="mb-12 scroll-mt-24">
-        <div className="mb-4 max-w-3xl">
-          <SectionHeader className="mb-3">Economic Claim Checks</SectionHeader>
-          <p className="text-sm leading-relaxed text-slate-400">
-            Start by deciding what kind of economic statement you are making. This page explains mechanisms; live numbers, fee-experiment records, and dated tokenomics claims need their own source path.
-          </p>
-        </div>
-        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+            <details className="mb-12 rounded-lg border border-border bg-surface-elevated px-4 py-3">
+        <summary className="cursor-pointer list-none text-sm font-semibold text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60">
+          Economic claim checks
+        </summary>
+        <p className="mt-2 max-w-3xl text-xs leading-relaxed text-slate-400">
+          Start by deciding what kind of economic statement you are making. This page explains mechanisms; live numbers, fee-experiment records, and dated tokenomics claims need their own source path.
+        </p>
+        <ul className="mt-3 divide-y divide-border">
           {economicClaimChecks.map((check) => (
-            <Card key={check.title} padding="md">
-              <div className="mb-3 flex flex-wrap items-center gap-2">
-                <Badge variant={check.badgeVariant}>{check.badge}</Badge>
-                <h3 className="text-base font-semibold text-slate-100">{check.title}</h3>
+            <li key={check.title} className="py-3 first:pt-0 last:pb-0">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="text-sm font-semibold text-slate-200">{check.title}</span>
+                <Link href={check.href} className="text-xs font-semibold text-accent underline-offset-4 hover:underline">
+                  {check.linkLabel}
+                </Link>
               </div>
-              <dl className="grid gap-3 text-xs leading-relaxed text-slate-400 sm:grid-cols-3">
-                <div>
-                  <dt className="font-semibold uppercase tracking-wider text-slate-500">Use For</dt>
-                  <dd className="mt-1">{check.use}</dd>
-                </div>
-                <div>
-                  <dt className="font-semibold uppercase tracking-wider text-slate-500">Verify</dt>
-                  <dd className="mt-1">{check.verify}</dd>
-                </div>
-                <div>
-                  <dt className="font-semibold uppercase tracking-wider text-slate-500">Do Not Claim</dt>
-                  <dd className="mt-1">{check.avoid}</dd>
-                </div>
-              </dl>
-              <Link href={check.href} className="mt-4 inline-flex text-xs font-semibold text-accent underline-offset-4 hover:underline">
-                {check.linkLabel}
-              </Link>
-            </Card>
+              <p className="mt-1 text-xs leading-relaxed text-slate-400">{check.use}</p>
+              <p className="mt-1 text-xs leading-relaxed text-amber-300/90">{check.avoid}</p>
+            </li>
           ))}
+        </ul>
+      </details>
+
+      <details className="mb-12 rounded-lg border border-border bg-surface-elevated px-4 py-3">
+        <summary className="cursor-pointer list-none text-sm font-semibold text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60">
+          Current RUNEPool / POL state
+        </summary>
+        <p className="mt-2 max-w-3xl text-xs leading-relaxed text-slate-400">
+          Live enablement, aggregate provider value, and PnL are current-only THORNode fields. Open this when you need present-tense RUNEPool/POL evidence.
+        </p>
+        <div className="mt-3">
+          <RunepoolPolPanel />
         </div>
-      </section>
+      </details>
 
-      <RunepoolPolPanel />
-
-      <SectionHeader>RUNE Token</SectionHeader>
+      <SectionHeader id="economics-rune" level="primary">RUNE Token</SectionHeader>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-12">
         {[
           { title: 'Settlement Asset', desc: 'External-asset swaps route through RUNE-paired liquidity, which keeps the liquidity graph simple and shared.' },
@@ -186,7 +198,7 @@ export default function EconomicsPage() {
         ))}
       </div>
 
-      <SectionHeader>Supply & Emission</SectionHeader>
+      <SectionHeader id="supply-emission" level="primary">Supply & Emission</SectionHeader>
       <p className="mb-4 text-sm text-slate-400">
         {supplyRecord.data.summary} Treat these as dated/source-backed figures, not hard-coded live balances.
       </p>
@@ -203,7 +215,7 @@ export default function EconomicsPage() {
         ))}
       </div>
 
-      <SectionHeader>Fee Structure</SectionHeader>
+      <SectionHeader id="fee-structure" level="primary">Fee Structure</SectionHeader>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-12">
         {[
           { fee: 'Inbound Gas', rate: 'Chain-specific', desc: 'External-chain gas paid by the user when sending inbound transactions.' },
@@ -219,7 +231,7 @@ export default function EconomicsPage() {
         ))}
       </div>
 
-      <SectionHeader>Incentive Pendulum</SectionHeader>
+      <SectionHeader id="incentive-pendulum" level="primary">Incentive Pendulum</SectionHeader>
       <p className="mb-4 text-sm text-slate-400">
         The pendulum allocates the node/LP share of network revenue based on the network&apos;s bond-to-liquidity posture.
       </p>
@@ -234,7 +246,7 @@ export default function EconomicsPage() {
         </Card>
       </div>
 
-      <SectionHeader>RUNEPool, POL, Trade Accounts, and Secured Assets</SectionHeader>
+      <SectionHeader id="runepool-pol-trade" level="primary">RUNEPool, POL, Trade Accounts, and Secured Assets</SectionHeader>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-12">
         {[
           {
@@ -266,12 +278,20 @@ export default function EconomicsPage() {
         ))}
       </div>
 
-      <SectionHeader>CLP Formula</SectionHeader>
+      <SectionHeader id="clp-formula" level="primary">CLP Formula</SectionHeader>
       <Card className="font-mono text-xs text-slate-400 space-y-1">
         <p><span className="text-accent">Slip Ratio:</span> slip = x / (X + x), where x is input and X is input-side pool depth</p>
         <p><span className="text-accent">Liquidity Fee:</span> fee = (x^2 * Y) / (x + X)^2, denominated in the output asset</p>
         <p><span className="text-accent">Output Amount:</span> y = (x * X * Y) / (x + X)^2, where Y is output-side pool depth</p>
       </Card>
+        </div>
+
+        <aside className="hidden lg:block">
+          <div className="sticky top-[72px]">
+            <PageTableOfContents items={economicsToc} />
+          </div>
+        </aside>
+      </div>
     </PageContainer>
   );
 }

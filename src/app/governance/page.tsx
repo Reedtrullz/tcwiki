@@ -8,9 +8,10 @@ import {
 import { Badge } from '@/components/ui/Badge';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { Card } from '@/components/ui/Card';
-import { PageContainer } from '@/components/layout/PageContainer';
 import { FreshnessMeta } from '@/components/ui/FreshnessMeta';
-import { RouteSourcePosture } from '@/components/features/RouteSourcePosture';
+import { PageContainer } from '@/components/layout/PageContainer';
+import { PageSourcePosture } from '@/components/features/PageSourcePosture';
+import { PageTableOfContents, type TocItem } from '@/components/layout/PageTableOfContents';
 import { RelatedChecks, type RelatedCheck } from '@/components/features/RelatedChecks';
 import { GovernanceIncidentArchiveExplorer } from '@/components/features/GovernanceIncidentArchiveExplorer';
 import { getContentEntry } from '@/lib/content/registry';
@@ -24,6 +25,14 @@ export const metadata = createRouteMetadata({
 });
 
 const entry = getContentEntry('governance');
+
+const governanceToc: TocItem[] = [
+  { id: 'current-recovery', label: 'Recovery tracker' },
+  { id: 'governance-archive-map', label: 'Archive map' },
+  { id: 'governance-records', label: 'Governance records' },
+  { id: 'protocol-milestones', label: 'Milestones & incidents' },
+  { id: 'governance-research', label: 'Research' },
+];
 
 const governanceRelatedChecks: RelatedCheck[] = [
   {
@@ -339,7 +348,10 @@ export default function GovernancePage() {
       <p className="text-slate-400 max-w-3xl mb-6">
         ADRs, Mimir context, milestones, incidents, and research. Vote percentages are shown only when source-backed.
       </p>
-      <RouteSourcePosture
+
+      <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_200px] lg:gap-10">
+        <div className="min-w-0">
+      <PageSourcePosture
         entry={entry}
         className="mb-6"
         useFor={[
@@ -359,60 +371,31 @@ export default function GovernancePage() {
         badgeLabel="claim path"
       />
 
-      <section id="governance-claim-checks" className="mb-12 scroll-mt-24">
-        <div className="mb-4 max-w-3xl">
-          <SectionHeader className="mb-3">Governance Claim Checks</SectionHeader>
-          <p className="text-sm leading-relaxed text-slate-400">
-            Start with the claim type. Governance records are useful for dated decisions and history; live controls, incident root-cause wording, recovery status, and community interpretation need separate proof paths.
-          </p>
-        </div>
-        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-          {governanceClaimChecks.map((check) => {
-            const content = (
-              <>
-                <div className="mb-3 flex flex-wrap items-center gap-2">
-                  <Badge variant={check.badgeVariant}>{check.badge}</Badge>
-                  <h3 className="text-base font-semibold text-slate-100">{check.title}</h3>
-                </div>
-                <dl className="grid gap-3 text-xs leading-relaxed text-slate-400 sm:grid-cols-3">
-                  <div>
-                    <dt className="font-semibold uppercase tracking-wider text-slate-500">Use For</dt>
-                    <dd className="mt-1">{check.use}</dd>
-                  </div>
-                  <div>
-                    <dt className="font-semibold uppercase tracking-wider text-slate-500">Verify</dt>
-                    <dd className="mt-1">{check.verify}</dd>
-                  </div>
-                  <div>
-                    <dt className="font-semibold uppercase tracking-wider text-amber-300">Do Not Claim</dt>
-                    <dd className="mt-1">{check.avoid}</dd>
-                  </div>
-                </dl>
-                <Link href={check.href} className="mt-4 inline-flex text-xs font-semibold text-accent underline-offset-4 hover:underline">
+      <details id="governance-claim-checks" className="mb-12 rounded-lg border border-border bg-surface-elevated px-4 py-3">
+        <summary className="cursor-pointer list-none text-sm font-semibold text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60">
+          Claim checks by type
+        </summary>
+        <p className="mt-2 max-w-3xl text-xs leading-relaxed text-slate-400">
+          Start with the claim type. Governance records are useful for dated decisions and history; live controls, incident root-cause wording, recovery status, and community interpretation need separate proof paths.
+        </p>
+        <ul className="mt-3 divide-y divide-border">
+          {governanceClaimChecks.map((check) => (
+            <li key={check.title} id="governance-proposal-status" className="py-3 first:pt-0 last:pb-0">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="text-sm font-semibold text-slate-200">{check.title}</span>
+                <Link href={check.href} className="text-xs font-semibold text-accent underline-offset-4 hover:underline">
                   {check.linkLabel}
                 </Link>
-              </>
-            );
-
-            if ('id' in check && check.id === 'governance-proposal-status') {
-              return (
-                <Card key={check.title} id="governance-proposal-status" padding="md" className="scroll-mt-24">
-                  {content}
-                </Card>
-              );
-            }
-
-            return (
-              <Card key={check.title} padding="md">
-                {content}
-              </Card>
-            );
-          })}
-        </div>
-      </section>
+              </div>
+              <p className="mt-1 text-xs leading-relaxed text-slate-400">{check.use}</p>
+              <p className="mt-1 text-xs leading-relaxed text-amber-300/90">{check.avoid}</p>
+            </li>
+          ))}
+        </ul>
+      </details>
 
       <section id="current-recovery" className="scroll-mt-24 mb-12">
-        <SectionHeader>Current Incident & Recovery Tracker</SectionHeader>
+        <SectionHeader level="primary">Current Incident & Recovery Tracker</SectionHeader>
         <p className="mb-4 max-w-3xl text-sm text-slate-400">
           Conservative tracker for records explicitly tagged as current or needing current recovery review. Historical unresolved records remain in the incident archive below unless they are re-verified for current tracking.
         </p>
@@ -550,7 +533,7 @@ export default function GovernancePage() {
 
       <section id="governance-archive-map" className="mb-12 scroll-mt-24">
         <div className="mb-4 max-w-3xl">
-          <SectionHeader className="mb-3">Dated Archive Map</SectionHeader>
+          <SectionHeader className="mb-3" level="primary">Dated Archive Map</SectionHeader>
           <p className="text-sm leading-relaxed text-slate-400">
             Use the lane map before diving into the archive. Counts are navigation aids, not health scores, and every lane still needs the claim-specific checks above.
           </p>
@@ -585,7 +568,7 @@ export default function GovernancePage() {
 
       <section id="governance-records" className="mb-12 scroll-mt-24">
         <div className="mb-4 max-w-3xl">
-          <SectionHeader className="mb-3">Governance Records</SectionHeader>
+          <SectionHeader className="mb-3" level="primary">Governance Records</SectionHeader>
           <p className="text-sm leading-relaxed text-slate-400">
             Dated governance and operational records. The status badge describes the record evidence posture; use live diagnostics before turning it into a current action claim.
           </p>
@@ -626,7 +609,7 @@ export default function GovernancePage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-12">
         <section id="protocol-milestones" className="scroll-mt-24">
-          <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4">Milestones</h2>
+          <SectionHeader level="primary">Milestones</SectionHeader>
           <div className="space-y-0">
             {PROTOCOL_MILESTONE_RECORDS.map((record) => (
               <div
@@ -650,7 +633,7 @@ export default function GovernancePage() {
 
       <section id="governance-research" className="scroll-mt-24">
         <div className="mb-4 max-w-3xl">
-          <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">Research</h2>
+          <SectionHeader level="primary">Research</SectionHeader>
           <p className="mt-1 text-sm leading-relaxed text-slate-400">
             Dated analysis and roadmap context. Treat these as period framing until current protocol, route, or recovery sources agree.
           </p>
@@ -679,6 +662,14 @@ export default function GovernancePage() {
           })}
         </div>
       </section>
+        </div>
+
+        <aside className="hidden lg:block">
+          <div className="sticky top-[72px]">
+            <PageTableOfContents items={governanceToc} />
+          </div>
+        </aside>
+      </div>
     </PageContainer>
   );
 }

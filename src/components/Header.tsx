@@ -210,27 +210,6 @@ export default function Header() {
                 <Search className="h-4 w-4" />
               </button>
             </div>
-            <div className="mt-3 grid gap-2 sm:grid-cols-2">
-              {TASK_GUIDE_GROUPED.map((group) => (
-                <section key={group.id} aria-labelledby={`search-task-group-${group.id}`}>
-                  <p id={`search-task-group-${group.id}`} className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
-                    {group.label}
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {group.guides.map((guide) => (
-                      <Link
-                        key={guide.id}
-                        href={guide.href}
-                        className="rounded-md border border-border px-2.5 py-1 text-xs text-slate-400 hover:border-accent/30 hover:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
-                        onClick={() => closePanels(false)}
-                      >
-                        {guide.label}
-                      </Link>
-                    ))}
-                  </div>
-                </section>
-              ))}
-            </div>
             <div className="mt-3 flex justify-end">
               <Link
                 href="/search#search-guided-answers"

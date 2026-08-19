@@ -4,7 +4,8 @@ import { DEEP_DIVE_ENTRIES, DEEP_DIVE_READER_PATHS, getContentEntry } from '@/li
 import { createRouteMetadata } from '@/lib/metadata';
 import { Badge } from '@/components/ui/Badge';
 import { FreshnessMeta } from '@/components/ui/FreshnessMeta';
-import { RouteSourcePosture } from '@/components/features/RouteSourcePosture';
+import { PageSourcePosture } from '@/components/features/PageSourcePosture';
+import { PageTableOfContents, type TocItem } from '@/components/layout/PageTableOfContents';
 import { getConfidenceLabel, getConfidenceTone } from '@/lib/trust';
 import {
   DeepDiveLibraryExplorer,
@@ -20,6 +21,12 @@ export const metadata = createRouteMetadata({
 });
 
 const entry = getContentEntry('deep-dives');
+
+const deepDivesToc: TocItem[] = [
+  { id: 'deep-dive-start-here', label: 'Look here first' },
+  { id: 'deep-dive-reader-paths', label: 'Reader paths' },
+  { id: 'deep-dive-library', label: 'Library' },
+];
 
 const deepDiveStartingPoints = [
   {
@@ -119,6 +126,8 @@ export default function DeepDivesIndex() {
         In-depth explanations of core THORChain concepts and mechanisms.
       </p>
 
+      <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_200px] lg:gap-10">
+        <div className="min-w-0">
       <section id="deep-dive-start-here" className="mb-8 scroll-mt-24">
         <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
           <div>
@@ -153,7 +162,7 @@ export default function DeepDivesIndex() {
         </div>
       </section>
 
-      <RouteSourcePosture
+      <PageSourcePosture
         entry={entry}
         className="mb-12"
         useFor={[
@@ -246,6 +255,14 @@ export default function DeepDivesIndex() {
       </section>
 
       <DeepDiveLibraryExplorer articles={deepDiveArticles} topics={deepDiveLibraryTopics} />
+        </div>
+
+        <aside className="hidden lg:block">
+          <div className="sticky top-[72px]">
+            <PageTableOfContents items={deepDivesToc} />
+          </div>
+        </aside>
+      </div>
     </PageContainer>
   );
 }

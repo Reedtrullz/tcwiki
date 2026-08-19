@@ -1,7 +1,7 @@
 import { getContentEntry } from '@/lib/content/registry';
 import { createRouteMetadata } from '@/lib/metadata';
 import { PageContainer } from '@/components/layout/PageContainer';
-import { RouteSourcePosture } from '@/components/features/RouteSourcePosture';
+import { PageSourcePosture } from '@/components/features/PageSourcePosture';
 import StatsPageClient from './StatsPageClient';
 
 const entry = getContentEntry('stats');
@@ -21,7 +21,7 @@ export default function StatsPage() {
           Current-only THORChain metrics from Midgard and THORNode. Unavailable upstream data is shown as degraded, not zero.
         </p>
       </div>
-      <RouteSourcePosture
+      <PageSourcePosture
         entry={entry}
         className="mb-8"
         useFor={[

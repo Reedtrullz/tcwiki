@@ -135,52 +135,6 @@ const homeEcosystemPreviewRecords = homeEcosystemPreviewIds.map((id) => {
   return record;
 });
 
-function homeExploreEntry(id: string) {
-  return getContentEntry(id);
-}
-
-const homeExploreGroups = [
-  {
-    id: 'live-claims',
-    title: 'Live And Claim Checks',
-    description: 'Start here when the question depends on current state, source quality, or a specific present-tense claim.',
-    entries: [
-      homeExploreEntry('search'),
-      homeExploreEntry('network'),
-      homeExploreEntry('stats'),
-      homeExploreEntry('dynamic-fees'),
-      homeExploreEntry('deep-dive-mimir-halt-controls'),
-      homeExploreEntry('tcy'),
-    ],
-  },
-  {
-    id: 'sources-and-builders',
-    title: 'Sources And Builders',
-    description: 'Use these before choosing endpoint families, app surfaces, or third-party tooling.',
-    entries: [
-      homeExploreEntry('docs'),
-      homeExploreEntry('deep-dive-midgard-thornode-data'),
-      homeExploreEntry('deep-dive-build-query-data'),
-      homeExploreEntry('ecosystem'),
-      homeExploreEntry('deep-dive-app-layer'),
-      homeExploreEntry('glossary'),
-    ],
-  },
-  {
-    id: 'mechanics-and-recovery',
-    title: 'Mechanics And Recovery',
-    description: 'Read mechanism and history pages with the current-state boundary still attached.',
-    entries: [
-      homeExploreEntry('protocol'),
-      homeExploreEntry('economics'),
-      homeExploreEntry('rune'),
-      homeExploreEntry('deep-dive-liquidity-actions'),
-      homeExploreEntry('deep-dive-runepool-pol'),
-      homeExploreEntry('deep-dive-streaming-swaps-refunds'),
-    ],
-  },
-];
-
 export default function HomePageClient({ sourcePosture }: HomePageClientProps) {
   const {
     data: networkData,
@@ -374,44 +328,15 @@ export default function HomePageClient({ sourcePosture }: HomePageClientProps) {
         </div>
       </section>
 
-      {/* Explore topics */}
+      {/* Explore topics (slim entry point; full taxonomy lives in the Guides flyout / search) */}
       <section className="px-6 max-w-7xl mx-auto mb-16">
-        <div className="mb-5 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">Explore</h2>
-            <p className="mt-1 max-w-2xl text-xs leading-relaxed text-slate-400">
-              Intentional entry points for current checks, source choices, builders, and mechanism context. Review posture stays visible on each link.
-            </p>
-          </div>
-          <Link href="/docs#source-map-chooser" className="text-xs text-slate-400 transition-colors hover:text-slate-300">
-            Match source to claim →
+        <p className="max-w-2xl text-xs leading-relaxed text-slate-400">
+          Reader paths and task guides are gathered in one place. Use them to pick the right starting page, source, or proof boundary before deep-reading a section.
+        </p>
+        <div className="mt-3">
+          <Link href="/search#search-guided-answers" className="text-xs text-slate-400 transition-colors hover:text-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60">
+            Browse guided answers & reader paths →
           </Link>
-        </div>
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          {homeExploreGroups.map((group) => (
-            <div key={group.id} className="rounded-lg border border-border bg-surface-elevated p-4">
-              <div className="mb-4">
-                <h3 className="text-sm font-semibold text-slate-100">{group.title}</h3>
-                <p className="mt-1 text-xs leading-relaxed text-slate-400">{group.description}</p>
-              </div>
-              <div className="divide-y divide-border">
-                {group.entries.map((entry) => (
-                  <Link
-                    key={entry.id}
-                    href={entry.href}
-                    className="group block py-3 first:pt-0 last:pb-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
-                  >
-                    <div className="flex min-w-0 flex-wrap items-center gap-2">
-                      <span className="min-w-0 text-sm font-semibold text-slate-200 transition-colors group-hover:text-accent">{entry.title}</span>
-                      <Badge variant={getConfidenceTone(entry.confidence)}>{getConfidenceLabel(entry.confidence)}</Badge>
-                    </div>
-                    <p className="mt-1 text-[11px] leading-relaxed text-slate-400">{entry.description}</p>
-                    <p className="mt-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500">Checked {entry.reviewedAt}</p>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          ))}
         </div>
       </section>
 

@@ -86,8 +86,11 @@ export function DeepDiveShell({ entryId, editPath, children }: DeepDiveShellProp
         <p className="mt-3 text-base leading-relaxed text-slate-400">{entry.description}</p>
       </header>
 
-      <div className="mb-6 rounded-lg border border-border bg-surface-elevated/60 p-4">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-400">
+      <details className="mb-8 rounded-lg border border-border bg-surface-elevated/60 p-4">
+        <summary className="cursor-pointer list-none text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+          About this article&apos;s sourcing
+        </summary>
+        <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-400">
           <FreshnessMeta
             freshness={{
               checkedAt: entry.reviewedAt,
@@ -100,48 +103,35 @@ export function DeepDiveShell({ entryId, editPath, children }: DeepDiveShellProp
         </div>
         <div className="mt-3 grid gap-2 border-t border-border pt-3 text-xs leading-relaxed text-slate-300 md:grid-cols-2">
           <p>
-            <span className="font-semibold text-emerald-300">Use This Article For: </span>
+            <span className="font-semibold text-emerald-300">Use this article for: </span>
             {articleUseCase}
           </p>
           <p>
-            <span className="font-semibold text-amber-300">Verify Elsewhere Before Claiming: </span>
+            <span className="font-semibold text-amber-300">Verify elsewhere before claiming: </span>
             {articleClaimBoundary}
           </p>
         </div>
-      </div>
-
-      {verifyNowLinks.length > 0 && (
-        <section aria-labelledby="deep-dive-verify-now" className="mb-4 rounded-lg border border-amber-500/20 bg-amber-500/5 p-3">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <div className="min-w-0">
-              <h2 id="deep-dive-verify-now" className="text-[11px] font-semibold uppercase tracking-wider text-amber-300">
-                Verify Now
-              </h2>
-              <p className="mt-1 max-w-2xl text-xs leading-relaxed text-slate-400">
-                Use these current-state checks before turning this explainer into a live protocol, wallet, or availability claim.
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-2 lg:justify-end">
-              {verifyNowLinks.map((link) => (
-                <Link
-                  key={`${link.label}-${link.href}`}
-                  href={link.href}
-                  className="rounded-md border border-amber-500/20 bg-surface/70 px-2.5 py-1.5 text-xs font-semibold text-slate-100 transition-colors hover:border-amber-300/40 hover:bg-amber-500/10"
-                  title={link.description}
-                >
-                  {link.label}
-                </Link>
-              ))}
+        {verifyNowLinks.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-2 border-t border-border pt-3">
+            {verifyNowLinks.map((link) => (
               <Link
-                href="/deep-dives#deep-dive-reader-paths"
-                className="rounded-md border border-border bg-surface/70 px-2.5 py-1.5 text-xs font-semibold text-slate-300 transition-colors hover:border-accent/30 hover:text-slate-100"
+                key={`${link.label}-${link.href}`}
+                href={link.href}
+                className="rounded-md border border-border bg-surface/70 px-2.5 py-1.5 text-xs font-semibold text-slate-100 transition-colors hover:border-accent/30 hover:text-slate-100"
+                title={link.description}
               >
-                Why these checks
+                {link.label}
               </Link>
-            </div>
+            ))}
+            <Link
+              href="/deep-dives#deep-dive-reader-paths"
+              className="rounded-md border border-border bg-surface/70 px-2.5 py-1.5 text-xs font-semibold text-slate-300 transition-colors hover:border-accent/30 hover:text-slate-100"
+            >
+              Why these checks
+            </Link>
           </div>
-        </section>
-      )}
+        )}
+      </details>
 
       {toc.length > 0 && (
         <nav aria-label="Table of contents" className="mb-6 rounded-lg border border-border bg-surface-elevated/60 p-4">
@@ -173,12 +163,12 @@ export function DeepDiveShell({ entryId, editPath, children }: DeepDiveShellProp
         </div>
 
         {readerPaths.length > 0 && (
-          <section aria-labelledby="article-reader-paths" className="mt-6 rounded-lg border border-border bg-surface-elevated/60 p-4">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <details className="mt-6 rounded-lg border border-border bg-surface-elevated/60 p-4">
+            <summary className="cursor-pointer list-none text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+              Reader paths for this article
+            </summary>
+            <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
-                <h2 id="article-reader-paths" className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-                  Reader Paths For This Article
-                </h2>
                 <p className="mt-1 max-w-2xl text-sm leading-relaxed text-slate-400">
                   Use these paths to connect this explainer with the current-state checks needed before making live protocol claims.
                 </p>
@@ -205,9 +195,6 @@ export function DeepDiveShell({ entryId, editPath, children }: DeepDiveShellProp
                       <span className="rounded border border-border bg-surface-elevated px-2 py-1 text-[11px] font-medium text-slate-400">
                         Step {stepNumber} of {totalSteps}
                       </span>
-                      <Badge variant={getConfidenceTone(path.confidence)}>{getConfidenceLabel(path.confidence)}</Badge>
-                      <span className="text-[11px] text-slate-500">Wiki reviewed {path.reviewedAt}</span>
-                      <span className="text-[11px] text-slate-500">Review due {path.nextReviewDue}</span>
                     </div>
                   </div>
 
@@ -280,7 +267,7 @@ export function DeepDiveShell({ entryId, editPath, children }: DeepDiveShellProp
                 </div>
               ))}
             </div>
-          </section>
+          </details>
         )}
 
         {(previous || next) && (

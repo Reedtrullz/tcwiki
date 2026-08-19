@@ -1126,8 +1126,8 @@ function validateRouteSourcePostureUsage(entries) {
 
     const relativeRoutePath = relative(root, routePath);
     const routeSource = readFileSync(routePath, 'utf8');
-    if (!routeSource.includes('RouteSourcePosture')) {
-      fail(relativeRoutePath, `must render RouteSourcePosture for CONTENT_ENTRIES[${id}]`);
+    if (!routeSource.includes('RouteSourcePosture') && !routeSource.includes('PageSourcePosture')) {
+      fail(relativeRoutePath, `must render RouteSourcePosture/PageSourcePosture for CONTENT_ENTRIES[${id}]`);
     }
     if (!new RegExp(`getContentEntry\\(\\s*['"]${id}['"]\\s*\\)`).test(routeSource)) {
       fail(relativeRoutePath, `must load registry metadata with getContentEntry('${id}')`);

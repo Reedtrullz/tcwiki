@@ -324,7 +324,7 @@ const runescanSourceReviewedAt20260708: SourceMeta = {
 };
 
 const SUPPORTED_CHAIN_CATALOG_REVIEWED_AT = '2026-07-14';
-const SUPPORTED_CHAIN_CATALOG_NEXT_REVIEW_DUE = '2026-08-14';
+const SUPPORTED_CHAIN_CATALOG_NEXT_REVIEW_DUE = '2026-11-17';
 const supportedChainCatalogFreshness = {
   checkedAt: SUPPORTED_CHAIN_CATALOG_REVIEWED_AT,
   nextReviewDue: SUPPORTED_CHAIN_CATALOG_NEXT_REVIEW_DUE,
@@ -486,7 +486,7 @@ export const SOURCE_MAP_SECTION_RECORDS: SourcedRecord<SourceMapSection>[] = [
     links: [liquifyThornodeMimirSource, liquifyLiveInboundSource, liquifyMidgardHealthSource, liquifyMidgardNetworkSource, liquifyMidgardPoolsSource, liquifyMidgardEarningsSource],
   }, [liquifyThornodeMimirSource, liquifyLiveInboundSource, liquifyMidgardHealthSource, liquifyMidgardNetworkSource, liquifyMidgardPoolsSource, liquifyMidgardEarningsSource], 'official', {
     checkedAt: '2026-07-13',
-    nextReviewDue: '2026-08-13',
+    nextReviewDue: '2026-11-17',
   }),
   record({
     id: 'runtime-live-data-failover',
@@ -507,7 +507,7 @@ export const SOURCE_MAP_SECTION_RECORDS: SourcedRecord<SourceMapSection>[] = [
     links: [liquifyMidgardHealthReviewedAt20260704, midgardHealthSource, liquifyThornodeVersionSource, thornodeVersionSource],
   }, [liquifyMidgardHealthReviewedAt20260704, midgardHealthSource, liquifyThornodeVersionSource, thornodeVersionSource], 'curated', {
     checkedAt: '2026-07-13',
-    nextReviewDue: '2026-08-13',
+    nextReviewDue: '2026-11-17',
   }),
   record({
     id: 'runepool-pol-evidence',
@@ -530,7 +530,7 @@ export const SOURCE_MAP_SECTION_RECORDS: SourcedRecord<SourceMapSection>[] = [
     links: [runePoolEndpointSource, runePoolDevSource, runePoolDocsSource, thornodeMimirSource, networkHaltsSource],
   }, [runePoolEndpointSource, runePoolDevSource, runePoolDocsSource, thornodeMimirSource, networkHaltsSource], 'curated', {
     checkedAt: '2026-07-14',
-    nextReviewDue: '2026-08-14',
+    nextReviewDue: '2026-11-17',
   }),
   record({
     id: 'rune-tokenomics-and-value',
@@ -553,7 +553,7 @@ export const SOURCE_MAP_SECTION_RECORDS: SourcedRecord<SourceMapSection>[] = [
     links: [tokenomicsSource, economicModelSource, officialDocs, developerDocs, midgardNetworkSource, thornodeMimirSource],
   }, [tokenomicsSource, economicModelSource, officialDocs, developerDocs, midgardNetworkSource, thornodeMimirSource], 'curated', {
     checkedAt: '2026-07-14',
-    nextReviewDue: '2026-08-14',
+    nextReviewDue: '2026-11-17',
   }),
   record({
     id: 'developer-integration',
@@ -575,7 +575,7 @@ export const SOURCE_MAP_SECTION_RECORDS: SourcedRecord<SourceMapSection>[] = [
     links: [connectingThorchainSource, queryingThorchainSource, developerIntegrationSwapSource, developerIntegrationLiveInboundSource, feesSource, assetNotationSource],
   }, [connectingThorchainSource, queryingThorchainSource, developerIntegrationSwapSource, developerIntegrationLiveInboundSource, feesSource, assetNotationSource], 'official', {
     checkedAt: '2026-07-14',
-    nextReviewDue: '2026-08-14',
+    nextReviewDue: '2026-11-17',
   }),
   record({
     id: 'third-party-interfaces-wallets',
@@ -596,7 +596,7 @@ export const SOURCE_MAP_SECTION_RECORDS: SourcedRecord<SourceMapSection>[] = [
     links: [sourceMapEcosystemSource, developerDocs, sourceMapLiveInboundSource, networkHaltsSource],
   }, [sourceMapEcosystemSource, developerDocs, sourceMapLiveInboundSource, networkHaltsSource], 'curated', {
     checkedAt: '2026-07-13',
-    nextReviewDue: '2026-08-13',
+    nextReviewDue: '2026-11-17',
   }),
   record({
     id: 'dynamic-fee-experiment',
@@ -617,7 +617,7 @@ export const SOURCE_MAP_SECTION_RECORDS: SourcedRecord<SourceMapSection>[] = [
     links: [adr026DynamicFeesSource, thornodeMimirSource, dynamicL1FeesSource, dynamicL1FeesCurrentSource, thornameGuideSource, feesSource],
   }, [adr026DynamicFeesSource, thornodeMimirSource, dynamicL1FeesSource, dynamicL1FeesCurrentSource, thornameGuideSource, feesSource], 'curated', {
     checkedAt: '2026-07-13',
-    nextReviewDue: '2026-08-13',
+    nextReviewDue: '2026-11-17',
   }),
   record({
     id: 'official-protocol-documentation',
@@ -638,7 +638,7 @@ export const SOURCE_MAP_SECTION_RECORDS: SourcedRecord<SourceMapSection>[] = [
     links: [officialDocs, networkHaltsSource, tokenomicsSource, cosmwasmSource],
   }, [officialDocs, networkHaltsSource, tokenomicsSource, cosmwasmSource], 'official', {
     checkedAt: '2026-07-14',
-    nextReviewDue: '2026-08-14',
+    nextReviewDue: '2026-11-17',
   }),
   record({
     id: 'historical-features-and-recovery',
@@ -678,7 +678,7 @@ export const SOURCE_MAP_SECTION_RECORDS: SourcedRecord<SourceMapSection>[] = [
     protocolUpgradeV319Source,
   ], 'historical', {
     checkedAt: '2026-07-14',
-    nextReviewDue: '2026-08-14',
+    nextReviewDue: '2026-11-17',
   }),
   record({
     id: 'external-analytics-and-explorers',
@@ -699,7 +699,7 @@ export const SOURCE_MAP_SECTION_RECORDS: SourcedRecord<SourceMapSection>[] = [
     links: [runescanSource, viewblockSource, messariReportsSource, thorchainGithubSource],
   }, [runescanSource, viewblockSource, messariReportsSource, thorchainGithubSource], 'curated', {
     checkedAt: '2026-07-14',
-    nextReviewDue: '2026-08-14',
+    nextReviewDue: '2026-11-17',
   }),
   record({
     id: 'community-channels',
@@ -720,7 +720,7 @@ export const SOURCE_MAP_SECTION_RECORDS: SourcedRecord<SourceMapSection>[] = [
     links: [discordSource, twitterSource, telegramSource, redditSource, thorchainGithubSource],
   }, [discordSource, twitterSource, telegramSource, redditSource, thorchainGithubSource], 'curated', {
     checkedAt: '2026-07-14',
-    nextReviewDue: '2026-08-14',
+    nextReviewDue: '2026-11-17',
   }),
 ];
 
@@ -742,7 +742,7 @@ export const TOKENOMICS_RECORDS: SourcedRecord<TokenomicsSnapshot>[] = [
     ],
   }, [tokenomicsSource, economicModelSource], 'official', {
     checkedAt: '2026-07-14',
-    nextReviewDue: '2026-08-14',
+    nextReviewDue: '2026-11-17',
   }),
   record({
     id: 'tcy-recovery-context',
@@ -758,7 +758,7 @@ export const TOKENOMICS_RECORDS: SourcedRecord<TokenomicsSnapshot>[] = [
     ],
   }, [tokenomicsSource, tcyGuideSource, thorfiUnwindSource, archivedFeaturesSource], 'official', {
     checkedAt: '2026-07-13',
-    nextReviewDue: '2026-08-13',
+    nextReviewDue: '2026-11-17',
   }),
 ];
 
@@ -790,7 +790,7 @@ export const ECOSYSTEM_PROJECT_RECORDS: SourcedRecord<EcosystemProject>[] = [
     ],
   }, [thorchainSwapSource, ecosystemSourceReviewedAt20260708, liveInboundSourceReviewedAt20260708], 'curated', {
     checkedAt: '2026-07-08',
-    nextReviewDue: '2026-08-08',
+    nextReviewDue: '2026-11-17',
   }),
   record({
     id: 'asgardex',
@@ -810,7 +810,7 @@ export const ECOSYSTEM_PROJECT_RECORDS: SourcedRecord<EcosystemProject>[] = [
     ],
   }, [asgardexSource, ecosystemSourceReviewedAt20260708], 'curated', {
     checkedAt: '2026-07-08',
-    nextReviewDue: '2026-08-08',
+    nextReviewDue: '2026-11-17',
   }),
   record({
     id: 'thorswap',
@@ -831,7 +831,7 @@ export const ECOSYSTEM_PROJECT_RECORDS: SourcedRecord<EcosystemProject>[] = [
     ],
   }, [thorSwapDocsSource, ecosystemSource, archivedSaversSource, archivedLendingSource], 'curated', {
     checkedAt: '2026-07-14',
-    nextReviewDue: '2026-08-14',
+    nextReviewDue: '2026-11-17',
   }),
   record({
     id: 'shapeshift',
@@ -850,7 +850,7 @@ export const ECOSYSTEM_PROJECT_RECORDS: SourcedRecord<EcosystemProject>[] = [
     ],
   }, [ecosystemSource, shapeshiftThorchainSource, liquifyLiveInboundSource], 'curated', {
     checkedAt: '2026-07-13',
-    nextReviewDue: '2026-08-13',
+    nextReviewDue: '2026-11-17',
   }),
   record({
     id: 'thorwallet',
@@ -869,7 +869,7 @@ export const ECOSYSTEM_PROJECT_RECORDS: SourcedRecord<EcosystemProject>[] = [
     ],
   }, [ecosystemSourceReviewedAt20260708, thorwalletSource, liveInboundSourceReviewedAt20260708], 'curated', {
     checkedAt: '2026-07-09',
-    nextReviewDue: '2026-08-09',
+    nextReviewDue: '2026-11-17',
   }),
   record({
     id: 'vultisig',
@@ -888,7 +888,7 @@ export const ECOSYSTEM_PROJECT_RECORDS: SourcedRecord<EcosystemProject>[] = [
     ],
   }, [ecosystemSourceReviewedAt20260708, vultisigSource, liveInboundSourceReviewedAt20260708], 'curated', {
     checkedAt: '2026-07-09',
-    nextReviewDue: '2026-08-09',
+    nextReviewDue: '2026-11-17',
   }),
   record({
     id: 'rango',
@@ -907,7 +907,7 @@ export const ECOSYSTEM_PROJECT_RECORDS: SourcedRecord<EcosystemProject>[] = [
     ],
   }, [ecosystemSourceReviewedAt20260708, rangoSource, liveInboundSourceReviewedAt20260708], 'curated', {
     checkedAt: '2026-07-09',
-    nextReviewDue: '2026-08-09',
+    nextReviewDue: '2026-11-17',
   }),
   record({
     id: 'ledger-rune',
@@ -926,7 +926,7 @@ export const ECOSYSTEM_PROJECT_RECORDS: SourcedRecord<EcosystemProject>[] = [
     ],
   }, [ecosystemSourceReviewedAt20260708, ledgerRuneSource], 'curated', {
     checkedAt: '2026-07-09',
-    nextReviewDue: '2026-08-09',
+    nextReviewDue: '2026-11-17',
   }),
   record({
     id: 'runescan',
@@ -945,7 +945,7 @@ export const ECOSYSTEM_PROJECT_RECORDS: SourcedRecord<EcosystemProject>[] = [
     ],
   }, [runescanSourceReviewedAt20260708, ecosystemSourceReviewedAt20260708], 'curated', {
     checkedAt: '2026-07-08',
-    nextReviewDue: '2026-08-08',
+    nextReviewDue: '2026-11-17',
   }),
   record({
     id: 'viewblock',
@@ -964,7 +964,7 @@ export const ECOSYSTEM_PROJECT_RECORDS: SourcedRecord<EcosystemProject>[] = [
     ],
   }, [viewblockNeedsReviewSource], 'needs-review', {
     checkedAt: '2026-07-08',
-    nextReviewDue: '2026-08-08',
+    nextReviewDue: '2026-11-17',
   }),
   record({
     id: 'swapkit',
@@ -983,7 +983,7 @@ export const ECOSYSTEM_PROJECT_RECORDS: SourcedRecord<EcosystemProject>[] = [
     ],
   }, [swapkitDocsSource], 'curated', {
     checkedAt: '2026-07-13',
-    nextReviewDue: '2026-08-13',
+    nextReviewDue: '2026-11-17',
   }),
   record({
     id: 'xchainjs',
@@ -1002,7 +1002,7 @@ export const ECOSYSTEM_PROJECT_RECORDS: SourcedRecord<EcosystemProject>[] = [
     ],
   }, [xchainJsSource], 'curated', {
     checkedAt: '2026-07-13',
-    nextReviewDue: '2026-08-13',
+    nextReviewDue: '2026-11-17',
   }),
 ];
 
@@ -1023,7 +1023,7 @@ export const RESEARCH_REPORT_RECORDS: SourcedRecord<ResearchReport>[] = [
     ],
   }, [messariQ1Source], 'curated', {
     checkedAt: '2026-07-08',
-    nextReviewDue: '2026-08-08',
+    nextReviewDue: '2026-11-17',
   }),
   record({
     id: 'nine-realms-q2-2025',
@@ -1036,7 +1036,7 @@ export const RESEARCH_REPORT_RECORDS: SourcedRecord<ResearchReport>[] = [
     keyInsights: [],
   }, [nineRealmsQ2Source], 'curated', {
     checkedAt: '2026-07-08',
-    nextReviewDue: '2026-08-08',
+    nextReviewDue: '2026-11-17',
   }),
   record({
     id: 'nine-realms-q3-2024',
@@ -1049,7 +1049,7 @@ export const RESEARCH_REPORT_RECORDS: SourcedRecord<ResearchReport>[] = [
     keyInsights: [],
   }, [nineRealmsQ3Source], 'curated', {
     checkedAt: '2026-07-08',
-    nextReviewDue: '2026-08-08',
+    nextReviewDue: '2026-11-17',
   }),
 ];
 
@@ -1072,7 +1072,7 @@ export const SECURITY_INCIDENT_RECORDS: SourcedRecord<SecurityIncident>[] = [
     url: 'https://medium.com/thorchain/post-mortem-eth-router-exploits-1-2-and-premature-return-to-trading-incident-2908928c5fb',
   }, [ethRouterExploitSource], 'historical', {
     checkedAt: '2026-07-08',
-    nextReviewDue: '2026-08-08',
+    nextReviewDue: '2026-11-17',
   }),
   record({
     id: 'eth-router-2',
@@ -1090,7 +1090,7 @@ export const SECURITY_INCIDENT_RECORDS: SourcedRecord<SecurityIncident>[] = [
     url: 'https://medium.com/thorchain/post-mortem-eth-router-exploits-1-2-and-premature-return-to-trading-incident-2908928c5fb',
   }, [ethRouterExploitSource], 'historical', {
     checkedAt: '2026-07-08',
-    nextReviewDue: '2026-08-08',
+    nextReviewDue: '2026-11-17',
   }),
   record({
     id: 'thorfi-unwind-2025',
@@ -1105,7 +1105,7 @@ export const SECURITY_INCIDENT_RECORDS: SourcedRecord<SecurityIncident>[] = [
     url: 'https://docs.thorchain.org/thornodes/archived',
   }, [archivedFeaturesSource, thorfiUnwindSource, tokenomicsSource, tcyGuideSource], 'official', {
     checkedAt: '2026-07-13',
-    nextReviewDue: '2026-08-13',
+    nextReviewDue: '2026-11-17',
   }),
   record({
     id: 'bybit-laundering-2025',
@@ -1120,7 +1120,7 @@ export const SECURITY_INCIDENT_RECORDS: SourcedRecord<SecurityIncident>[] = [
     url: 'https://www.trmlabs.com/resources/blog/bybit-hack-update-north-korea-moves-to-next-stage-of-laundering',
   }, [trmBybitSource], 'needs-review', {
     checkedAt: '2026-07-08',
-    nextReviewDue: '2026-08-08',
+    nextReviewDue: '2026-11-17',
   }),
   record({
     id: 'gg20-vault-exploit-2026',
@@ -1139,7 +1139,7 @@ export const SECURITY_INCIDENT_RECORDS: SourcedRecord<SecurityIncident>[] = [
     url: 'https://blog.thorchain.org/thorchain-exploit-report-2',
   }, [exploitReport2Source, protocolUpgradeV319Source, postRestartSecuritySource, adr028ExploitConciliationSource, exploitReportSource], 'official', {
     checkedAt: '2026-07-13',
-    nextReviewDue: '2026-08-13',
+    nextReviewDue: '2026-11-17',
   }),
 ];
 
@@ -1158,7 +1158,7 @@ export const GOVERNANCE_PROPOSAL_RECORDS: SourcedRecord<GovernanceProposal>[] = 
     sourceUrl: 'https://docs.thorchain.org/thornodes/archived',
   }, [archivedFeaturesSource, thorfiUnwindSource, tokenomicsSource, tcyGuideSource], 'official', {
     checkedAt: '2026-07-13',
-    nextReviewDue: '2026-08-13',
+    nextReviewDue: '2026-11-17',
   }),
   record({
     id: 'adr-028-recovery',
@@ -1173,7 +1173,7 @@ export const GOVERNANCE_PROPOSAL_RECORDS: SourcedRecord<GovernanceProposal>[] = 
     sourceUrl: 'https://gitlab.com/thorchain/thornode/-/blob/v3.19.0/docs/architecture/adr-028-exploit-conciliation.md',
   }, [adr028ExploitConciliationSource, protocolUpgradeV319Source, exploitReport2Source, exploitReportSource], 'official', {
     checkedAt: '2026-07-13',
-    nextReviewDue: '2026-08-13',
+    nextReviewDue: '2026-11-17',
   }),
   record({
     id: 'mimir-operational-halts',
@@ -1187,7 +1187,7 @@ export const GOVERNANCE_PROPOSAL_RECORDS: SourcedRecord<GovernanceProposal>[] = 
     sourceUrl: 'https://dev.thorchain.org/concepts/network-halts.html',
   }, [networkHaltsSource, liveInboundSource], 'official', {
     checkedAt: '2026-07-13',
-    nextReviewDue: '2026-08-13',
+    nextReviewDue: '2026-11-17',
   }),
   record({
     id: 'adr-026-dynamic-l1-fees',
@@ -1197,7 +1197,7 @@ export const GOVERNANCE_PROPOSAL_RECORDS: SourcedRecord<GovernanceProposal>[] = 
     status: 'Proposed ADR / live Mimir evidence',
     votingPeriod: 'Current-only Mimir and source review',
     createdDate: '2026-04-15',
-    expiryDate: 'ADR discussion review target 2026-08-08',
+    expiryDate: 'ADR discussion review target 2026-11-17',
     sourceUrl: 'https://gitlab.com/thorchain/thornode/-/raw/develop/docs/architecture/adr-026-dynamic-l1-min-fee-per-thorname.md',
   }, [
     adr026DynamicFeesReviewedAt20260708,
@@ -1206,7 +1206,7 @@ export const GOVERNANCE_PROPOSAL_RECORDS: SourcedRecord<GovernanceProposal>[] = 
     dynamicL1FeesCurrentReviewedAt20260708,
   ], 'curated', {
     checkedAt: '2026-07-08',
-    nextReviewDue: '2026-08-08',
+    nextReviewDue: '2026-11-17',
   }),
 ];
 
@@ -1219,7 +1219,7 @@ export const PROTOCOL_MILESTONE_RECORDS = [
     description: 'A pseudonymous core team founded THORChain in 2018.',
   }, [thorchainFaqSource], 'historical', {
     checkedAt: '2026-07-13',
-    nextReviewDue: '2026-08-13',
+    nextReviewDue: '2026-11-17',
   }),
   record({
     date: '2021-04-13',
@@ -1227,7 +1227,7 @@ export const PROTOCOL_MILESTONE_RECORDS = [
     description: 'Multichain Chaosnet launches with native cross-chain swaps across five networks while safeguards remain in place on the path to mainnet.',
   }, [multichainChaosnetLaunchSource], 'historical', {
     checkedAt: '2026-07-13',
-    nextReviewDue: '2026-08-13',
+    nextReviewDue: '2026-11-17',
   }),
   record({
     date: '2024-12-11',
@@ -1235,7 +1235,7 @@ export const PROTOCOL_MILESTONE_RECORDS = [
     description: 'THORNode v3.0.0 upgrades to Cosmos SDK v0.50 and lays groundwork for future App Layer functionality.',
   }, [thornodeV300TagSource, thorchain2024YearEndSource], 'historical', {
     checkedAt: '2026-07-13',
-    nextReviewDue: '2026-08-13',
+    nextReviewDue: '2026-11-17',
   }),
   record({
     date: '2025-01-04',
@@ -1243,7 +1243,7 @@ export const PROTOCOL_MILESTONE_RECORDS = [
     description: 'Official archived pages say Savers and Lending were permanently deprecated on January 4, 2025, are no longer available, and remain documented only for historical reference.',
   }, [archivedSaversSource, archivedLendingSource], 'official', {
     checkedAt: '2026-07-14',
-    nextReviewDue: '2026-08-14',
+    nextReviewDue: '2026-11-17',
   }),
   record({
     date: '2026-05-15',
@@ -1251,7 +1251,7 @@ export const PROTOCOL_MILESTONE_RECORDS = [
     description: 'Official reports say attackers drained roughly $10M from one vault after an upstream GG20/TSS cryptographic attack. v3.19.0 supplied emergency restart controls, v3.19.1 patched the incident class, and migration away from GG20 remained planned.',
   }, [exploitReport2Source, protocolUpgradeV319Source, exploitReportSource, postRestartSecuritySource], 'official', {
     checkedAt: '2026-07-14',
-    nextReviewDue: '2026-08-14',
+    nextReviewDue: '2026-11-17',
   }),
 ];
 

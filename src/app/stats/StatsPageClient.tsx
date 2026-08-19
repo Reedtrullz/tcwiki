@@ -27,6 +27,7 @@ import {
   type StatsPoolSortKey,
 } from '@/lib/stats-dashboard';
 import { RelatedChecks, type RelatedCheck } from '@/components/features/RelatedChecks';
+import { PageTableOfContents, type TocItem } from '@/components/layout/PageTableOfContents';
 
 const statsRelatedChecks: RelatedCheck[] = [
   {
@@ -59,6 +60,16 @@ const statsRelatedChecks: RelatedCheck[] = [
     badge: 'task',
     description: 'Open the task guide for using Midgard, THORNode, inbound-address, and Mimir endpoint data.',
   },
+];
+
+const statsToc: TocItem[] = [
+  { id: 'stats-look-here-first', label: 'Look here first' },
+  { id: 'stats-operational-check', label: 'Operational check' },
+  { id: 'stats-number-guide-heading', label: 'Which numbers matter' },
+  { id: 'stats-live-metrics-heading', label: 'Live metrics' },
+  { id: 'available-pools', label: 'Available pools' },
+  { id: 'earnings-history', label: 'Earnings history' },
+  { id: 'stats-related-checks', label: 'Related checks' },
 ];
 
 const statsNumberGuide = [
@@ -401,6 +412,8 @@ export default function StatsPage() {
 
   return (
     <>
+      <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_200px] lg:gap-10">
+        <div className="min-w-0">
       {(networkHasError || earningsHasError || poolsHasError) && (
         <Card padding="sm" className="mb-8 border-amber-500/20 bg-amber-500/5 text-sm text-amber-300">
           Live data is degraded. {networkError || poolsError || earningsError || 'One or more sources did not respond.'}
@@ -408,7 +421,7 @@ export default function StatsPage() {
       )}
 
       <section id="stats-look-here-first" className="mb-8 scroll-mt-24">
-        <SectionHeader className="mb-3">Look Here First</SectionHeader>
+        <SectionHeader className="mb-3" level="primary">Look Here First</SectionHeader>
         <p className="mb-3 max-w-3xl text-sm leading-relaxed text-slate-400">
           First check whether the sources are usable, then read the metric cards as four separate signals: liquidity depth, node reward rate, active security set, and reserve context.
         </p>
@@ -426,18 +439,16 @@ export default function StatsPage() {
       </section>
 
       <section id="stats-operational-check" className="mb-8 scroll-mt-24" aria-labelledby="stats-operational-check-heading">
-        <SectionHeader id="stats-operational-check-heading" className="mb-3">Operational Check</SectionHeader>
+        <SectionHeader id="stats-operational-check-heading" className="mb-3" level="primary">Operational Check</SectionHeader>
         <p className="mb-3 max-w-3xl text-sm leading-relaxed text-slate-400">
           Check network status before treating loaded metrics as route-ready. A healthy-looking Midgard number does not override a current THORNode pause or source warning.
         </p>
         <NetworkStatusBanner result={statusResult} isLoading={statusLoading} variant="compact" />
       </section>
 
-      <section aria-labelledby="stats-number-guide-heading" className="mb-8">
+      <section id="stats-which-numbers-matter" aria-labelledby="stats-number-guide-heading" className="mb-8">
         <div className="mb-3 max-w-3xl">
-          <h2 id="stats-number-guide-heading" className="text-sm font-semibold uppercase tracking-wider text-slate-400">
-            Which Numbers Matter
-          </h2>
+          <SectionHeader id="stats-number-guide-heading" level="primary">Which Numbers Matter</SectionHeader>
           <p className="mt-1 text-sm leading-relaxed text-slate-400">
             Start with the number that matches the claim. Each metric is useful, but none of them alone proves route availability, future yield, or recovery state.
           </p>
@@ -467,8 +478,8 @@ export default function StatsPage() {
         </div>
       </section>
 
-      <section aria-labelledby="stats-live-metrics-heading" className="mb-12">
-        <SectionHeader id="stats-live-metrics-heading">Live Metrics</SectionHeader>
+      <section id="stats-live-metrics" aria-labelledby="stats-live-metrics-heading" className="mb-12">
+        <SectionHeader id="stats-live-metrics-heading" level="primary">Live Metrics</SectionHeader>
         <p className="mb-3 max-w-3xl text-sm leading-relaxed text-slate-400">
           These are current Midgard snapshot numbers. Use them for dashboard triage, then verify operational availability, route quality, and historical conclusions elsewhere.
         </p>
@@ -496,7 +507,7 @@ export default function StatsPage() {
       </section>
 
       <section id="available-pools" className="mb-12 scroll-mt-24">
-        <SectionHeader>Midgard Available-Pool Rows</SectionHeader>
+        <SectionHeader level="primary">Midgard Available-Pool Rows</SectionHeader>
         <p id="available-pools-summary" className="mb-3 max-w-3xl text-sm leading-relaxed text-slate-400">
           {poolSnapshot.summary} This is liquidity context from Midgard, not proof that a specific route will quote or settle. Full loaded row list stays in this wiki view.
         </p>
@@ -743,8 +754,8 @@ export default function StatsPage() {
         </Card>
       </section>
 
-      <section className="mb-12">
-        <SectionHeader>Earnings History</SectionHeader>
+      <section id="earnings-history" className="mb-12">
+        <SectionHeader level="primary">Earnings History</SectionHeader>
         <p id="earnings-history-summary" className="mb-3 text-sm text-slate-400">
           {earningsSummary}
         </p>
@@ -871,7 +882,15 @@ export default function StatsPage() {
         </Card>
       </section>
 
-      <RelatedChecks checks={statsRelatedChecks} className="mb-8" />
+      <RelatedChecks id="stats-related-checks" checks={statsRelatedChecks} className="mb-8" />
+        </div>
+
+        <aside className="hidden lg:block">
+          <div className="sticky top-[72px]">
+            <PageTableOfContents items={statsToc} />
+          </div>
+        </aside>
+      </div>
     </>
   );
 }

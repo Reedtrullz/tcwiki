@@ -1,5 +1,5 @@
 import DynamicFeesPageClient from '@/app/dynamic-fees/DynamicFeesPageClient';
-import { RouteSourcePosture } from '@/components/features/RouteSourcePosture';
+import { PageSourcePosture } from '@/components/features/PageSourcePosture';
 import { getContentEntry } from '@/lib/content/registry';
 import { createRouteMetadata } from '@/lib/metadata';
 
@@ -14,7 +14,7 @@ const entry = getContentEntry('dynamic-fees');
 export default function DynamicFeesPage() {
   return (
     <DynamicFeesPageClient>
-      <RouteSourcePosture
+      <PageSourcePosture
         entry={entry}
         className="mb-8"
         useFor={[

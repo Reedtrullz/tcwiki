@@ -4,7 +4,8 @@ import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { FreshnessMeta } from '@/components/ui/FreshnessMeta';
-import { RouteSourcePosture } from '@/components/features/RouteSourcePosture';
+import { PageSourcePosture } from '@/components/features/PageSourcePosture';
+import { PageTableOfContents, type TocItem } from '@/components/layout/PageTableOfContents';
 import { RelatedChecks, type RelatedCheck } from '@/components/features/RelatedChecks';
 import { getTokenomicsRecord } from '@/lib/data/static';
 import { getContentEntry } from '@/lib/content/registry';
@@ -19,6 +20,15 @@ export const metadata = createRouteMetadata({
 });
 
 const entry = getContentEntry('rune');
+
+const runeToc: TocItem[] = [
+  { id: 'rune-overview', label: 'What is RUNE?' },
+  { id: 'rune-action-router', label: 'Action router' },
+  { id: 'rune-number-router', label: 'Number router' },
+  { id: 'rune-claim-checks', label: 'Claim checks' },
+  { id: 'rune-continue-from-here', label: 'Continue from here' },
+  { id: 'rune-token-economics', label: 'Token economics' },
+];
 const supplyRecord = getTokenomicsRecord('rune-supply-framing');
 const supplyAnchor = recordAnchor('tokenomics', supplyRecord.data.id);
 
@@ -185,7 +195,10 @@ export default function RunePage() {
       <p className="text-slate-400 max-w-3xl mb-6">
         RUNE is the native asset used for settlement, liquidity pairing, economic security, and protocol accounting.
       </p>
-      <RouteSourcePosture
+
+      <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_200px] lg:gap-10">
+        <div className="min-w-0">
+      <PageSourcePosture
         entry={entry}
         className="mb-6"
         useFor={[
@@ -199,7 +212,7 @@ export default function RunePage() {
       />
 
       <section id="rune-overview" className="mb-12 scroll-mt-24" aria-labelledby="rune-overview-heading">
-        <SectionHeader id="rune-overview-heading" className="mb-5">What is RUNE?</SectionHeader>
+        <SectionHeader id="rune-overview-heading" level="primary" className="mb-5">What is RUNE?</SectionHeader>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {[
             { title: 'Settlement Asset', desc: 'Every external-asset swap routes through RUNE liquidity, for example BTC to RUNE to ETH.' },
@@ -217,7 +230,7 @@ export default function RunePage() {
 
       <section id="rune-action-router" className="mb-12 scroll-mt-24">
         <div className="mb-4 max-w-3xl">
-          <SectionHeader className="mb-3">What Do You Want To Do With RUNE?</SectionHeader>
+          <SectionHeader className="mb-3" level="primary">What Do You Want To Do With RUNE?</SectionHeader>
           <p className="text-sm leading-relaxed text-slate-400">
             Route action questions before reading tokenomics. RUNE can appear in swaps, liquidity, RUNEPool, and node bonding, but each path has a different current-state check.
           </p>
@@ -256,7 +269,7 @@ export default function RunePage() {
 
       <section id="rune-number-router" className="mb-12 scroll-mt-24">
         <div className="mb-4 max-w-3xl">
-          <SectionHeader className="mb-3">Which RUNE Number Do You Need?</SectionHeader>
+          <SectionHeader className="mb-3" level="primary">Which RUNE Number Do You Need?</SectionHeader>
           <p className="text-sm leading-relaxed text-slate-400">
             Pick the number by the claim you are making. RUNE appears in settlement, security, liquidity, and tokenomics, but each number needs a different evidence path.
           </p>
@@ -288,7 +301,7 @@ export default function RunePage() {
 
       <section id="rune-claim-checks" className="mb-12 scroll-mt-24">
         <div className="mb-4 max-w-3xl">
-          <SectionHeader className="mb-3">RUNE Claim Checks</SectionHeader>
+          <SectionHeader className="mb-3" level="primary">RUNE Claim Checks</SectionHeader>
           <p className="text-sm leading-relaxed text-slate-400">
             Start by classifying the claim. This page supports protocol-role explanations; live balances, current economics, tokenomics figures, and value claims need different source paths.
           </p>
@@ -331,7 +344,7 @@ export default function RunePage() {
         badgeLabel="claim path"
       />
 
-      <h2 id={supplyAnchor} className="scroll-mt-24 text-sm font-semibold text-slate-400 uppercase tracking-wider mb-5">Token Economics</h2>
+      <SectionHeader id="rune-token-economics" level="primary" className="scroll-mt-24">Token Economics</SectionHeader>
       <p className="mb-4 text-sm text-slate-400">
         {supplyRecord.data.summary} Recheck live/source data before quoting exact balances.
       </p>
@@ -348,7 +361,7 @@ export default function RunePage() {
         ))}
       </div>
 
-      <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-5">How RUNE Flows</h2>
+      <SectionHeader level="primary">How RUNE Flows</SectionHeader>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-12">
         <Card>
           <h3 className="text-sm font-semibold text-accent mb-2">1. Swaps</h3>
@@ -362,6 +375,14 @@ export default function RunePage() {
           <h3 className="text-sm font-semibold text-accent mb-2">3. Security</h3>
           <p className="text-xs text-slate-400">Node operators bond RUNE. Misbehavior can put that bond at risk through slash mechanisms and churn rules.</p>
         </Card>
+      </div>
+        </div>
+
+        <aside className="hidden lg:block">
+          <div className="sticky top-[72px]">
+            <PageTableOfContents items={runeToc} />
+          </div>
+        </aside>
       </div>
     </PageContainer>
   );

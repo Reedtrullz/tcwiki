@@ -6,6 +6,7 @@ import { usePathname, useSearchParams } from 'next/navigation';
 import { Search, X } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import { FreshnessMeta } from '@/components/ui/FreshnessMeta';
+import { SectionHeader } from '@/components/ui/SectionHeader';
 import type { DataConfidence, SourceMeta } from '@/lib/types';
 
 export interface GlossaryExplorerTerm {
@@ -213,7 +214,7 @@ export function GlossaryExplorer({ terms }: { terms: GlossaryExplorerTerm[] }) {
       <div className="rounded-lg border border-border bg-surface-elevated p-4">
         <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div className="min-w-0">
-            <h2 id="glossary-explorer" className="text-sm font-semibold text-slate-100">Term Finder</h2>
+            <SectionHeader id="glossary-explorer" level="primary">Term Finder</SectionHeader>
             <p aria-live="polite" className="mt-1 text-xs text-slate-400">
               Showing {filteredTerms.length} of {terms.length} source-backed terms.
             </p>

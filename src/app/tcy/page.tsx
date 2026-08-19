@@ -3,12 +3,14 @@ import { PageContainer } from '@/components/layout/PageContainer';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { FreshnessMeta } from '@/components/ui/FreshnessMeta';
-import { RouteSourcePosture } from '@/components/features/RouteSourcePosture';
+import { SectionHeader } from '@/components/ui/SectionHeader';
+import { PageSourcePosture } from '@/components/features/PageSourcePosture';
+import { PageTableOfContents, type TocItem } from '@/components/layout/PageTableOfContents';
 import { RelatedChecks, type RelatedCheck } from '@/components/features/RelatedChecks';
 import { getTokenomicsRecord } from '@/lib/data/static';
 import { getContentEntry } from '@/lib/content/registry';
 import { createRouteMetadata } from '@/lib/metadata';
-import { recordAnchor } from '@/lib/utils';
+
 import { TcyControlsPanel } from './TcyControlsPanel';
 
 export const metadata = createRouteMetadata({
@@ -19,8 +21,16 @@ export const metadata = createRouteMetadata({
 
 const entry = getContentEntry('tcy');
 
+const tcyToc: TocItem[] = [
+  { id: 'tcy-history', label: 'What happened' },
+  { id: 'tcy-decision-matrix', label: 'Decision matrix' },
+  { id: 'tcy-timeline', label: 'Historical timeline' },
+  { id: 'tcy-what-changed', label: 'What changed' },
+  { id: 'tcy-controls', label: 'Current controls' },
+  { id: 'tcy-sources', label: 'Sources' },
+];
+
 const tcyRecord = getTokenomicsRecord('tcy-recovery-context');
-const tcyAnchor = recordAnchor('tokenomics', tcyRecord.data.id);
 
 const tcyRelatedChecks: RelatedCheck[] = [
   {
@@ -90,7 +100,10 @@ export default function TCYPage() {
         Savers and Lending are historical THORFi features. Official archived docs say they are deprecated
         and no longer available; TCY is the recovery-token framing that followed the unwind.
       </p>
-      <RouteSourcePosture
+
+      <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_200px] lg:gap-10">
+        <div className="min-w-0">
+      <PageSourcePosture
         entry={entry}
         className="mb-6"
         useFor={[
@@ -110,9 +123,7 @@ export default function TCYPage() {
         badgeLabel="claim path"
       />
 
-      <TcyControlsPanel />
-
-      <div id={tcyAnchor} className="mb-12 scroll-mt-24 rounded-lg border border-amber-500/20 bg-amber-500/5 p-5">
+      <div id="tcy-history" className="mb-12 scroll-mt-24 rounded-lg border border-amber-500/20 bg-amber-500/5 p-5">
         <div className="flex flex-wrap items-center gap-2 mb-2">
           <Badge variant="warning">Historical</Badge>
           <Badge variant="danger">Deprecated products</Badge>
@@ -126,7 +137,7 @@ export default function TCYPage() {
         </div>
       </div>
 
-      <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-5">Reader Decision Matrix</h2>
+      <SectionHeader id="tcy-decision-matrix" level="primary">Reader Decision Matrix</SectionHeader>
       <div className="grid grid-cols-1 gap-3 mb-12 lg:grid-cols-2">
         {tcyDecisionRows.map((row) => (
           <Card key={row.question} padding="sm">
@@ -138,7 +149,7 @@ export default function TCYPage() {
         ))}
       </div>
 
-      <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-5">Historical Timeline</h2>
+      <SectionHeader id="tcy-timeline" level="primary">Historical Timeline</SectionHeader>
       <p className="mb-4 max-w-3xl text-sm leading-relaxed text-slate-400">
         For the source-backed date sequence, use the{' '}
         <Link href="/deep-dives/tcy-recovery-timeline" className="text-accent underline-offset-4 hover:underline">
@@ -168,7 +179,7 @@ export default function TCYPage() {
         ))}
       </div>
 
-      <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-5">What Changed</h2>
+      <SectionHeader id="tcy-what-changed" level="primary">What Changed</SectionHeader>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-12">
         <Card className="border-amber-500/20">
           <h3 className="text-sm font-semibold text-amber-300 mb-2">Savers and Lending</h3>
@@ -188,7 +199,21 @@ export default function TCYPage() {
         </Card>
       </div>
 
-      <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-5">Sources</h2>
+            <section id="tcy-controls" className="mb-12 scroll-mt-24">
+        <details className="rounded-lg border border-border bg-surface-elevated px-4 py-3">
+          <summary className="cursor-pointer list-none text-sm font-semibold text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60">
+            Current TCY / THORFi controls
+          </summary>
+          <p className="mt-2 max-w-3xl text-xs leading-relaxed text-slate-400">
+            Live claiming, staking, pause, and redemption state. Open when you need present-tense control evidence.
+          </p>
+          <div className="mt-3">
+            <TcyControlsPanel />
+          </div>
+        </details>
+      </section>
+
+      <SectionHeader id="tcy-sources" level="primary">Sources</SectionHeader>
       <div className="mb-4">
         <FreshnessMeta freshness={tcyRecord.freshness} sources={tcyRecord.sources} />
       </div>
@@ -204,6 +229,14 @@ export default function TCYPage() {
             {source.label}
           </a>
         ))}
+      </div>
+        </div>
+
+        <aside className="hidden lg:block">
+          <div className="sticky top-[72px]">
+            <PageTableOfContents items={tcyToc} />
+          </div>
+        </aside>
       </div>
     </PageContainer>
   );

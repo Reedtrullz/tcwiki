@@ -22,6 +22,7 @@ import { SectionHeader } from '@/components/ui/SectionHeader';
 import { StatCard } from '@/components/ui/StatCard';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { RelatedChecks, type RelatedCheck } from '@/components/features/RelatedChecks';
+import { PageTableOfContents, type TocItem } from '@/components/layout/PageTableOfContents';
 import { useDynamicL1FeeStatus } from '@/lib/hooks/useMidgard';
 import { adr026DynamicFeesSource, feesSource, thornameGuideSource } from '@/lib/sources';
 import type {
@@ -778,7 +779,7 @@ function LookFirstPanel({
     <Card id="dynamic-fees-live" className="mb-8 scroll-mt-24">
       <div className="mb-5 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
         <div>
-          <h2 className="text-lg font-semibold">Look Here First</h2>
+          <SectionHeader level="primary">Look Here First</SectionHeader>
           <p className="mt-1 max-w-3xl text-sm leading-relaxed text-slate-400">
             Start with these four signals. ADR-026 is testing whether partner-pair floors can improve revenue without losing useful flow.
           </p>
@@ -904,10 +905,10 @@ function HistoricalResultsChart({ status }: { status?: DynamicL1FeeStatus }) {
     .filter((point): point is { x: number; y: number; row: HistoryEpochRow } => point !== null);
 
   return (
-    <Card className="mb-10">
+    <Card id="dynamic-fee-historical-results" className="mb-10">
       <div className="mb-5 flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <h2 className="text-lg font-semibold">Historical Results</h2>
+          <SectionHeader level="primary">Historical Results</SectionHeader>
           <p className="mt-1 max-w-3xl text-sm leading-relaxed text-slate-400">
             Sealed epoch history from <code className="break-all">/dynamic_l1_fees/&lbrace;thorname&rbrace;</code>. Showing {sealedSamples.toLocaleString()} sample{sealedSamples === 1 ? '' : 's'} across {pairCount.toLocaleString()} pair{pairCount === 1 ? '' : 's'}; this is operational history, not proof of durable revenue lift.
           </p>
@@ -1366,7 +1367,7 @@ function DynamicFeeRecordsExplorer({
 
   return (
     <section id="dynamic-fee-records-explorer" className="mb-10 scroll-mt-24" aria-labelledby="dynamic-fee-records-heading">
-      <SectionHeader id="dynamic-fee-records-heading">Tracked Records</SectionHeader>
+      <SectionHeader id="dynamic-fee-records-heading" level="primary">Tracked Records</SectionHeader>
       <p className="mb-4 max-w-3xl text-sm text-slate-400">
         Raw sealed records show the maintained dynamic floor for each tracked thorname and pair. Active whitelist records may apply that floor at swap time; monitor records are computed but still use the base L1 floor.
       </p>
@@ -1639,8 +1640,8 @@ function ExperimentContextPanel({
   sourceWarningCount?: number;
 }) {
   return (
-    <section className="mb-4" aria-labelledby="dynamic-fee-context-heading">
-      <SectionHeader id="dynamic-fee-context-heading">Experiment Context</SectionHeader>
+    <section id="dynamic-fee-context" className="mb-4" aria-labelledby="dynamic-fee-context-heading">
+      <SectionHeader id="dynamic-fee-context-heading" level="primary">Experiment Context</SectionHeader>
       <p className="mb-4 max-w-3xl text-sm leading-relaxed text-slate-400">
         The live tracker above is the decision surface. Use these lower disclosures for design mechanics, community framing, and proof boundaries.
       </p>
@@ -1775,6 +1776,17 @@ function SourceStatusStrip({
   );
 }
 
+const dynamicFeesToc: TocItem[] = [
+  { id: 'dynamic-fees-live', label: 'Live tracker' },
+  { id: 'dynamic-fee-current-controls', label: 'Current controls' },
+  { id: 'dynamic-fee-controller-config', label: 'Controller config' },
+  { id: 'dynamic-fee-historical-results', label: 'Historical results' },
+  { id: 'dynamic-fee-records-explorer', label: 'Records explorer' },
+  { id: 'dynamic-fee-orphan-accumulators', label: 'Orphan accumulators' },
+  { id: 'dynamic-fee-bps-distribution', label: 'BPS distribution' },
+  { id: 'dynamic-fee-context', label: 'Experiment context' },
+];
+
 interface DynamicFeesViewProps {
   children?: ReactNode;
   result?: LiveDataResult<DynamicL1FeeStatus>;
@@ -1835,6 +1847,8 @@ export function DynamicFeesView({
         sourceWarningCount={sourceWarningCount}
       />
 
+      <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_200px] lg:gap-10">
+        <div className="min-w-0">
       <LookFirstPanel
         status={status}
         liveState={liveState}
@@ -1843,9 +1857,9 @@ export function DynamicFeesView({
         ceilingPinnedCount={ceilingPinnedCount}
       />
 
-      <RelatedChecks checks={dynamicFeeRelatedChecks} className="mb-8" />
+      <RelatedChecks id="dynamic-fee-related-checks" checks={dynamicFeeRelatedChecks} className="mb-8" />
 
-      <SectionHeader>Current Controls</SectionHeader>
+      <SectionHeader id="dynamic-fee-current-controls" level="primary">Current Controls</SectionHeader>
       <p className="mb-4 max-w-3xl text-sm text-slate-400">
         These are the control-surface values behind the tracker. The fallback floor is still the base L1 minimum; dynamic floors only apply to active whitelisted thorname and pair records.
       </p>
@@ -1857,7 +1871,7 @@ export function DynamicFeesView({
         <StatCard icon={<Scale className="h-4 w-4" />} label="Current epoch" value={status?.currentEpoch ?? missingValue} />
       </div>
 
-      <details className="mb-10 rounded-md border border-border bg-surface-elevated p-4">
+      <details id="dynamic-fee-controller-config" className="mb-10 rounded-md border border-border bg-surface-elevated p-4">
         <summary className="cursor-pointer text-sm font-semibold text-accent underline-offset-4 hover:underline">
           Show controller configuration
         </summary>
@@ -1881,7 +1895,7 @@ export function DynamicFeesView({
         ceilingBps={ceilingBps}
       />
       {status && status.records.length > 0 && orphanCurrentEntries.length > 0 && (
-        <Card className="mb-10">
+        <Card id="dynamic-fee-orphan-accumulators" className="mb-10">
           <h2 className="mb-2 text-sm font-semibold text-amber-300">Current accumulators without sealed records</h2>
           <p className="mb-3 text-sm text-slate-400">
             THORNode is exposing in-progress TOR volume or fees for these pairs before a matching sealed record is available in this snapshot.
@@ -1898,7 +1912,7 @@ export function DynamicFeesView({
         </Card>
       )}
 
-      <div className="mb-12 grid min-w-0 gap-4 lg:grid-cols-[0.9fr_1.1fr]">
+      <div id="dynamic-fee-bps-distribution" className="mb-12 grid min-w-0 gap-4 lg:grid-cols-[0.9fr_1.1fr]">
         <Card className="min-w-0">
           <h2 className="mb-4 text-sm font-semibold">Dynamic bps distribution</h2>
           {status && status.records.length > 0 && (
@@ -1946,6 +1960,14 @@ export function DynamicFeesView({
       </div>
 
       <ExperimentContextPanel status={status} liveState={liveState} sourceWarningCount={sourceWarningCount} />
+        </div>
+
+        <aside className="hidden lg:block">
+          <div className="sticky top-[72px]">
+            <PageTableOfContents items={dynamicFeesToc} />
+          </div>
+        </aside>
+      </div>
     </PageContainer>
   );
 }

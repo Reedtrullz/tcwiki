@@ -4,7 +4,8 @@ import { Card } from '@/components/ui/Card';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { Badge } from '@/components/ui/Badge';
-import { RouteSourcePosture } from '@/components/features/RouteSourcePosture';
+import { PageSourcePosture } from '@/components/features/PageSourcePosture';
+import { PageTableOfContents, type TocItem } from '@/components/layout/PageTableOfContents';
 import { RelatedChecks, type RelatedCheck } from '@/components/features/RelatedChecks';
 import { ProtocolChainFinder } from '@/components/features/ProtocolChainFinder';
 import { getContentEntry } from '@/lib/content/registry';
@@ -51,8 +52,7 @@ const protocolRelatedChecks: RelatedCheck[] = [
 const protocolClaimChecks = [
   {
     title: 'Architecture explanation',
-    badge: 'concept',
-    use: 'Cosmos app-chain, Bifrost observation, vaults, pools, Mimir, and swap lifecycle structure.',
+    summary: 'Concept context for Cosmos app-chain, Bifrost, vaults, pools, Mimir, and the swap lifecycle.',
     verify: 'Use the New to THORChain path or the relevant deep dive before turning this into implementation detail.',
     avoid: 'Do not treat architecture cards as proof that a chain, route, or action is currently available.',
     href: '/deep-dives#deep-dive-path-new-to-thorchain',
@@ -60,8 +60,7 @@ const protocolClaimChecks = [
   },
   {
     title: 'Current availability claim',
-    badge: 'live state',
-    use: 'Whether swaps, signing, inbound addresses, LP actions, secured assets, or app-layer controls are open now.',
+    summary: 'Whether swaps, signing, inbound addresses, LP actions, secured assets, or app-layer controls are open now.',
     verify: 'Use Network diagnostics and current source-map guidance before presenting availability as live.',
     avoid: 'Do not infer live state from supported-chain listings, old docs, or a missing halt mention.',
     href: '/network#network-diagnostics',
@@ -69,8 +68,7 @@ const protocolClaimChecks = [
   },
   {
     title: 'Security or vault claim',
-    badge: 'security',
-    use: 'TSS, vault signing, churn, Bifrost observation, slash exposure, and post-exploit migration language.',
+    summary: 'TSS, vault signing, churn, Bifrost observation, slash exposure, and post-exploit migration language.',
     verify: 'Use the Network Security path plus dated incident or upgrade reports before describing current safety.',
     avoid: 'Do not convert a dated exploit report or migration discussion into present-day safety proof.',
     href: '/deep-dives#deep-dive-path-network-security',
@@ -78,8 +76,7 @@ const protocolClaimChecks = [
   },
   {
     title: 'Developer integration claim',
-    badge: 'developer',
-    use: 'Memos, asset notation, constants, Mimir keys, inbound-address fields, quote behavior, and API usage.',
+    summary: 'Memos, asset notation, constants, Mimir keys, inbound-address fields, quote behavior, and API usage.',
     verify: 'Use official developer docs and live endpoint evidence before giving transaction or implementation guidance.',
     avoid: 'Do not use wiki summaries as send instructions, wallet guidance, or complete API contracts.',
     href: '/deep-dives/build-query-data#query-plan',
@@ -236,6 +233,15 @@ function ConceptLinkCard({ card }: { card: { title: string; desc: string; href: 
   );
 }
 
+const protocolToc: TocItem[] = [
+  { id: 'protocol-claim-checks', label: 'Claim checks' },
+  { id: 'architecture', label: 'Architecture' },
+  { id: 'current-state-controls', label: 'Current-state controls' },
+  { id: 'swap-lifecycle', label: 'Swap lifecycle' },
+  { id: 'key-concepts', label: 'Key concepts' },
+  { id: 'supported-chains', label: 'Supported chains' },
+];
+
 export default function ProtocolPage() {
   return (
     <PageContainer>
@@ -243,124 +249,125 @@ export default function ProtocolPage() {
       <p className="text-slate-400 max-w-3xl mb-6">
         THORChain is a decentralized cross-chain liquidity protocol for native asset swaps without wrapped assets or centralized custody.
       </p>
-      <RouteSourcePosture
-        entry={entry}
-        className="mb-6"
-        useFor={[
-          'Architecture concepts, swap lifecycle, Bifrost, TSS, Mimir, and supported-chain context.',
-          'Dated educational framing for how THORChain components fit together.',
-        ]}
-        verifyBeforeClaiming={[
-          'Current halt, signing, inbound-address, gas-rate, or Mimir state.',
-          'Exact live constants, minimum bond, slash settings, or current chain availability.',
-        ]}
-      />
-      <RelatedChecks
-        checks={protocolRelatedChecks}
-        className="mb-12"
-        title="Continue From Here"
-        description="Move from the protocol overview into the right deeper read or live-source check before making an availability, implementation, or developer claim."
-        badgeLabel="claim path"
-      />
 
-      <section id="protocol-claim-checks" className="mb-12 scroll-mt-24">
-        <div className="mb-4 max-w-3xl">
-          <SectionHeader className="mb-3">Protocol Claim Checks</SectionHeader>
-          <p className="text-sm leading-relaxed text-slate-400">
-            Start with the claim type. The overview explains how the system fits together; current availability, vault safety, and developer behavior need stronger source paths.
-          </p>
-        </div>
-        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-          {protocolClaimChecks.map((check) => (
-            <Card key={check.title} padding="md">
-              <div className="mb-3 flex flex-wrap items-center gap-2">
-                <Badge variant="info">{check.badge}</Badge>
-                <h3 className="text-base font-semibold text-slate-100">{check.title}</h3>
-              </div>
-              <dl className="grid gap-3 text-xs leading-relaxed text-slate-400 sm:grid-cols-3">
-                <div>
-                  <dt className="font-semibold uppercase tracking-wider text-slate-500">Use For</dt>
-                  <dd className="mt-1">{check.use}</dd>
-                </div>
-                <div>
-                  <dt className="font-semibold uppercase tracking-wider text-slate-500">Verify</dt>
-                  <dd className="mt-1">{check.verify}</dd>
-                </div>
-                <div>
-                  <dt className="font-semibold uppercase tracking-wider text-amber-300">Do Not Claim</dt>
-                  <dd className="mt-1">{check.avoid}</dd>
-                </div>
-              </dl>
-              <Link href={check.href} className="mt-4 inline-flex text-xs font-semibold text-accent underline-offset-4 hover:underline">
-                {check.linkLabel}
-              </Link>
-            </Card>
-          ))}
-        </div>
-      </section>
+      <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_200px] lg:gap-10">
+        <div className="min-w-0">
+          <PageSourcePosture
+            entry={entry}
+            className="mb-6"
+            useFor={[
+              'Architecture concepts, swap lifecycle, Bifrost, TSS, Mimir, and supported-chain context.',
+              'Dated educational framing for how THORChain components fit together.',
+            ]}
+            verifyBeforeClaiming={[
+              'Current halt, signing, inbound-address, gas-rate, or Mimir state.',
+              'Exact live constants, minimum bond, slash settings, or current chain availability.',
+            ]}
+          />
 
-      <SectionHeader>Architecture</SectionHeader>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-12">
-        {architectureCards.map((card) => <ConceptLinkCard key={card.title} card={card} />)}
-      </div>
-
-      <SectionHeader>Current-State Controls</SectionHeader>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-12">
-        {currentStateControlCards.map((card) => <ConceptLinkCard key={card.title} card={card} />)}
-      </div>
-
-      <SectionHeader>Swap Lifecycle</SectionHeader>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-12">
-        {swapLifecycleCards.map((card) => <ConceptLinkCard key={card.title} card={card} />)}
-      </div>
-
-      <SectionHeader>Key Concepts</SectionHeader>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-12">
-        {keyConceptCards.map((card) => <ConceptLinkCard key={card.title} card={card} />)}
-      </div>
-
-      <SectionHeader>Supported Chains</SectionHeader>
-      <p className="text-sm text-slate-400 mb-4">
-        This curated list mirrors chains observed in live inbound-address sources at the {chainCatalogReviewedAt} chain-catalog review. Availability, routing, signing, LP actions, and pause state remain live/current-only.
-      </p>
-
-      <section id="chain-catalog-boundary" className="mb-5 scroll-mt-24">
-        <div className="mb-3 flex flex-col gap-1 md:flex-row md:items-end md:justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Before Reading The Chain Grid</p>
-            <p className="mt-1 max-w-3xl text-sm leading-relaxed text-slate-400">
-              Treat this as a catalog boundary, not a current availability dashboard. Move to the matching live check before telling a user a chain, action, or route is usable now.
+          <details className="mb-6 rounded-lg border border-border bg-surface-elevated px-4 py-3">
+            <summary className="cursor-pointer list-none text-sm font-semibold text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60">
+              Claim checks by type
+            </summary>
+            <p className="mt-2 max-w-3xl text-xs leading-relaxed text-slate-400">
+              Start with the claim type. The overview explains how the system fits together; current availability, vault safety, and developer behavior need stronger source paths.
             </p>
-          </div>
-          <Badge variant="warning">catalog is not availability</Badge>
-        </div>
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
-          {chainCatalogBoundary.map((item) => (
-            <Card key={item.title} padding="sm">
-              <div className="mb-2 flex flex-wrap items-center gap-2">
-                <Badge variant="info">{item.badge}</Badge>
-                <h3 className="text-sm font-semibold text-slate-100">{item.title}</h3>
-              </div>
-              <dl className="space-y-2 text-xs leading-relaxed text-slate-400">
-                <div>
-                  <dt className="font-semibold uppercase tracking-wider text-slate-500">Can Prove</dt>
-                  <dd>{item.proves}</dd>
-                </div>
-                <div>
-                  <dt className="font-semibold uppercase tracking-wider text-amber-300">Does Not Prove</dt>
-                  <dd>{item.doesNotProve}</dd>
-                </div>
-              </dl>
-              <Link href={item.href} className="mt-3 inline-flex text-xs font-semibold text-accent underline-offset-4 hover:underline">
-                {item.linkLabel}
-              </Link>
-            </Card>
-          ))}
-        </div>
-      </section>
+            <ul className="mt-3 divide-y divide-border">
+              {protocolClaimChecks.map((check) => (
+                <li key={check.title} className="py-3 first:pt-0 last:pb-0">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="text-sm font-semibold text-slate-200">{check.title}</span>
+                    <Link href={check.href} className="text-xs font-semibold text-accent underline-offset-4 hover:underline">
+                      {check.linkLabel}
+                    </Link>
+                  </div>
+                  <p className="mt-1 text-xs leading-relaxed text-slate-400">{check.summary}</p>
+                  <p className="mt-1 text-xs leading-relaxed text-amber-300/90">{check.avoid}</p>
+                </li>
+              ))}
+            </ul>
+          </details>
 
-      <div id="supported-chain-finder" className="scroll-mt-24">
-        <ProtocolChainFinder chainRecords={CHAIN_RECORDS} catalogReviewedAt={chainCatalogReviewedAt} />
+          <RelatedChecks
+            checks={protocolRelatedChecks}
+            className="mb-12"
+            title="Continue From Here"
+            description="Move from the protocol overview into the right deeper read or live-source check before making an availability, implementation, or developer claim."
+            badgeLabel="claim path"
+          />
+
+          <SectionHeader level="primary">Architecture</SectionHeader>
+          <div id="architecture" className="grid grid-cols-1 scroll-mt-24 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-12">
+            {architectureCards.map((card) => <ConceptLinkCard key={card.title} card={card} />)}
+          </div>
+
+          <SectionHeader level="primary">Current-State Controls</SectionHeader>
+          <div id="current-state-controls" className="grid grid-cols-1 scroll-mt-24 md:grid-cols-2 gap-3 mb-12">
+            {currentStateControlCards.map((card) => <ConceptLinkCard key={card.title} card={card} />)}
+          </div>
+
+          <SectionHeader level="primary">Swap Lifecycle</SectionHeader>
+          <div id="swap-lifecycle" className="grid grid-cols-1 scroll-mt-24 md:grid-cols-3 gap-3 mb-12">
+            {swapLifecycleCards.map((card) => <ConceptLinkCard key={card.title} card={card} />)}
+          </div>
+
+          <SectionHeader level="primary">Key Concepts</SectionHeader>
+          <div id="key-concepts" className="grid grid-cols-1 scroll-mt-24 md:grid-cols-2 gap-3 mb-12">
+            {keyConceptCards.map((card) => <ConceptLinkCard key={card.title} card={card} />)}
+          </div>
+
+          <div id="supported-chains" className="scroll-mt-24">
+            <SectionHeader level="primary">Supported Chains</SectionHeader>
+            <p className="text-sm text-slate-400 mb-4">
+              This curated list mirrors chains observed in live inbound-address sources at the {chainCatalogReviewedAt} chain-catalog review. Availability, routing, signing, LP actions, and pause state remain live/current-only.
+            </p>
+
+            <section id="chain-catalog-boundary" className="mb-5 scroll-mt-24">
+              <div className="mb-3 flex flex-col gap-1 md:flex-row md:items-end md:justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Before Reading The Chain Grid</p>
+                  <p className="mt-1 max-w-3xl text-sm leading-relaxed text-slate-400">
+                    Treat this as a catalog boundary, not a current availability dashboard. Move to the matching live check before telling a user a chain, action, or route is usable now.
+                  </p>
+                </div>
+                <Badge variant="warning">catalog is not availability</Badge>
+              </div>
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+                {chainCatalogBoundary.map((item) => (
+                  <Card key={item.title} padding="sm">
+                    <div className="mb-2 flex flex-wrap items-center gap-2">
+                      <Badge variant="info">{item.badge}</Badge>
+                      <h3 className="text-sm font-semibold text-slate-100">{item.title}</h3>
+                    </div>
+                    <dl className="space-y-2 text-xs leading-relaxed text-slate-400">
+                      <div>
+                        <dt className="font-semibold uppercase tracking-wider text-slate-500">Can Prove</dt>
+                        <dd>{item.proves}</dd>
+                      </div>
+                      <div>
+                        <dt className="font-semibold uppercase tracking-wider text-amber-300">Does Not Prove</dt>
+                        <dd>{item.doesNotProve}</dd>
+                      </div>
+                    </dl>
+                    <Link href={item.href} className="mt-3 inline-flex text-xs font-semibold text-accent underline-offset-4 hover:underline">
+                      {item.linkLabel}
+                    </Link>
+                  </Card>
+                ))}
+              </div>
+            </section>
+
+            <div id="supported-chain-finder" className="scroll-mt-24">
+              <ProtocolChainFinder chainRecords={CHAIN_RECORDS} catalogReviewedAt={chainCatalogReviewedAt} />
+            </div>
+          </div>
+        </div>
+
+        <aside className="hidden lg:block">
+          <div className="sticky top-[72px]">
+            <PageTableOfContents items={protocolToc} />
+          </div>
+        </aside>
       </div>
     </PageContainer>
   );

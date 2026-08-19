@@ -1,5 +1,5 @@
 import HomePageClient from './HomePageClient';
-import { RouteSourcePosture } from '@/components/features/RouteSourcePosture';
+import { PageSourcePosture } from '@/components/features/PageSourcePosture';
 import { getContentEntry } from '@/lib/content/registry';
 import { createRouteMetadata } from '@/lib/metadata';
 
@@ -15,7 +15,7 @@ export default function HomePage() {
   return (
     <HomePageClient
       sourcePosture={(
-        <RouteSourcePosture
+        <PageSourcePosture
           entry={entry}
           className="border-accent/10"
           useFor={[

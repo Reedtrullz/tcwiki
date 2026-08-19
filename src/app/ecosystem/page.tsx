@@ -1,8 +1,10 @@
 import Link from 'next/link';
 import { CHAIN_RECORDS, ECOSYSTEM_PROJECT_RECORDS } from '@/lib/data/static';
 import { PageContainer } from '@/components/layout/PageContainer';
+import { SectionHeader } from '@/components/ui/SectionHeader';
 import { EcosystemFilterList } from '@/components/features/EcosystemFilterList';
-import { RouteSourcePosture } from '@/components/features/RouteSourcePosture';
+import { PageSourcePosture } from '@/components/features/PageSourcePosture';
+import { PageTableOfContents, type TocItem } from '@/components/layout/PageTableOfContents';
 import { getContentEntry } from '@/lib/content/registry';
 import { createRouteMetadata } from '@/lib/metadata';
 
@@ -13,6 +15,11 @@ export const metadata = createRouteMetadata({
 });
 
 const entry = getContentEntry('ecosystem');
+
+const ecosystemToc: TocItem[] = [
+  { id: 'interface-use-checklist', label: 'Before using an interface' },
+  { id: 'ecosystem-directory', label: 'Ecosystem directory' },
+];
 
 const interfaceIntentGuides = [
   {
@@ -91,7 +98,9 @@ export default function EcosystemPage() {
       <p className="text-slate-400 max-w-3xl mb-6">
         Selected applications, wallets, interfaces, explorers, and developer tools. This is a curated reference index, not an endorsement list, safety review, or proof of current availability.
       </p>
-      <RouteSourcePosture
+      <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_200px] lg:gap-10">
+        <div className="min-w-0">
+      <PageSourcePosture
         entry={entry}
         className="mb-12"
         useFor={[
@@ -107,7 +116,7 @@ export default function EcosystemPage() {
       <section id="interface-use-checklist" className="mb-10 scroll-mt-24">
         <div className="mb-3 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
           <div>
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-400">Before Using An Interface</h2>
+            <SectionHeader level="primary">Before Using An Interface</SectionHeader>
             <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-400">
               Use this as an interface trust journey: choose by intent, check live protocol state, read what the sources actually prove, then inspect the transaction or download path before signing.
             </p>
@@ -179,6 +188,14 @@ export default function EcosystemPage() {
       <section id="ecosystem-directory" className="scroll-mt-24">
         <EcosystemFilterList projectRecords={ECOSYSTEM_PROJECT_RECORDS} chainRecords={CHAIN_RECORDS} />
       </section>
+        </div>
+
+        <aside className="hidden lg:block">
+          <div className="sticky top-[72px]">
+            <PageTableOfContents items={ecosystemToc} />
+          </div>
+        </aside>
+      </div>
     </PageContainer>
   );
 }

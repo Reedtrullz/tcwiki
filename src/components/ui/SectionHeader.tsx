@@ -1,13 +1,18 @@
 import { cn } from '@/lib/utils';
 
 interface SectionHeaderProps extends React.HTMLAttributes<HTMLHeadingElement> {
-  children: React.ReactNode;
+  /** `primary` draws the eye as a major content section; `secondary` (default) is a quieter sub-heading. */
+  level?: 'primary' | 'secondary';
 }
 
-export function SectionHeader({ children, className, ...props }: SectionHeaderProps) {
+export function SectionHeader({ children, className, level = 'secondary', ...props }: SectionHeaderProps) {
+  const styles =
+    level === 'primary'
+      ? 'text-lg font-semibold text-slate-100 uppercase tracking-wide mb-5'
+      : 'text-sm font-semibold text-slate-400 uppercase tracking-wider mb-5';
   return (
     <h2
-      className={cn('text-sm font-semibold text-slate-400 uppercase tracking-wider mb-5', className)}
+      className={cn(styles, className)}
       {...props}
     >
       {children}

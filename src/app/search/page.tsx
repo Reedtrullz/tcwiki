@@ -1,5 +1,5 @@
 import SearchPageClient from './SearchPageClient';
-import { RouteSourcePosture } from '@/components/features/RouteSourcePosture';
+import { PageSourcePosture } from '@/components/features/PageSourcePosture';
 import { getContentEntry } from '@/lib/content/registry';
 import { createRouteMetadata } from '@/lib/metadata';
 
@@ -15,7 +15,7 @@ export default function SearchPage() {
   return (
     <SearchPageClient
       sourcePosture={(
-        <RouteSourcePosture
+        <PageSourcePosture
           entry={entry}
           className="mt-10"
           useFor={[

@@ -1,12 +1,14 @@
 import Link from 'next/link';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { FreshnessMeta } from '@/components/ui/FreshnessMeta';
-import { RouteSourcePosture } from '@/components/features/RouteSourcePosture';
+import { SectionHeader } from '@/components/ui/SectionHeader';
+import { PageSourcePosture } from '@/components/features/PageSourcePosture';
 import { SourceMapExplorer } from '@/components/features/SourceMapExplorer';
 import { SOURCE_MAP_SECTION_RECORDS } from '@/lib/data/static';
 import { getContentEntry, SOURCE_CHOICE_DECISIONS } from '@/lib/content/registry';
 import { createRouteMetadata } from '@/lib/metadata';
 import type { SourceMapExplorerChoice, SourceMapExplorerDecision, SourceMapExplorerSection } from '@/lib/source-map-explorer';
+import { PageTableOfContents, type TocItem } from '@/components/layout/PageTableOfContents';
 
 export const metadata = createRouteMetadata({
   title: 'THORChain Source Map | THORChain Wiki',
@@ -15,6 +17,11 @@ export const metadata = createRouteMetadata({
 });
 
 const entry = getContentEntry('docs');
+
+const docsToc: TocItem[] = [
+  { id: 'source-map-chooser', label: 'Source map chooser' },
+  ...SOURCE_MAP_SECTION_RECORDS.map((record) => ({ id: record.data.id, label: record.data.title })),
+];
 
 const sourceTriageChoices = [
   {
@@ -159,6 +166,8 @@ export default function DocsPage() {
         A source map for official docs, developer references, live APIs, historical records, external analytics, and community channels. Pick sources by the kind of claim you need to make.
       </p>
 
+      <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_200px] lg:gap-10">
+        <div className="min-w-0">
       <section id="source-map-chooser" className="mb-12 scroll-mt-24">
         <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-slate-400">
           What Are You Trying To Prove?
@@ -176,7 +185,7 @@ export default function DocsPage() {
             </span>
           </div>
         </div>
-        <RouteSourcePosture
+        <PageSourcePosture
           entry={entry}
           className="mb-7"
           useFor={[
@@ -195,12 +204,19 @@ export default function DocsPage() {
         />
       </section>
 
-      <div className="mb-12 space-y-10">
+      <details className="mb-12 rounded-lg border border-border bg-surface/40 p-4">
+        <summary className="cursor-pointer text-sm font-semibold uppercase tracking-wider text-slate-300">
+          Full source-family reference
+        </summary>
+        <p className="mb-6 mt-3 text-sm leading-relaxed text-slate-400">
+          The complete, canonical list of source families with full claim guidance, freshness metadata, and primary-source links.
+        </p>
+        <div className="space-y-10">
         {SOURCE_MAP_SECTION_RECORDS.map((record) => (
           <section key={record.data.id} id={record.data.id} className="scroll-mt-24 border-t border-border pt-7">
             <div className="mb-4 flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
               <div className="max-w-3xl">
-                <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-400">{record.data.title}</h2>
+                <SectionHeader level="primary">{record.data.title}</SectionHeader>
                 <p className="mt-2 text-base leading-relaxed text-slate-200">{record.data.decision}</p>
               </div>
               <FreshnessMeta freshness={record.freshness} sources={record.sources} compact />
@@ -257,6 +273,15 @@ export default function DocsPage() {
             </div>
           </section>
         ))}
+        </div>
+      </details>
+        </div>
+
+        <aside className="hidden lg:block">
+          <div className="sticky top-[72px]">
+            <PageTableOfContents items={docsToc} />
+          </div>
+        </aside>
       </div>
     </PageContainer>
   );

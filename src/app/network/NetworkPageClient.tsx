@@ -10,9 +10,18 @@ import { PageContainer } from '@/components/layout/PageContainer';
 import { useMidgardHealth, useNetworkData, useNetworkStatus } from '@/lib/hooks/useMidgard';
 import { MayaNodePanel } from '@/components/features/MayaNodePanel';
 import { NetworkStatusBanner } from '@/components/features/NetworkStatusBanner';
+import { PageTableOfContents } from '@/components/layout/PageTableOfContents';
 import { LiveSourceMeta } from '@/components/ui/LiveSourceMeta';
 import { getNetworkCurrentOnlyStateLabel, getSecuredAssetsSummaryPaused } from '@/lib/network-status-summary';
 import { RelatedChecks, type RelatedCheck } from '@/components/features/RelatedChecks';
+const networkToc = [
+  { id: 'network-diagnostics', label: 'Diagnostics' },
+  { id: 'current-operation-snapshot-heading', label: 'Operation snapshot' },
+  { id: 'node-operator-guide', label: 'Node operator guide' },
+  { id: 'node-types', label: 'Node types' },
+  { id: 'security-architecture', label: 'Security architecture' },
+];
+
 import { nodeLeavingSource, nodeManagingSource, nodeOperationsSource, nodeRisksRewardsSource } from '@/lib/sources';
 
 const networkRelatedChecks: RelatedCheck[] = [
@@ -348,6 +357,9 @@ export default function NetworkPageClient({ children }: NetworkPageClientProps) 
         data is shown alongside for cross-protocol visibility.
       </p>
 
+      <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_200px] lg:gap-10">
+        <div className="min-w-0">
+
       <div id="network-diagnostics" className="scroll-mt-24 mb-12">
         <NetworkStatusBanner result={statusResult} isLoading={statusLoading} variant="diagnostic" showQuoteChecker />
       </div>
@@ -360,7 +372,7 @@ export default function NetworkPageClient({ children }: NetworkPageClientProps) 
 
       {nodeOperatorGuide}
 
-      <SectionHeader>Node Types</SectionHeader>
+      <SectionHeader id="node-types" level="primary">Node Types</SectionHeader>
       <div className="grid grid-cols-1 gap-3 mb-12 sm:grid-cols-2 lg:grid-cols-5">
         {[
           { type: 'Whitelisted', color: 'text-blue-400', desc: 'Bonded, but required node keys have not yet been set; operator setup is incomplete.' },
@@ -376,7 +388,7 @@ export default function NetworkPageClient({ children }: NetworkPageClientProps) 
         ))}
       </div>
 
-      <SectionHeader>Security Architecture</SectionHeader>
+      <SectionHeader id="security-architecture" level="primary">Security Architecture</SectionHeader>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-12">
         {[
           { title: 'Threshold Signatures', desc: 'Distributed signing protects vault keys, but implementation details and migration status should stay tied to dated source material.' },
@@ -395,6 +407,14 @@ export default function NetworkPageClient({ children }: NetworkPageClientProps) 
 
       <MayaNodePanel />
 
+        </div>
+
+        <aside className="hidden lg:block">
+          <div className="sticky top-[72px]">
+            <PageTableOfContents items={networkToc} />
+          </div>
+        </aside>
+      </div>
     </PageContainer>
   );
 }

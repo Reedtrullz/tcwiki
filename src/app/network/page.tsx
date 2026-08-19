@@ -1,6 +1,6 @@
 import { getContentEntry } from '@/lib/content/registry';
 import { createRouteMetadata } from '@/lib/metadata';
-import { RouteSourcePosture } from '@/components/features/RouteSourcePosture';
+import { PageSourcePosture } from '@/components/features/PageSourcePosture';
 import NetworkPageClient from './NetworkPageClient';
 
 const entry = getContentEntry('network');
@@ -14,7 +14,7 @@ export const metadata = createRouteMetadata({
 export default function NetworkPage() {
   return (
     <NetworkPageClient>
-      <RouteSourcePosture
+      <PageSourcePosture
         entry={entry}
         className="mb-12"
         useFor={[

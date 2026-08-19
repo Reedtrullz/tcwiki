@@ -7,9 +7,10 @@ import Link from 'next/link';
 import { Activity, ArrowRight, BookOpen, Compass, Search, ShieldCheck } from 'lucide-react';
 import lunr from 'lunr';
 import { SEARCH_DOCUMENTS, SearchDoc } from '@/lib/search/registry';
-import { JOURNEY_LINKS, SEARCH_PAGE_ENTRY, TASK_GUIDE_GROUPED } from '@/lib/content/registry';
+import { SEARCH_PAGE_ENTRY } from '@/lib/content/registry';
 import { PageContainer } from '@/components/layout/PageContainer';
-import { RouteSourcePosture } from '@/components/features/RouteSourcePosture';
+import { PageSourcePosture } from '@/components/features/PageSourcePosture';
+import { PageTableOfContents, type TocItem } from '@/components/layout/PageTableOfContents';
 import { Badge } from '@/components/ui/Badge';
 import { FreshnessMeta } from '@/components/ui/FreshnessMeta';
 import { AdditionalSourceDisclosure, SourceMetaLink } from '@/components/ui/SourceMetaDisclosure';
@@ -164,6 +165,12 @@ function searchHref(query: string, filterId: SearchFilterId) {
   return queryString ? `/search?${queryString}` : '/search';
 }
 
+const searchToc: TocItem[] = [
+  { id: 'search-form', label: 'Search' },
+  { id: 'search-guided-answers', label: 'Guided answers' },
+  { id: 'search-common-tasks', label: 'Browse by task' },
+];
+
 function SearchDecisionPrimer() {
   return (
     <section id="search-look-here-first" aria-labelledby="search-look-here-first-heading" className="mb-8">
@@ -293,68 +300,32 @@ function SearchResultBoundary() {
 function SearchGuideLinks() {
   return (
     <section id="search-guided-answers" aria-labelledby="search-guided-answers-heading" className="mb-8 scroll-mt-24">
-      <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h2 id="search-guided-answers-heading" className="text-sm font-semibold uppercase tracking-wider text-slate-400">
-            Guided Answers
-          </h2>
-          <p className="mt-1 max-w-2xl text-xs leading-relaxed text-slate-400">
-            Start with the reader job when the exact page, metric, or source is not obvious yet.
-          </p>
+      <div className="rounded-lg border border-border bg-surface-elevated p-4 sm:p-5">
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 id="search-guided-answers-heading" className="text-sm font-semibold uppercase tracking-wider text-slate-400">
+              Guided Answers
+            </h2>
+            <p className="mt-1 max-w-2xl text-xs leading-relaxed text-slate-400">
+              Reader paths and task guides are gathered in one place so you can pick the right starting page, source, or proof boundary. The full taxonomy lives in the Guides flyout and on this section&apos;s dedicated surface.
+            </p>
+          </div>
         </div>
-        <Link href="#search-common-tasks" className="text-xs text-slate-400 transition-colors hover:text-slate-300">
-          Jump to common tasks →
-        </Link>
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <Link
+            href="/search#search-guided-answers"
+            className="inline-flex items-center gap-1 rounded-md border border-border bg-surface px-3 py-1.5 text-xs font-medium text-slate-200 transition-colors hover:border-accent/30 hover:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
+          >
+            Browse all guided answers
+            <ArrowRight aria-hidden="true" className="h-3.5 w-3.5" />
+          </Link>
+        </div>
       </div>
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[0.85fr_1.4fr]">
-        <section aria-labelledby="search-reader-paths">
-          <h2 id="search-reader-paths" className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
-            Reader Paths
-          </h2>
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-1">
-            {JOURNEY_LINKS.map((journey) => (
-              <Link
-                key={journey.href}
-                href={journey.href}
-                className="block rounded-lg border border-border bg-surface-elevated p-4 transition-colors hover:border-accent/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
-              >
-                <p className="text-sm font-semibold text-slate-200">{journey.label}</p>
-                <p className="mt-1 text-xs leading-relaxed text-slate-400">{journey.description}</p>
-              </Link>
-            ))}
-          </div>
-        </section>
-
-        <section id="search-common-tasks" aria-labelledby="search-common-tasks-heading" className="scroll-mt-24">
-          <h2 id="search-common-tasks-heading" className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
-            Common Tasks
-          </h2>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {TASK_GUIDE_GROUPED.map((group) => (
-              <section key={group.id} aria-labelledby={`search-task-group-${group.id}`}>
-                <h3 id={`search-task-group-${group.id}`} className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-                  {group.label}
-                </h3>
-                <div className="mt-3 grid gap-2">
-                  {group.guides.map((guide) => (
-                    <Link
-                      key={guide.id}
-                      href={guide.href}
-                      className="rounded-md border border-border bg-surface px-3 py-2 transition-colors hover:border-accent/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
-                    >
-                      <span className="block text-sm font-semibold text-slate-200">{guide.label}</span>
-                      <span className="mt-1 block text-xs leading-relaxed text-slate-400">{guide.description}</span>
-                    </Link>
-                  ))}
-                </div>
-              </section>
-            ))}
-          </div>
-        </section>
-      </div>
+      <span id="search-common-tasks" className="sr-only" />
     </section>
   );
 }
+
 
 function SearchResultCard({
   result,
@@ -634,7 +605,7 @@ function SearchResultsInner() {
 
   return (
     <div>
-      <form role="search" aria-label="Search wiki content" onSubmit={handleSearchSubmit} className="mb-8">
+      <form id="search-form" role="search" aria-label="Search wiki content" onSubmit={handleSearchSubmit} className="mb-8">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
           <input
@@ -707,6 +678,8 @@ interface SearchPageClientProps {
 export default function SearchPage({ sourcePosture }: SearchPageClientProps) {
   return (
     <PageContainer maxWidth="narrow">
+      <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_200px] lg:gap-10">
+        <div className="min-w-0">
       <div className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight">Search And Guided Answers</h1>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-400">
@@ -716,9 +689,9 @@ export default function SearchPage({ sourcePosture }: SearchPageClientProps) {
       <Suspense fallback={<p className="text-sm text-slate-400">Loading...</p>}>
         <SearchResultsInner />
       </Suspense>
-      <div id="search-page-source-posture" className="scroll-mt-24">
+        <div id="search-page-source-posture" className="scroll-mt-24">
         {sourcePosture ?? (
-          <RouteSourcePosture
+          <PageSourcePosture
             entry={SEARCH_PAGE_ENTRY}
             className="mt-10"
             useFor={[
@@ -731,6 +704,14 @@ export default function SearchPage({ sourcePosture }: SearchPageClientProps) {
             ]}
           />
         )}
+        </div>
+        </div>
+
+        <aside className="hidden lg:block">
+          <div className="sticky top-[72px]">
+            <PageTableOfContents items={searchToc} />
+          </div>
+        </aside>
       </div>
     </PageContainer>
   );

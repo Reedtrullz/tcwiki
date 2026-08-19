@@ -11,7 +11,7 @@ export const MDX_SEARCH_DOCUMENTS: SearchDoc[] = [
     "description": "App Layer, CosmWasm, and Secured Assets THORChain's App Layer is the smart contract surface built around CosmWasm.",
     "confidence": "curated",
     "reviewedAt": "2026-07-14",
-    "nextReviewDue": "2026-08-14",
+    "nextReviewDue": "2026-11-17",
     "sources": [
       {
         "label": "THORChain Application Layer docs",
@@ -61,7 +61,7 @@ export const MDX_SEARCH_DOCUMENTS: SearchDoc[] = [
     "description": "Bifrost Bridge and Cross Chain Observability Bifrost is the component responsible for making THORChain aware of activity on external blockchains.",
     "confidence": "curated",
     "reviewedAt": "2026-07-14",
-    "nextReviewDue": "2026-08-14",
+    "nextReviewDue": "2026-11-17",
     "sources": [
       {
         "label": "Bifrost, TSS and Vaults",
@@ -99,7 +99,7 @@ export const MDX_SEARCH_DOCUMENTS: SearchDoc[] = [
     "description": "Build And Query THORChain Data Building on THORChain data starts with a source choice.",
     "confidence": "curated",
     "reviewedAt": "2026-07-14",
-    "nextReviewDue": "2026-08-14",
+    "nextReviewDue": "2026-11-17",
     "sources": [
       {
         "label": "Connecting to THORChain",
@@ -167,7 +167,7 @@ export const MDX_SEARCH_DOCUMENTS: SearchDoc[] = [
     "description": "Churning and Node Lifecycle Churning is the mechanism that keeps the THORChain validator set fresh, secure, and decentralized over time.",
     "confidence": "curated",
     "reviewedAt": "2026-07-14",
-    "nextReviewDue": "2026-08-14",
+    "nextReviewDue": "2026-11-17",
     "sources": [
       {
         "label": "THORNode node operations",
@@ -217,7 +217,7 @@ export const MDX_SEARCH_DOCUMENTS: SearchDoc[] = [
     "description": "Continuous Liquidity Pools (CLP) Deep Dive The Continuous Liquidity Pool is the core innovation that allows THORChain to offer native cross chain swaps without order books or wr...",
     "confidence": "curated",
     "reviewedAt": "2026-07-14",
-    "nextReviewDue": "2026-08-14",
+    "nextReviewDue": "2026-11-17",
     "sources": [
       {
         "label": "THORChain Docs",
@@ -255,7 +255,7 @@ export const MDX_SEARCH_DOCUMENTS: SearchDoc[] = [
     "description": "The Incentive Pendulum The Incentive Pendulum is THORChain's reward balancing mechanism.",
     "confidence": "curated",
     "reviewedAt": "2026-07-14",
-    "nextReviewDue": "2026-08-14",
+    "nextReviewDue": "2026-11-17",
     "sources": [
       {
         "label": "THORChain economic model",
@@ -293,7 +293,7 @@ export const MDX_SEARCH_DOCUMENTS: SearchDoc[] = [
     "description": "Liquidity Actions Deep Dive Liquidity actions are not the same claim as ordinary swap availability.",
     "confidence": "curated",
     "reviewedAt": "2026-07-14",
-    "nextReviewDue": "2026-08-14",
+    "nextReviewDue": "2026-11-17",
     "sources": [
       {
         "label": "Liquidity Providers",
@@ -361,7 +361,7 @@ export const MDX_SEARCH_DOCUMENTS: SearchDoc[] = [
     "description": "Midgard And THORNode Data The wiki uses live data in two different ways.",
     "confidence": "curated",
     "reviewedAt": "2026-07-14",
-    "nextReviewDue": "2026-08-14",
+    "nextReviewDue": "2026-11-17",
     "sources": [
       {
         "label": "Connecting to THORChain",
@@ -423,7 +423,7 @@ export const MDX_SEARCH_DOCUMENTS: SearchDoc[] = [
     "description": "Mimir And Halt Controls Mimir values are THORChain operational controls.",
     "confidence": "curated",
     "reviewedAt": "2026-07-13",
-    "nextReviewDue": "2026-08-13",
+    "nextReviewDue": "2026-11-17",
     "sources": [
       {
         "label": "THORChain Network Halts",
@@ -467,7 +467,7 @@ export const MDX_SEARCH_DOCUMENTS: SearchDoc[] = [
     "description": "RUNE as the Universal Settlement Asset RUNE is THORChain's native asset and the common pair for the protocol's liquidity pools.",
     "confidence": "curated",
     "reviewedAt": "2026-07-14",
-    "nextReviewDue": "2026-08-14",
+    "nextReviewDue": "2026-11-17",
     "sources": [
       {
         "label": "THORChain RUNE docs",
@@ -505,7 +505,7 @@ export const MDX_SEARCH_DOCUMENTS: SearchDoc[] = [
     "description": "RUNEPool And POL Evidence RUNEPool lets RUNE providers participate in protocol owned liquidity (POL).",
     "confidence": "curated",
     "reviewedAt": "2026-07-14",
-    "nextReviewDue": "2026-08-14",
+    "nextReviewDue": "2026-11-17",
     "sources": [
       {
         "label": "THORChain RUNEPool docs",
@@ -555,7 +555,7 @@ export const MDX_SEARCH_DOCUMENTS: SearchDoc[] = [
     "description": "Savers and Lending (Historical) Savers and Lending were THORFi era features.",
     "confidence": "historical",
     "reviewedAt": "2026-07-14",
-    "nextReviewDue": "2026-08-14",
+    "nextReviewDue": "2026-11-17",
     "sources": [
       {
         "label": "Archived Savers docs",
@@ -605,7 +605,7 @@ export const MDX_SEARCH_DOCUMENTS: SearchDoc[] = [
     "description": "Slashing and Economic Security Slashing is the primary economic defense mechanism that aligns node operator incentives with the security of the network.",
     "confidence": "curated",
     "reviewedAt": "2026-07-14",
-    "nextReviewDue": "2026-08-14",
+    "nextReviewDue": "2026-11-17",
     "sources": [
       {
         "label": "THORNode risks, costs and rewards",
@@ -643,7 +643,7 @@ export const MDX_SEARCH_DOCUMENTS: SearchDoc[] = [
     "description": "Streaming Swaps And Refunds THORChain swaps are not just a formula.",
     "confidence": "curated",
     "reviewedAt": "2026-07-14",
-    "nextReviewDue": "2026-08-14",
+    "nextReviewDue": "2026-11-17",
     "sources": [
       {
         "label": "THORChain Swap Guide",
@@ -687,7 +687,7 @@ export const MDX_SEARCH_DOCUMENTS: SearchDoc[] = [
     "description": "TCY Recovery Timeline TCY sits in a sensitive part of THORChain history: deprecated THORFi products, defaulted Savers and Lending claims, recovery token mechanics, and later pos...",
     "confidence": "historical",
     "reviewedAt": "2026-07-13",
-    "nextReviewDue": "2026-08-13",
+    "nextReviewDue": "2026-11-17",
     "sources": [
       {
         "label": "THORFi Unwind Announcement",
@@ -749,7 +749,7 @@ export const MDX_SEARCH_DOCUMENTS: SearchDoc[] = [
     "description": "Threshold Signatures (TSS) in THORChain Threshold Signature Schemes are the cryptographic foundation that allows THORChain to custody assets across many chains without ever expo...",
     "confidence": "curated",
     "reviewedAt": "2026-07-13",
-    "nextReviewDue": "2026-08-13",
+    "nextReviewDue": "2026-11-17",
     "sources": [
       {
         "label": "THORChain Docs",

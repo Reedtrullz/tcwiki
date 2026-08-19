@@ -117,7 +117,7 @@ export const OPERATIONAL_HALT_SEARCH_DOCUMENTS: SearchDoc[] = [
     title: 'Mimir halt and enablement controls (current diagnostics)',
     confidence: 'official',
     reviewedAt: '2026-07-08',
-    nextReviewDue: '2026-08-08',
+    nextReviewDue: '2026-11-17',
     sources: [networkHaltsSource],
     description: 'Official Mimir control reference for THORChain operations. Current values and active states come from Network diagnostics, not this search record.',
     content: OPERATIONAL_CONTROL_SEARCH_CONTENT,

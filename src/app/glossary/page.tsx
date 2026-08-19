@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import { GLOSSARY_DEFINITION_PATHS, GLOSSARY_TERMS } from '@/lib/content/glossary';
 import { PageContainer } from '@/components/layout/PageContainer';
-import { RouteSourcePosture } from '@/components/features/RouteSourcePosture';
+import { PageSourcePosture } from '@/components/features/PageSourcePosture';
+import { PageTableOfContents, type TocItem } from '@/components/layout/PageTableOfContents';
 import { GlossaryExplorer, type GlossaryExplorerTerm } from '@/components/features/GlossaryExplorer';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
@@ -17,6 +18,16 @@ export const metadata = createRouteMetadata({
 });
 
 const entry = getContentEntry('glossary');
+
+const glossaryToc: TocItem[] = [
+  { id: 'glossary-definition-map', label: 'Definition map' },
+  { id: 'glossary-explorer', label: 'Term finder' },
+  { id: 'protocol', label: 'Protocol' },
+  { id: 'economics', label: 'Economics' },
+  { id: 'operations', label: 'Operations' },
+  { id: 'history', label: 'History' },
+  { id: 'developer', label: 'Developer' },
+];
 
 const glossaryTermsById = new Map(GLOSSARY_TERMS.map((term) => [term.id, term]));
 
@@ -96,7 +107,7 @@ export default function GlossaryPage() {
       <p className="text-slate-400 max-w-3xl mb-6">
         Source-aware definitions for protocol, economics, operations, developer, and historical THORChain terms.
       </p>
-      <RouteSourcePosture
+      <PageSourcePosture
         entry={entry}
         className="mb-8"
         useFor={[
@@ -109,10 +120,12 @@ export default function GlossaryPage() {
         ]}
       />
 
+      <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_200px] lg:gap-10">
+        <div className="min-w-0">
       <section id="glossary-definition-map" className="mb-10 scroll-mt-24">
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div className="max-w-3xl">
-            <SectionHeader className="mb-3">Definition Map</SectionHeader>
+            <SectionHeader className="mb-3" level="primary">Definition Map</SectionHeader>
             <p className="text-sm leading-relaxed text-slate-400">
               Start with a term, then move to the page that can actually prove the claim. Definitions explain vocabulary; live state, fee outcomes, app-layer availability, and recovery status need stronger evidence.
             </p>
@@ -164,6 +177,14 @@ export default function GlossaryPage() {
         </div>
       </section>
       <GlossaryExplorer terms={terms} />
+        </div>
+
+        <aside className="hidden lg:block">
+          <div className="sticky top-[72px]">
+            <PageTableOfContents items={glossaryToc} />
+          </div>
+        </aside>
+      </div>
     </PageContainer>
   );
 }
