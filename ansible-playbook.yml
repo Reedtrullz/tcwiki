@@ -158,6 +158,14 @@
 
   tasks:
     - block:
+        - name: Debug GHCR token length
+          debug:
+            msg: "GHCR token length: {{ ghcr_token | length }}"
+
+        - name: Debug GHCR token length
+          debug:
+            msg: "GHCR token length: {{ ghcr_token | length }}"
+
         - name: Login to GHCR
           community.docker.docker_login:
             registry: ghcr.io
