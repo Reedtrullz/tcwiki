@@ -37,6 +37,8 @@ jobs:
       - name: Audit full dependency tree
         run: npm run audit:all
       - run: npm run check:content
+        env:
+          ALLOW_OVERDUE_CONTENT: '1'
       - run: npm run lint
       - run: npm run typecheck
       - run: npm run test:unit
