@@ -297,7 +297,7 @@ describe('release and browser test wiring', () => {
 
   it('checks the strict readiness contract before and after production cutover', () => {
     const candidateContractIndex = playbook.indexOf('name: Verify candidate readiness contract');
-    const candidateStrictUrlIndex = playbook.indexOf('http://localhost:3004/api/ready?contract=strict');
+    const candidateStrictUrlIndex = playbook.indexOf('http://localhost:{{ candidate_port }}/api/ready?contract=strict');
     const stopLiveIndex = playbook.indexOf('name: Stop and remove existing container');
     const deployedContractIndex = playbook.indexOf('name: Verify deployed readiness contract');
     const deployedStrictUrlIndex = playbook.indexOf('http://localhost:3003/api/ready?contract=strict');
