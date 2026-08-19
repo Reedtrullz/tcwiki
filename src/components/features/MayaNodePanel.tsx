@@ -60,7 +60,6 @@ export function MayaNodePanel() {
   const { data: nodes, result: nodesResult, isLoading: nodesLoading } = useMayaNodes();
 
   const activeNodes = nodes?.filter((n) => n.isActive) ?? [];
-  const standbyNodes = nodes?.filter((n) => n.status?.toLowerCase() === 'standby') ?? [];
 
   const isLoading = networkLoading || nodesLoading;
   const hasError = networkResult?.status === 'degraded' && nodesResult?.status === 'degraded';
