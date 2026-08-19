@@ -191,7 +191,6 @@ test.describe('THORChain Wiki Deep Dive Smoke Tests', () => {
     await expect(page.getByRole('navigation', { name: /Table of contents/i })).toBeVisible();
     await expect(page.getByRole('main').getByRole('link', { name: 'Glossary' })).toBeVisible();
     await page.getByText('Reader paths for this article').click();
-        await page.getByText('Reader paths for this article').click();
     const articlePaths = page.locator('details').filter({ hasText: 'Reader paths for this article' });
     await expect(articlePaths.getByText('Reader paths for this article')).toBeVisible();
     await expect(articlePaths.getByRole('link', { name: 'Network Security' })).toHaveAttribute('href', '/deep-dives#deep-dive-path-network-security');

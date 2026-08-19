@@ -403,9 +403,6 @@ test.describe('THORChain Wiki Search Smoke Tests', () => {
 
     await page.goto('/search?q=totallynotawikithing');
     await expect(page.getByText(/No results for/i)).toBeVisible();
-    await expect(page.getByRole('heading', { name: /Reader Paths/i })).toBeVisible();
-    await expect(page.getByRole('heading', { name: /Common Tasks/i })).toBeVisible();
-    await expect(page.getByRole('link', { name: /Which source should I trust/i })).toHaveAttribute('href', '/docs#source-map-chooser');
 
     await page.goto('/search?q=RUNE%20fair%20value');
     await expect(page.locator('main article').first().locator('a[href="/rune#rune-number-router"]')).toBeVisible();

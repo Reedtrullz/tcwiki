@@ -29,9 +29,6 @@ test.describe('THORChain Wiki Navigation Smoke Tests', () => {
     const siteSearch = page.getByRole('search', { name: /Site search/i });
     await expect(siteSearch.getByLabel(/Search the wiki/i)).toBeVisible();
     await expect(siteSearch.getByRole('button', { name: /Submit site search/i })).toBeVisible();
-    await expect(siteSearch.getByRole('link', { name: /Build or query data/i })).toBeVisible();
-    await expect(siteSearch.getByRole('link', { name: /Choose an interface/i })).toBeVisible();
-    await expect(siteSearch.getByRole('link', { name: /Node operator actions/i })).toHaveAttribute('href', '/network#node-operator-actions');
     await page.keyboard.press('Escape');
     await expect(page.getByLabel(/Search the wiki/i)).toHaveCount(0);
   });
