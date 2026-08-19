@@ -8,6 +8,7 @@
     app_version: "{{ lookup('env', 'APP_VERSION') }}"
     csp_enforce: "{{ lookup('env', 'CSP_ENFORCE') | default('1', true) }}"
     require_ready: "{{ lookup('env', 'REQUIRE_READY') | default('0', true) }}"
+    ghcr_token: "{{ lookup('env', 'GHCR_TOKEN') | default('', true) }}"
 
   pre_tasks:
     - name: Require immutable image ref
@@ -157,6 +158,20 @@
 
   tasks:
     - block:
+        - name: Login to GHCR
+          community.docker.docker_login:
+            registry: ghcr.io
+            username: Reedtrullz
+            password: "{{ ghcr_token }}"
+          when: ghcr_token | length > 0
+
+        - name: Login to GHCR
+          community.docker.docker_login:
+            registry: ghcr.io
+            username: Reedtrullz
+            password: "{{ ghcr_token }}"
+          when: ghcr_token | length > 0
+
         - name: Pull immutable image from GHCR
           community.docker.docker_image:
             name: "{{ image_ref }}"

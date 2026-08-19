@@ -263,6 +263,7 @@ jobs:
           APP_VERSION: ${{ needs.publish.outputs.app_version }}
           CSP_ENFORCE: '1'
           REQUIRE_READY: '0'
+          GHCR_TOKEN: '${{ secrets.GHCR_TOKEN }}'
         run: ansible-playbook -i inventory/hosts.yml ansible-playbook.yml
       - name: Verify public production readback
         env:
