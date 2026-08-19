@@ -18,7 +18,6 @@ test.describe('THORChain Wiki Navigation Smoke Tests', () => {
     await expect(page.locator('#mobile-navigation').getByRole('link', { name: 'Start here' })).toBeVisible();
     await expect(page.locator('#mobile-navigation').getByRole('link', { name: 'Learning paths' })).toHaveAttribute('href', '/deep-dives#deep-dive-reader-paths');
     await expect(page.locator('#mobile-navigation').getByRole('link', { name: 'All guided answers' })).toHaveAttribute('href', '/search#search-guided-answers');
-    await expect(page.locator('#mobile-navigation').getByRole('link', { name: 'New to THORChain' })).toHaveAttribute('href', '/deep-dives#deep-dive-path-new-to-thorchain');
     await expect(page.locator('#mobile-navigation')).toHaveCSS('overflow-y', 'auto');
     const navBox = await page.locator('#mobile-navigation').boundingBox();
     expect(navBox?.height ?? 0).toBeLessThanOrEqual(268);

@@ -98,8 +98,6 @@ test.describe('THORChain Wiki Deep Dive Smoke Tests', () => {
     await expect(page.getByRole('button', { name: /Apps & recovery/i })).toBeVisible();
     for (const entry of DEEP_DIVE_ENTRIES) {
       const articleCard = page.locator(`#deep-dive-card-${entry.id}`);
-      const readerPaths = DEEP_DIVE_READER_PATHS.filter((path) => path.entryIds.includes(entry.id));
-      if (readerPaths.length > 0) {
       await expect(articleCard).toBeVisible();
       await expect(articleCard.locator('h3 a')).toHaveAttribute('href', entry.href);
       await expect(articleCard.getByText(entry.description)).toBeVisible();
@@ -108,9 +106,12 @@ test.describe('THORChain Wiki Deep Dive Smoke Tests', () => {
       expect(useCase).not.toMatch(/^(Curated explanation of|Historical context for)/);
       await expect(articleCard.getByText(useCase)).toBeVisible();
       await expect(articleCard.getByText('Verify First')).toBeVisible();
+      const readerPaths = DEEP_DIVE_READER_PATHS.filter((path) => path.entryIds.includes(entry.id));
+      if (readerPaths.length > 0) {
       const claimBoundary = getDeepDiveArticleClaimBoundary(entry.id, entry.confidence, readerPaths);
       expect(claimBoundary).not.toBe('Current protocol constants, live Mimir state, chain availability, quote execution, or product status.');
       await expect(articleCard.getByText(claimBoundary)).toBeVisible();
+      }
       await expect(articleCard.getByText(new RegExp(`Checked ${escapeRegExp(entry.reviewedAt)}`))).toBeVisible();
     }
 
@@ -164,7 +165,6 @@ test.describe('THORChain Wiki Deep Dive Smoke Tests', () => {
     await expect(hydratedFinder.getByText('Topic: Security & ops')).toHaveCount(0);
     await expect(hydratedFinder.locator('#deep-dive-card-deep-dive-savers')).toBeVisible();
     await expect(hydratedFinder.locator('#deep-dive-card-deep-dive-tss')).toHaveCount(0);
-    }
   });
 
   test('deep dive article shell exposes source posture, paths, and navigation', async ({ page, isMobile }) => {
@@ -405,4 +405,3 @@ test.describe('THORChain Wiki Deep Dive Smoke Tests', () => {
     }
   });
 });
-

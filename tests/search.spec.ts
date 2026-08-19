@@ -251,6 +251,7 @@ test.describe('THORChain Wiki Search Smoke Tests', () => {
       page.waitForURL(/\/governance#governance-proposal-status$/, { timeout: 15_000 }),
       governanceProposalResult.locator('a[href="/governance#governance-proposal-status"]').click(),
     ]);
+    await page.locator('#governance-claim-checks details').first().click();
     await expect(page.locator('#governance-proposal-status').first()).toBeVisible();
 
     await page.goto('/search?q=vote%20proposal');
