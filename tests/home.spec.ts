@@ -38,7 +38,7 @@ test.describe('THORChain Wiki Home Smoke Tests', () => {
     await expect(page.getByText('Available Pools')).toHaveCount(0);
     const networkStatus = page.getByRole('status').first();
     await expect(networkStatus).toBeVisible();
-    await expect(networkStatus.getByText(/live sources|checking live network status|ordinary swaps|some routes limited|no global swap halt|source degraded|source review/i).first()).toBeVisible();
+    await expect(networkStatus.getByText(/live sources|checking live network status|network status unavailable|network status unknown|ordinary swaps|some routes limited|no global swap halt|source degraded|source review/i).first()).toBeVisible();
     await expect(networkStatus.getByText(/swaps appear/i)).toHaveCount(0);
     await expect(page.getByText(/Intentional entry points for current checks/i)).toBeVisible();
     const exploreSection = page.locator('section').filter({ has: page.getByRole('heading', { name: /^Explore$/ }) });
