@@ -42,7 +42,7 @@ describe('source and freshness labels', () => {
   it('keeps source retrieval and governance review freshness independently dated', () => {
     expect(liveInboundSource.retrievedAt).toBe('2026-07-04');
     expect(GOVERNANCE_PROPOSAL_RECORDS.find((record) => record.data.id === 'mimir-operational-halts')?.freshness).toEqual(
-      expect.objectContaining({ checkedAt: '2026-07-13', nextReviewDue: '2026-08-13' })
+      expect.objectContaining({ checkedAt: '2026-07-13', nextReviewDue: '2026-11-17' })
     );
   });
 
@@ -226,7 +226,7 @@ describe('source and freshness labels', () => {
     );
 
     expect(html).toContain('Checked 2026-07-13');
-    expect(html).toContain('Review due 2026-08-13');
+    expect(html).toContain('Review due 2026-11-17');
     expect(html).toContain('Source retrieved 2026-07-04');
     expect(html).toContain('Source retrieved 2026-07-13');
     expect(html).toContain('Official root-cause report for the May 2026 GG20/TSS vault exploit, patched v3.19.1 recovery, and still-planned migration away from GG20.');
@@ -234,7 +234,7 @@ describe('source and freshness labels', () => {
 
   it('locks the security and recovery cohort to the July 13 UTC primary-source review', () => {
     const reviewedAt = '2026-07-13';
-    const nextReviewDue = '2026-08-13';
+    const nextReviewDue = '2026-11-17';
     const expectedEntryIds = ['deep-dive-tss', 'deep-dive-tcy-recovery-timeline'];
     const expectedGuideIds = ['tss-security-claims', 'tcy-recovery'];
     const expectedGlossaryTerms = [
@@ -301,7 +301,7 @@ describe('source and freshness labels', () => {
 
   it('locks the node-operator safety cohort to the July 14 primary-source review', () => {
     const reviewedAt = '2026-07-14';
-    const nextReviewDue = '2026-08-14';
+    const nextReviewDue = '2026-11-17';
     const expectedEntryIds = [
       'network',
       'deep-dive-bifrost',
@@ -420,9 +420,9 @@ describe('source and freshness labels', () => {
 
   it('backs the earliest August glossary review batch with claim-specific sources', () => {
     const expectedSources = new Map([
-      ['CLP', ['https://docs.thorchain.org/technical-documentation/thorchain-finance/continuous-liquidity-pools', '2026-07-14', '2026-08-14']],
-      ['Current-only', ['https://dev.thorchain.org/concepts/querying-thorchain.html', '2026-07-13', '2026-08-13']],
-      ['Mimir', ['https://dev.thorchain.org/concepts/network-halts.html', '2026-07-13', '2026-08-13']],
+      ['CLP', ['https://docs.thorchain.org/technical-documentation/thorchain-finance/continuous-liquidity-pools', '2026-07-14', '2026-11-17']],
+      ['Current-only', ['https://dev.thorchain.org/concepts/querying-thorchain.html', '2026-07-13', '2026-11-17']],
+      ['Mimir', ['https://dev.thorchain.org/concepts/network-halts.html', '2026-07-13', '2026-11-17']],
     ]);
 
     for (const [termName, [sourceUrl, reviewedAt, nextReviewDue]] of expectedSources) {
@@ -444,7 +444,7 @@ describe('source and freshness labels', () => {
     for (const termName of glossaryTerms) {
       const term = GLOSSARY_TERMS.find(({ term }) => term === termName);
       expect(term?.reviewedAt, termName).toBe('2026-07-13');
-      expect(term?.nextReviewDue, termName).toBe('2026-08-13');
+      expect(term?.nextReviewDue, termName).toBe('2026-11-17');
     }
 
     const securedAsset = GLOSSARY_TERMS.find(({ term }) => term === 'Secured asset');
@@ -466,17 +466,17 @@ describe('source and freshness labels', () => {
     expect(appLayer?.sources.some(({ url }) => url === 'https://dev.thorchain.org/mimir.html')).toBe(true);
 
     expect(GOVERNANCE_PROPOSAL_RECORDS.find(({ data }) => data.id === 'mimir-operational-halts')?.freshness).toEqual(
-      expect.objectContaining({ checkedAt: '2026-07-13', nextReviewDue: '2026-08-13' })
+      expect.objectContaining({ checkedAt: '2026-07-13', nextReviewDue: '2026-11-17' })
     );
 
     for (const id of ['dynamic-fee-experiment', 'runtime-live-data-failover', 'third-party-interfaces-wallets']) {
       expect(SOURCE_MAP_SECTION_RECORDS.find(({ data }) => data.id === id)?.freshness, id).toEqual(
-        expect.objectContaining({ checkedAt: '2026-07-13', nextReviewDue: '2026-08-13' })
+        expect.objectContaining({ checkedAt: '2026-07-13', nextReviewDue: '2026-11-17' })
       );
     }
 
     const beginnerPath = DEEP_DIVE_READER_PATHS.find(({ id }) => id === 'new-to-thorchain');
-    expect(beginnerPath).toEqual(expect.objectContaining({ reviewedAt: '2026-07-14', nextReviewDue: '2026-08-14' }));
+    expect(beginnerPath).toEqual(expect.objectContaining({ reviewedAt: '2026-07-14', nextReviewDue: '2026-11-17' }));
     expect(beginnerPath?.sources.map(({ url }) => url)).toEqual([
       'https://docs.thorchain.org/native-cross-chain-swaps',
       'https://docs.thorchain.org/technical-documentation/understanding-thorchain/rune',
@@ -494,7 +494,7 @@ describe('source and freshness labels', () => {
 
     for (const id of ['fees-and-adr026', 'swap-availability', 'why-paused']) {
       expect(TASK_INTENT_GUIDES.find((guide) => guide.id === id), id).toEqual(
-        expect.objectContaining({ reviewedAt: '2026-07-13', nextReviewDue: '2026-08-13' })
+        expect.objectContaining({ reviewedAt: '2026-07-13', nextReviewDue: '2026-11-17' })
       );
     }
   });
@@ -531,17 +531,17 @@ describe('source and freshness labels', () => {
     ];
     for (const id of contentIds) {
       expect(CONTENT_ENTRIES.find((entry) => entry.id === id), id).toEqual(
-        expect.objectContaining({ reviewedAt: '2026-07-13', nextReviewDue: '2026-08-13' })
+        expect.objectContaining({ reviewedAt: '2026-07-13', nextReviewDue: '2026-11-17' })
       );
     }
 
     const shapeshift = ECOSYSTEM_PROJECT_RECORDS.find(({ data }) => data.id === 'shapeshift');
     expect(shapeshift?.freshness).toEqual(
-      expect.objectContaining({ checkedAt: '2026-07-13', nextReviewDue: '2026-08-13' })
+      expect.objectContaining({ checkedAt: '2026-07-13', nextReviewDue: '2026-11-17' })
     );
     const currentProtocolState = SOURCE_MAP_SECTION_RECORDS.find(({ data }) => data.id === 'current-protocol-state');
     expect(currentProtocolState?.freshness).toEqual(
-      expect.objectContaining({ checkedAt: '2026-07-13', nextReviewDue: '2026-08-13' })
+      expect.objectContaining({ checkedAt: '2026-07-13', nextReviewDue: '2026-11-17' })
     );
 
     const reviewedSources = [
@@ -564,7 +564,7 @@ describe('source and freshness labels', () => {
       const record = ECOSYSTEM_PROJECT_RECORDS.find(({ data }) => data.id === projectId);
       expect(record?.sources.some(({ url }) => url === sourceUrl), projectId).toBe(true);
       expect(record?.freshness.checkedAt, projectId).toBe('2026-07-13');
-      expect(record?.freshness.nextReviewDue, projectId).toBe('2026-08-13');
+      expect(record?.freshness.nextReviewDue, projectId).toBe('2026-11-17');
     }
   });
 
@@ -582,7 +582,7 @@ describe('source and freshness labels', () => {
         title: 'THORChain Founded',
         description: 'A pseudonymous core team founded THORChain in 2018.',
         checkedAt: '2026-07-13',
-        nextReviewDue: '2026-08-13',
+        nextReviewDue: '2026-11-17',
         sourceUrls: ['https://docs.thorchain.org/thornodes/frequently-asked-questions'],
       },
       {
@@ -590,7 +590,7 @@ describe('source and freshness labels', () => {
         title: 'Multichain Chaosnet Launch',
         description: 'Multichain Chaosnet launches with native cross-chain swaps across five networks while safeguards remain in place on the path to mainnet.',
         checkedAt: '2026-07-13',
-        nextReviewDue: '2026-08-13',
+        nextReviewDue: '2026-11-17',
         sourceUrls: ['https://medium.com/thorchain/thorchain-launch-multichain-chaosnet-bb9f60008a03'],
       },
       {
@@ -598,7 +598,7 @@ describe('source and freshness labels', () => {
         title: 'THORNode v3.0.0 Release',
         description: 'THORNode v3.0.0 upgrades to Cosmos SDK v0.50 and lays groundwork for future App Layer functionality.',
         checkedAt: '2026-07-13',
-        nextReviewDue: '2026-08-13',
+        nextReviewDue: '2026-11-17',
         sourceUrls: [
           'https://gitlab.com/thorchain/thornode/-/tags/v3.0.0',
           'https://blog.thorchain.org/thorchain-2024-year-end-report-q4-report/',
@@ -679,13 +679,12 @@ describe('source and freshness labels', () => {
       </DeepDiveShell>
     );
 
-    expect(html).toContain('Reader Paths For This Article');
-    expect(html).toContain('Use This Article For');
+    expect(html).toContain('Reader paths for this article');
+    expect(html).toContain('Use this article for');
     expect(html).toContain('A security explainer for threshold signing, vault-key risk, GG20 incident language');
-    expect(html).toContain('Verify Elsewhere Before Claiming');
+    expect(html).toContain('Verify elsewhere before claiming');
     expect(html).toContain('Current signing state, vault safety, validator upgrade coverage, active TSS implementation');
-    expect(html).toContain('Verify Now');
-    expect(html).toContain('Use these current-state checks before turning this explainer into a live protocol, wallet, or availability claim.');
+    expect(html).toContain('Use these paths to connect this explainer with the current-state checks needed before making live protocol claims.');
     expect(html).toContain('Network Security');
     expect(html).toContain('Historical Recovery');
     expect(html).toContain('Verify Before Claiming');
@@ -693,8 +692,8 @@ describe('source and freshness labels', () => {
     expect(html).toContain('href="/deep-dives#deep-dive-path-network-security"');
     expect(html).toContain('href="/network#network-diagnostics"');
     expect(html).toContain('href="/docs#current-protocol-state"');
-    expect(html).toContain('Wiki reviewed 2026-07-14');
-    expect(html).toContain('Review due 2026-08-14');
+    expect(html).toContain('Checked 2026-07-13');
+    expect(html).toContain('Review due 2026-11-17');
 
     const historicalHtml = renderToStaticMarkup(
       <DeepDiveShell entryId="deep-dive-savers" editPath="content/deep-dives/savers.mdx">
@@ -711,7 +710,7 @@ describe('source and freshness labels', () => {
       </DeepDiveShell>
     );
 
-    expect(refundHtml).toContain('Verify Elsewhere Before Claiming: </span>Current quote result, memo, inbound address, amount thresholds, transaction evidence, and live halt/signing state.');
+    expect(refundHtml).toContain('Verify elsewhere before claiming: </span>Current quote result, memo, inbound address, amount thresholds, transaction evidence, and live halt/signing state.');
 
     const tcyHtml = renderToStaticMarkup(
       <DeepDiveShell entryId="deep-dive-tcy-recovery-timeline" editPath="content/deep-dives/tcy-recovery-timeline.mdx">
@@ -743,7 +742,7 @@ describe('source and freshness labels', () => {
 
     expect(html).toContain('Historical');
     expect(html).toContain('Checked 2026-07-08');
-    expect(html).toContain('Review due 2026-08-08');
+    expect(html).toContain('Review due 2026-11-17');
     expect(html).toContain('Archived Savers and Lending docs');
     expect(html).toContain('RUNE and TCY tokenomics');
     expect(html).toContain('TCY Developer Guide');

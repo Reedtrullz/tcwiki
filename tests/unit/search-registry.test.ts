@@ -243,7 +243,7 @@ describe('SEARCH_DOCUMENTS', () => {
     expect(docsMatching('If a statement jumps from the formula straight to a present tense action').some((doc) => doc.slug === '/deep-dives/clp')).toBe(true);
     expect(docsMatching('A route is currently quoteable, executable, cheap, or safe').some((doc) => doc.slug === '/deep-dives/clp')).toBe(true);
     expect(runeSettlement?.reviewedAt).toBe('2026-07-14');
-    expect(runeSettlement?.nextReviewDue).toBe('2026-08-14');
+    expect(runeSettlement?.nextReviewDue).toBe('2026-11-17');
     expect(runeSettlement?.sources.map((source) => source.label)).toContain('THORChain RUNE docs');
     expect(runeSettlement?.sources.map((source) => source.label)).toContain('Native cross-chain swaps');
     expect(docsMatching('Build And Query THORChain Data').some((doc) => doc.slug === '/deep-dives/build-query-data')).toBe(true);
@@ -339,7 +339,7 @@ describe('SEARCH_DOCUMENTS', () => {
 
     expect(chainDocs).toHaveLength(CHAIN_RECORDS.length);
     expect(chainDocs.every((doc) => doc.reviewedAt === '2026-07-14')).toBe(true);
-    expect(chainDocs.every((doc) => doc.nextReviewDue === '2026-08-14')).toBe(true);
+    expect(chainDocs.every((doc) => doc.nextReviewDue === '2026-11-17')).toBe(true);
     expect(chainDocs.every((doc) => (
       doc.sources.some((source) => (
         source.label === 'Liquify THORNode inbound_addresses' &&
@@ -456,22 +456,22 @@ describe('SEARCH_DOCUMENTS', () => {
     const dynamicFeeSourceMap = SEARCH_DOCUMENTS.find((doc) => doc.id === 'source-map:dynamic-fee-experiment');
 
     expect(gg20Incident?.reviewedAt).toBe('2026-07-13');
-    expect(gg20Incident?.nextReviewDue).toBe('2026-08-13');
+    expect(gg20Incident?.nextReviewDue).toBe('2026-11-17');
     expect(dynamicFeeSourceMap?.reviewedAt).toBe('2026-07-13');
-    expect(dynamicFeeSourceMap?.nextReviewDue).toBe('2026-08-13');
+    expect(dynamicFeeSourceMap?.nextReviewDue).toBe('2026-11-17');
     expect(SEARCH_DOCUMENTS.find((doc) => doc.id === 'tokenomics:rune-supply-framing')?.reviewedAt).toBe('2026-07-14');
     expect(SEARCH_DOCUMENTS.find((doc) => doc.id === 'tokenomics:tcy-recovery-context')).toEqual(
-      expect.objectContaining({ confidence: 'official', reviewedAt: '2026-07-13', nextReviewDue: '2026-08-13' })
+      expect.objectContaining({ confidence: 'official', reviewedAt: '2026-07-13', nextReviewDue: '2026-11-17' })
     );
     expect(olderIncident?.reviewedAt).toBe('2026-07-08');
-    expect(olderIncident?.nextReviewDue).toBe('2026-08-08');
+    expect(olderIncident?.nextReviewDue).toBe('2026-11-17');
   });
 
   it('indexes governance recovery tracker records from record metadata', () => {
     const adr028 = SEARCH_DOCUMENTS.find((doc) => doc.id === 'governance:adr-028-recovery');
 
     expect(adr028?.href).toBe('/governance#governance-adr-028-recovery');
-    expect(adr028).toEqual(expect.objectContaining({ confidence: 'official', reviewedAt: '2026-07-13', nextReviewDue: '2026-08-13' }));
+    expect(adr028).toEqual(expect.objectContaining({ confidence: 'official', reviewedAt: '2026-07-13', nextReviewDue: '2026-11-17' }));
     expect(adr028?.content).toContain('Status: Accepted; implemented in v3.19.0.');
     expect(adr028?.content).toContain('Current recovery tracker: current.');
     expect(adr028?.content).toContain('one-time conciliation migration');
@@ -508,7 +508,7 @@ describe('SEARCH_DOCUMENTS', () => {
       const doc = SEARCH_DOCUMENTS.find((candidate) => candidate.id === id);
 
       expect(entry?.reviewedAt, `${id} entry reviewedAt`).toMatch(/^2026-07-(05|06|08|09|13|14)$/);
-      expect(entry?.nextReviewDue, `${id} entry nextReviewDue`).toMatch(/^2026-08-(05|06|08|09|13|14)$/);
+      expect(entry?.nextReviewDue, `${id} entry nextReviewDue`).toBe('2026-11-17');
       expect(doc?.reviewedAt, `${id} search reviewedAt`).toBe(entry?.reviewedAt);
       expect(doc?.nextReviewDue, `${id} search nextReviewDue`).toBe(entry?.nextReviewDue);
       expect(doc?.sources.map((source) => source.label), `${id} search sources`).toEqual(entry?.sources.map((source) => source.label));
@@ -656,7 +656,7 @@ describe('SEARCH_DOCUMENTS', () => {
 
     expect(mimirDoc?.href).toBe('/network#network-diagnostics');
     expect(mimirDoc?.reviewedAt).toBe('2026-07-08');
-    expect(mimirDoc?.nextReviewDue).toBe('2026-08-08');
+    expect(mimirDoc?.nextReviewDue).toBe('2026-11-17');
     expect(docsMatching('Liquify').some((doc) => doc.slug === '/docs')).toBe(true);
     expect(docsMatching('gateway').some((doc) => doc.slug === '/docs')).toBe(true);
     expect(docsMatching('current-only snapshots').some((doc) => doc.id === 'source-map:current-protocol-state')).toBe(true);
@@ -922,7 +922,7 @@ describe('SEARCH_DOCUMENTS', () => {
     const slashing = SEARCH_DOCUMENTS.find((doc) => doc.id === 'deep-dive-slashing');
     for (const doc of [bifrost, churning, slashing]) {
       expect(doc?.reviewedAt, doc?.id).toBe('2026-07-14');
-      expect(doc?.nextReviewDue, doc?.id).toBe('2026-08-14');
+      expect(doc?.nextReviewDue, doc?.id).toBe('2026-11-17');
     }
     expect(bifrost?.content).toContain('Active and Retiring vaults');
     expect(bifrost?.content).toContain('67%');
@@ -966,7 +966,7 @@ describe('SEARCH_DOCUMENTS', () => {
     expect(docsMatching('route competitiveness').some((doc) => doc.slug === '/dynamic-fees')).toBe(true);
     expect(docsMatching('L1-to-L1 scope').some((doc) => doc.slug === '/dynamic-fees')).toBe(true);
     expect(docsMatching('ADR-026 Dynamic L1 Fees').some((doc) => doc.id === 'governance:adr-026-dynamic-l1-fees')).toBe(true);
-    expect(SEARCH_DOCUMENTS.find((doc) => doc.id === 'governance:adr-026-dynamic-l1-fees')?.nextReviewDue).toBe('2026-08-08');
+    expect(SEARCH_DOCUMENTS.find((doc) => doc.id === 'governance:adr-026-dynamic-l1-fees')?.nextReviewDue).toBe('2026-11-17');
     expect(docsMatching('dynamic_l1_fees_current').some((doc) => doc.id === 'source-map:dynamic-fee-experiment')).toBe(true);
     expect(docsMatching('do not prove durable revenue lift').some((doc) => doc.id === 'source-map:dynamic-fee-experiment')).toBe(true);
     expect(docsMatching('wallet-security audits').some((doc) => doc.id === 'source-map:third-party-interfaces-wallets')).toBe(true);

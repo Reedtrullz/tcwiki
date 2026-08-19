@@ -12,7 +12,7 @@ import {
 import { chainClientsSource } from '@/lib/sources';
 
 const REVIEWED_AT = '2026-07-14';
-const NEXT_REVIEW_DUE = '2026-08-14';
+const NEXT_REVIEW_DUE = '2026-11-17';
 const LIVE_INBOUND_URL = 'https://gateway.liquify.com/chain/thorchain_api/thorchain/inbound_addresses';
 
 describe('chain and developer-data content review', () => {

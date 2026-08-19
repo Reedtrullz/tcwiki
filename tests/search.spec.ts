@@ -328,7 +328,7 @@ test.describe('THORChain Wiki Search Smoke Tests', () => {
     await expect(mimirControlResult.locator('a[href="/network#network-diagnostics"]')).toBeVisible();
     await expect(mimirControlResult.getByText('Mimir Control', { exact: true })).toBeVisible();
     await expect(mimirControlResult.getByText(/HaltWasmContract-\*/i)).toBeVisible();
-    await expect(mimirControlResult.getByText(/Next wiki review.*2026-08-08/i)).toBeVisible();
+    await expect(mimirControlResult.getByText(/Next wiki review.*2026-11-17/i)).toBeVisible();
 
     await page.goto('/search?q=PauseLP');
     const pauseLpResult = page.locator('main article').first();
@@ -471,7 +471,7 @@ test.describe('THORChain Wiki Search Smoke Tests', () => {
     const incidentResult = page.locator('main article').filter({ has: incidentLink }).first();
     const incidentMeta = incidentResult.locator('dl').first();
     await expect(incidentMeta).toContainText(/Wiki reviewed\s*2026-07-13/i);
-    await expect(incidentMeta).toContainText(/Next wiki review\s*2026-08-13/i);
+    await expect(incidentMeta).toContainText(/Next wiki review\s*2026-11-17/i);
     await expect(incidentMeta).toContainText(/Source retrieved\s*2026-07-04 to 2026-07-13/i);
     await expect(incidentResult.getByText(/Sources used/i)).toBeVisible();
     await expect(incidentResult.getByRole('link', { name: 'THORChain Exploit Report #2' })).toBeVisible();

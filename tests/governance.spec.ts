@@ -49,9 +49,9 @@ test.describe('THORChain Wiki Governance Smoke Tests', () => {
     await expect(page.locator('#governance-archive-map').getByRole('link', { name: /Research and milestones lane/i })).toHaveAttribute('href', '#protocol-milestones');
     await expect(page.locator('#governance-records').getByText(/status badge describes the record evidence posture/i)).toBeVisible();
     const adr026Record = page.locator('#governance-adr-026-dynamic-l1-fees');
-    await expect(adr026Record.getByText('Record status: ADR discussion review target 2026-08-08')).toBeVisible();
-    await expect(adr026Record.getByText('Review: Review due 2026-08-08')).toHaveCount(0);
-    await expect(adr026Record.getByText('Review due 2026-08-08')).toBeVisible();
+    await expect(adr026Record.getByText('Record status: ADR discussion review target 2026-11-17')).toBeVisible();
+    await expect(adr026Record.getByText('Review: Review due 2026-11-17')).toHaveCount(0);
+    await expect(adr026Record.getByText('Review due 2026-11-17')).toBeVisible();
     const mimirRecord = page.locator('#governance-mimir-operational-halts');
     await expect(mimirRecord.getByText('Current-only control reference')).toBeVisible();
     await expect(mimirRecord.getByText('Record status: Check current THORNode Mimir state')).toBeVisible();

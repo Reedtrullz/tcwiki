@@ -169,18 +169,17 @@ describe('Home live metric trust posture', () => {
   it('keeps lower home previews bounded by static source posture', () => {
     const html = renderToStaticMarkup(<HomePage />);
 
-    expect(html).toContain('Intentional entry points for current checks');
-    expect(html).toContain('Live And Claim Checks');
+    expect(html).toContain('Check The Right Thing First');
+    expect(html).toContain('Start With The Claim');
+    expect(html).toContain('Learn in Sequence');
     expect(html).toContain('Mimir And Halt Controls');
-    expect(html).toContain('/deep-dives/mimir-halt-controls');
     expect(html).toContain('Build And Query THORChain Data');
-    expect(html).toContain('/deep-dives/build-query-data');
     expect(html).toContain('Liquidity Actions');
-    expect(html).toContain('/deep-dives/liquidity-actions');
-    expect(html).toContain('RUNEPool And POL Evidence');
-    expect(html).toContain('/deep-dives/runepool-pol');
-    expect(html).toContain('Streaming Swaps And Refunds');
-    expect(html).toContain('/deep-dives/streaming-swaps-refunds');
+    expect(html).toContain('RUNEPool/POL evidence');
+    expect(html).toContain('/economics#runepool-pol-live');
+    expect(html).toContain('/deep-dives#deep-dive-path-network-security');
+    expect(html).toContain('/deep-dives#deep-dive-path-developer-data-integration');
+    expect(html).toContain('/deep-dives#deep-dive-path-liquidity-actions');
     expect(html).toContain('Pointer list, not endorsement');
     expect(html).toContain('Catalog listed');
     expect(html).not.toContain('>Active<');

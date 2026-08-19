@@ -11,7 +11,7 @@ const thornameTerm: GlossaryExplorerTerm = {
   category: 'developer',
   confidence: 'official',
   reviewedAt: '2026-07-09',
-  nextReviewDue: '2026-08-09',
+  nextReviewDue: '2026-11-17',
   sources: [{
     label: 'THORName affiliate guide',
     url: 'https://dev.thorchain.org/affiliate-guide/thorname-guide.html',

@@ -6,7 +6,7 @@ import { SEARCH_DOCUMENTS } from '@/lib/search/registry';
 import { streamingSwapsSource } from '@/lib/sources';
 
 const REVIEWED_AT = '2026-07-14';
-const NEXT_REVIEW_DUE = '2026-08-14';
+const NEXT_REVIEW_DUE = '2026-11-17';
 
 const TERM_IDS = [
   'quote',

@@ -24,7 +24,7 @@ import {
 } from '@/lib/sources';
 
 const REVIEWED_AT = '2026-07-14';
-const NEXT_REVIEW_DUE = '2026-08-14';
+const NEXT_REVIEW_DUE = '2026-11-17';
 const LIQUIFY_RUNEPOOL_URL = 'https://gateway.liquify.com/chain/thorchain_api/thorchain/runepool';
 
 describe('liquidity and economics content review', () => {
