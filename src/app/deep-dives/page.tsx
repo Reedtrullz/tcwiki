@@ -131,7 +131,7 @@ export default function DeepDivesIndex() {
       <section id="deep-dive-start-here" className="mb-8 scroll-mt-24">
         <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-400">Look Here First</h2>
+            <h2 className="text-lg font-semibold normal-case tracking-normal text-slate-100">Look Here First</h2>
             <p className="mt-1 max-w-3xl text-xs leading-relaxed text-slate-400">
               Pick the job before picking the article. Long-form explanations stay separate from current live evidence.
             </p>
@@ -176,7 +176,7 @@ export default function DeepDivesIndex() {
       />
 
       <section id="deep-dive-reader-paths" className="mb-12 scroll-mt-24">
-        <h2 className="mb-2 text-sm font-semibold uppercase tracking-wider text-slate-400">Reader Paths</h2>
+        <h2 className="mb-2 text-lg font-semibold normal-case tracking-normal text-slate-100">Reader Paths</h2>
         <p className="mb-4 max-w-3xl text-sm leading-relaxed text-slate-400">
           Pick a path by the claim or question you are trying to understand. Each path keeps current-state checks separate from explanatory articles.
         </p>

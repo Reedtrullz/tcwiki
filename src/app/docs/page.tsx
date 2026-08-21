@@ -169,7 +169,7 @@ export default function DocsPage() {
       <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_200px] lg:gap-10">
         <div className="min-w-0">
       <section id="source-map-chooser" className="mb-12 scroll-mt-24">
-        <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-slate-400">
+        <h2 className="mb-4 text-lg font-semibold normal-case tracking-normal text-slate-100">
           What Are You Trying To Prove?
         </h2>
         <div className="mb-7">

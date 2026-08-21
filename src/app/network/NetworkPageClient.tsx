@@ -214,7 +214,7 @@ export default function NetworkPageClient({ children }: NetworkPageClientProps) 
     <details className="group mb-12" aria-labelledby="current-operation-snapshot-heading">
       <summary className="list-none cursor-pointer rounded-lg border border-border bg-surface-elevated px-4 py-3 transition-colors hover:border-accent/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60">
         <div className="flex items-center justify-between gap-3">
-          <h2 id="current-operation-snapshot-heading" className="text-sm font-semibold uppercase tracking-wider text-slate-400">
+          <h2 id="current-operation-snapshot-heading" className="text-lg font-semibold normal-case tracking-normal text-slate-100">
             Current Operation Snapshot
           </h2>
           <ChevronDown aria-hidden="true" className="h-4 w-4 shrink-0 text-slate-500 transition-transform group-open:rotate-180" />

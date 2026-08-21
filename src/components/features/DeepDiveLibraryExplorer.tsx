@@ -281,7 +281,7 @@ export function DeepDiveLibraryExplorer({
     <section id="deep-dive-library" aria-labelledby="deep-dive-library-heading" className="scroll-mt-24">
       <div className="mb-4 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
         <div className="max-w-3xl">
-          <h2 id="deep-dive-library-heading" className="text-sm font-semibold uppercase tracking-wider text-slate-400">
+          <h2 id="deep-dive-library-heading" className="text-lg font-semibold normal-case tracking-normal text-slate-100">
             All Deep Dives
           </h2>
           <p aria-live="polite" className="mt-2 text-sm leading-relaxed text-slate-400">

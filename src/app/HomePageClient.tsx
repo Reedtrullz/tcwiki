@@ -114,7 +114,7 @@ export default function HomePageClient({ sourcePosture }: HomePageClientProps) {
           </div>
           <Card id="home-source-router" padding="md" className="border-accent/15">
             <div className="mb-4">
-              <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-400">Start With The Claim</h2>
+              <h2 className="text-lg font-semibold normal-case tracking-normal text-slate-100">Start With The Claim</h2>
               <p className="mt-1 text-xs leading-relaxed text-slate-400">
                 Pick the proof path before treating a number, halt, interface, ADR, or incident note as current truth.
               </p>
@@ -147,7 +147,7 @@ export default function HomePageClient({ sourcePosture }: HomePageClientProps) {
       <section aria-labelledby="home-live-status-heading" className="px-6 max-w-7xl mx-auto mb-8">
         <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h2 id="home-live-status-heading" className="text-sm font-semibold uppercase tracking-wider text-slate-400">Live Operations Snapshot</h2>
+            <h2 id="home-live-status-heading" className="text-lg font-semibold normal-case tracking-normal text-slate-100">Live Operations Snapshot</h2>
             <p className="mt-1 max-w-2xl text-xs leading-relaxed text-slate-400">
               Current THORNode evidence belongs before present-tense claims about swaps, LP actions, signing, TCY, or route availability.
             </p>
@@ -162,7 +162,7 @@ export default function HomePageClient({ sourcePosture }: HomePageClientProps) {
       <section className="px-6 max-w-7xl mx-auto mb-16">
         <div className="flex flex-col gap-1 mb-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">Learn in Sequence</h2>
+            <h2 className="text-lg font-semibold normal-case tracking-normal text-slate-100">Learn in Sequence</h2>
             <p className="mt-1 max-w-2xl text-xs leading-relaxed text-slate-400">
               Guided reading paths keep explanatory articles separate from current-state proof.
             </p>

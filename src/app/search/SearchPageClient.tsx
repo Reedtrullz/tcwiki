@@ -176,7 +176,7 @@ function SearchDecisionPrimer() {
     <section id="search-look-here-first" aria-labelledby="search-look-here-first-heading" className="mb-8">
       <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h2 id="search-look-here-first-heading" className="text-sm font-semibold uppercase tracking-wider text-slate-400">
+          <h2 id="search-look-here-first-heading" className="text-lg font-semibold normal-case tracking-normal text-slate-100">
             Look Here First
           </h2>
           <p className="mt-1 max-w-2xl text-xs leading-relaxed text-slate-400">
@@ -303,7 +303,7 @@ function SearchGuideLinks() {
       <div className="rounded-lg border border-border bg-surface-elevated p-4 sm:p-5">
         <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h2 id="search-guided-answers-heading" className="text-sm font-semibold uppercase tracking-wider text-slate-400">
+            <h2 id="search-guided-answers-heading" className="text-lg font-semibold normal-case tracking-normal text-slate-100">
               Guided Answers
             </h2>
             <p className="mt-1 max-w-2xl text-xs leading-relaxed text-slate-400">
