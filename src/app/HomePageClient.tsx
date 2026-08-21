@@ -2,20 +2,16 @@
 
 import type { ReactNode } from 'react';
 import Link from 'next/link';
-import { ECOSYSTEM_PROJECT_RECORDS, RESEARCH_REPORT_RECORDS } from '@/lib/data/static';
 import { Activity, TrendingUp, Shield, Layers } from 'lucide-react';
 import { useMidgardHealth, useNetworkData, useNetworkStatus, usePools } from '@/lib/hooks/useMidgard';
 import { StatCard } from '@/components/ui/StatCard';
 import { NetworkStatusBanner } from '@/components/features/NetworkStatusBanner';
-import { DEEP_DIVE_READER_PATHS, HOME_DECISION_LINKS, getContentEntry } from '@/lib/content/registry';
-import { formatPercent, formatRuneFromBaseUnits, getConfidenceLabel, getConfidenceTone, normalizeApyToPercent } from '@/lib/trust';
+import { DEEP_DIVE_READER_PATHS, getContentEntry } from '@/lib/content/registry';
+import { formatPercent, formatRuneFromBaseUnits, normalizeApyToPercent } from '@/lib/trust';
 import { LiveSourceMeta } from '@/components/ui/LiveSourceMeta';
-import { recordAnchor } from '@/lib/utils';
-import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
+import { Badge } from '@/components/ui/Badge';
 import { midgardResultHasCleanHealth, midgardSourceIssueIsVisible } from '@/lib/stats-dashboard';
-import { ecosystemDirectoryPosture, ecosystemDirectoryPostureLabel } from '@/lib/ecosystem-directory';
-import type { DataConfidence } from '@/lib/types';
 
 const homeReaderPaths = DEEP_DIVE_READER_PATHS.map((path) => {
   const firstEntry = getContentEntry(path.entryIds[0]);
@@ -57,83 +53,6 @@ const homeProofRoutes = [
     description: 'Docs, developer references, live endpoints, explorers, and community context.',
   },
 ];
-
-const quickLinks = [
-  {
-    label: 'THORChain Docs',
-    href: 'https://docs.thorchain.org',
-    sourceType: 'Official docs',
-    boundary: 'Protocol design, operations, and feature docs.',
-  },
-  {
-    label: 'Developer Docs',
-    href: 'https://dev.thorchain.org',
-    sourceType: 'Developer docs',
-    boundary: 'Integration, quote, asset, and endpoint behavior.',
-  },
-  {
-    label: 'Midgard API',
-    href: 'https://midgard.thorchain.network/v2/doc',
-    sourceType: 'Consumer API',
-    boundary: 'Dashboard-friendly current and historical metrics.',
-  },
-  {
-    label: 'RuneScan Explorer',
-    href: 'https://runescan.io',
-    sourceType: 'Explorer',
-    boundary: 'Transactions, pools, nodes, and account inspection.',
-  },
-];
-
-function homeEcosystemCatalogBadge(confidence: DataConfidence) {
-  const posture = ecosystemDirectoryPosture(confidence);
-
-  return {
-    label: ecosystemDirectoryPostureLabel(posture),
-    variant: posture === 'needs-review' ? 'warning' as const : 'default' as const,
-    needsReview: posture === 'needs-review',
-  };
-}
-
-function homeEcosystemBoundary(category: string, checkedAt: string, needsReview: boolean) {
-  if (needsReview) {
-    return `Checked ${checkedAt}. Confirm the direct source is reachable and reconciled before citing it.`;
-  }
-
-  switch (category) {
-    case 'Interface':
-      return `Checked ${checkedAt}. Verify live quote, route, fees, recipient, and wallet approvals before signing.`;
-    case 'Wallet':
-      return `Checked ${checkedAt}. Verify release source, wallet permissions, route, and device security before signing.`;
-    case 'Explorer':
-      return `Checked ${checkedAt}. Cross-check explorer context against THORNode or Midgard before citing it.`;
-    case 'Developer Tools':
-      return `Checked ${checkedAt}. Verify package versions, API behavior, and production readiness before building.`;
-    default:
-      return `Checked ${checkedAt}. Verify current source state before relying on this pointer.`;
-  }
-}
-
-const homeEcosystemPreviewIds = [
-  'thorchain-swap',
-  'thorwallet',
-  'vultisig',
-  'rango',
-  'runescan',
-  'viewblock',
-  'swapkit',
-  'xchainjs',
-];
-
-const homeEcosystemPreviewRecords = homeEcosystemPreviewIds.map((id) => {
-  const record = ECOSYSTEM_PROJECT_RECORDS.find((candidate) => candidate.data.id === id);
-
-  if (!record) {
-    throw new Error(`Missing home ecosystem preview record: ${id}`);
-  }
-
-  return record;
-});
 
 export default function HomePageClient({ sourcePosture }: HomePageClientProps) {
   const {
@@ -240,38 +159,6 @@ export default function HomePageClient({ sourcePosture }: HomePageClientProps) {
         <NetworkStatusBanner result={statusResult} isLoading={statusLoading} variant="compact" />
       </section>
 
-      <section className="px-6 max-w-7xl mx-auto mb-8">
-        <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-400">Check The Right Thing First</h2>
-            <p className="mt-1 max-w-2xl text-xs leading-relaxed text-slate-400">
-              Use the live surface that matches the question before turning a number, pause, or third-party listing into a claim.
-            </p>
-          </div>
-          <Link href="/search#search-guided-answers" className="text-xs text-slate-400 transition-colors hover:text-slate-300">
-            Browse guided answers →
-          </Link>
-        </div>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {HOME_DECISION_LINKS.map((link) => (
-            <Link
-              key={link.id}
-              href={link.href}
-              className="block rounded-lg border border-border bg-surface-elevated p-4 transition-colors hover:border-accent/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
-            >
-              <div className="mb-3 flex items-center justify-between gap-3">
-                <span className="rounded border border-border bg-surface px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
-                  {link.badge}
-                </span>
-              </div>
-              <p className="text-sm font-semibold text-slate-100">{link.question}</p>
-              <p className="mt-1 text-xs font-medium text-accent">{link.label}</p>
-              <p className="mt-2 text-[11px] leading-relaxed text-slate-400">{link.description}</p>
-            </Link>
-          ))}
-        </div>
-      </section>
-
       <section className="px-6 max-w-7xl mx-auto mb-16">
         <div className="flex flex-col gap-1 mb-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
@@ -328,112 +215,23 @@ export default function HomePageClient({ sourcePosture }: HomePageClientProps) {
         </div>
       </section>
 
-      {/* Explore topics (slim entry point; full taxonomy lives in the Guides flyout / search) */}
-      <section className="px-6 max-w-7xl mx-auto mb-16">
-        <p className="max-w-2xl text-xs leading-relaxed text-slate-400">
-          Reader paths and task guides are gathered in one place. Use them to pick the right starting page, source, or proof boundary before deep-reading a section.
-        </p>
-        <div className="mt-3">
-          <Link href="/search#search-guided-answers" className="text-xs text-slate-400 transition-colors hover:text-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60">
-            Browse guided answers & reader paths →
-          </Link>
-        </div>
-      </section>
-
-      {/* Ecosystem preview */}
-      <section className="px-6 max-w-7xl mx-auto mb-16">
-        <div className="mb-5 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">Ecosystem</h2>
-            <p className="mt-1 max-w-2xl text-xs leading-relaxed text-slate-400">
-              Pointer list, not endorsement. Verify route state, wallet safety, explorer reachability, and current source evidence before use.
-            </p>
-          </div>
-          <Link href="/ecosystem#interface-use-checklist" className="text-xs text-slate-400 hover:text-slate-300 transition-colors">Open interface checklist →</Link>
-        </div>
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
-          {homeEcosystemPreviewRecords.map((record) => {
-            const project = record.data;
-            const directoryBadge = homeEcosystemCatalogBadge(record.freshness.confidence);
-            return (
-              <Link
-                key={project.id}
-                href={`/ecosystem#${recordAnchor('ecosystem', project.id)}`}
-                className="block p-4 rounded-lg bg-surface-elevated border border-border hover:border-accent/20 transition-colors group"
-              >
-                <div className="mb-3 flex flex-wrap items-center gap-1.5">
-                  <Badge variant={directoryBadge.variant}>{directoryBadge.label}</Badge>
-                </div>
-                <p className="text-sm font-medium group-hover:text-accent transition-colors">{project.name}</p>
-                <p className="text-[11px] text-slate-400 mt-1">{project.category}</p>
-                <p className="mt-3 text-[11px] leading-relaxed text-slate-500">
-                  {homeEcosystemBoundary(project.category, record.freshness.checkedAt, directoryBadge.needsReview)}
-                </p>
-              </Link>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* Research */}
-      <section className="px-6 max-w-7xl mx-auto mb-16">
-        <div className="mb-5 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">Research</h2>
-            <p className="mt-1 max-w-2xl text-xs leading-relaxed text-slate-400">
-              Dated analysis context, not live protocol proof. Use these reports for period framing before checking current sources.
-            </p>
-          </div>
-          <Link href="/docs#source-map-chooser" className="text-xs text-slate-400 transition-colors hover:text-slate-300">
-            Source map →
-          </Link>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          {RESEARCH_REPORT_RECORDS.map((record) => {
-            const report = record.data;
-            const primarySource = record.sources[0]?.label ?? report.source;
-            return (
-              <a
-                key={report.id}
-                href={report.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block p-5 rounded-lg bg-surface-elevated border border-border hover:border-accent/20 transition-colors"
-              >
-                <div className="mb-3 flex flex-wrap items-center gap-1.5">
-                  <Badge variant={getConfidenceTone(record.freshness.confidence)}>{getConfidenceLabel(record.freshness.confidence)}</Badge>
-                  <span className="text-[11px] text-slate-500">Checked {record.freshness.checkedAt}</span>
-                </div>
-                <p className="text-[11px] text-slate-400 mb-1">{report.date} · {primarySource}</p>
-                <h3 className="text-sm font-semibold mb-2">{report.title}</h3>
-                <p className="text-xs text-slate-400 leading-relaxed line-clamp-2">{report.summary}</p>
-                <p className="mt-3 text-[11px] leading-relaxed text-slate-500">Not live protocol proof.</p>
-              </a>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* Quick links */}
+      {/* Quick links (footer-level external sources, kept compact) */}
       <section className="px-6 max-w-7xl mx-auto pb-20">
-        <div className="mb-5">
-          <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">Quick Links</h2>
-          <p className="mt-1 max-w-2xl text-xs leading-relaxed text-slate-400">
-            External sources answer different questions; match the source family to the claim before citing it.
-          </p>
-        </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-          {quickLinks.map((l) => (
+          {[
+            { label: 'THORChain Docs', href: 'https://docs.thorchain.org' },
+            { label: 'Developer Docs', href: 'https://dev.thorchain.org' },
+            { label: 'Midgard API', href: 'https://midgard.thorchain.network/v2/doc' },
+            { label: 'RuneScan Explorer', href: 'https://runescan.io' },
+          ].map((l) => (
             <a
               key={l.href}
               href={l.href}
               target="_blank"
               rel="noopener noreferrer"
-              className="block rounded-lg border border-border bg-surface-elevated p-4 text-left transition-colors hover:border-accent/20 hover:text-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
+              className="block rounded-lg border border-border bg-surface-elevated p-3 text-sm font-semibold text-slate-300 transition-colors hover:border-accent/20 hover:text-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
             >
-              <span className="block text-sm font-semibold text-slate-300">{l.label}</span>
-              <span className="mt-2 block text-[11px] font-medium uppercase tracking-wider text-slate-500">{l.sourceType}</span>
-              <span className="mt-1 block text-[11px] leading-relaxed text-slate-400">{l.boundary}</span>
+              {l.label}
             </a>
           ))}
         </div>
