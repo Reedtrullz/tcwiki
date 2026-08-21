@@ -4,11 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Search, Menu, X, ChevronDown } from 'lucide-react';
-import { JOURNEY_LINKS, NAV_ITEMS, TASK_GUIDE_GROUPED } from '@/lib/content/registry';
-
-const DESKTOP_NAV_ITEMS = NAV_ITEMS
-  .filter((item) => item.href !== '/deep-dives')
-  .map((item) => (item.href === '/stats' ? { ...item, name: 'Stats' } : item));
+import { JOURNEY_LINKS, NAV_GROUPS, TASK_GUIDE_GROUPED } from '@/lib/content/registry';
 
 export default function Header() {
   const pathname = usePathname();
@@ -16,6 +12,7 @@ export default function Header() {
   const [isOpen, setIsOpen] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [showGuides, setShowGuides] = useState(false);
+  const [openNavGroup, setOpenNavGroup] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [panelPathname, setPanelPathname] = useState(pathname);
   const searchButtonRef = useRef<HTMLButtonElement>(null);
@@ -25,14 +22,15 @@ export default function Header() {
   const isOpenForPath = isOpen && panelPathname === pathname;
   const showSearchForPath = showSearch && panelPathname === pathname;
   const showGuidesForPath = showGuides && panelPathname === pathname;
+  const showNavGroupForPath = openNavGroup !== null && panelPathname === pathname;
   const isCurrentHref = (href: string) => (
     href === '/' ? pathname === href : pathname === href || pathname.startsWith(`${href}/`)
   );
   const pathForHref = (href: string) => href.split(/[?#]/)[0] || href;
   const isCurrentLink = (href: string) => isCurrentHref(pathForHref(href));
   const guidesRouteActive = isCurrentHref('/deep-dives');
-  const navLinkClassName = (href: string) => {
-    const current = isCurrentLink(href);
+  const navLinkClassName = (href: string, active = false) => {
+    const current = isCurrentLink(href) || active;
     return [
       'shrink-0 whitespace-nowrap rounded-md border px-2.5 py-1.5 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60',
       current
@@ -63,6 +61,7 @@ export default function Header() {
     setIsOpen(false);
     setShowSearch(false);
     setShowGuides(false);
+    setOpenNavGroup(null);
     if (restoreFocus) {
       window.requestAnimationFrame(() => lastTriggerRef.current?.focus());
     }
@@ -113,16 +112,44 @@ export default function Header() {
           </Link>
 
           <nav aria-label="Primary navigation" className="hidden xl:flex items-center gap-1">
-            {DESKTOP_NAV_ITEMS.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                aria-current={isCurrentHref(item.href) ? 'page' : undefined}
-                className={navLinkClassName(item.href)}
-              >
-                {item.name}
-              </Link>
-            ))}
+            {NAV_GROUPS.map((group) => {
+              const groupActive = group.items.some((item) => isCurrentLink(item.href));
+              return (
+                <div key={group.id} className="relative">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPanelPathname(pathname);
+                      setIsOpen(false);
+                      setShowSearch(false);
+                      setShowGuides(false);
+                      setOpenNavGroup((value) => (panelPathname === pathname && value === group.id) ? null : group.id);
+                    }}
+                    aria-expanded={showNavGroupForPath && openNavGroup === group.id}
+                    aria-haspopup="true"
+                    className={navLinkClassName(group.items[0]?.href ?? '', groupActive && showNavGroupForPath)}
+                  >
+                    {group.label}
+                    <ChevronDown className={`ml-1 inline h-3 w-3 transition-transform ${showNavGroupForPath && openNavGroup === group.id ? 'rotate-180' : ''}`} />
+                  </button>
+                  {showNavGroupForPath && openNavGroup === group.id && (
+                    <div className="absolute left-0 top-full z-10 mt-1 min-w-[180px] rounded-lg border border-border bg-surface-elevated p-1 shadow-lg">
+                      {group.items.map((item) => (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          aria-current={isCurrentLink(item.href) ? 'page' : undefined}
+                          className="block rounded-md px-3 py-1.5 text-sm transition-colors hover:bg-slate-800/50 hover:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
+                          onClick={() => closePanels(false)}
+                        >
+                          {item.name}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
             <button
               ref={guidesButtonRef}
               type="button"
@@ -292,16 +319,23 @@ export default function Header() {
             <p className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
               Sections
             </p>
-            {NAV_ITEMS.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                aria-current={isCurrentHref(item.href) ? 'page' : undefined}
-                className={mobileLinkClassName(item.href)}
-                onClick={() => closePanels(false)}
-              >
-                {item.name}
-              </Link>
+            {NAV_GROUPS.map((group) => (
+              <div key={group.id}>
+                <p id={`mobile-nav-group-${group.id}`} className="px-3 pb-1 pt-3 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+                  {group.label}
+                </p>
+                {group.items.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    aria-current={isCurrentLink(item.href) ? 'page' : undefined}
+                    className={mobileLinkClassName(item.href)}
+                    onClick={() => closePanels(false)}
+                  >
+                    {item.name}
+                  </Link>
+                ))}
+              </div>
             ))}
             <div className="my-2 border-t border-border" />
             <p className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500">

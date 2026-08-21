@@ -1,0 +1,451 @@
+- generic [active] [ref=e1]:
+  - link "Skip to content" [ref=e2] [cursor=pointer]:
+    - /url: "#main"
+  - banner [ref=e3]:
+    - generic [ref=e5]:
+      - link "⬡ THORChain Wiki" [ref=e6] [cursor=pointer]:
+        - /url: /
+        - generic [ref=e7]: ⬡
+        - generic [ref=e9]: THORChain Wiki
+      - navigation "Primary navigation" [ref=e10]:
+        - link "Search" [ref=e11] [cursor=pointer]:
+          - /url: /search
+        - link "Protocol" [ref=e12] [cursor=pointer]:
+          - /url: /protocol
+        - link "Network" [ref=e13] [cursor=pointer]:
+          - /url: /network
+        - link "Economics" [ref=e14] [cursor=pointer]:
+          - /url: /economics
+        - link "Dynamic Fees" [ref=e15] [cursor=pointer]:
+          - /url: /dynamic-fees
+        - link "Ecosystem" [ref=e16] [cursor=pointer]:
+          - /url: /ecosystem
+        - link "Governance" [ref=e17] [cursor=pointer]:
+          - /url: /governance
+        - link "Stats" [ref=e18] [cursor=pointer]:
+          - /url: /stats
+        - link "RUNE" [ref=e19] [cursor=pointer]:
+          - /url: /rune
+        - link "TCY" [ref=e20] [cursor=pointer]:
+          - /url: /tcy
+        - link "Docs" [ref=e21] [cursor=pointer]:
+          - /url: /docs
+        - button "Guides" [ref=e22]
+      - button "Open search" [ref=e26]
+  - main [ref=e30]:
+    - generic [ref=e31]:
+      - generic [ref=e32]:
+        - heading "Network Statistics" [level=1] [ref=e33]
+        - paragraph [ref=e34]: Current-only THORChain metrics from Midgard and THORNode. Unavailable upstream data is shown as degraded, not zero.
+      - region "Source and freshness" [ref=e35]:
+        - group [ref=e36]:
+          - generic "Source & freshness Curated Checked 2026-07-13 · Review due 2026-11-17 · Liquify Midgard v2 Health How to use this page ▾" [ref=e37] [cursor=pointer]:
+            - generic [ref=e38]:
+              - generic [ref=e39]: Source & freshness
+              - generic [ref=e40]:
+                - generic [ref=e41]: Curated
+                - generic [ref=e42]: Checked 2026-07-13
+                - generic [ref=e43]: ·
+                - generic [ref=e44]: Review due 2026-11-17
+                - generic [ref=e45]: ·
+                - generic [ref=e46]:
+                  - link "Liquify Midgard v2 Health" [ref=e47]:
+                    - /url: https://gateway.liquify.com/chain/thorchain_midgard/v2/health
+                  - group [ref=e48]: retrieval details
+                  - group [ref=e49]:
+                    - generic "Show 5 additional sources for Liquify Midgard v2 Health" [ref=e50]: +5 sources
+            - generic [ref=e51]: How to use this page ▾
+      - generic [ref=e52]:
+        - generic [ref=e53]:
+          - generic [ref=e54]:
+            - heading "Look Here First" [level=2] [ref=e55]
+            - paragraph [ref=e56]: "First check whether the sources are usable, then read the metric cards as four separate signals: liquidity depth, node reward rate, active security set, and reserve context."
+            - generic [ref=e57]:
+              - generic [ref=e58]:
+                - generic [ref=e59]:
+                  - paragraph [ref=e60]: Headline metrics
+                  - generic [ref=e61]: Loading
+                - paragraph [ref=e62]: Pooled RUNE, bonding APY, active nodes, and reserve are waiting on Midgard.
+              - generic [ref=e63]:
+                - generic [ref=e64]:
+                  - paragraph [ref=e65]: Midgard pool rows
+                  - generic [ref=e66]: Loading
+                - paragraph [ref=e67]: "Waiting for the current Midgard `/pools?status=available` rows."
+              - generic [ref=e68]:
+                - generic [ref=e69]:
+                  - paragraph [ref=e70]: Midgard health
+                  - generic [ref=e71]: Checking
+                - paragraph [ref=e72]: Waiting for provider health before treating metric freshness as usable.
+              - generic [ref=e73]:
+                - generic [ref=e74]:
+                  - paragraph [ref=e75]: Operations
+                  - generic [ref=e76]: Checking
+                - paragraph [ref=e77]: Waiting for THORNode diagnostics before separating metric health from protocol pause state.
+              - generic [ref=e78]:
+                - generic [ref=e79]:
+                  - paragraph [ref=e80]: Earnings history
+                  - generic [ref=e81]: Loading
+                - paragraph [ref=e82]: Waiting for daily Midgard intervals before drawing chart conclusions.
+          - region [ref=e83]:
+            - heading "Operational Check" [level=2] [ref=e84]
+            - paragraph [ref=e85]: Check network status before treating loaded metrics as route-ready. A healthy-looking Midgard number does not override a current THORNode pause or source warning.
+            - generic [ref=e86]:
+              - generic [ref=e87]:
+                - status [ref=e93]:
+                  - heading "Checking live network status" [level=2] [ref=e95]
+                  - paragraph [ref=e96]: Fetching THORNode Mimir, inbound-address, version, and block evidence.
+                - paragraph [ref=e98]: Loading live source...
+              - generic [ref=e99]:
+                - paragraph [ref=e100]: Look here first
+                - generic "Look here first" [ref=e101]:
+                  - generic [ref=e102]:
+                    - paragraph [ref=e103]: Ordinary swaps
+                    - paragraph [ref=e104]: Checking
+                  - generic [ref=e105]:
+                    - paragraph [ref=e106]: Limited chains
+                    - paragraph [ref=e107]: Unavailable
+                  - generic [ref=e108]:
+                    - paragraph [ref=e109]: Other operations
+                    - paragraph [ref=e110]: Unavailable
+                  - generic [ref=e111]:
+                    - paragraph [ref=e112]: Data quality
+                    - paragraph [ref=e113]: Pending
+              - generic [ref=e114]:
+                - generic [ref=e115]: Compact view hides raw Mimir keys. Use Network diagnostics for exact evidence and grouped controls.
+                - link "Open diagnostics" [ref=e116] [cursor=pointer]:
+                  - /url: /network#network-diagnostics
+          - region [ref=e117]:
+            - generic [ref=e118]:
+              - heading "Which Numbers Matter" [level=2] [ref=e119]
+              - paragraph [ref=e120]: Start with the number that matches the claim. Each metric is useful, but none of them alone proves route availability, future yield, or recovery state.
+            - generic [ref=e121]:
+              - generic [ref=e122]:
+                - generic [ref=e123]:
+                  - heading "Liquidity depth" [level=3] [ref=e124]
+                  - generic [ref=e125]: Pooled RUNE
+                - generic [ref=e126]:
+                  - generic [ref=e127]:
+                    - term [ref=e128]: Use For
+                    - definition [ref=e129]: Broad liquidity depth and pool-scale context.
+                  - generic [ref=e130]:
+                    - term [ref=e131]: Do Not Use For
+                    - definition [ref=e132]: A specific route will quote, settle, or have low slippage.
+                - link "Read CLP evidence" [ref=e133] [cursor=pointer]:
+                  - /url: /deep-dives/clp#evidence-ladder
+              - generic [ref=e134]:
+                - generic [ref=e135]:
+                  - heading "Security set" [level=3] [ref=e136]
+                  - generic [ref=e137]: Active nodes
+                - generic [ref=e138]:
+                  - generic [ref=e139]:
+                    - term [ref=e140]: Use For
+                    - definition [ref=e141]: Current validator-set size and security-context triage.
+                  - generic [ref=e142]:
+                    - term [ref=e143]: Do Not Use For
+                    - definition [ref=e144]: Vault safety, signing availability, or incident recovery proof.
+                - link "Check operations" [ref=e145] [cursor=pointer]:
+                  - /url: /network#network-diagnostics
+              - generic [ref=e146]:
+                - generic [ref=e147]:
+                  - heading "Reward signal" [level=3] [ref=e148]
+                  - generic [ref=e149]: Bonding APY
+                - generic [ref=e150]:
+                  - generic [ref=e151]:
+                    - term [ref=e152]: Use For
+                    - definition [ref=e153]: Current node-reward direction from Midgard.
+                  - generic [ref=e154]:
+                    - term [ref=e155]: Do Not Use For
+                    - definition [ref=e156]: Future yield, investment return, or durable profitability.
+                - link "Read incentive model" [ref=e157] [cursor=pointer]:
+                  - /url: /deep-dives/incentive-pendulum
+              - generic [ref=e158]:
+                - generic [ref=e159]:
+                  - heading "Earnings shape" [level=3] [ref=e160]
+                  - generic [ref=e161]: Daily intervals
+                - generic [ref=e162]:
+                  - generic [ref=e163]:
+                    - term [ref=e164]: Use For
+                    - definition [ref=e165]: Recent distribution shape from loaded Midgard intervals.
+                  - generic [ref=e166]:
+                    - term [ref=e167]: Do Not Use For
+                    - definition [ref=e168]: Protocol revenue lift, route competitiveness, or partner attribution.
+                - link "Check fee experiment" [ref=e169] [cursor=pointer]:
+                  - /url: /dynamic-fees#dynamic-fees-live
+          - region [ref=e170]:
+            - heading "Live Metrics" [level=2] [ref=e171]
+            - paragraph [ref=e172]: These are current Midgard snapshot numbers. Use them for dashboard triage, then verify operational availability, route quality, and historical conclusions elsewhere.
+            - generic [ref=e173]:
+              - generic [ref=e174]:
+                - generic [ref=e175]: Pooled RUNE
+                - paragraph [ref=e179]: Loading
+                - paragraph [ref=e180]: "Liquidity depth signal. LP APY: unavailable."
+              - generic [ref=e181]:
+                - generic [ref=e182]: Bonding APY
+                - paragraph [ref=e187]: Loading
+                - paragraph [ref=e188]: Node reward signal; current-only and source-dependent.
+              - generic [ref=e189]:
+                - generic [ref=e190]: Active Nodes
+                - paragraph [ref=e194]: Loading
+                - paragraph [ref=e195]: Security-set signal. Standby nodes unavailable.
+              - generic [ref=e196]:
+                - generic [ref=e197]: Reserve RUNE
+                - paragraph [ref=e202]: Loading
+                - paragraph [ref=e203]: Protocol reserve/backstop context; not a solvency guarantee by itself.
+            - paragraph [ref=e205]: Loading live source...
+          - generic [ref=e206]:
+            - heading "Midgard Available-Pool Rows" [level=2] [ref=e207]
+            - paragraph [ref=e208]: Loading Midgard available-pool rows... This is liquidity context from Midgard, not proof that a specific route will quote or settle. Full loaded row list stays in this wiki view.
+            - generic [ref=e209]:
+              - generic [ref=e210]:
+                - paragraph [ref=e211]: Midgard pool rows
+                - paragraph [ref=e212]: Loading
+              - generic [ref=e213]:
+                - paragraph [ref=e214]: Chains in rows
+                - paragraph [ref=e215]: Loading
+              - generic [ref=e216]:
+                - paragraph [ref=e217]: Deepest pool
+                - paragraph [ref=e218]: Unavailable
+              - generic [ref=e219]:
+                - paragraph [ref=e220]: Highest 24h RUNE volume
+                - paragraph [ref=e221]: Unavailable
+            - paragraph [ref=e223]: Loading live source...
+            - generic [ref=e225]:
+              - generic [ref=e226]:
+                - paragraph [ref=e227]: Route proof is separate
+                - paragraph [ref=e228]: Pool rows show liquidity context. A current route still needs a THORNode quote, source freshness, and network diagnostics.
+              - link "Check a route" [ref=e229] [cursor=pointer]:
+                - /url: /network#check-a-route
+            - status [ref=e233]: Loading Midgard available-pool rows...
+          - generic [ref=e234]:
+            - heading "Earnings History" [level=2] [ref=e235]
+            - paragraph [ref=e236]: Loading Midgard daily earnings intervals...
+            - generic [ref=e237]:
+              - generic [ref=e238]:
+                - paragraph [ref=e239]: Usable intervals
+                - paragraph [ref=e240]: 0/0
+              - generic [ref=e241]:
+                - paragraph [ref=e242]: Unavailable intervals
+                - paragraph [ref=e243]: Loading
+              - generic [ref=e244]:
+                - paragraph [ref=e246]: Latest valid-window total
+                - paragraph [ref=e247]: Unavailable
+                - paragraph [ref=e248]: Loading intervals
+              - generic [ref=e249]:
+                - paragraph [ref=e251]: Valid loaded-interval total
+                - paragraph [ref=e252]: Unavailable
+                - paragraph [ref=e253]: Loading intervals
+            - paragraph [ref=e254]: Earnings history is a Midgard-sourced current readback of available intervals. Use it to inspect recent distribution shape, not as durable revenue proof or protocol-attribution proof.
+            - paragraph [ref=e256]: Loading live source...
+            - status [ref=e258]: Loading earnings history from Midgard...
+          - region [ref=e259]:
+            - generic [ref=e260]:
+              - generic [ref=e261]:
+                - heading "Related Checks" [level=2] [ref=e262]
+                - paragraph [ref=e263]: Use these before turning current dashboard values into a broader claim.
+              - generic [ref=e264]: current-only
+            - generic [ref=e265]:
+              - link "Live data guide proof boundary Check when to use Midgard dashboard metrics versus THORNode raw protocol state." [ref=e266] [cursor=pointer]:
+                - /url: /deep-dives/midgard-thornode-data
+                - generic [ref=e267]:
+                  - generic [ref=e268]:
+                    - generic [ref=e269]: Live data guide
+                    - generic [ref=e270]: proof boundary
+                  - generic [ref=e271]: Check when to use Midgard dashboard metrics versus THORNode raw protocol state.
+              - link "Network diagnostics operations Paused trading, signing, observation, or LP controls can decide whether loaded metrics are actionable." [ref=e274] [cursor=pointer]:
+                - /url: /network#network-diagnostics
+                - generic [ref=e275]:
+                  - generic [ref=e276]:
+                    - generic [ref=e277]: Network diagnostics
+                    - generic [ref=e278]: operations
+                  - generic [ref=e279]: Paused trading, signing, observation, or LP controls can decide whether loaded metrics are actionable.
+              - link "Liquidity actions LP evidence Separate LP adds, withdrawals, pool-deposit pauses, asymmetric withdrawals, and APY claims before using stats numbers." [ref=e282] [cursor=pointer]:
+                - /url: /deep-dives/liquidity-actions#what-to-check-first
+                - generic [ref=e283]:
+                  - generic [ref=e284]:
+                    - generic [ref=e285]: Liquidity actions
+                    - generic [ref=e286]: LP evidence
+                  - generic [ref=e287]: Separate LP adds, withdrawals, pool-deposit pauses, asymmetric withdrawals, and APY claims before using stats numbers.
+              - link "Dynamic fees fees Use the ADR-026 tracker when fee questions are about partner-pair floors rather than ordinary earnings." [ref=e290] [cursor=pointer]:
+                - /url: /dynamic-fees#dynamic-fees-live
+                - generic [ref=e291]:
+                  - generic [ref=e292]:
+                    - generic [ref=e293]: Dynamic fees
+                    - generic [ref=e294]: fees
+                  - generic [ref=e295]: Use the ADR-026 tracker when fee questions are about partner-pair floors rather than ordinary earnings.
+              - link "Build/query path task Open the task guide for using Midgard, THORNode, inbound-address, and Mimir endpoint data." [ref=e298] [cursor=pointer]:
+                - /url: /deep-dives/build-query-data#query-plan
+                - generic [ref=e299]:
+                  - generic [ref=e300]:
+                    - generic [ref=e301]: Build/query path
+                    - generic [ref=e302]: task
+                  - generic [ref=e303]: Open the task guide for using Midgard, THORNode, inbound-address, and Mimir endpoint data.
+        - complementary [ref=e306]:
+          - navigation "On this page" [ref=e308]:
+            - paragraph [ref=e309]: On this page
+            - list [ref=e310]:
+              - listitem [ref=e311]:
+                - link "Look here first" [ref=e312] [cursor=pointer]:
+                  - /url: "#stats-look-here-first"
+              - listitem [ref=e313]:
+                - link "Operational check" [ref=e314] [cursor=pointer]:
+                  - /url: "#stats-operational-check"
+              - listitem [ref=e315]:
+                - link "Which numbers matter" [ref=e316] [cursor=pointer]:
+                  - /url: "#stats-number-guide-heading"
+              - listitem [ref=e317]:
+                - link "Live metrics" [ref=e318] [cursor=pointer]:
+                  - /url: "#stats-live-metrics-heading"
+              - listitem [ref=e319]:
+                - link "Available pools" [ref=e320] [cursor=pointer]:
+                  - /url: "#available-pools"
+              - listitem [ref=e321]:
+                - link "Earnings history" [ref=e322] [cursor=pointer]:
+                  - /url: "#earnings-history"
+              - listitem [ref=e323]:
+                - link "Related checks" [ref=e324] [cursor=pointer]:
+                  - /url: "#stats-related-checks"
+  - contentinfo [ref=e325]:
+    - generic [ref=e326]:
+      - generic [ref=e327]:
+        - generic [ref=e328]:
+          - generic [ref=e329]:
+            - generic [ref=e330]: ⬡
+            - generic [ref=e332]: THORChain Wiki
+          - paragraph [ref=e333]: Community-maintained encyclopedia of THORChain protocol, data, and ecosystem.
+        - generic [ref=e334]:
+          - heading "Navigate" [level=3] [ref=e335]
+          - list [ref=e336]:
+            - listitem [ref=e337]:
+              - link "Search" [ref=e338] [cursor=pointer]:
+                - /url: /search
+            - listitem [ref=e339]:
+              - link "Protocol" [ref=e340] [cursor=pointer]:
+                - /url: /protocol
+            - listitem [ref=e341]:
+              - link "Network" [ref=e342] [cursor=pointer]:
+                - /url: /network
+            - listitem [ref=e343]:
+              - link "Economics" [ref=e344] [cursor=pointer]:
+                - /url: /economics
+            - listitem [ref=e345]:
+              - link "Dynamic Fees" [ref=e346] [cursor=pointer]:
+                - /url: /dynamic-fees
+            - listitem [ref=e347]:
+              - link "Ecosystem" [ref=e348] [cursor=pointer]:
+                - /url: /ecosystem
+            - listitem [ref=e349]:
+              - link "Governance" [ref=e350] [cursor=pointer]:
+                - /url: /governance
+            - listitem [ref=e351]:
+              - link "Statistics" [ref=e352] [cursor=pointer]:
+                - /url: /stats
+            - listitem [ref=e353]:
+              - link "RUNE" [ref=e354] [cursor=pointer]:
+                - /url: /rune
+            - listitem [ref=e355]:
+              - link "TCY" [ref=e356] [cursor=pointer]:
+                - /url: /tcy
+            - listitem [ref=e357]:
+              - link "Deep Dives" [ref=e358] [cursor=pointer]:
+                - /url: /deep-dives
+            - listitem [ref=e359]:
+              - link "Glossary" [ref=e360] [cursor=pointer]:
+                - /url: /glossary
+            - listitem [ref=e361]:
+              - link "Docs" [ref=e362] [cursor=pointer]:
+                - /url: /docs
+        - generic [ref=e363]:
+          - heading "Verify First" [level=3] [ref=e364]
+          - list [ref=e365]:
+            - listitem [ref=e366]:
+              - link "Source map Match source to claim." [ref=e367] [cursor=pointer]:
+                - /url: /docs#source-map-chooser
+                - generic [ref=e368]: Source map
+                - generic [ref=e369]: Match source to claim.
+            - listitem [ref=e370]:
+              - link "Network diagnostics Check live operational state." [ref=e371] [cursor=pointer]:
+                - /url: /network#network-diagnostics
+                - generic [ref=e372]: Network diagnostics
+                - generic [ref=e373]: Check live operational state.
+            - listitem [ref=e374]:
+              - link "Interface checklist Review third-party app boundaries." [ref=e375] [cursor=pointer]:
+                - /url: /ecosystem#interface-use-checklist
+                - generic [ref=e376]: Interface checklist
+                - generic [ref=e377]: Review third-party app boundaries.
+            - listitem [ref=e378]:
+              - link "Guided answers Start from common tasks and reader paths." [ref=e379] [cursor=pointer]:
+                - /url: /search#search-guided-answers
+                - generic [ref=e380]: Guided answers
+                - generic [ref=e381]: Start from common tasks and reader paths.
+        - generic [ref=e382]:
+          - heading "Official Sources/APIs" [level=3] [ref=e383]
+          - list [ref=e384]:
+            - listitem [ref=e385]:
+              - link "THORChain Docs Official protocol documentation." [ref=e386] [cursor=pointer]:
+                - /url: https://docs.thorchain.org
+                - generic [ref=e387]: THORChain Docs
+                - generic [ref=e388]: Official protocol documentation.
+            - listitem [ref=e389]:
+              - link "Developer Docs Official builder docs and API guidance." [ref=e390] [cursor=pointer]:
+                - /url: https://dev.thorchain.org
+                - generic [ref=e391]: Developer Docs
+                - generic [ref=e392]: Official builder docs and API guidance.
+            - listitem [ref=e393]:
+              - link "Midgard API Official indexed dashboard API docs." [ref=e394] [cursor=pointer]:
+                - /url: https://midgard.thorchain.network/v2/doc
+                - generic [ref=e395]: Midgard API
+                - generic [ref=e396]: Official indexed dashboard API docs.
+          - heading "Third-Party Surfaces" [level=3] [ref=e397]
+          - list [ref=e398]:
+            - listitem [ref=e399]:
+              - generic [ref=e400]:
+                - generic [ref=e401]: Gateway API
+                - generic [ref=e402]: Third-party gateway; verify provider and data-source posture before using it as evidence.
+                - generic [ref=e403]:
+                  - link "Review data-source guide" [ref=e404] [cursor=pointer]:
+                    - /url: /deep-dives/midgard-thornode-data
+                  - link "Open Gateway API externally" [ref=e405] [cursor=pointer]:
+                    - /url: https://gateway.liquify.com/chain/thorchain_midgard/v2
+                    - text: Open Gateway API
+            - listitem [ref=e406]:
+              - generic [ref=e407]:
+                - generic [ref=e408]: RuneScan
+                - generic [ref=e409]: Explorer surface; useful context, not protocol canon or route-availability proof.
+                - generic [ref=e410]:
+                  - link "Review explorer posture" [ref=e411] [cursor=pointer]:
+                    - /url: /docs#external-analytics-and-explorers
+                  - link "Open RuneScan externally" [ref=e412] [cursor=pointer]:
+                    - /url: https://runescan.io
+                    - text: Open RuneScan
+            - listitem [ref=e413]:
+              - generic [ref=e414]:
+                - generic [ref=e415]: THORSwap
+                - generic [ref=e416]: Interface surface; verify route, recipient, fees, wallet permissions, and app state before signing.
+                - generic [ref=e417]:
+                  - link "Review interface checklist" [ref=e418] [cursor=pointer]:
+                    - /url: /ecosystem#interface-use-checklist
+                  - link "Open THORSwap externally" [ref=e419] [cursor=pointer]:
+                    - /url: https://app.thorswap.finance
+                    - text: Open THORSwap
+        - generic [ref=e420]:
+          - heading "Community" [level=3] [ref=e421]
+          - list [ref=e422]:
+            - listitem [ref=e423]:
+              - link "Discord" [ref=e424] [cursor=pointer]:
+                - /url: https://discord.com/invite/thorchaincommunity
+            - listitem [ref=e425]:
+              - link "Twitter" [ref=e426] [cursor=pointer]:
+                - /url: https://x.com/thorchain_org
+            - listitem [ref=e427]:
+              - link "Telegram" [ref=e428] [cursor=pointer]:
+                - /url: https://t.me/thorchain_org
+            - listitem [ref=e429]:
+              - link "Reddit" [ref=e430] [cursor=pointer]:
+                - /url: https://reddit.com/r/THORChain
+            - listitem [ref=e431]:
+              - link "GitHub" [ref=e432] [cursor=pointer]:
+                - /url: https://github.com/thorchain
+      - generic [ref=e433]:
+        - paragraph [ref=e434]: Live data is current-only from Midgard/THORNode sources. Page and record review dates are authoritative; 2026-06-18 is only the base static-catalog baseline. Not affiliated with THORChain.
+        - paragraph [ref=e435]: © 2026 THORChain Wiki
+  - alert [ref=e436]

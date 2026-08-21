@@ -844,6 +844,35 @@ export const NAV_ITEMS = CONTENT_ENTRIES
   .filter((entry) => entry.nav)
   .map((entry) => ({ name: entry.navLabel ?? entry.title, href: entry.href }));
 
+export interface NavGroupDefinition {
+  id: string;
+  label: string;
+  hrefs: string[];
+}
+
+export interface NavGroup extends NavGroupDefinition {
+  items: Array<{ name: string; href: string }>;
+}
+
+const NAV_GROUP_DEFINITIONS: NavGroupDefinition[] = [
+  { id: 'learn', label: 'Learn', hrefs: ['/protocol', '/network', '/economics', '/deep-dives', '/glossary'] },
+  { id: 'tokens', label: 'Tokens', hrefs: ['/rune', '/tcy'] },
+  { id: 'reference', label: 'Reference', hrefs: ['/governance', '/ecosystem', '/dynamic-fees', '/docs'] },
+  { id: 'tools', label: 'Tools', hrefs: ['/stats', '/search'] },
+];
+
+export const NAV_GROUPS: NavGroup[] = NAV_GROUP_DEFINITIONS
+  .map((group) => ({
+    ...group,
+    items: group.hrefs
+      .map((href) => {
+        const entry = CONTENT_ENTRIES.find((candidate) => candidate.href === href);
+        return entry ? { name: entry.navLabel ?? entry.title, href: entry.href } : null;
+      })
+      .filter((item): item is NonNullable<typeof item> => item !== null),
+  }))
+  .filter((group) => group.items.length > 0);
+
 export const FOOTER_NAV_ITEMS = CONTENT_ENTRIES
   .filter((entry) => entry.footer)
   .map((entry) => ({ label: entry.footerLabel ?? entry.title, href: entry.href }));

@@ -1,0 +1,400 @@
+- generic [active] [ref=e1]:
+  - link "Skip to content" [ref=e2] [cursor=pointer]:
+    - /url: "#main"
+  - banner [ref=e3]:
+    - generic [ref=e5]:
+      - link "⬡ THORChain Wiki" [ref=e6] [cursor=pointer]:
+        - /url: /
+        - generic [ref=e7]: ⬡
+        - generic [ref=e9]: THORChain Wiki
+      - generic [ref=e10]:
+        - button "Open search" [ref=e11]
+        - button "Open navigation menu" [ref=e15]
+  - main [ref=e17]:
+    - generic [ref=e18]:
+      - heading "Network & Security" [level=1] [ref=e19]
+      - paragraph [ref=e20]: THORChain secures cross-chain assets through bonded node operators, threshold signatures, Mimir-controlled operations, solvency checks, and economic penalties. Maya Protocol node data is shown alongside for cross-protocol visibility.
+      - generic [ref=e22]:
+        - generic [ref=e24]:
+          - generic [ref=e25]:
+            - status [ref=e31]:
+              - heading "Checking live network status" [level=2] [ref=e33]
+              - paragraph [ref=e34]: Fetching THORNode Mimir, inbound-address, version, and block evidence.
+            - paragraph [ref=e36]: Loading live source...
+          - generic [ref=e37]:
+            - paragraph [ref=e38]: Look here first
+            - generic "Look here first" [ref=e39]:
+              - generic [ref=e40]:
+                - paragraph [ref=e41]: Ordinary swaps
+                - paragraph [ref=e42]: Checking
+              - generic [ref=e43]:
+                - paragraph [ref=e44]: Limited chains
+                - paragraph [ref=e45]: Unavailable
+              - generic [ref=e46]:
+                - paragraph [ref=e47]: Other operations
+                - paragraph [ref=e48]: Unavailable
+              - generic [ref=e49]:
+                - paragraph [ref=e50]: Data quality
+                - paragraph [ref=e51]: Pending
+          - region [ref=e52]:
+            - generic [ref=e53]:
+              - generic [ref=e54]:
+                - heading "Node operator actions" [level=3] [ref=e55]
+                - paragraph [ref=e56]: Current Mimir controls for bonding, unbonding, rebonding, and operator rotation. These action gates are separate from ordinary swaps and LP availability.
+              - generic [ref=e57]: current-only
+            - generic [ref=e58]:
+              - generic [ref=e59]:
+                - generic [ref=e60]: Checking
+                - generic [ref=e61]: Node operation controls are not available
+              - paragraph [ref=e62]: Waiting for current THORNode Mimir controls for bonding, unbonding, rebonding, and operator rotation.
+            - paragraph [ref=e63]: This panel is about network-level action gates. It does not prove a specific node can leave safely; node state, churn timing, slash points, and operator tooling still matter.
+          - region [ref=e64]:
+            - generic [ref=e65]:
+              - generic [ref=e66]:
+                - heading "Check A Route" [level=3] [ref=e67]
+                - paragraph [ref=e68]: On-demand THORNode quote probe. It uses Midgard available pools plus native RUNE as route choices, does not collect a wallet address, and is not a send instruction.
+              - paragraph [ref=e70]: Loading live source...
+            - generic [ref=e71]:
+              - generic [ref=e72]:
+                - generic [ref=e73]: From asset
+                - combobox "From asset" [disabled] [ref=e74]:
+                  - option "Pools unavailable" [selected]
+              - generic [ref=e75]:
+                - generic [ref=e76]: To asset
+                - combobox "To asset" [disabled] [ref=e77]:
+                  - option "Pools unavailable" [selected]
+              - generic [ref=e78]:
+                - generic [ref=e79]: Amount
+                - textbox "Amount" [ref=e80]: "0.01"
+              - button "Check route" [disabled] [ref=e82]
+            - generic [ref=e84]:
+              - paragraph [ref=e85]: Network status unavailable
+              - paragraph [ref=e86]: Live THORNode status has not loaded.
+            - region [ref=e87]:
+              - generic [ref=e88]:
+                - generic [ref=e89]:
+                  - heading "Refund / failed swap triage" [level=3] [ref=e90]
+                  - paragraph [ref=e91]: "Refund diagnosis: insufficient evidence"
+                  - paragraph [ref=e92]: Run a fresh quote probe and compare it with the actual quote flow, memo, inbound transaction, and any refund transaction before naming a cause.
+                - link "Triage guide" [ref=e93] [cursor=pointer]:
+                  - /url: /deep-dives/streaming-swaps-refunds#what-to-check-first
+              - generic [ref=e94]:
+                - generic [ref=e95]:
+                  - generic [ref=e96]:
+                    - paragraph [ref=e97]: Current quote result
+                    - generic [ref=e98]: Missing
+                  - paragraph [ref=e99]: No quote has been checked for this selected route and amount.
+                - generic [ref=e100]:
+                  - generic [ref=e101]:
+                    - paragraph [ref=e102]: Live route blockers
+                    - generic [ref=e103]: Missing
+                  - paragraph [ref=e104]: Live THORNode status has not loaded.
+                - generic [ref=e105]:
+                  - generic [ref=e106]:
+                    - paragraph [ref=e107]: Amount threshold
+                    - generic [ref=e108]: Missing
+                  - paragraph [ref=e109]: Need the quote minimum amount and the inbound chain dust threshold before blaming amount size.
+                - generic [ref=e110]:
+                  - generic [ref=e111]:
+                    - paragraph [ref=e112]: Same quote-flow inputs
+                    - generic [ref=e113]: Missing
+                  - paragraph [ref=e114]: Need the inbound address or router, memo, and expiry from the same fresh quote flow. This wiki does not create wallet send instructions.
+                - generic [ref=e115]:
+                  - generic [ref=e116]:
+                    - paragraph [ref=e117]: Transaction and refund proof
+                    - generic [ref=e118]: Missing
+                  - paragraph [ref=e119]: Need the inbound transaction hash, observed memo, source and destination chains, and any refund or outbound transaction before assigning a refund cause.
+              - paragraph [ref=e120]: "Result discipline: current quotes and halts can narrow the investigation, but a specific refund cause requires the actual transaction evidence."
+        - group [ref=e121]:
+          - generic "Current Operation Snapshot Additional context for node counts, operator constants, and grouped operation gates. Open when you need the secondary view. Additional context" [ref=e122] [cursor=pointer]:
+            - heading "Current Operation Snapshot" [level=2] [ref=e124]
+            - paragraph [ref=e127]: Additional context for node counts, operator constants, and grouped operation gates. Open when you need the secondary view.
+            - generic [ref=e128]: Additional context
+        - region "Source and freshness" [ref=e129]:
+          - group [ref=e130]:
+            - generic "Source & freshness Curated Checked 2026-07-14 · Review due 2026-11-17 · THORChain Docs How to use this page ▾" [ref=e131] [cursor=pointer]:
+              - generic [ref=e132]:
+                - generic [ref=e133]: Source & freshness
+                - generic [ref=e134]:
+                  - generic [ref=e135]: Curated
+                  - generic [ref=e136]: Checked 2026-07-14
+                  - generic [ref=e137]: ·
+                  - generic [ref=e138]: Review due 2026-11-17
+                  - generic [ref=e139]: ·
+                  - generic [ref=e140]:
+                    - link "THORChain Docs" [ref=e141]:
+                      - /url: https://docs.thorchain.org
+                    - group [ref=e142]: retrieval details
+                    - group [ref=e143]:
+                      - generic "Show 10 additional sources for THORChain Docs" [ref=e144]: +10 sources
+              - generic [ref=e145]: How to use this page ▾
+        - region [ref=e146]:
+          - generic [ref=e147]:
+            - generic [ref=e148]:
+              - heading "Related Checks" [level=2] [ref=e149]
+              - paragraph [ref=e150]: Use these before turning current dashboard values into a broader claim.
+            - generic [ref=e151]: current-only
+          - generic [ref=e152]:
+            - link "Source map proof boundary Separate current THORNode operational evidence from docs, historical reports, and community context." [ref=e153] [cursor=pointer]:
+              - /url: /docs#current-protocol-state
+              - generic [ref=e154]:
+                - generic [ref=e155]:
+                  - generic [ref=e156]: Source map
+                  - generic [ref=e157]: proof boundary
+                - generic [ref=e158]: Separate current THORNode operational evidence from docs, historical reports, and community context.
+            - link "Live-source failover source health Review how provider warnings, stale snapshots, and degraded source labels should be interpreted." [ref=e161] [cursor=pointer]:
+              - /url: /docs#runtime-live-data-failover
+              - generic [ref=e162]:
+                - generic [ref=e163]:
+                  - generic [ref=e164]: Live-source failover
+                  - generic [ref=e165]: source health
+                - generic [ref=e166]: Review how provider warnings, stale snapshots, and degraded source labels should be interpreted.
+            - link "Stats dashboard metrics Compare operational availability with Midgard headline metrics and earnings coverage." [ref=e169] [cursor=pointer]:
+              - /url: /stats#stats-look-here-first
+              - generic [ref=e170]:
+                - generic [ref=e171]:
+                  - generic [ref=e172]: Stats dashboard
+                  - generic [ref=e173]: metrics
+                - generic [ref=e174]: Compare operational availability with Midgard headline metrics and earnings coverage.
+            - link "Mimir halt guide guide Read how halt keys, source warnings, and scoped pauses should be interpreted." [ref=e177] [cursor=pointer]:
+              - /url: /deep-dives/mimir-halt-controls#what-mimirs-can-prove
+              - generic [ref=e178]:
+                - generic [ref=e179]:
+                  - generic [ref=e180]: Mimir halt guide
+                  - generic [ref=e181]: guide
+                - generic [ref=e182]: Read how halt keys, source warnings, and scoped pauses should be interpreted.
+        - region [ref=e185]:
+          - heading "Node Operator Guide" [level=2] [ref=e186]
+          - paragraph [ref=e187]: Use this as an orientation map before acting. Official operator docs explain setup and maintenance, while this page separates current controls, node lifecycle, bond risk, and rewards context so a guide search does not look like live action proof.
+          - generic [ref=e188]:
+            - generic [ref=e189]:
+              - generic [ref=e190]:
+                - generic [ref=e191]:
+                  - generic [ref=e192]: official docs
+                  - heading "Setup and maintenance" [level=3] [ref=e193]
+                - paragraph [ref=e194]: Start from the official operator runbook for setup, sync, troubleshooting, and maintenance details. Treat local wiki text as a source map, not installation instructions.
+              - link "Managing THORNodes" [ref=e195] [cursor=pointer]:
+                - /url: https://docs.thorchain.org/thornodes/managing
+            - generic [ref=e196]:
+              - generic [ref=e197]:
+                - generic [ref=e198]:
+                  - generic [ref=e199]: current controls
+                  - heading "Bond, unbond, and rotate checks" [level=3] [ref=e200]
+                - paragraph [ref=e201]: Use live diagnostics for PauseBond, PauseUnbond, HaltRebond, HaltOperatorRotate, source warnings, and the boundary around whether a specific node can act now.
+              - link "Check node-operation controls" [ref=e202] [cursor=pointer]:
+                - /url: "#node-operator-actions"
+            - generic [ref=e203]:
+              - generic [ref=e204]:
+                - generic [ref=e205]:
+                  - generic [ref=e206]: context
+                  - heading "Lifecycle and leaving" [level=3] [ref=e207]
+                - paragraph [ref=e208]: Whitelisted, Standby, Ready, Active, and Disabled are distinct states. Only a Standby node outside vault migration may unbond; current state still needs direct node evidence.
+              - generic [ref=e209]:
+                - link "THORNode node operations" [ref=e210] [cursor=pointer]:
+                  - /url: https://docs.thorchain.org/thornodes/overview/node-operations
+                - link "Leaving THORChain as a node operator" [ref=e211] [cursor=pointer]:
+                  - /url: https://docs.thorchain.org/thornodes/leaving
+            - generic [ref=e212]:
+              - generic [ref=e213]:
+                - generic [ref=e214]:
+                  - generic [ref=e215]: context
+                  - heading "Rewards and slash exposure" [level=3] [ref=e216]
+                - paragraph [ref=e217]: Slash points reduce rewards; separately defined security events can slash bond principal. Documentation examples do not prove a node's current balance, parameters, or incident outcome.
+              - link "THORNode risks, costs and rewards" [ref=e218] [cursor=pointer]:
+                - /url: https://docs.thorchain.org/thornodes/overview/risks-costs-and-rewards
+        - heading "Node Types" [level=2] [ref=e219]
+        - generic [ref=e220]:
+          - generic [ref=e221]:
+            - heading "Whitelisted" [level=3] [ref=e222]
+            - paragraph [ref=e223]: Bonded, but required node keys have not yet been set; operator setup is incomplete.
+          - generic [ref=e224]:
+            - heading "Standby" [level=3] [ref=e225]
+            - paragraph [ref=e226]: Bonded but not active. Current requirements are evaluated during churn; only Standby nodes outside vault migration may unbond.
+          - generic [ref=e227]:
+            - heading "Ready" [level=3] [ref=e228]
+            - paragraph [ref=e229]: Passed current preflight requirements and is eligible for churn selection; a node cannot unbond while Ready.
+          - generic [ref=e230]:
+            - heading "Active" [level=3] [ref=e231]
+            - paragraph [ref=e232]: Participates in consensus, observation, and signing; it cannot unbond until churned to Standby and clear of vault migration.
+          - generic [ref=e233]:
+            - heading "Disabled" [level=3] [ref=e234]
+            - paragraph [ref=e235]: Completed the permanent-leave path while Standby and cannot rejoin with the same node account.
+        - heading "Security Architecture" [level=2] [ref=e236]
+        - generic [ref=e237]:
+          - generic [ref=e238]:
+            - heading "Threshold Signatures" [level=3] [ref=e239]
+            - paragraph [ref=e240]: Distributed signing protects vault keys, but implementation details and migration status should stay tied to dated source material.
+          - generic [ref=e241]:
+            - heading "Solvency Checks" [level=3] [ref=e242]
+            - paragraph [ref=e243]: Nodes monitor vault balances and can trigger halts when observed balances diverge from expected protocol state.
+          - generic [ref=e244]:
+            - heading "Operational Mimir" [level=3] [ref=e245]
+            - paragraph [ref=e246]: Emergency parameters can halt trading, signing, churning, chain observation, LP actions, TCY claims, and more.
+          - generic [ref=e247]:
+            - heading "Bonded Operators" [level=3] [ref=e248]
+            - paragraph [ref=e249]: Operators bond RUNE as economic security. Minimum bond and slash constants can be overridden by Mimir.
+          - generic [ref=e250]:
+            - heading "Slash Points" [level=3] [ref=e251]
+            - paragraph [ref=e252]: Nodes can accrue slash points for missed observations or signing failures, affecting churn and rewards.
+          - generic [ref=e253]:
+            - heading "Churning" [level=3] [ref=e254]
+            - paragraph [ref=e255]: Validator rotation and vault rotation reduce long-lived key exposure; exact intervals are live constants or Mimir overrides.
+        - region [ref=e256]:
+          - heading "Maya Protocol Nodes" [level=2] [ref=e257]
+          - paragraph [ref=e258]: Maya Protocol is a THORChain fork with its own validator set, CACAO native asset, and independent chain support. Node data below comes from Maya's Midgard API.
+          - generic [ref=e259]:
+            - generic [ref=e260]:
+              - heading "Network Overview" [level=3] [ref=e261]
+              - paragraph [ref=e262]: Loading Maya network data…
+              - paragraph [ref=e264]: Loading live source...
+            - generic [ref=e265]:
+              - heading "Node Status Distribution" [level=3] [ref=e266]
+              - paragraph [ref=e267]: Loading Maya node data…
+              - paragraph [ref=e269]: Loading live source...
+          - link "Maya Node Operator Docs" [ref=e271] [cursor=pointer]:
+            - /url: https://docs.mayaprotocol.com/node-docs/mayanodes/overview
+  - contentinfo [ref=e272]:
+    - generic [ref=e273]:
+      - generic [ref=e274]:
+        - generic [ref=e275]:
+          - generic [ref=e276]:
+            - generic [ref=e277]: ⬡
+            - generic [ref=e279]: THORChain Wiki
+          - paragraph [ref=e280]: Community-maintained encyclopedia of THORChain protocol, data, and ecosystem.
+        - generic [ref=e281]:
+          - heading "Navigate" [level=3] [ref=e282]
+          - list [ref=e283]:
+            - listitem [ref=e284]:
+              - link "Search" [ref=e285] [cursor=pointer]:
+                - /url: /search
+            - listitem [ref=e286]:
+              - link "Protocol" [ref=e287] [cursor=pointer]:
+                - /url: /protocol
+            - listitem [ref=e288]:
+              - link "Network" [ref=e289] [cursor=pointer]:
+                - /url: /network
+            - listitem [ref=e290]:
+              - link "Economics" [ref=e291] [cursor=pointer]:
+                - /url: /economics
+            - listitem [ref=e292]:
+              - link "Dynamic Fees" [ref=e293] [cursor=pointer]:
+                - /url: /dynamic-fees
+            - listitem [ref=e294]:
+              - link "Ecosystem" [ref=e295] [cursor=pointer]:
+                - /url: /ecosystem
+            - listitem [ref=e296]:
+              - link "Governance" [ref=e297] [cursor=pointer]:
+                - /url: /governance
+            - listitem [ref=e298]:
+              - link "Statistics" [ref=e299] [cursor=pointer]:
+                - /url: /stats
+            - listitem [ref=e300]:
+              - link "RUNE" [ref=e301] [cursor=pointer]:
+                - /url: /rune
+            - listitem [ref=e302]:
+              - link "TCY" [ref=e303] [cursor=pointer]:
+                - /url: /tcy
+            - listitem [ref=e304]:
+              - link "Deep Dives" [ref=e305] [cursor=pointer]:
+                - /url: /deep-dives
+            - listitem [ref=e306]:
+              - link "Glossary" [ref=e307] [cursor=pointer]:
+                - /url: /glossary
+            - listitem [ref=e308]:
+              - link "Docs" [ref=e309] [cursor=pointer]:
+                - /url: /docs
+        - generic [ref=e310]:
+          - heading "Verify First" [level=3] [ref=e311]
+          - list [ref=e312]:
+            - listitem [ref=e313]:
+              - link "Source map Match source to claim." [ref=e314] [cursor=pointer]:
+                - /url: /docs#source-map-chooser
+                - generic [ref=e315]: Source map
+                - generic [ref=e316]: Match source to claim.
+            - listitem [ref=e317]:
+              - link "Network diagnostics Check live operational state." [ref=e318] [cursor=pointer]:
+                - /url: /network#network-diagnostics
+                - generic [ref=e319]: Network diagnostics
+                - generic [ref=e320]: Check live operational state.
+            - listitem [ref=e321]:
+              - link "Interface checklist Review third-party app boundaries." [ref=e322] [cursor=pointer]:
+                - /url: /ecosystem#interface-use-checklist
+                - generic [ref=e323]: Interface checklist
+                - generic [ref=e324]: Review third-party app boundaries.
+            - listitem [ref=e325]:
+              - link "Guided answers Start from common tasks and reader paths." [ref=e326] [cursor=pointer]:
+                - /url: /search#search-guided-answers
+                - generic [ref=e327]: Guided answers
+                - generic [ref=e328]: Start from common tasks and reader paths.
+        - generic [ref=e329]:
+          - heading "Official Sources/APIs" [level=3] [ref=e330]
+          - list [ref=e331]:
+            - listitem [ref=e332]:
+              - link "THORChain Docs Official protocol documentation." [ref=e333] [cursor=pointer]:
+                - /url: https://docs.thorchain.org
+                - generic [ref=e334]: THORChain Docs
+                - generic [ref=e335]: Official protocol documentation.
+            - listitem [ref=e336]:
+              - link "Developer Docs Official builder docs and API guidance." [ref=e337] [cursor=pointer]:
+                - /url: https://dev.thorchain.org
+                - generic [ref=e338]: Developer Docs
+                - generic [ref=e339]: Official builder docs and API guidance.
+            - listitem [ref=e340]:
+              - link "Midgard API Official indexed dashboard API docs." [ref=e341] [cursor=pointer]:
+                - /url: https://midgard.thorchain.network/v2/doc
+                - generic [ref=e342]: Midgard API
+                - generic [ref=e343]: Official indexed dashboard API docs.
+          - heading "Third-Party Surfaces" [level=3] [ref=e344]
+          - list [ref=e345]:
+            - listitem [ref=e346]:
+              - generic [ref=e347]:
+                - generic [ref=e348]: Gateway API
+                - generic [ref=e349]: Third-party gateway; verify provider and data-source posture before using it as evidence.
+                - generic [ref=e350]:
+                  - link "Review data-source guide" [ref=e351] [cursor=pointer]:
+                    - /url: /deep-dives/midgard-thornode-data
+                  - link "Open Gateway API externally" [ref=e352] [cursor=pointer]:
+                    - /url: https://gateway.liquify.com/chain/thorchain_midgard/v2
+                    - text: Open Gateway API
+            - listitem [ref=e353]:
+              - generic [ref=e354]:
+                - generic [ref=e355]: RuneScan
+                - generic [ref=e356]: Explorer surface; useful context, not protocol canon or route-availability proof.
+                - generic [ref=e357]:
+                  - link "Review explorer posture" [ref=e358] [cursor=pointer]:
+                    - /url: /docs#external-analytics-and-explorers
+                  - link "Open RuneScan externally" [ref=e359] [cursor=pointer]:
+                    - /url: https://runescan.io
+                    - text: Open RuneScan
+            - listitem [ref=e360]:
+              - generic [ref=e361]:
+                - generic [ref=e362]: THORSwap
+                - generic [ref=e363]: Interface surface; verify route, recipient, fees, wallet permissions, and app state before signing.
+                - generic [ref=e364]:
+                  - link "Review interface checklist" [ref=e365] [cursor=pointer]:
+                    - /url: /ecosystem#interface-use-checklist
+                  - link "Open THORSwap externally" [ref=e366] [cursor=pointer]:
+                    - /url: https://app.thorswap.finance
+                    - text: Open THORSwap
+        - generic [ref=e367]:
+          - heading "Community" [level=3] [ref=e368]
+          - list [ref=e369]:
+            - listitem [ref=e370]:
+              - link "Discord" [ref=e371] [cursor=pointer]:
+                - /url: https://discord.com/invite/thorchaincommunity
+            - listitem [ref=e372]:
+              - link "Twitter" [ref=e373] [cursor=pointer]:
+                - /url: https://x.com/thorchain_org
+            - listitem [ref=e374]:
+              - link "Telegram" [ref=e375] [cursor=pointer]:
+                - /url: https://t.me/thorchain_org
+            - listitem [ref=e376]:
+              - link "Reddit" [ref=e377] [cursor=pointer]:
+                - /url: https://reddit.com/r/THORChain
+            - listitem [ref=e378]:
+              - link "GitHub" [ref=e379] [cursor=pointer]:
+                - /url: https://github.com/thorchain
+      - generic [ref=e380]:
+        - paragraph [ref=e381]: Live data is current-only from Midgard/THORNode sources. Page and record review dates are authoritative; 2026-06-18 is only the base static-catalog baseline. Not affiliated with THORChain.
+        - paragraph [ref=e382]: © 2026 THORChain Wiki
+  - alert [ref=e383]

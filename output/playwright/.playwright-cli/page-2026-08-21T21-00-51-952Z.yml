@@ -1,0 +1,332 @@
+- generic [active] [ref=e1]:
+  - link "Skip to content" [ref=e2] [cursor=pointer]:
+    - /url: "#main"
+  - banner [ref=e3]:
+    - generic [ref=e5]:
+      - link "⬡ THORChain Wiki" [ref=e6] [cursor=pointer]:
+        - /url: /
+        - generic [ref=e7]: ⬡
+        - generic [ref=e9]: THORChain Wiki
+      - generic [ref=e10]:
+        - button "Open search" [ref=e11]
+        - button "Open navigation menu" [ref=e15]
+  - main [ref=e17]:
+    - generic [ref=e18]:
+      - generic [ref=e19]:
+        - link "← All Deep Dives" [ref=e20] [cursor=pointer]:
+          - /url: /deep-dives
+        - link "Edit this page on GitHub →" [ref=e21] [cursor=pointer]:
+          - /url: https://github.com/Reedtrullz/tcwiki/edit/main/content/deep-dives/clp.mdx
+      - generic [ref=e22]:
+        - generic [ref=e23]:
+          - generic [ref=e24]: Deep Dive
+          - generic [ref=e25]: Curated
+        - heading "Continuous Liquidity Pools (CLP)" [level=1] [ref=e26]
+        - paragraph [ref=e27]: How THORChain's constant-function, slip-priced pools support native swaps, and where formula evidence stops before current route, refund, LP, or yield claims.
+      - group [ref=e28]:
+        - generic "About this article's sourcing" [ref=e29] [cursor=pointer]
+      - navigation "Table of contents" [ref=e30]:
+        - paragraph [ref=e31]: Table of Contents
+        - generic [ref=e32]:
+          - link "What CLP Can Prove" [ref=e33] [cursor=pointer]:
+            - /url: "#what-clp-can-prove"
+          - link "How CLP Works" [ref=e34] [cursor=pointer]:
+            - /url: "#how-clp-works"
+          - link "Key Properties" [ref=e35] [cursor=pointer]:
+            - /url: "#key-properties"
+          - link "Evidence Ladder" [ref=e36] [cursor=pointer]:
+            - /url: "#evidence-ladder"
+          - link "Swap Lifecycle and Refunds" [ref=e37] [cursor=pointer]:
+            - /url: "#swap-lifecycle-and-refunds"
+          - link "Comparison to Traditional AMMs" [ref=e38] [cursor=pointer]:
+            - /url: "#comparison-to-traditional-amms"
+          - link "What To Verify Before Claiming" [ref=e39] [cursor=pointer]:
+            - /url: "#what-to-verify-before-claiming"
+          - link "Non-Claims" [ref=e40] [cursor=pointer]:
+            - /url: "#non-claims"
+      - article [ref=e41]:
+        - paragraph [ref=e42]: The Continuous Liquidity Pool is the core innovation that allows THORChain to offer native cross-chain swaps without order books or wrapped assets.
+        - heading "What CLP Can Prove" [level=2] [ref=e43]
+        - paragraph [ref=e44]: "CLP explains how THORChain prices a pool-based swap and why larger trades pay more slip/liquidity fee. It can support narrow mechanism claims:"
+        - list [ref=e45]:
+          - listitem [ref=e46]: THORChain pools pair external assets with RUNE rather than isolated asset-to-asset order books.
+          - listitem [ref=e47]: The CLP formula links input size, pool depth, slip, liquidity fee, and output amount.
+          - listitem [ref=e48]: RUNE-paired pools let a cross-chain route compose through shared settlement liquidity.
+          - listitem [ref=e49]: Slip-based pricing makes depth-consuming trades progressively more expensive and directs the liquidity fee to pool capital; it does not eliminate LP risk.
+        - paragraph [ref=e50]: It does not, by itself, prove that a current route is quoteable, cheap, available, or safe to execute. Current execution still depends on a fresh quote, live pool depth, inbound address state, chain/trading/signing controls, outbound fee economics, memo validity, and source quality.
+        - heading "How CLP Works" [level=2] [ref=e51]
+        - paragraph [ref=e52]: "Every pool consists of RUNE paired with an external asset. THORChain docs describe slippage as the input size relative to pool depth, then use that slippage to derive the liquidity fee and final output:"
+        - code [ref=e54]: slip = x / (X + x) fee = (x^2 * Y) / (x + X)^2 output = (x * X * Y) / (x + X)^2
+        - paragraph [ref=e55]:
+          - text: Where
+          - code [ref=e56]: "`x`"
+          - text: is the input amount,
+          - code [ref=e57]: "`X`"
+          - text: is the input-side pool depth, and
+          - code [ref=e58]: "`Y`"
+          - text: is the output-side pool depth. The slip ratio is not itself the fee amount; the fee is denominated in the output asset.
+        - heading "Key Properties" [level=2] [ref=e59]
+        - list [ref=e60]:
+          - listitem [ref=e61]:
+            - strong [ref=e62]: Quoteable through pool depth
+            - text: ": CLP pricing can produce a quote across available pool depth, but execution still depends on current halt state, quote limits, outbound fees, recommended minimums, and refund rules."
+          - listitem [ref=e63]:
+            - strong [ref=e64]: Progressive slippage
+            - text: ": Larger trades pay proportionally more, making abrupt pool-price movement more expensive without guaranteeing LP protection or route safety."
+          - listitem [ref=e65]:
+            - strong [ref=e66]: Separate LP action availability
+            - text: ": Pool mechanics do not prove that LP adds, withdrawals, pool-specific deposits, or asymmetric withdrawals are currently open. Use the"
+            - link "Liquidity Actions" [ref=e67] [cursor=pointer]:
+              - /url: /deep-dives/liquidity-actions#what-to-check-first
+            - text: evidence guide before turning CLP mechanics into LP workflow claims.
+          - listitem [ref=e68]:
+            - strong [ref=e69]: Historical single-sided products
+            - text: ": Savers previously offered single-asset exposure, but official archived docs now mark Savers and Lending as deprecated."
+        - paragraph [ref=e70]: If a swap limit is not met, the amount is below the recommended minimum, fees exceed the practical output, or a relevant chain/trading/signing control is halted, the transaction can be refunded or remain unavailable. Treat swap availability as live/current-only, not as a static property of the CLP formula.
+        - heading "Evidence Ladder" [level=2] [ref=e71]
+        - paragraph [ref=e72]: "Use the narrowest evidence that matches the claim:"
+        - list [ref=e73]:
+          - listitem [ref=e74]:
+            - strong [ref=e75]: "Mechanism claim:"
+            - text: use the CLP formula and official THORChain docs to explain slip, liquidity fee, and RUNE-paired pools.
+          - listitem [ref=e76]:
+            - strong [ref=e77]: "Current quote claim:"
+            - text: use a fresh THORNode quote for the exact route and amount. Keep expected output, fees, slippage bps, recommended minimum input, expiry, and warning text attached.
+          - listitem [ref=e78]:
+            - strong [ref=e79]: "Current availability claim:"
+            - text: use
+            - link "Network diagnostics" [ref=e80] [cursor=pointer]:
+              - /url: /network#network-diagnostics
+            - text: for trading, signing, chain observation, source warnings, and quote-probe posture.
+          - listitem [ref=e81]:
+            - strong [ref=e82]: "Pool-depth or APY claim:"
+            - text: use Midgard pool and earnings data with source labels, unavailable-interval counts, and degraded-state warnings.
+          - listitem [ref=e83]:
+            - strong [ref=e84]: "LP action claim:"
+            - text: use the
+            - link "Liquidity Actions" [ref=e85] [cursor=pointer]:
+              - /url: /deep-dives/liquidity-actions#what-to-check-first
+            - text: guide before saying add, withdraw, pool deposit, asymmetric withdrawal, or RUNEPool actions are open.
+          - listitem [ref=e86]:
+            - strong [ref=e87]: "Refund or failure claim:"
+            - text: use the
+            - link "Streaming Swaps And Refunds" [ref=e88] [cursor=pointer]:
+              - /url: /deep-dives/streaming-swaps-refunds#evidence-ladder
+            - text: evidence ladder with the exact quote, memo, transaction hash, and network state.
+        - paragraph [ref=e89]: If a statement jumps from the formula straight to a present-tense action, label the result as partial evidence.
+        - heading "Swap Lifecycle and Refunds" [level=2] [ref=e90]
+        - paragraph [ref=e91]: "A normal swap journey starts before the CLP math is executed:"
+        - list [ref=e92]:
+          - listitem [ref=e93]: The user or interface asks THORNode for a quote and checks the current inbound address, router, fees, limits, and expected wait time.
+          - listitem [ref=e94]: The user sends the native asset to the current inbound address with a memo that names the action, target asset, destination, and optional affiliate or streaming parameters.
+          - listitem [ref=e95]: Bifrost observers report the inbound transaction to THORChain, where current Mimir controls, chain state, memo validity, pool status, and quote limits determine whether the swap can proceed.
+          - listitem [ref=e96]: The state machine prices the swap through RUNE-paired pools, applying slip, liquidity fees, outbound fees, and current protocol rules.
+          - listitem [ref=e97]: If execution is valid and signing is available, nodes sign the outbound transaction. If the memo, limits, pool state, dust amount, fee economics, halt state, or outbound path make the action invalid or impossible, the protocol can refund instead.
+        - paragraph [ref=e98]: Refunds are therefore not one single failure mode. They can point to user-input problems, stale quotes, minimum-output protection, paused chains, signing/trading controls, exhausted practical output after fees, or source-state changes between quote and execution. Use live network diagnostics before concluding that a refund was caused by the CLP formula itself.
+        - paragraph [ref=e99]:
+          - text: For operational triage, use the dedicated
+          - link "Streaming Swaps And Refunds" [ref=e100] [cursor=pointer]:
+            - /url: /deep-dives/streaming-swaps-refunds
+          - text: article before assigning a refund cause.
+        - heading "Comparison to Traditional AMMs" [level=2] [ref=e101]
+        - paragraph [ref=e102]: THORChain's CLP is a constant-function pool design with slip-based pricing, adapted to native cross-chain settlement through RUNE-paired pools. Its distinctive claim is the shared RUNE settlement graph and native-asset execution model, not an escape from constant-product-style pool economics. Current chain availability should be checked from live inbound-address and pool status, not from a hard-coded chain count.
+        - heading "What To Verify Before Claiming" [level=2] [ref=e103]
+        - paragraph [ref=e104]: "Before making a CLP, swap, fee, liquidity, or LP statement, verify:"
+        - list [ref=e105]:
+          - listitem [ref=e106]: Whether the statement is about the formula, a current quote, route availability, pool depth, LP availability, or a historical product.
+          - listitem [ref=e107]: The current quote response for the exact route and amount if the claim is user-facing or route-specific.
+          - listitem [ref=e108]:
+            - text: Current
+            - link "Network diagnostics" [ref=e109] [cursor=pointer]:
+              - /url: /network#network-diagnostics
+            - text: for trading, signing, chain halts, LP controls, and source-warning state.
+          - listitem [ref=e110]: Current Midgard pool and earnings source quality before quoting depth, APY, or recent earnings.
+          - listitem [ref=e111]: Whether the claim belongs in the refund guide, liquidity-actions guide, RUNEPool/POL guide, or dynamic-fee tracker instead of the CLP formula page.
+          - listitem [ref=e112]: The source provider, checked time, block height when available, and whether missing fields were shown as unavailable rather than zero.
+        - heading "Non-Claims" [level=2] [ref=e113]
+        - paragraph [ref=e114]: "This page does not prove:"
+        - list [ref=e115]:
+          - listitem [ref=e116]: A route is currently quoteable, executable, cheap, or safe.
+          - listitem [ref=e117]: A swap will not refund, expire, miss minimum output, or fail on memo, dust, fee, halt, signing, or outbound conditions.
+          - listitem [ref=e118]: Current pool depth, APY, liquidity provider earnings, or route competitiveness.
+          - listitem [ref=e119]: That LP adds, withdrawals, pool deposits, asymmetric withdrawals, RUNEPool, Savers, Lending, or secured-asset flows are available.
+          - listitem [ref=e120]: That a static formula is wallet guidance, transaction construction, or support diagnosis.
+          - listitem [ref=e121]: That a current quote or dashboard number proves future yield, profitability, safety, or investment suitability.
+      - generic [ref=e122]:
+        - generic [ref=e123]:
+          - link "Glossary" [ref=e124] [cursor=pointer]:
+            - /url: /glossary#glossary-definition-map
+          - generic [ref=e125]: clp
+          - generic [ref=e126]: fees
+          - generic [ref=e127]: swaps
+        - group [ref=e128]:
+          - generic "Reader paths for this article" [ref=e129] [cursor=pointer]
+        - region [ref=e130]:
+          - generic [ref=e131]:
+            - paragraph [ref=e132]: Browse All Deep Dives
+            - paragraph [ref=e133]: Article library order, separate from reader-path order.
+          - generic [ref=e134]:
+            - link "Previous in library Build And Query THORChain Data" [ref=e135] [cursor=pointer]:
+              - /url: /deep-dives/build-query-data
+              - generic [ref=e136]: Previous in library
+              - generic [ref=e137]: Build And Query THORChain Data
+            - link "Next in library Liquidity Actions" [ref=e138] [cursor=pointer]:
+              - /url: /deep-dives/liquidity-actions
+              - generic [ref=e139]: Next in library
+              - generic [ref=e140]: Liquidity Actions
+        - generic [ref=e141]:
+          - paragraph [ref=e142]: Related Reading
+          - generic [ref=e143]:
+            - link "Liquidity Actions How to separate LP add, withdraw, pool-deposit, asymmetric-withdrawal, RUNEPool, and yield claims from ordinary swap availability." [ref=e144] [cursor=pointer]:
+              - /url: /deep-dives/liquidity-actions
+              - text: Liquidity Actions
+              - generic [ref=e145]: How to separate LP add, withdraw, pool-deposit, asymmetric-withdrawal, RUNEPool, and yield claims from ordinary swap availability.
+            - link "Streaming Swaps And Refunds How fresh quotes, memos, streaming parameters, fee thresholds, halts, and transaction evidence explain swap refunds." [ref=e146] [cursor=pointer]:
+              - /url: /deep-dives/streaming-swaps-refunds
+              - text: Streaming Swaps And Refunds
+              - generic [ref=e147]: How fresh quotes, memos, streaming parameters, fee thresholds, halts, and transaction evidence explain swap refunds.
+  - contentinfo [ref=e148]:
+    - generic [ref=e149]:
+      - generic [ref=e150]:
+        - generic [ref=e151]:
+          - generic [ref=e152]:
+            - generic [ref=e153]: ⬡
+            - generic [ref=e155]: THORChain Wiki
+          - paragraph [ref=e156]: Community-maintained encyclopedia of THORChain protocol, data, and ecosystem.
+        - generic [ref=e157]:
+          - heading "Navigate" [level=3] [ref=e158]
+          - list [ref=e159]:
+            - listitem [ref=e160]:
+              - link "Search" [ref=e161] [cursor=pointer]:
+                - /url: /search
+            - listitem [ref=e162]:
+              - link "Protocol" [ref=e163] [cursor=pointer]:
+                - /url: /protocol
+            - listitem [ref=e164]:
+              - link "Network" [ref=e165] [cursor=pointer]:
+                - /url: /network
+            - listitem [ref=e166]:
+              - link "Economics" [ref=e167] [cursor=pointer]:
+                - /url: /economics
+            - listitem [ref=e168]:
+              - link "Dynamic Fees" [ref=e169] [cursor=pointer]:
+                - /url: /dynamic-fees
+            - listitem [ref=e170]:
+              - link "Ecosystem" [ref=e171] [cursor=pointer]:
+                - /url: /ecosystem
+            - listitem [ref=e172]:
+              - link "Governance" [ref=e173] [cursor=pointer]:
+                - /url: /governance
+            - listitem [ref=e174]:
+              - link "Statistics" [ref=e175] [cursor=pointer]:
+                - /url: /stats
+            - listitem [ref=e176]:
+              - link "RUNE" [ref=e177] [cursor=pointer]:
+                - /url: /rune
+            - listitem [ref=e178]:
+              - link "TCY" [ref=e179] [cursor=pointer]:
+                - /url: /tcy
+            - listitem [ref=e180]:
+              - link "Deep Dives" [ref=e181] [cursor=pointer]:
+                - /url: /deep-dives
+            - listitem [ref=e182]:
+              - link "Glossary" [ref=e183] [cursor=pointer]:
+                - /url: /glossary
+            - listitem [ref=e184]:
+              - link "Docs" [ref=e185] [cursor=pointer]:
+                - /url: /docs
+        - generic [ref=e186]:
+          - heading "Verify First" [level=3] [ref=e187]
+          - list [ref=e188]:
+            - listitem [ref=e189]:
+              - link "Source map Match source to claim." [ref=e190] [cursor=pointer]:
+                - /url: /docs#source-map-chooser
+                - generic [ref=e191]: Source map
+                - generic [ref=e192]: Match source to claim.
+            - listitem [ref=e193]:
+              - link "Network diagnostics Check live operational state." [ref=e194] [cursor=pointer]:
+                - /url: /network#network-diagnostics
+                - generic [ref=e195]: Network diagnostics
+                - generic [ref=e196]: Check live operational state.
+            - listitem [ref=e197]:
+              - link "Interface checklist Review third-party app boundaries." [ref=e198] [cursor=pointer]:
+                - /url: /ecosystem#interface-use-checklist
+                - generic [ref=e199]: Interface checklist
+                - generic [ref=e200]: Review third-party app boundaries.
+            - listitem [ref=e201]:
+              - link "Guided answers Start from common tasks and reader paths." [ref=e202] [cursor=pointer]:
+                - /url: /search#search-guided-answers
+                - generic [ref=e203]: Guided answers
+                - generic [ref=e204]: Start from common tasks and reader paths.
+        - generic [ref=e205]:
+          - heading "Official Sources/APIs" [level=3] [ref=e206]
+          - list [ref=e207]:
+            - listitem [ref=e208]:
+              - link "THORChain Docs Official protocol documentation." [ref=e209] [cursor=pointer]:
+                - /url: https://docs.thorchain.org
+                - generic [ref=e210]: THORChain Docs
+                - generic [ref=e211]: Official protocol documentation.
+            - listitem [ref=e212]:
+              - link "Developer Docs Official builder docs and API guidance." [ref=e213] [cursor=pointer]:
+                - /url: https://dev.thorchain.org
+                - generic [ref=e214]: Developer Docs
+                - generic [ref=e215]: Official builder docs and API guidance.
+            - listitem [ref=e216]:
+              - link "Midgard API Official indexed dashboard API docs." [ref=e217] [cursor=pointer]:
+                - /url: https://midgard.thorchain.network/v2/doc
+                - generic [ref=e218]: Midgard API
+                - generic [ref=e219]: Official indexed dashboard API docs.
+          - heading "Third-Party Surfaces" [level=3] [ref=e220]
+          - list [ref=e221]:
+            - listitem [ref=e222]:
+              - generic [ref=e223]:
+                - generic [ref=e224]: Gateway API
+                - generic [ref=e225]: Third-party gateway; verify provider and data-source posture before using it as evidence.
+                - generic [ref=e226]:
+                  - link "Review data-source guide" [ref=e227] [cursor=pointer]:
+                    - /url: /deep-dives/midgard-thornode-data
+                  - link "Open Gateway API externally" [ref=e228] [cursor=pointer]:
+                    - /url: https://gateway.liquify.com/chain/thorchain_midgard/v2
+                    - text: Open Gateway API
+            - listitem [ref=e229]:
+              - generic [ref=e230]:
+                - generic [ref=e231]: RuneScan
+                - generic [ref=e232]: Explorer surface; useful context, not protocol canon or route-availability proof.
+                - generic [ref=e233]:
+                  - link "Review explorer posture" [ref=e234] [cursor=pointer]:
+                    - /url: /docs#external-analytics-and-explorers
+                  - link "Open RuneScan externally" [ref=e235] [cursor=pointer]:
+                    - /url: https://runescan.io
+                    - text: Open RuneScan
+            - listitem [ref=e236]:
+              - generic [ref=e237]:
+                - generic [ref=e238]: THORSwap
+                - generic [ref=e239]: Interface surface; verify route, recipient, fees, wallet permissions, and app state before signing.
+                - generic [ref=e240]:
+                  - link "Review interface checklist" [ref=e241] [cursor=pointer]:
+                    - /url: /ecosystem#interface-use-checklist
+                  - link "Open THORSwap externally" [ref=e242] [cursor=pointer]:
+                    - /url: https://app.thorswap.finance
+                    - text: Open THORSwap
+        - generic [ref=e243]:
+          - heading "Community" [level=3] [ref=e244]
+          - list [ref=e245]:
+            - listitem [ref=e246]:
+              - link "Discord" [ref=e247] [cursor=pointer]:
+                - /url: https://discord.com/invite/thorchaincommunity
+            - listitem [ref=e248]:
+              - link "Twitter" [ref=e249] [cursor=pointer]:
+                - /url: https://x.com/thorchain_org
+            - listitem [ref=e250]:
+              - link "Telegram" [ref=e251] [cursor=pointer]:
+                - /url: https://t.me/thorchain_org
+            - listitem [ref=e252]:
+              - link "Reddit" [ref=e253] [cursor=pointer]:
+                - /url: https://reddit.com/r/THORChain
+            - listitem [ref=e254]:
+              - link "GitHub" [ref=e255] [cursor=pointer]:
+                - /url: https://github.com/thorchain
+      - generic [ref=e256]:
+        - paragraph [ref=e257]: Live data is current-only from Midgard/THORNode sources. Page and record review dates are authoritative; 2026-06-18 is only the base static-catalog baseline. Not affiliated with THORChain.
+        - paragraph [ref=e258]: © 2026 THORChain Wiki
+  - alert [ref=e259]

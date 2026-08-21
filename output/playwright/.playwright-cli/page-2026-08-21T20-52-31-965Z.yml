@@ -1,0 +1,315 @@
+- generic [active] [ref=e1]:
+  - link "Skip to content" [ref=e2] [cursor=pointer]:
+    - /url: "#main"
+  - banner [ref=e3]:
+    - generic [ref=e5]:
+      - link "⬡ THORChain Wiki" [ref=e6] [cursor=pointer]:
+        - /url: /
+        - generic [ref=e7]: ⬡
+        - generic [ref=e9]: THORChain Wiki
+      - navigation "Primary navigation" [ref=e10]:
+        - link "Search" [ref=e11] [cursor=pointer]:
+          - /url: /search
+        - link "Protocol" [ref=e12] [cursor=pointer]:
+          - /url: /protocol
+        - link "Network" [ref=e13] [cursor=pointer]:
+          - /url: /network
+        - link "Economics" [ref=e14] [cursor=pointer]:
+          - /url: /economics
+        - link "Dynamic Fees" [ref=e15] [cursor=pointer]:
+          - /url: /dynamic-fees
+        - link "Ecosystem" [ref=e16] [cursor=pointer]:
+          - /url: /ecosystem
+        - link "Governance" [ref=e17] [cursor=pointer]:
+          - /url: /governance
+        - link "Stats" [ref=e18] [cursor=pointer]:
+          - /url: /stats
+        - link "RUNE" [ref=e19] [cursor=pointer]:
+          - /url: /rune
+        - link "TCY" [ref=e20] [cursor=pointer]:
+          - /url: /tcy
+        - link "Docs" [ref=e21] [cursor=pointer]:
+          - /url: /docs
+        - button "Guides" [ref=e22]
+      - button "Open search" [ref=e26]
+  - main [ref=e30]:
+    - generic [ref=e32]:
+      - generic [ref=e33]:
+        - generic [ref=e34]:
+          - heading "Search And Guided Answers" [level=1] [ref=e35]
+          - paragraph [ref=e36]: Search directly, or start from a common THORChain question when the right source is the hard part.
+        - generic [ref=e37]:
+          - search "Search wiki content" [ref=e38]:
+            - generic [ref=e39]:
+              - textbox "Search the wiki" [ref=e43]:
+                - /placeholder: Search the wiki...
+              - button "Submit search page query" [ref=e44]
+          - paragraph [ref=e48]: Enter a search term above or start from a task or reader path.
+          - region [ref=e49]:
+            - generic [ref=e50]:
+              - generic [ref=e51]:
+                - heading "Look Here First" [level=2] [ref=e52]
+                - paragraph [ref=e53]: Pick the kind of proof you need, then use search for the narrower term.
+              - link "Open source map" [ref=e54] [cursor=pointer]:
+                - /url: /docs#source-map-chooser
+            - generic [ref=e55]:
+              - article [ref=e56]:
+                - generic [ref=e57]: Live state
+                - heading [level=3] [ref=e61]:
+                  - link "Can this route quote?" [ref=e62] [cursor=pointer]:
+                    - /url: /network#check-a-route
+                - paragraph [ref=e63]: Start with the route checker for a specific asset pair and amount, then use diagnostics for chain-wide blockers.
+                - generic [ref=e64]:
+                  - link "Open path" [ref=e65] [cursor=pointer]:
+                    - /url: /network#check-a-route
+                  - link "Search “can i swap right now”" [ref=e68] [cursor=pointer]:
+                    - /url: /search?q=can+i+swap+right+now
+              - article [ref=e69]:
+                - generic [ref=e70]: Claim source
+                - heading [level=3] [ref=e75]:
+                  - link "Which proof fits?" [ref=e76] [cursor=pointer]:
+                    - /url: /docs#source-map-chooser
+                - paragraph [ref=e77]: Match the claim to live state, static docs, dated incident reports, interfaces, or community context.
+                - generic [ref=e78]:
+                  - link "Open path" [ref=e79] [cursor=pointer]:
+                    - /url: /docs#source-map-chooser
+                  - link "Search “which source should i trust”" [ref=e82] [cursor=pointer]:
+                    - /url: /search?q=which+source+should+i+trust
+              - article [ref=e83]:
+                - generic [ref=e84]: Definition
+                - heading [level=3] [ref=e88]:
+                  - link "What does this term mean?" [ref=e89] [cursor=pointer]:
+                    - /url: /glossary#glossary-definition-map
+                - paragraph [ref=e90]: Use source-aware definitions before jumping into memos, quotes, vaults, Mimir, secured assets, or recovery terms.
+                - generic [ref=e91]:
+                  - link "Open path" [ref=e92] [cursor=pointer]:
+                    - /url: /glossary#glossary-definition-map
+                  - link "Search “what is quote expiry”" [ref=e95] [cursor=pointer]:
+                    - /url: /search?q=what+is+quote+expiry
+              - article [ref=e96]:
+                - generic [ref=e97]: Builder path
+                - heading [level=3] [ref=e102]:
+                  - link "Which endpoint should I use?" [ref=e103] [cursor=pointer]:
+                    - /url: /deep-dives/build-query-data#query-plan
+                - paragraph [ref=e104]: Start with the query plan for Midgard, THORNode, inbound addresses, quote endpoints, memos, fees, and units.
+                - generic [ref=e105]:
+                  - link "Open path" [ref=e106] [cursor=pointer]:
+                    - /url: /deep-dives/build-query-data#query-plan
+                  - link "Search “Midgard API”" [ref=e109] [cursor=pointer]:
+                    - /url: /search?q=Midgard+API
+          - region [ref=e110]:
+            - heading "Example Queries" [level=2] [ref=e111]
+            - generic [ref=e112]:
+              - region [ref=e113]:
+                - heading "Use Now" [level=3] [ref=e114]
+                - paragraph [ref=e115]: Current-state checks before saying an action is available.
+                - generic [ref=e116]:
+                  - link "can I swap right now" [ref=e117] [cursor=pointer]:
+                    - /url: /search?q=can+I+swap+right+now
+                  - link "current TCY controls" [ref=e118] [cursor=pointer]:
+                    - /url: /search?q=current+TCY+controls
+                  - link "RUNEPool live" [ref=e119] [cursor=pointer]:
+                    - /url: /search?q=RUNEPool+live
+              - region [ref=e120]:
+                - heading "Proof Boundaries" [level=3] [ref=e121]
+                - paragraph [ref=e122]: Source-map searches for claims that are easy to overstate.
+                - generic [ref=e123]:
+                  - link "App Layer claim checks" [ref=e124] [cursor=pointer]:
+                    - /url: /search?q=App+Layer+claim+checks
+                  - link "dynamic fee source map" [ref=e125] [cursor=pointer]:
+                    - /url: /search?q=dynamic+fee+source+map
+                  - link "RUNE fair value" [ref=e126] [cursor=pointer]:
+                    - /url: /search?q=RUNE+fair+value
+              - region [ref=e127]:
+                - heading "Builder Terms" [level=3] [ref=e128]
+                - paragraph [ref=e129]: Protocol terms and endpoint fields that need exact handling.
+                - generic [ref=e130]:
+                  - link "recommended_min_amount_in" [ref=e131] [cursor=pointer]:
+                    - /url: /search?q=recommended_min_amount_in
+                  - link "quote expiry" [ref=e132] [cursor=pointer]:
+                    - /url: /search?q=quote+expiry
+                  - link "Midgard API" [ref=e133] [cursor=pointer]:
+                    - /url: /search?q=Midgard+API
+          - region [ref=e134]:
+            - generic [ref=e135]:
+              - generic [ref=e137]:
+                - heading "Guided Answers" [level=2] [ref=e138]
+                - paragraph [ref=e139]: Reader paths and task guides are gathered in one place so you can pick the right starting page, source, or proof boundary. The full taxonomy lives in the Guides flyout and on this section's dedicated surface.
+              - link "Browse all guided answers" [ref=e141] [cursor=pointer]:
+                - /url: /search#search-guided-answers
+        - region "Source and freshness" [ref=e146]:
+          - group [ref=e147]:
+            - generic "Source & freshness Curated Checked 2026-07-14 · Review due 2026-11-17 · THORChain Docs How to use this page ▾" [ref=e148] [cursor=pointer]:
+              - generic [ref=e149]:
+                - generic [ref=e150]: Source & freshness
+                - generic [ref=e151]:
+                  - generic [ref=e152]: Curated
+                  - generic [ref=e153]: Checked 2026-07-14
+                  - generic [ref=e154]: ·
+                  - generic [ref=e155]: Review due 2026-11-17
+                  - generic [ref=e156]: ·
+                  - generic [ref=e157]:
+                    - link "THORChain Docs" [ref=e158]:
+                      - /url: https://docs.thorchain.org
+                    - group [ref=e159]: retrieval details
+                    - group [ref=e160]:
+                      - generic "Show 4 additional sources for THORChain Docs" [ref=e161]: +4 sources
+              - generic [ref=e162]: How to use this page ▾
+      - complementary [ref=e163]:
+        - navigation "On this page" [ref=e165]:
+          - paragraph [ref=e166]: On this page
+          - list [ref=e167]:
+            - listitem [ref=e168]:
+              - link "Search" [ref=e169] [cursor=pointer]:
+                - /url: "#search-form"
+            - listitem [ref=e170]:
+              - link "Guided answers" [ref=e171] [cursor=pointer]:
+                - /url: "#search-guided-answers"
+            - listitem [ref=e172]:
+              - link "Browse by task" [ref=e173] [cursor=pointer]:
+                - /url: "#search-common-tasks"
+  - contentinfo [ref=e174]:
+    - generic [ref=e175]:
+      - generic [ref=e176]:
+        - generic [ref=e177]:
+          - generic [ref=e178]:
+            - generic [ref=e179]: ⬡
+            - generic [ref=e181]: THORChain Wiki
+          - paragraph [ref=e182]: Community-maintained encyclopedia of THORChain protocol, data, and ecosystem.
+        - generic [ref=e183]:
+          - heading "Navigate" [level=3] [ref=e184]
+          - list [ref=e185]:
+            - listitem [ref=e186]:
+              - link "Search" [ref=e187] [cursor=pointer]:
+                - /url: /search
+            - listitem [ref=e188]:
+              - link "Protocol" [ref=e189] [cursor=pointer]:
+                - /url: /protocol
+            - listitem [ref=e190]:
+              - link "Network" [ref=e191] [cursor=pointer]:
+                - /url: /network
+            - listitem [ref=e192]:
+              - link "Economics" [ref=e193] [cursor=pointer]:
+                - /url: /economics
+            - listitem [ref=e194]:
+              - link "Dynamic Fees" [ref=e195] [cursor=pointer]:
+                - /url: /dynamic-fees
+            - listitem [ref=e196]:
+              - link "Ecosystem" [ref=e197] [cursor=pointer]:
+                - /url: /ecosystem
+            - listitem [ref=e198]:
+              - link "Governance" [ref=e199] [cursor=pointer]:
+                - /url: /governance
+            - listitem [ref=e200]:
+              - link "Statistics" [ref=e201] [cursor=pointer]:
+                - /url: /stats
+            - listitem [ref=e202]:
+              - link "RUNE" [ref=e203] [cursor=pointer]:
+                - /url: /rune
+            - listitem [ref=e204]:
+              - link "TCY" [ref=e205] [cursor=pointer]:
+                - /url: /tcy
+            - listitem [ref=e206]:
+              - link "Deep Dives" [ref=e207] [cursor=pointer]:
+                - /url: /deep-dives
+            - listitem [ref=e208]:
+              - link "Glossary" [ref=e209] [cursor=pointer]:
+                - /url: /glossary
+            - listitem [ref=e210]:
+              - link "Docs" [ref=e211] [cursor=pointer]:
+                - /url: /docs
+        - generic [ref=e212]:
+          - heading "Verify First" [level=3] [ref=e213]
+          - list [ref=e214]:
+            - listitem [ref=e215]:
+              - link "Source map Match source to claim." [ref=e216] [cursor=pointer]:
+                - /url: /docs#source-map-chooser
+                - generic [ref=e217]: Source map
+                - generic [ref=e218]: Match source to claim.
+            - listitem [ref=e219]:
+              - link "Network diagnostics Check live operational state." [ref=e220] [cursor=pointer]:
+                - /url: /network#network-diagnostics
+                - generic [ref=e221]: Network diagnostics
+                - generic [ref=e222]: Check live operational state.
+            - listitem [ref=e223]:
+              - link "Interface checklist Review third-party app boundaries." [ref=e224] [cursor=pointer]:
+                - /url: /ecosystem#interface-use-checklist
+                - generic [ref=e225]: Interface checklist
+                - generic [ref=e226]: Review third-party app boundaries.
+            - listitem [ref=e227]:
+              - link "Guided answers Start from common tasks and reader paths." [ref=e228] [cursor=pointer]:
+                - /url: /search#search-guided-answers
+                - generic [ref=e229]: Guided answers
+                - generic [ref=e230]: Start from common tasks and reader paths.
+        - generic [ref=e231]:
+          - heading "Official Sources/APIs" [level=3] [ref=e232]
+          - list [ref=e233]:
+            - listitem [ref=e234]:
+              - link "THORChain Docs Official protocol documentation." [ref=e235] [cursor=pointer]:
+                - /url: https://docs.thorchain.org
+                - generic [ref=e236]: THORChain Docs
+                - generic [ref=e237]: Official protocol documentation.
+            - listitem [ref=e238]:
+              - link "Developer Docs Official builder docs and API guidance." [ref=e239] [cursor=pointer]:
+                - /url: https://dev.thorchain.org
+                - generic [ref=e240]: Developer Docs
+                - generic [ref=e241]: Official builder docs and API guidance.
+            - listitem [ref=e242]:
+              - link "Midgard API Official indexed dashboard API docs." [ref=e243] [cursor=pointer]:
+                - /url: https://midgard.thorchain.network/v2/doc
+                - generic [ref=e244]: Midgard API
+                - generic [ref=e245]: Official indexed dashboard API docs.
+          - heading "Third-Party Surfaces" [level=3] [ref=e246]
+          - list [ref=e247]:
+            - listitem [ref=e248]:
+              - generic [ref=e249]:
+                - generic [ref=e250]: Gateway API
+                - generic [ref=e251]: Third-party gateway; verify provider and data-source posture before using it as evidence.
+                - generic [ref=e252]:
+                  - link "Review data-source guide" [ref=e253] [cursor=pointer]:
+                    - /url: /deep-dives/midgard-thornode-data
+                  - link "Open Gateway API externally" [ref=e254] [cursor=pointer]:
+                    - /url: https://gateway.liquify.com/chain/thorchain_midgard/v2
+                    - text: Open Gateway API
+            - listitem [ref=e255]:
+              - generic [ref=e256]:
+                - generic [ref=e257]: RuneScan
+                - generic [ref=e258]: Explorer surface; useful context, not protocol canon or route-availability proof.
+                - generic [ref=e259]:
+                  - link "Review explorer posture" [ref=e260] [cursor=pointer]:
+                    - /url: /docs#external-analytics-and-explorers
+                  - link "Open RuneScan externally" [ref=e261] [cursor=pointer]:
+                    - /url: https://runescan.io
+                    - text: Open RuneScan
+            - listitem [ref=e262]:
+              - generic [ref=e263]:
+                - generic [ref=e264]: THORSwap
+                - generic [ref=e265]: Interface surface; verify route, recipient, fees, wallet permissions, and app state before signing.
+                - generic [ref=e266]:
+                  - link "Review interface checklist" [ref=e267] [cursor=pointer]:
+                    - /url: /ecosystem#interface-use-checklist
+                  - link "Open THORSwap externally" [ref=e268] [cursor=pointer]:
+                    - /url: https://app.thorswap.finance
+                    - text: Open THORSwap
+        - generic [ref=e269]:
+          - heading "Community" [level=3] [ref=e270]
+          - list [ref=e271]:
+            - listitem [ref=e272]:
+              - link "Discord" [ref=e273] [cursor=pointer]:
+                - /url: https://discord.com/invite/thorchaincommunity
+            - listitem [ref=e274]:
+              - link "Twitter" [ref=e275] [cursor=pointer]:
+                - /url: https://x.com/thorchain_org
+            - listitem [ref=e276]:
+              - link "Telegram" [ref=e277] [cursor=pointer]:
+                - /url: https://t.me/thorchain_org
+            - listitem [ref=e278]:
+              - link "Reddit" [ref=e279] [cursor=pointer]:
+                - /url: https://reddit.com/r/THORChain
+            - listitem [ref=e280]:
+              - link "GitHub" [ref=e281] [cursor=pointer]:
+                - /url: https://github.com/thorchain
+      - generic [ref=e282]:
+        - paragraph [ref=e283]: Live data is current-only from Midgard/THORNode sources. Page and record review dates are authoritative; 2026-06-18 is only the base static-catalog baseline. Not affiliated with THORChain.
+        - paragraph [ref=e284]: © 2026 THORChain Wiki
+  - alert [ref=e285]
