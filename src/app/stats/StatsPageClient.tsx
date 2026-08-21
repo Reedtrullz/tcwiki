@@ -108,19 +108,19 @@ const statsNumberGuide = [
 ];
 
 const chartTooltipContentStyle = {
-  backgroundColor: '#0f172a',
-  border: '1px solid #334155',
+  backgroundColor: 'oklch(0.15 0.01 250)',
+  border: '1px solid oklch(0.25 0.01 250)',
   borderRadius: 8,
-  color: '#e2e8f0',
+  color: 'oklch(0.85 0.01 250)',
 };
 
 const chartTooltipLabelStyle = {
-  color: '#cbd5e1',
+  color: 'oklch(0.78 0.01 250)',
   fontWeight: 600,
 };
 
 const chartAxisTick = {
-  fill: '#94a3b8',
+  fill: 'oklch(0.65 0.01 250)',
   fontSize: 11,
 };
 
@@ -664,7 +664,7 @@ export default function StatsPage() {
                             labelStyle={chartTooltipLabelStyle}
                             formatter={(value) => [formatRuneAmount(chartNumber(value)), 'RUNE depth']}
                           />
-                          <Bar dataKey="runeDepth" fill="#14b8a6" radius={[0, 4, 4, 0]} name="RUNE depth" />
+                          <Bar dataKey="runeDepth" fill="oklch(0.75 0.15 85)" radius={[0, 4, 4, 0]} name="RUNE depth" />
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
@@ -807,12 +807,12 @@ export default function StatsPage() {
               <div className="h-[300px] md:h-[400px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={earningsChart} margin={{ top: 8, right: 12, bottom: 8, left: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                    <XAxis dataKey="name" tick={chartAxisTick} tickLine={false} axisLine={{ stroke: '#334155' }} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.20 0.01 250)" />
+                    <XAxis dataKey="name" tick={chartAxisTick} tickLine={false} axisLine={{ stroke: 'oklch(0.25 0.01 250)' }} />
                     <YAxis
                       tick={chartAxisTick}
                       tickLine={false}
-                      axisLine={{ stroke: '#334155' }}
+                      axisLine={{ stroke: 'oklch(0.25 0.01 250)' }}
                       tickFormatter={(value) => formatRuneMetric(chartNumber(value))}
                     />
                     <Tooltip
@@ -820,10 +820,10 @@ export default function StatsPage() {
                       labelStyle={chartTooltipLabelStyle}
                       formatter={(value, name) => [formatRuneAmount(chartNumber(value)), name]}
                     />
-                    <Legend wrapperStyle={{ color: '#cbd5e1', fontSize: 12 }} />
-                    <Line type="monotone" dataKey="earnings" stroke="#3b82f6" strokeWidth={2} dot={false} name="Total Earnings (RUNE)" />
-                    <Line type="monotone" dataKey="nodeOps" stroke="#8b5cf6" strokeWidth={2} dot={false} name="Node Operator Earnings" />
-                    <Line type="monotone" dataKey="lps" stroke="#10b981" strokeWidth={2} dot={false} name="LP Earnings" />
+                    <Legend wrapperStyle={{ color: 'oklch(0.78 0.01 250)', fontSize: 12 }} />
+                    <Line type="monotone" dataKey="earnings" stroke="oklch(0.7 0.18 190)" strokeWidth={2} dot={false} name="Total Earnings (RUNE)" />
+                    <Line type="monotone" dataKey="nodeOps" stroke="oklch(0.65 0.15 290)" strokeWidth={2} dot={false} name="Node Operator Earnings" />
+                    <Line type="monotone" dataKey="lps" stroke="oklch(0.75 0.15 160)" strokeWidth={2} dot={false} name="LP Earnings" />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
