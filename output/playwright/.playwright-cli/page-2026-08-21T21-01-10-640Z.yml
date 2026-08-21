@@ -1,0 +1,388 @@
+- generic [active] [ref=e1]:
+  - link "Skip to content" [ref=e2] [cursor=pointer]:
+    - /url: "#main"
+  - banner [ref=e3]:
+    - generic [ref=e5]:
+      - link "⬡ THORChain Wiki" [ref=e6] [cursor=pointer]:
+        - /url: /
+        - generic [ref=e7]: ⬡
+        - generic [ref=e9]: THORChain Wiki
+      - generic [ref=e10]:
+        - button "Open search" [ref=e11]
+        - button "Open navigation menu" [ref=e15]
+  - main [ref=e17]:
+    - generic [ref=e18]:
+      - generic [ref=e19]:
+        - link "← All Deep Dives" [ref=e20] [cursor=pointer]:
+          - /url: /deep-dives
+        - link "Edit this page on GitHub →" [ref=e21] [cursor=pointer]:
+          - /url: https://github.com/Reedtrullz/tcwiki/edit/main/content/deep-dives/mimir-halt-controls.mdx
+      - generic [ref=e22]:
+        - generic [ref=e23]:
+          - generic [ref=e24]: Deep Dive
+          - generic [ref=e25]: Curated
+        - heading "Mimir And Halt Controls" [level=1] [ref=e26]
+        - paragraph [ref=e27]: How to read Mimir halt keys, scoped controls, scheduled values, absent keys, and source warnings before making current availability claims.
+      - group [ref=e28]:
+        - generic "About this article's sourcing" [ref=e29] [cursor=pointer]
+      - navigation "Table of contents" [ref=e30]:
+        - paragraph [ref=e31]: Table of Contents
+        - generic [ref=e32]:
+          - link "What Mimirs Can Prove" [ref=e33] [cursor=pointer]:
+            - /url: "#what-mimirs-can-prove"
+          - link "Control Families" [ref=e34] [cursor=pointer]:
+            - /url: "#control-families"
+          - link "Active, Scheduled, Inactive, Absent" [ref=e35] [cursor=pointer]:
+            - /url: "#active-scheduled-inactive-absent"
+          - link "Scoped Keys And Normalization" [ref=e36] [cursor=pointer]:
+            - /url: "#scoped-keys-and-normalization"
+          - link "Source Warnings And Review Keys" [ref=e37] [cursor=pointer]:
+            - /url: "#source-warnings-and-review-keys"
+          - link "What To Verify Before Claiming" [ref=e38] [cursor=pointer]:
+            - /url: "#what-to-verify-before-claiming"
+          - link "Non-Claims" [ref=e39] [cursor=pointer]:
+            - /url: "#non-claims"
+      - article [ref=e40]:
+        - paragraph [ref=e41]: Mimir values are THORChain operational controls. They let the network change parameters, pause scoped actions, and schedule some controls without changing the protocol code every time. This article explains how to read those controls without turning a static docs page into a false current-status claim.
+        - paragraph [ref=e42]:
+          - text: For current availability, start with
+          - code [ref=e43]: "`/network#network-diagnostics`"
+          - text: . This page is the map for interpreting the evidence.
+        - heading "What Mimirs Can Prove" [level=2] [ref=e44]
+        - paragraph [ref=e45]: Mimirs can support a precise current-state claim when the claim names the action, scope, source, and checked height.
+        - paragraph [ref=e46]: "Good wording sounds like:"
+        - list [ref=e47]:
+          - listitem [ref=e48]: "\"Trading is halted for BSC in this checked THORNode snapshot.\""
+          - listitem [ref=e49]: "\"A network-wide LP pause applies, so LP actions should not be described as available from this snapshot.\""
+          - listitem [ref=e50]: "\"Operation-like Mimir keys need review, so the source quality is degraded even when a specific route blocker is visible.\""
+        - paragraph [ref=e51]: "Risky wording sounds like:"
+        - list [ref=e52]:
+          - listitem [ref=e53]: "\"THORChain is paused\" when only LP, loan, churn, or one chain route is affected."
+          - listitem [ref=e54]: "\"Swaps are healthy\" because no global halt key appears in one source read."
+          - listitem [ref=e55]: "\"This app is safe\" because a WASM halt key is absent."
+        - paragraph [ref=e56]: Mimir evidence is strongest when paired with the exact key, source freshness, block height, and the user action being discussed.
+        - heading "Control Families" [level=2] [ref=e57]
+        - paragraph [ref=e58]: The same word "halt" can apply to very different operations. Keep the families separate.
+        - heading "Ordinary swap controls" [level=3] [ref=e59]
+        - paragraph [ref=e60]: "Use these when the claim is about base-layer swaps:"
+        - list [ref=e61]:
+          - listitem [ref=e62]:
+            - code [ref=e63]: "`HALTTRADING`"
+            - text: and chain-scoped trading keys.
+          - listitem [ref=e64]:
+            - code [ref=e65]: "`HALTSIGNING`"
+            - text: and chain-scoped signing keys.
+          - listitem [ref=e66]:
+            - text: Chain halt fields from
+            - code [ref=e67]: "`inbound_addresses`"
+            - text: .
+          - listitem [ref=e68]:
+            - text: Quote errors from THORNode
+            - code [ref=e69]: "`/thorchain/quote/swap`"
+            - text: for a specific route.
+          - listitem [ref=e70]:
+            - text: Streaming and memo-related controls such as
+            - code [ref=e71]: "`StreamingSwapPause`"
+            - text: and
+            - code [ref=e72]: "`HaltMemoless`"
+            - text: .
+        - paragraph [ref=e73]: These are the controls that should drive phrases such as "ordinary swaps available", "some routes limited", or "route blocked".
+        - heading "LP, pool, loan, and churn controls" [level=3] [ref=e74]
+        - paragraph [ref=e75]: "These controls matter, but they should not make ordinary swaps look globally halted:"
+        - list [ref=e76]:
+          - listitem [ref=e77]:
+            - code [ref=e78]: "`PAUSELP`"
+            - text: and chain-scoped LP controls.
+          - listitem [ref=e79]: Pool-specific deposit controls.
+          - listitem [ref=e80]:
+            - code [ref=e81]: "`PAUSELOANS`"
+            - text: .
+          - listitem [ref=e82]:
+            - code [ref=e83]: "`HALTCHURNING`"
+            - text: .
+          - listitem [ref=e84]:
+            - text: RUNEPool controls such as
+            - code [ref=e85]: "`RUNEPoolHaltDeposit`"
+            - text: and
+            - code [ref=e86]: "`RUNEPoolHaltWithdraw`"
+            - text: .
+        - paragraph [ref=e87]: If one of these is active, label the affected operation. Do not collapse it into "swaps paused" unless a swap control also supports that claim.
+        - heading "App Layer, secured-asset, and trade-account controls" [level=3] [ref=e88]
+        - paragraph [ref=e89]: "App Layer and account-style flows have their own controls:"
+        - list [ref=e90]:
+          - listitem [ref=e91]:
+            - code [ref=e92]: "`HaltWasmGlobal`"
+            - text: ","
+            - code [ref=e93]: "`HaltWasmDeployer-*`"
+            - text: ","
+            - code [ref=e94]: "`HaltWasmCs-*`"
+            - text: ", and"
+            - code [ref=e95]: "`HaltWasmContract-*`"
+            - text: .
+          - listitem [ref=e96]:
+            - code [ref=e97]: "`HaltOracle`"
+            - text: .
+          - listitem [ref=e98]:
+            - code [ref=e99]: "`HaltSecuredGlobal`"
+            - text: ","
+            - code [ref=e100]: "`HaltSecuredDeposit-*`"
+            - text: ", and"
+            - code [ref=e101]: "`HaltSecuredWithdraw-*`"
+            - text: .
+          - listitem [ref=e102]:
+            - code [ref=e103]: "`TradeAccountsEnabled`"
+            - text: and related trade-account deposit controls.
+        - paragraph [ref=e104]: These controls are scoped. A specific contract, code checksum, deployer, secured-asset flow, or trade-account action can be limited while ordinary swaps remain available.
+        - heading "Node and operator controls" [level=3] [ref=e105]
+        - paragraph [ref=e106]: "Node operations use another family:"
+        - list [ref=e107]:
+          - listitem [ref=e108]:
+            - code [ref=e109]: "`PauseBond`"
+            - text: .
+          - listitem [ref=e110]:
+            - code [ref=e111]: "`PauseUnbond`"
+            - text: .
+          - listitem [ref=e112]:
+            - code [ref=e113]: "`HaltRebond`"
+            - text: .
+          - listitem [ref=e114]:
+            - code [ref=e115]: "`HaltOperatorRotate`"
+            - text: .
+        - paragraph [ref=e116]: These keys affect node/operator workflows. They should not be used as route-availability proof unless the claim is about the relevant node action.
+        - heading "Active, Scheduled, Inactive, Absent" [level=2] [ref=e117]
+        - paragraph [ref=e118]: "The dashboard should distinguish four states:"
+        - list [ref=e119]:
+          - listitem [ref=e120]:
+            - strong [ref=e121]: "Active:"
+            - text: the key or source field currently blocks the scoped action.
+          - listitem [ref=e122]:
+            - strong [ref=e123]: "Scheduled:"
+            - text: the value refers to a future or height-dependent control, so the claim depends on the checked block height.
+          - listitem [ref=e124]:
+            - strong [ref=e125]: "Inactive:"
+            - text: the key is known and present but does not currently block the scoped action.
+          - listitem [ref=e126]:
+            - strong [ref=e127]: "Absent:"
+            - text: the key was not returned by the source snapshot.
+        - paragraph [ref=e128]: Absent is the easiest state to overread. A missing halt key is not full proof that every related operation is healthy. It only means that key was not present in the checked source response. Current availability still depends on inbound fields, pool state, route quote behavior, provider freshness, and whether the relevant key family is fully understood by the dashboard.
+        - heading "Scoped Keys And Normalization" [level=2] [ref=e129]
+        - paragraph [ref=e130]: Many halt controls are scoped rather than global. Scope can come from a chain suffix, pool, contract address suffix, deployer, checksum, or account-flow family.
+        - paragraph [ref=e131]: "When interpreting a scoped control:"
+        - list [ref=e132]:
+          - listitem [ref=e133]: Normalize the chain or asset name before comparing values.
+          - listitem [ref=e134]: Separate network-wide controls from chain-specific controls.
+          - listitem [ref=e135]: Render network-wide controls once instead of repeating them on every chain.
+          - listitem [ref=e136]: Preserve the exact raw key in collapsed diagnostics for auditability.
+          - listitem [ref=e137]: Avoid inventing a healthy status for unknown or malformed keys.
+        - paragraph [ref=e138]: "This is why a good diagnostics panel names the user-facing blocker first, then keeps raw Mimir keys in a disclosure. A reader needs \"BSC: trading halted\" before they need the exact key spelling."
+        - heading "Source Warnings And Review Keys" [level=2] [ref=e139]
+        - paragraph [ref=e140]: Operational source warnings should degrade the data-quality label even when the visible blocker is clear.
+        - paragraph [ref=e141]: "Examples:"
+        - list [ref=e142]:
+          - listitem [ref=e143]: A stale or unpinned source means the page should not present the data as a fresh snapshot.
+          - listitem [ref=e144]: A malformed Mimir value should be shown as a warning, not coerced to zero.
+          - listitem [ref=e145]: An unknown operation-like Mimir key should enter a review queue until the dashboard knows how to classify it.
+          - listitem [ref=e146]: Duplicate or conflicting scoped records should fail closed for that provider.
+        - paragraph [ref=e147]: "Unknown keys are not automatically active halts. They are a source-quality problem. The practical posture is: show the known current blockers, disclose the review queue, and avoid claiming complete coverage."
+        - heading "What To Verify Before Claiming" [level=2] [ref=e148]
+        - paragraph [ref=e149]: "Before saying an action is available, limited, or paused, verify:"
+        - list [ref=e150]:
+          - listitem [ref=e151]:
+            - text: The current
+            - code [ref=e152]: "`/network#network-diagnostics`"
+            - text: headline and limited-chain list.
+          - listitem [ref=e153]: Whether the claim is about ordinary swaps, LP actions, pool deposits, secured assets, app-layer contracts, TCY/RUNEPool, node operations, or a specific route quote.
+          - listitem [ref=e154]: The exact Mimir key or source field behind the blocker.
+          - listitem [ref=e155]: The source provider, checked time, block height, and data-quality badge.
+          - listitem [ref=e156]: Whether a network-wide control is being repeated as inherited context or directly blocking the chain/action.
+          - listitem [ref=e157]: For a concrete route, the current quote result from THORNode rather than a broad chain-level assumption.
+        - paragraph [ref=e158]: Use static docs for design meaning. Use live THORNode, inbound-address, quote, and Midgard evidence for current claims.
+        - heading "Non-Claims" [level=2] [ref=e159]
+        - paragraph [ref=e160]: "This page does not prove:"
+        - list [ref=e161]:
+          - listitem [ref=e162]: Future availability after the checked block or epoch.
+          - listitem [ref=e163]: That a missing halt key means an action is safe or healthy.
+          - listitem [ref=e164]: Wallet, interface, memo, inbound-address, or transaction safety.
+          - listitem [ref=e165]: Historical uptime, incident status, or post-upgrade readiness.
+          - listitem [ref=e166]: Route competitiveness, liquidity depth, or expected execution quality.
+          - listitem [ref=e167]: That every unknown operation-like key has no user impact.
+        - paragraph [ref=e168]: Mimir controls are powerful evidence, but only when the claim stays scoped to the action, key, source, and checked snapshot.
+      - generic [ref=e169]:
+        - generic [ref=e170]:
+          - link "Glossary" [ref=e171] [cursor=pointer]:
+            - /url: /glossary#glossary-definition-map
+          - generic [ref=e172]: mimir
+          - generic [ref=e173]: halts
+          - generic [ref=e174]: operations
+          - generic [ref=e175]: diagnostics
+        - group [ref=e176]:
+          - generic "Reader paths for this article" [ref=e177] [cursor=pointer]
+        - region [ref=e178]:
+          - generic [ref=e179]:
+            - paragraph [ref=e180]: Browse All Deep Dives
+            - paragraph [ref=e181]: Article library order, separate from reader-path order.
+          - generic [ref=e182]:
+            - link "Previous in library App Layer, CosmWasm, and Secured Assets" [ref=e183] [cursor=pointer]:
+              - /url: /deep-dives/app-layer
+              - generic [ref=e184]: Previous in library
+              - generic [ref=e185]: App Layer, CosmWasm, and Secured Assets
+            - link "Next in library RUNE as the Universal Settlement Asset" [ref=e186] [cursor=pointer]:
+              - /url: /deep-dives/rune-settlement
+              - generic [ref=e187]: Next in library
+              - generic [ref=e188]: RUNE as the Universal Settlement Asset
+        - generic [ref=e189]:
+          - paragraph [ref=e190]: Related Reading
+          - generic [ref=e191]:
+            - link "App Layer, CosmWasm, and Secured Assets How THORChain App Layer contracts, secured assets, trade-account boundaries, and WASM halt controls fit together without overclaiming current availability." [ref=e192] [cursor=pointer]:
+              - /url: /deep-dives/app-layer
+              - text: App Layer, CosmWasm, and Secured Assets
+              - generic [ref=e193]: How THORChain App Layer contracts, secured assets, trade-account boundaries, and WASM halt controls fit together without overclaiming current availability.
+            - link "Liquidity Actions How to separate LP add, withdraw, pool-deposit, asymmetric-withdrawal, RUNEPool, and yield claims from ordinary swap availability." [ref=e194] [cursor=pointer]:
+              - /url: /deep-dives/liquidity-actions
+              - text: Liquidity Actions
+              - generic [ref=e195]: How to separate LP add, withdraw, pool-deposit, asymmetric-withdrawal, RUNEPool, and yield claims from ordinary swap availability.
+  - contentinfo [ref=e196]:
+    - generic [ref=e197]:
+      - generic [ref=e198]:
+        - generic [ref=e199]:
+          - generic [ref=e200]:
+            - generic [ref=e201]: ⬡
+            - generic [ref=e203]: THORChain Wiki
+          - paragraph [ref=e204]: Community-maintained encyclopedia of THORChain protocol, data, and ecosystem.
+        - generic [ref=e205]:
+          - heading "Navigate" [level=3] [ref=e206]
+          - list [ref=e207]:
+            - listitem [ref=e208]:
+              - link "Search" [ref=e209] [cursor=pointer]:
+                - /url: /search
+            - listitem [ref=e210]:
+              - link "Protocol" [ref=e211] [cursor=pointer]:
+                - /url: /protocol
+            - listitem [ref=e212]:
+              - link "Network" [ref=e213] [cursor=pointer]:
+                - /url: /network
+            - listitem [ref=e214]:
+              - link "Economics" [ref=e215] [cursor=pointer]:
+                - /url: /economics
+            - listitem [ref=e216]:
+              - link "Dynamic Fees" [ref=e217] [cursor=pointer]:
+                - /url: /dynamic-fees
+            - listitem [ref=e218]:
+              - link "Ecosystem" [ref=e219] [cursor=pointer]:
+                - /url: /ecosystem
+            - listitem [ref=e220]:
+              - link "Governance" [ref=e221] [cursor=pointer]:
+                - /url: /governance
+            - listitem [ref=e222]:
+              - link "Statistics" [ref=e223] [cursor=pointer]:
+                - /url: /stats
+            - listitem [ref=e224]:
+              - link "RUNE" [ref=e225] [cursor=pointer]:
+                - /url: /rune
+            - listitem [ref=e226]:
+              - link "TCY" [ref=e227] [cursor=pointer]:
+                - /url: /tcy
+            - listitem [ref=e228]:
+              - link "Deep Dives" [ref=e229] [cursor=pointer]:
+                - /url: /deep-dives
+            - listitem [ref=e230]:
+              - link "Glossary" [ref=e231] [cursor=pointer]:
+                - /url: /glossary
+            - listitem [ref=e232]:
+              - link "Docs" [ref=e233] [cursor=pointer]:
+                - /url: /docs
+        - generic [ref=e234]:
+          - heading "Verify First" [level=3] [ref=e235]
+          - list [ref=e236]:
+            - listitem [ref=e237]:
+              - link "Source map Match source to claim." [ref=e238] [cursor=pointer]:
+                - /url: /docs#source-map-chooser
+                - generic [ref=e239]: Source map
+                - generic [ref=e240]: Match source to claim.
+            - listitem [ref=e241]:
+              - link "Network diagnostics Check live operational state." [ref=e242] [cursor=pointer]:
+                - /url: /network#network-diagnostics
+                - generic [ref=e243]: Network diagnostics
+                - generic [ref=e244]: Check live operational state.
+            - listitem [ref=e245]:
+              - link "Interface checklist Review third-party app boundaries." [ref=e246] [cursor=pointer]:
+                - /url: /ecosystem#interface-use-checklist
+                - generic [ref=e247]: Interface checklist
+                - generic [ref=e248]: Review third-party app boundaries.
+            - listitem [ref=e249]:
+              - link "Guided answers Start from common tasks and reader paths." [ref=e250] [cursor=pointer]:
+                - /url: /search#search-guided-answers
+                - generic [ref=e251]: Guided answers
+                - generic [ref=e252]: Start from common tasks and reader paths.
+        - generic [ref=e253]:
+          - heading "Official Sources/APIs" [level=3] [ref=e254]
+          - list [ref=e255]:
+            - listitem [ref=e256]:
+              - link "THORChain Docs Official protocol documentation." [ref=e257] [cursor=pointer]:
+                - /url: https://docs.thorchain.org
+                - generic [ref=e258]: THORChain Docs
+                - generic [ref=e259]: Official protocol documentation.
+            - listitem [ref=e260]:
+              - link "Developer Docs Official builder docs and API guidance." [ref=e261] [cursor=pointer]:
+                - /url: https://dev.thorchain.org
+                - generic [ref=e262]: Developer Docs
+                - generic [ref=e263]: Official builder docs and API guidance.
+            - listitem [ref=e264]:
+              - link "Midgard API Official indexed dashboard API docs." [ref=e265] [cursor=pointer]:
+                - /url: https://midgard.thorchain.network/v2/doc
+                - generic [ref=e266]: Midgard API
+                - generic [ref=e267]: Official indexed dashboard API docs.
+          - heading "Third-Party Surfaces" [level=3] [ref=e268]
+          - list [ref=e269]:
+            - listitem [ref=e270]:
+              - generic [ref=e271]:
+                - generic [ref=e272]: Gateway API
+                - generic [ref=e273]: Third-party gateway; verify provider and data-source posture before using it as evidence.
+                - generic [ref=e274]:
+                  - link "Review data-source guide" [ref=e275] [cursor=pointer]:
+                    - /url: /deep-dives/midgard-thornode-data
+                  - link "Open Gateway API externally" [ref=e276] [cursor=pointer]:
+                    - /url: https://gateway.liquify.com/chain/thorchain_midgard/v2
+                    - text: Open Gateway API
+            - listitem [ref=e277]:
+              - generic [ref=e278]:
+                - generic [ref=e279]: RuneScan
+                - generic [ref=e280]: Explorer surface; useful context, not protocol canon or route-availability proof.
+                - generic [ref=e281]:
+                  - link "Review explorer posture" [ref=e282] [cursor=pointer]:
+                    - /url: /docs#external-analytics-and-explorers
+                  - link "Open RuneScan externally" [ref=e283] [cursor=pointer]:
+                    - /url: https://runescan.io
+                    - text: Open RuneScan
+            - listitem [ref=e284]:
+              - generic [ref=e285]:
+                - generic [ref=e286]: THORSwap
+                - generic [ref=e287]: Interface surface; verify route, recipient, fees, wallet permissions, and app state before signing.
+                - generic [ref=e288]:
+                  - link "Review interface checklist" [ref=e289] [cursor=pointer]:
+                    - /url: /ecosystem#interface-use-checklist
+                  - link "Open THORSwap externally" [ref=e290] [cursor=pointer]:
+                    - /url: https://app.thorswap.finance
+                    - text: Open THORSwap
+        - generic [ref=e291]:
+          - heading "Community" [level=3] [ref=e292]
+          - list [ref=e293]:
+            - listitem [ref=e294]:
+              - link "Discord" [ref=e295] [cursor=pointer]:
+                - /url: https://discord.com/invite/thorchaincommunity
+            - listitem [ref=e296]:
+              - link "Twitter" [ref=e297] [cursor=pointer]:
+                - /url: https://x.com/thorchain_org
+            - listitem [ref=e298]:
+              - link "Telegram" [ref=e299] [cursor=pointer]:
+                - /url: https://t.me/thorchain_org
+            - listitem [ref=e300]:
+              - link "Reddit" [ref=e301] [cursor=pointer]:
+                - /url: https://reddit.com/r/THORChain
+            - listitem [ref=e302]:
+              - link "GitHub" [ref=e303] [cursor=pointer]:
+                - /url: https://github.com/thorchain
+      - generic [ref=e304]:
+        - paragraph [ref=e305]: Live data is current-only from Midgard/THORNode sources. Page and record review dates are authoritative; 2026-06-18 is only the base static-catalog baseline. Not affiliated with THORChain.
+        - paragraph [ref=e306]: © 2026 THORChain Wiki
+  - alert [ref=e307]

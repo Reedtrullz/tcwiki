@@ -1,0 +1,1307 @@
+- generic [active] [ref=e1]:
+  - link "Skip to content" [ref=e2] [cursor=pointer]:
+    - /url: "#main"
+  - banner [ref=e3]:
+    - generic [ref=e5]:
+      - link "⬡ THORChain Wiki" [ref=e6] [cursor=pointer]:
+        - /url: /
+        - generic [ref=e7]: ⬡
+        - generic [ref=e9]: THORChain Wiki
+      - generic [ref=e10]:
+        - button "Open search" [ref=e11]
+        - button "Open navigation menu" [ref=e15]
+  - main [ref=e17]:
+    - generic [ref=e18]:
+      - heading "Glossary" [level=1] [ref=e19]
+      - paragraph [ref=e20]: Source-aware definitions for protocol, economics, operations, developer, and historical THORChain terms.
+      - region "Source and freshness" [ref=e21]:
+        - group [ref=e22]:
+          - generic "Source & freshness Curated Checked 2026-07-14 · Review due 2026-11-17 · THORChain Docs How to use this page ▾" [ref=e23] [cursor=pointer]:
+            - generic [ref=e24]:
+              - generic [ref=e25]: Source & freshness
+              - generic [ref=e26]:
+                - generic [ref=e27]: Curated
+                - generic [ref=e28]: Checked 2026-07-14
+                - generic [ref=e29]: ·
+                - generic [ref=e30]: Review due 2026-11-17
+                - generic [ref=e31]: ·
+                - generic [ref=e32]:
+                  - link "THORChain Docs" [ref=e33]:
+                    - /url: https://docs.thorchain.org
+                  - group [ref=e34]: retrieval details
+                  - group [ref=e35]:
+                    - generic "Show 7 additional sources for THORChain Docs" [ref=e36]: +7 sources
+            - generic [ref=e37]: How to use this page ▾
+      - generic [ref=e39]:
+        - generic [ref=e40]:
+          - generic [ref=e41]:
+            - generic [ref=e42]:
+              - heading "Definition Map" [level=2] [ref=e43]
+              - paragraph [ref=e44]: Start with a term, then move to the page that can actually prove the claim. Definitions explain vocabulary; live state, fee outcomes, app-layer availability, and recovery status need stronger evidence.
+              - paragraph [ref=e45]: Each term card carries its own review date and source row; the page posture above covers the map and navigation.
+            - link "Find a term" [ref=e46] [cursor=pointer]:
+              - /url: "#glossary-explorer"
+          - generic [ref=e47]:
+            - generic [ref=e48]:
+              - generic [ref=e49]:
+                - generic [ref=e50]: operations
+                - heading "Live State Terms" [level=3] [ref=e51]
+              - paragraph [ref=e52]: Use these terms when a claim depends on current THORNode, Mimir, inbound, halt, pause, or source-health state.
+              - generic [ref=e53]:
+                - link "Mimir" [ref=e54] [cursor=pointer]:
+                  - /url: /glossary#term-mimir
+                - link "Mimir override" [ref=e55] [cursor=pointer]:
+                  - /url: /glossary#term-mimir-override
+                - link "Inbound address" [ref=e56] [cursor=pointer]:
+                  - /url: /glossary#term-inbound-address
+                - link "Current-only" [ref=e57] [cursor=pointer]:
+                  - /url: /glossary#term-current-only
+              - generic [ref=e58]:
+                - paragraph [ref=e59]: "Do not claim: A definition does not prove the network is open right now."
+                - link "Verify in network diagnostics" [ref=e60] [cursor=pointer]:
+                  - /url: /network#network-diagnostics
+            - generic [ref=e61]:
+              - generic [ref=e62]:
+                - generic [ref=e63]: operations
+                - heading "Vault, Signing, And Observation Terms" [level=3] [ref=e64]
+              - paragraph [ref=e65]: Use these for vault membership, chain observation, TSS, signing health, and compromised-vault wording before turning architecture terms into safety claims.
+              - generic [ref=e66]:
+                - link "Asgard vault" [ref=e67] [cursor=pointer]:
+                  - /url: /glossary#term-asgard-vault
+                - link "Bifrost" [ref=e68] [cursor=pointer]:
+                  - /url: /glossary#term-bifrost
+                - link "TSS" [ref=e69] [cursor=pointer]:
+                  - /url: /glossary#term-tss
+                - link "Key-sign failures" [ref=e70] [cursor=pointer]:
+                  - /url: /glossary#term-key-sign-failures
+                - link "Compromised vault" [ref=e71] [cursor=pointer]:
+                  - /url: /glossary#term-compromised-vault
+              - generic [ref=e72]:
+                - paragraph [ref=e73]: "Do not claim: Vault and signing vocabulary does not prove current signing health, vault safety, or chain observation completeness."
+                - link "Follow security evidence path" [ref=e74] [cursor=pointer]:
+                  - /url: /deep-dives#deep-dive-path-network-security
+            - generic [ref=e75]:
+              - generic [ref=e76]:
+                - generic [ref=e77]: economics
+                - heading "Swap And Fee Terms" [level=3] [ref=e78]
+              - paragraph [ref=e79]: Use these for CLP, quotes, refund boundaries, liquidity, fee, affiliate, and dynamic-fee vocabulary before quoting a number or route conclusion.
+              - generic [ref=e80]:
+                - link "CLP" [ref=e81] [cursor=pointer]:
+                  - /url: /glossary#term-clp
+                - link "Quote" [ref=e82] [cursor=pointer]:
+                  - /url: /glossary#term-quote
+                - link "Quote expiry" [ref=e83] [cursor=pointer]:
+                  - /url: /glossary#term-quote-expiry
+                - link "recommended_min_amount_in" [ref=e84] [cursor=pointer]:
+                  - /url: /glossary#term-recommended-min-amount-in
+                - link "Dust threshold" [ref=e85] [cursor=pointer]:
+                  - /url: /glossary#term-dust-threshold
+                - link "Refund address" [ref=e86] [cursor=pointer]:
+                  - /url: /glossary#term-refund-address
+                - link "Streaming swap" [ref=e87] [cursor=pointer]:
+                  - /url: /glossary#term-streaming-swap
+                - link "liquidity_tolerance_bps" [ref=e88] [cursor=pointer]:
+                  - /url: /glossary#term-liquidity-tolerance-bps
+                - link "Outbound fee" [ref=e89] [cursor=pointer]:
+                  - /url: /glossary#term-outbound-fee
+                - link "Affiliate fee" [ref=e90] [cursor=pointer]:
+                  - /url: /glossary#term-affiliate-fee
+                - link "THORName" [ref=e91] [cursor=pointer]:
+                  - /url: /glossary#term-thorname
+                - link "Dynamic L1 fee" [ref=e92] [cursor=pointer]:
+                  - /url: /glossary#term-dynamic-l1-fee
+              - generic [ref=e93]:
+                - paragraph [ref=e94]: "Do not claim: Static swap and fee terms do not prove live quoteability, settlement, refund cause, route competitiveness, or revenue lift."
+                - link "Check swap/refund evidence" [ref=e95] [cursor=pointer]:
+                  - /url: /deep-dives/streaming-swaps-refunds#what-to-check-first
+            - generic [ref=e96]:
+              - generic [ref=e97]:
+                - generic [ref=e98]: economics
+                - heading "Liquidity And Pool Accounting Terms" [level=3] [ref=e99]
+              - paragraph [ref=e100]: Use these when an LP, liquidity-unit, impermanent-loss, RUNEPool, or POL claim needs an action, accounting, or live-source boundary.
+              - generic [ref=e101]:
+                - link "Liquidity provider" [ref=e102] [cursor=pointer]:
+                  - /url: /glossary#term-liquidity-provider
+                - link "Liquidity units" [ref=e103] [cursor=pointer]:
+                  - /url: /glossary#term-liquidity-units
+                - link "Asymmetric withdrawal" [ref=e104] [cursor=pointer]:
+                  - /url: /glossary#term-asymmetric-withdrawal
+                - link "Impermanent loss" [ref=e105] [cursor=pointer]:
+                  - /url: /glossary#term-impermanent-loss
+                - link "Impermanent loss protection" [ref=e106] [cursor=pointer]:
+                  - /url: /glossary#term-impermanent-loss-protection
+                - link "Protocol-owned liquidity" [ref=e107] [cursor=pointer]:
+                  - /url: /glossary#term-protocol-owned-liquidity
+                - link "RUNEPool" [ref=e108] [cursor=pointer]:
+                  - /url: /glossary#term-runepool
+              - generic [ref=e109]:
+                - paragraph [ref=e110]: "Do not claim: Pool accounting terms do not prove LP actions are open, yield is positive, POL scope is stable, or a pool is routeable."
+                - link "Check liquidity evidence ladder" [ref=e111] [cursor=pointer]:
+                  - /url: /deep-dives/liquidity-actions#what-to-check-first
+            - generic [ref=e112]:
+              - generic [ref=e113]:
+                - generic [ref=e114]: developer
+                - heading "App Layer And Asset Terms" [level=3] [ref=e115]
+              - paragraph [ref=e116]: Use these when explaining memos, CosmWasm, secured assets, trade assets, and app-layer availability boundaries.
+              - generic [ref=e117]:
+                - link "Memo" [ref=e118] [cursor=pointer]:
+                  - /url: /glossary#term-memo
+                - link "App Layer" [ref=e119] [cursor=pointer]:
+                  - /url: /glossary#term-app-layer
+                - link "CosmWasm" [ref=e120] [cursor=pointer]:
+                  - /url: /glossary#term-cosmwasm
+                - link "Secured asset" [ref=e121] [cursor=pointer]:
+                  - /url: /glossary#term-secured-asset
+                - link "Trade asset" [ref=e122] [cursor=pointer]:
+                  - /url: /glossary#term-trade-asset
+                - link "Synthetic asset" [ref=e123] [cursor=pointer]:
+                  - /url: /glossary#term-synthetic-asset
+              - generic [ref=e124]:
+                - paragraph [ref=e125]: "Do not claim: Do not infer contract, secured-asset, trade-account, or archived synth availability without live controls and dated product context."
+                - link "Read app-layer explainer" [ref=e126] [cursor=pointer]:
+                  - /url: /deep-dives/app-layer
+            - generic [ref=e127]:
+              - generic [ref=e128]:
+                - generic [ref=e129]: history
+                - heading "Incident And Recovery Terms" [level=3] [ref=e130]
+              - paragraph [ref=e131]: Use these for deprecated THORFi context, TCY, and post-exploit TSS/security vocabulary.
+              - generic [ref=e132]:
+                - link "Savers" [ref=e133] [cursor=pointer]:
+                  - /url: /glossary#term-savers
+                - link "TCY" [ref=e134] [cursor=pointer]:
+                  - /url: /glossary#term-tcy
+                - link "GG20" [ref=e135] [cursor=pointer]:
+                  - /url: /glossary#term-gg20
+                - link "DKLS" [ref=e136] [cursor=pointer]:
+                  - /url: /glossary#term-dkls
+                - link "Schnorr" [ref=e137] [cursor=pointer]:
+                  - /url: /glossary#term-schnorr
+                - link "Paillier" [ref=e138] [cursor=pointer]:
+                  - /url: /glossary#term-paillier
+                - link "MTA" [ref=e139] [cursor=pointer]:
+                  - /url: /glossary#term-mta
+                - link "Multi-prime modulus" [ref=e140] [cursor=pointer]:
+                  - /url: /glossary#term-multi-prime-modulus
+                - link "KeyVerify" [ref=e141] [cursor=pointer]:
+                  - /url: /glossary#term-keyverify
+              - generic [ref=e142]:
+                - paragraph [ref=e143]: "Do not claim: Dated incident vocabulary is not present-day safety or recovery proof."
+                - link "Check recovery tracker" [ref=e144] [cursor=pointer]:
+                  - /url: /governance#current-recovery
+        - region [ref=e145]:
+          - generic [ref=e146]:
+            - generic [ref=e148]:
+              - heading "Term Finder" [level=2] [ref=e149]
+              - paragraph [ref=e150]: Showing 43 of 43 source-backed terms.
+              - paragraph [ref=e151]: Searches terms, definitions, source labels, and related proof links.
+            - generic [ref=e152]:
+              - search "Filter glossary terms" [ref=e153]:
+                - searchbox "Filter glossary terms" [ref=e158]
+              - navigation "Glossary categories" [ref=e159]:
+                - button "All terms43" [pressed] [ref=e160]
+                - button "Developer4" [ref=e161]
+                - button "Economics11" [ref=e162]
+                - button "History11" [ref=e163]
+                - button "Operations12" [ref=e164]
+                - button "Protocol5" [ref=e165]
+          - generic [ref=e166]:
+            - heading "developer" [level=2] [ref=e167]
+            - generic [ref=e168]:
+              - article [ref=e169]:
+                - generic [ref=e170]:
+                  - heading "Memo" [level=3] [ref=e171]
+                  - generic [ref=e172]: developer
+                - paragraph [ref=e173]: "The transaction instruction string that communicates an intended THORChain action. Valid syntax, accepted size, and current action availability are separate checks: deprecated handlers can remain documented, and an invalid or unavailable action may refund rather than execute."
+                - generic [ref=e175]:
+                  - generic [ref=e176]: Curated
+                  - generic [ref=e177]: Checked 2026-07-14
+                  - generic [ref=e178]: ·
+                  - generic [ref=e179]: Review due 2026-11-17
+                  - generic [ref=e180]: ·
+                  - generic [ref=e181]:
+                    - link "THORChain transaction memos" [ref=e182] [cursor=pointer]:
+                      - /url: https://dev.thorchain.org/concepts/memos.html
+                    - group [ref=e183]: retrieval details
+                    - group [ref=e184]:
+                      - generic "Show 1 additional source for THORChain transaction memos" [ref=e185] [cursor=pointer]: +1 source
+                - generic [ref=e186]:
+                  - link "Protocol" [ref=e187] [cursor=pointer]:
+                    - /url: /protocol
+                  - link "Developer Integration" [ref=e188] [cursor=pointer]:
+                    - /url: /docs#developer-integration
+              - article [ref=e189]:
+                - generic [ref=e190]:
+                  - heading "THORName" [level=3] [ref=e191]
+                  - generic [ref=e192]: developer
+                - paragraph [ref=e193]: A THORChain L1 vanity-name and alias record with an owner, expiry, chain aliases, and optional preferred asset for affiliate-fee payouts. It can support affiliate tracking and fee collection, but it does not by itself prove current dynamic-fee attribution, route quality, or interface safety.
+                - generic [ref=e195]:
+                  - generic [ref=e196]: Official source
+                  - generic [ref=e197]: Checked 2026-07-09
+                  - generic [ref=e198]: ·
+                  - generic [ref=e199]: Review due 2026-11-17
+                  - generic [ref=e200]: ·
+                  - generic [ref=e201]:
+                    - link "THORName affiliate guide" [ref=e202] [cursor=pointer]:
+                      - /url: https://dev.thorchain.org/affiliate-guide/thorname-guide.html
+                    - group [ref=e203]: retrieval details
+                - generic [ref=e204]:
+                  - link "Developer Integration" [ref=e205] [cursor=pointer]:
+                    - /url: /docs#developer-integration
+                  - link "Dynamic-fee live tracker" [ref=e206] [cursor=pointer]:
+                    - /url: /dynamic-fees#dynamic-fees-live
+                  - 'link "Glossary: Term Affiliate Fee" [ref=e207] [cursor=pointer]':
+                    - /url: /glossary#term-affiliate-fee
+              - article [ref=e208]:
+                - generic [ref=e209]:
+                  - heading "App Layer" [level=3] [ref=e210]
+                  - generic [ref=e211]: developer
+                - paragraph [ref=e212]: THORChain application-layer functionality built around CosmWasm contracts, Mimir-governed deployment permissioning, and scoped deployer, checksum, and contract controls.
+                - generic [ref=e214]:
+                  - generic [ref=e215]: Curated
+                  - generic [ref=e216]: Checked 2026-07-14
+                  - generic [ref=e217]: ·
+                  - generic [ref=e218]: Review due 2026-11-17
+                  - generic [ref=e219]: ·
+                  - generic [ref=e220]:
+                    - link "THORChain Application Layer docs" [ref=e221] [cursor=pointer]:
+                      - /url: https://docs.thorchain.org/application-layer
+                    - group [ref=e222]: retrieval details
+                    - group [ref=e223]:
+                      - generic "Show 3 additional sources for THORChain Application Layer docs" [ref=e224] [cursor=pointer]: +3 sources
+                - generic [ref=e225]:
+                  - link "App Layer, CosmWasm, and Secured Assets" [ref=e226] [cursor=pointer]:
+                    - /url: /deep-dives/app-layer
+                  - link "Protocol" [ref=e227] [cursor=pointer]:
+                    - /url: /protocol
+                  - link "Network diagnostics" [ref=e228] [cursor=pointer]:
+                    - /url: /network#network-diagnostics
+              - article [ref=e229]:
+                - generic [ref=e230]:
+                  - heading "CosmWasm" [level=3] [ref=e231]
+                  - generic [ref=e232]: developer
+                - paragraph [ref=e233]: Smart-contract technology used for THORChain app-layer functionality. Current deployer, checksum, contract, or global halt state must be read from live controls.
+                - generic [ref=e235]:
+                  - generic [ref=e236]: Curated
+                  - generic [ref=e237]: Checked 2026-07-14
+                  - generic [ref=e238]: ·
+                  - generic [ref=e239]: Review due 2026-11-17
+                  - generic [ref=e240]: ·
+                  - generic [ref=e241]:
+                    - link "CosmWasm" [ref=e242] [cursor=pointer]:
+                      - /url: https://docs.thorchain.org/technical-documentation/technology/cosmwasm
+                    - group [ref=e243]: retrieval details
+                    - group [ref=e244]:
+                      - generic "Show 1 additional source for CosmWasm" [ref=e245] [cursor=pointer]: +1 source
+                - generic [ref=e246]:
+                  - link "App Layer, CosmWasm, and Secured Assets" [ref=e247] [cursor=pointer]:
+                    - /url: /deep-dives/app-layer
+                  - link "Protocol" [ref=e248] [cursor=pointer]:
+                    - /url: /protocol
+                  - link "Official Protocol Documentation" [ref=e249] [cursor=pointer]:
+                    - /url: /docs#official-protocol-documentation
+          - generic [ref=e250]:
+            - heading "economics" [level=2] [ref=e251]
+            - generic [ref=e252]:
+              - article [ref=e253]:
+                - generic [ref=e254]:
+                  - heading "CLP" [level=3] [ref=e255]
+                  - generic [ref=e256]: economics
+                - paragraph [ref=e257]: Continuous Liquidity Pool. THORChain pools price swaps from pool depth and slip, with RUNE paired against external assets.
+                - generic [ref=e259]:
+                  - generic [ref=e260]: Curated
+                  - generic [ref=e261]: Checked 2026-07-14
+                  - generic [ref=e262]: ·
+                  - generic [ref=e263]: Review due 2026-11-17
+                  - generic [ref=e264]: ·
+                  - generic [ref=e265]:
+                    - link "Continuous Liquidity Pools" [ref=e266] [cursor=pointer]:
+                      - /url: https://docs.thorchain.org/technical-documentation/thorchain-finance/continuous-liquidity-pools
+                    - group [ref=e267]: retrieval details
+                - generic [ref=e268]:
+                  - link "Continuous Liquidity Pools (CLP)" [ref=e269] [cursor=pointer]:
+                    - /url: /deep-dives/clp
+                  - link "Economics" [ref=e270] [cursor=pointer]:
+                    - /url: /economics
+              - article [ref=e271]:
+                - generic [ref=e272]:
+                  - heading "Impermanent loss" [level=3] [ref=e273]
+                  - generic [ref=e274]: economics
+                - paragraph [ref=e275]: Liquidity-provider purchasing-power risk when relative pool asset prices move. THORChain docs frame slip-based fees as reducing this risk, not removing it; current LP return claims still need live pool and earnings evidence.
+                - generic [ref=e277]:
+                  - generic [ref=e278]: Curated
+                  - generic [ref=e279]: Checked 2026-07-14
+                  - generic [ref=e280]: ·
+                  - generic [ref=e281]: Review due 2026-11-17
+                  - generic [ref=e282]: ·
+                  - generic [ref=e283]:
+                    - link "Liquidity Providers" [ref=e284] [cursor=pointer]:
+                      - /url: https://docs.thorchain.org/technical-documentation/understanding-thorchain/roles/liquidity-providers
+                    - group [ref=e285]: retrieval details
+                    - group [ref=e286]:
+                      - generic "Show 1 additional source for Liquidity Providers" [ref=e287] [cursor=pointer]: +1 source
+                - generic [ref=e288]:
+                  - link "Continuous Liquidity Pools (CLP)" [ref=e289] [cursor=pointer]:
+                    - /url: /deep-dives/clp
+                  - link "Stats decision panel" [ref=e290] [cursor=pointer]:
+                    - /url: /stats#stats-look-here-first
+              - article [ref=e291]:
+                - generic [ref=e292]:
+                  - heading "Liquidity provider" [level=3] [ref=e293]
+                  - generic [ref=e294]: economics
+                - paragraph [ref=e295]: A participant who supplies assets to a THORChain pool and receives pool-share accounting plus a share of pool earnings and final balances. Current deposit or withdrawal availability depends on live LP controls, lockup rules, outbound state, and chain state.
+                - generic [ref=e297]:
+                  - generic [ref=e298]: Curated
+                  - generic [ref=e299]: Checked 2026-07-14
+                  - generic [ref=e300]: ·
+                  - generic [ref=e301]: Review due 2026-11-17
+                  - generic [ref=e302]: ·
+                  - generic [ref=e303]:
+                    - link "Liquidity Providers" [ref=e304] [cursor=pointer]:
+                      - /url: https://docs.thorchain.org/technical-documentation/understanding-thorchain/roles/liquidity-providers
+                    - group [ref=e305]: retrieval details
+                    - group [ref=e306]:
+                      - generic "Show 1 additional source for Liquidity Providers" [ref=e307] [cursor=pointer]: +1 source
+                - generic [ref=e308]:
+                  - link "Continuous Liquidity Pools (CLP)" [ref=e309] [cursor=pointer]:
+                    - /url: /deep-dives/clp
+                  - link "Network diagnostics" [ref=e310] [cursor=pointer]:
+                    - /url: /network#network-diagnostics
+              - article [ref=e311]:
+                - generic [ref=e312]:
+                  - heading "Liquidity units" [level=3] [ref=e313]
+                  - generic [ref=e314]: economics
+                - paragraph [ref=e315]: Accounting units used to track a provider share of a THORChain pool. Units explain proportional pool ownership and redemption accounting, not whether LP deposits or withdrawals are currently open or what a position will return.
+                - generic [ref=e317]:
+                  - generic [ref=e318]: Curated
+                  - generic [ref=e319]: Checked 2026-07-14
+                  - generic [ref=e320]: ·
+                  - generic [ref=e321]: Review due 2026-11-17
+                  - generic [ref=e322]: ·
+                  - generic [ref=e323]:
+                    - link "Liquidity Providers FAQ" [ref=e324] [cursor=pointer]:
+                      - /url: https://docs.thorchain.org/thornodes/frequently-asked-questions/liquidity-providers
+                    - group [ref=e325]: retrieval details
+                    - group [ref=e326]:
+                      - generic "Show 1 additional source for Liquidity Providers FAQ" [ref=e327] [cursor=pointer]: +1 source
+                - generic [ref=e328]:
+                  - link "Continuous Liquidity Pools (CLP)" [ref=e329] [cursor=pointer]:
+                    - /url: /deep-dives/clp
+                  - link "Stats decision panel" [ref=e330] [cursor=pointer]:
+                    - /url: /stats#stats-look-here-first
+              - article [ref=e331]:
+                - generic [ref=e332]:
+                  - heading "recommended_min_amount_in" [level=3] [ref=e333]
+                  - generic [ref=e334]: economics
+                - paragraph [ref=e335]: The quote field for the minimum allowed input, priced in 1e8 units of the inbound asset. It applies the documented source-fee, destination-fee, and one-dollar floor with a gas-spike buffer; it is still a current quote value, not an execution guarantee.
+                - generic [ref=e337]:
+                  - generic [ref=e338]: Official source
+                  - generic [ref=e339]: Checked 2026-07-14
+                  - generic [ref=e340]: ·
+                  - generic [ref=e341]: Review due 2026-11-17
+                  - generic [ref=e342]: ·
+                  - generic [ref=e343]:
+                    - link "THORChain fees developer docs" [ref=e344] [cursor=pointer]:
+                      - /url: https://dev.thorchain.org/concepts/fees.html
+                    - group [ref=e345]: retrieval details
+                    - group [ref=e346]:
+                      - generic "Show 1 additional source for THORChain fees developer docs" [ref=e347] [cursor=pointer]: +1 source
+                - generic [ref=e348]:
+                  - link "Network diagnostics" [ref=e349] [cursor=pointer]:
+                    - /url: /network#network-diagnostics
+                  - 'link "Streaming Swaps And Refunds: Memos Limits And Refund Addresses" [ref=e350] [cursor=pointer]':
+                    - /url: /deep-dives/streaming-swaps-refunds#memos-limits-and-refund-addresses
+              - article [ref=e351]:
+                - generic [ref=e352]:
+                  - heading "liquidity_tolerance_bps" [level=3] [ref=e353]
+                  - generic [ref=e354]: economics
+                - paragraph [ref=e355]: A quote parameter that converts the expected output into a fee-aware minimum output in the generated memo. The swap reverts or refunds when output falls beyond that basis-point tolerance; unlike tolerance_bps, it accounts for swap and outbound fees, but it is not route or settlement proof.
+                - generic [ref=e357]:
+                  - generic [ref=e358]: Official source
+                  - generic [ref=e359]: Checked 2026-07-14
+                  - generic [ref=e360]: ·
+                  - generic [ref=e361]: Review due 2026-11-17
+                  - generic [ref=e362]: ·
+                  - generic [ref=e363]:
+                    - link "THORChain Swap Guide" [ref=e364] [cursor=pointer]:
+                      - /url: https://dev.thorchain.org/swap-guide/quickstart-guide.html
+                    - group [ref=e365]: retrieval details
+                    - group [ref=e366]:
+                      - generic "Show 1 additional source for THORChain Swap Guide" [ref=e367] [cursor=pointer]: +1 source
+                - generic [ref=e368]:
+                  - 'link "Streaming Swaps And Refunds: Memos Limits And Refund Addresses" [ref=e369] [cursor=pointer]':
+                    - /url: /deep-dives/streaming-swaps-refunds#memos-limits-and-refund-addresses
+                  - 'link "Continuous Liquidity Pools (CLP): Evidence Ladder" [ref=e370] [cursor=pointer]':
+                    - /url: /deep-dives/clp#evidence-ladder
+              - article [ref=e371]:
+                - generic [ref=e372]:
+                  - heading "Outbound fee" [level=3] [ref=e373]
+                  - generic [ref=e374]: economics
+                - paragraph [ref=e375]: A fee component associated with the outbound transaction and chain gas. Exact values are live protocol data, not static wiki constants.
+                - generic [ref=e377]:
+                  - generic [ref=e378]: Curated
+                  - generic [ref=e379]: Checked 2026-07-13
+                  - generic [ref=e380]: ·
+                  - generic [ref=e381]: Review due 2026-11-17
+                  - generic [ref=e382]: ·
+                  - generic [ref=e383]:
+                    - link "THORChain fees developer docs" [ref=e384] [cursor=pointer]:
+                      - /url: https://dev.thorchain.org/concepts/fees.html
+                    - group [ref=e385]: retrieval details
+                - generic [ref=e386]:
+                  - link "Economics" [ref=e387] [cursor=pointer]:
+                    - /url: /economics
+                  - link "Stats decision panel" [ref=e388] [cursor=pointer]:
+                    - /url: /stats#stats-look-here-first
+              - article [ref=e389]:
+                - generic [ref=e390]:
+                  - heading "Affiliate fee" [level=3] [ref=e391]
+                  - generic [ref=e392]: economics
+                - paragraph [ref=e393]: An optional memo-defined interface or affiliate fee, usually expressed in basis points. It is distinct from protocol liquidity and gas-related fees.
+                - generic [ref=e395]:
+                  - generic [ref=e396]: Curated
+                  - generic [ref=e397]: Checked 2026-07-13
+                  - generic [ref=e398]: ·
+                  - generic [ref=e399]: Review due 2026-11-17
+                  - generic [ref=e400]: ·
+                  - generic [ref=e401]:
+                    - link "THORChain fees developer docs" [ref=e402] [cursor=pointer]:
+                      - /url: https://dev.thorchain.org/concepts/fees.html
+                    - group [ref=e403]: retrieval details
+                - generic [ref=e404]:
+                  - link "Economics" [ref=e405] [cursor=pointer]:
+                    - /url: /economics
+                  - link "Dynamic-fee live tracker" [ref=e406] [cursor=pointer]:
+                    - /url: /dynamic-fees#dynamic-fees-live
+              - article [ref=e407]:
+                - generic [ref=e408]:
+                  - heading "Dynamic L1 fee" [level=3] [ref=e409]
+                  - generic [ref=e410]: economics
+                - paragraph [ref=e411]: ADR-026 experiment terminology for per-thorname, per-pair L1 minimum slip floors adjusted by TOR-denominated fee evidence. Live state is current-only THORNode evidence.
+                - generic [ref=e413]:
+                  - generic [ref=e414]: Curated
+                  - generic [ref=e415]: Checked 2026-07-13
+                  - generic [ref=e416]: ·
+                  - generic [ref=e417]: Review due 2026-11-17
+                  - generic [ref=e418]: ·
+                  - generic [ref=e419]:
+                    - link "ADR-026 dynamic L1 fee model" [ref=e420] [cursor=pointer]:
+                      - /url: https://gitlab.com/thorchain/thornode/-/raw/develop/docs/architecture/adr-026-dynamic-l1-min-fee-per-thorname.md
+                    - group [ref=e421]: retrieval details
+                - generic [ref=e422]:
+                  - link "Dynamic-fee live tracker" [ref=e423] [cursor=pointer]:
+                    - /url: /dynamic-fees#dynamic-fees-live
+                  - link "Dynamic Fee Experiment" [ref=e424] [cursor=pointer]:
+                    - /url: /docs#dynamic-fee-experiment
+              - article [ref=e425]:
+                - generic [ref=e426]:
+                  - heading "Protocol-owned liquidity" [level=3] [ref=e427]
+                  - generic [ref=e428]: economics
+                - paragraph [ref=e429]: "Liquidity controlled by the protocol rather than ordinary external LPs. Balances and PnL come from current accounting, while enabled pool scope comes from live `POL-<Asset>` Mimir keys; neither should be inferred from a fixed documentation count."
+                - generic [ref=e431]:
+                  - generic [ref=e432]: Curated
+                  - generic [ref=e433]: Checked 2026-07-14
+                  - generic [ref=e434]: ·
+                  - generic [ref=e435]: Review due 2026-11-17
+                  - generic [ref=e436]: ·
+                  - generic [ref=e437]:
+                    - link "THORChain RUNEPool docs" [ref=e438] [cursor=pointer]:
+                      - /url: https://docs.thorchain.org/technical-documentation/thorchain-finance/runepool
+                    - group [ref=e439]: retrieval details
+                    - group [ref=e440]:
+                      - generic "Show 2 additional sources for THORChain RUNEPool docs" [ref=e441] [cursor=pointer]: +2 sources
+                - generic [ref=e442]:
+                  - link "RUNEPool/POL live snapshot" [ref=e443] [cursor=pointer]:
+                    - /url: /economics#runepool-pol-live
+                  - 'link "RUNEPool And POL Evidence: Accounting Checks" [ref=e444] [cursor=pointer]':
+                    - /url: /deep-dives/runepool-pol#accounting-checks
+                  - link "Stats decision panel" [ref=e445] [cursor=pointer]:
+                    - /url: /stats#stats-look-here-first
+              - article [ref=e446]:
+                - generic [ref=e447]:
+                  - heading "RUNEPool" [level=3] [ref=e448]
+                  - generic [ref=e449]: economics
+                - paragraph [ref=e450]: A RUNE-only participation mechanism with aggregate exposure to POL-enabled pools. Current value, potentially negative PnL/current-deposit fields, POL scope, and deposit or withdrawal availability need same-provider, height-pinned THORNode and Mimir evidence.
+                - generic [ref=e452]:
+                  - generic [ref=e453]: Curated
+                  - generic [ref=e454]: Checked 2026-07-14
+                  - generic [ref=e455]: ·
+                  - generic [ref=e456]: Review due 2026-11-17
+                  - generic [ref=e457]: ·
+                  - generic [ref=e458]:
+                    - link "THORChain RUNEPool docs" [ref=e459] [cursor=pointer]:
+                      - /url: https://docs.thorchain.org/technical-documentation/thorchain-finance/runepool
+                    - group [ref=e460]: retrieval details
+                    - group [ref=e461]:
+                      - generic "Show 3 additional sources for THORChain RUNEPool docs" [ref=e462] [cursor=pointer]: +3 sources
+                - generic [ref=e463]:
+                  - link "RUNEPool/POL live snapshot" [ref=e464] [cursor=pointer]:
+                    - /url: /economics#runepool-pol-live
+                  - 'link "RUNEPool And POL Evidence: Accounting Checks" [ref=e465] [cursor=pointer]':
+                    - /url: /deep-dives/runepool-pol#accounting-checks
+                  - link "Network diagnostics" [ref=e466] [cursor=pointer]:
+                    - /url: /network#network-diagnostics
+          - generic [ref=e467]:
+            - heading "history" [level=2] [ref=e468]
+            - generic [ref=e469]:
+              - article [ref=e470]:
+                - generic [ref=e471]:
+                  - heading "Impermanent loss protection" [level=3] [ref=e472]
+                  - generic [ref=e473]: history
+                - paragraph [ref=e474]: A historical reserve-subsidy mechanism for LP withdrawals. Official THORChain docs now say IL protection has been removed or ended, so do not describe it as currently available for ordinary liquidity providers.
+                - generic [ref=e476]:
+                  - generic [ref=e477]: Official source
+                  - generic [ref=e478]: Checked 2026-07-14
+                  - generic [ref=e479]: ·
+                  - generic [ref=e480]: Review due 2026-11-17
+                  - generic [ref=e481]: ·
+                  - generic [ref=e482]:
+                    - link "Continuous Liquidity Pools" [ref=e483] [cursor=pointer]:
+                      - /url: https://docs.thorchain.org/technical-documentation/thorchain-finance/continuous-liquidity-pools
+                    - group [ref=e484]: retrieval details
+                    - group [ref=e485]:
+                      - generic "Show 1 additional source for Continuous Liquidity Pools" [ref=e486] [cursor=pointer]: +1 source
+                - generic [ref=e487]:
+                  - link "Continuous Liquidity Pools (CLP)" [ref=e488] [cursor=pointer]:
+                    - /url: /deep-dives/clp
+                  - link "Historical Features And Recovery" [ref=e489] [cursor=pointer]:
+                    - /url: /docs#historical-features-and-recovery
+              - article [ref=e490]:
+                - generic [ref=e491]:
+                  - heading "Synthetic asset" [level=3] [ref=e492]
+                  - generic [ref=e493]: history
+                - paragraph [ref=e494]: "A Cosmos bank asset type, often shortened to synth, denoted with `CHAIN/ASSET` and distinct from secured (`CHAIN-ASSET`) and trade (`CHAIN~ASSET`) notation. Synthetics were part of historical Savers mechanics; notation and documented memo handlers do not prove that minting, swapping, or Savers actions are currently available."
+                - generic [ref=e496]:
+                  - generic [ref=e497]: Curated
+                  - generic [ref=e498]: Checked 2026-07-14
+                  - generic [ref=e499]: ·
+                  - generic [ref=e500]: Review due 2026-11-17
+                  - generic [ref=e501]: ·
+                  - generic [ref=e502]:
+                    - link "Asset Notation" [ref=e503] [cursor=pointer]:
+                      - /url: https://dev.thorchain.org/concepts/asset-notation.html
+                    - group [ref=e504]: retrieval details
+                    - group [ref=e505]:
+                      - generic "Show 2 additional sources for Asset Notation" [ref=e506] [cursor=pointer]: +2 sources
+                - generic [ref=e507]:
+                  - link "Savers and Lending (Historical)" [ref=e508] [cursor=pointer]:
+                    - /url: /deep-dives/savers
+                  - link "Developer Integration" [ref=e509] [cursor=pointer]:
+                    - /url: /docs#developer-integration
+                  - link "Network diagnostics" [ref=e510] [cursor=pointer]:
+                    - /url: /network#network-diagnostics
+              - article [ref=e511]:
+                - generic [ref=e512]:
+                  - heading "Savers" [level=3] [ref=e513]
+                  - generic [ref=e514]: history
+                - paragraph [ref=e515]: A permanently deprecated THORFi feature that used single-sided synthetic accounting. Official archived docs date deprecation to 2025-01-04; retained mechanics and memo references are historical evidence, not current deposit, yield, or redemption instructions.
+                - generic [ref=e517]:
+                  - generic [ref=e518]: Official source
+                  - generic [ref=e519]: Checked 2026-07-14
+                  - generic [ref=e520]: ·
+                  - generic [ref=e521]: Review due 2026-11-17
+                  - generic [ref=e522]: ·
+                  - generic [ref=e523]:
+                    - link "Archived Savers docs" [ref=e524] [cursor=pointer]:
+                      - /url: https://docs.thorchain.org/thornodes/archived/savers
+                    - group [ref=e525]: retrieval details
+                    - group [ref=e526]:
+                      - generic "Show 2 additional sources for Archived Savers docs" [ref=e527] [cursor=pointer]: +2 sources
+                - generic [ref=e528]:
+                  - link "TCY" [ref=e529] [cursor=pointer]:
+                    - /url: /tcy
+                  - link "Savers and Lending (Historical)" [ref=e530] [cursor=pointer]:
+                    - /url: /deep-dives/savers
+              - article [ref=e531]:
+                - generic [ref=e532]:
+                  - heading "TCY" [level=3] [ref=e533]
+                  - generic [ref=e534]: history
+                - paragraph [ref=e535]: A recovery-token framing associated with the THORFi unwind. Official sources describe 1 TCY per $1 of defaulted THORFi debt and warn that full recovery is market dependent, so current claim, staking, and value claims need fresh evidence.
+                - generic [ref=e537]:
+                  - generic [ref=e538]: Official source
+                  - generic [ref=e539]: Checked 2026-07-13
+                  - generic [ref=e540]: ·
+                  - generic [ref=e541]: Review due 2026-11-17
+                  - generic [ref=e542]: ·
+                  - generic [ref=e543]:
+                    - link "RUNE and TCY tokenomics" [ref=e544] [cursor=pointer]:
+                      - /url: https://docs.thorchain.org/tokenomics-rune-tcy
+                    - group [ref=e545]: retrieval details
+                    - group [ref=e546]:
+                      - generic "Show 2 additional sources for RUNE and TCY tokenomics" [ref=e547] [cursor=pointer]: +2 sources
+                - generic [ref=e548]:
+                  - link "TCY" [ref=e549] [cursor=pointer]:
+                    - /url: /tcy
+                  - link "TCY Recovery Timeline" [ref=e550] [cursor=pointer]:
+                    - /url: /deep-dives/tcy-recovery-timeline
+                  - link "Recovery tracker" [ref=e551] [cursor=pointer]:
+                    - /url: /governance#current-recovery
+              - article [ref=e552]:
+                - generic [ref=e553]:
+                  - heading "DKLS" [level=3] [ref=e554]
+                  - generic [ref=e555]: history
+                - paragraph [ref=e556]: A threshold-signature scheme family in THORChain's post-exploit migration plan. The June 2026 post-restart update still describes chain-by-chain DKLS/FROST migration as future work, not completed current implementation.
+                - generic [ref=e558]:
+                  - generic [ref=e559]: Curated
+                  - generic [ref=e560]: Checked 2026-07-13
+                  - generic [ref=e561]: ·
+                  - generic [ref=e562]: Review due 2026-11-17
+                  - generic [ref=e563]: ·
+                  - generic [ref=e564]:
+                    - 'link "THORChain Exploit Report #2" [ref=e565] [cursor=pointer]':
+                      - /url: https://blog.thorchain.org/thorchain-exploit-report-2
+                    - group [ref=e566]: retrieval details
+                    - group [ref=e567]:
+                      - 'generic "Show 1 additional source for THORChain Exploit Report #2" [ref=e568] [cursor=pointer]': +1 source
+                - generic [ref=e569]:
+                  - link "Threshold Signatures (TSS)" [ref=e570] [cursor=pointer]:
+                    - /url: /deep-dives/tss
+                  - link "Recovery tracker" [ref=e571] [cursor=pointer]:
+                    - /url: /governance#current-recovery
+              - article [ref=e572]:
+                - generic [ref=e573]:
+                  - heading "Schnorr" [level=3] [ref=e574]
+                  - generic [ref=e575]: history
+                - paragraph [ref=e576]: A signature construction related to the FROST direction discussed after the GG20 exploit. Official post-restart reporting describes evaluation and future chain-by-chain migration, not proof that current vault signing has moved to Schnorr/FROST.
+                - generic [ref=e578]:
+                  - generic [ref=e579]: Curated
+                  - generic [ref=e580]: Checked 2026-07-13
+                  - generic [ref=e581]: ·
+                  - generic [ref=e582]: Review due 2026-11-17
+                  - generic [ref=e583]: ·
+                  - generic [ref=e584]:
+                    - 'link "THORChain Exploit Report #2" [ref=e585] [cursor=pointer]':
+                      - /url: https://blog.thorchain.org/thorchain-exploit-report-2
+                    - group [ref=e586]: retrieval details
+                    - group [ref=e587]:
+                      - 'generic "Show 1 additional source for THORChain Exploit Report #2" [ref=e588] [cursor=pointer]': +1 source
+                - generic [ref=e589]:
+                  - link "Threshold Signatures (TSS)" [ref=e590] [cursor=pointer]:
+                    - /url: /deep-dives/tss
+                  - link "Recovery tracker" [ref=e591] [cursor=pointer]:
+                    - /url: /governance#current-recovery
+              - article [ref=e592]:
+                - generic [ref=e593]:
+                  - heading "GG20" [level=3] [ref=e594]
+                  - generic [ref=e595]: history
+                - paragraph [ref=e596]: The threshold-signature implementation family used in the May 2026 exploit path. v3.19.1 patched the incident class, but official post-restart reporting still treats migration away from GG20 as future work; neither fact is present-day vault-safety proof.
+                - generic [ref=e598]:
+                  - generic [ref=e599]: Curated
+                  - generic [ref=e600]: Checked 2026-07-13
+                  - generic [ref=e601]: ·
+                  - generic [ref=e602]: Review due 2026-11-17
+                  - generic [ref=e603]: ·
+                  - generic [ref=e604]:
+                    - 'link "THORChain Exploit Report #2" [ref=e605] [cursor=pointer]':
+                      - /url: https://blog.thorchain.org/thorchain-exploit-report-2
+                    - group [ref=e606]: retrieval details
+                    - group [ref=e607]:
+                      - 'generic "Show 2 additional sources for THORChain Exploit Report #2" [ref=e608] [cursor=pointer]': +2 sources
+                - generic [ref=e609]:
+                  - link "Threshold Signatures (TSS)" [ref=e610] [cursor=pointer]:
+                    - /url: /deep-dives/tss
+                  - link "Recovery tracker" [ref=e611] [cursor=pointer]:
+                    - /url: /governance#current-recovery
+              - article [ref=e612]:
+                - generic [ref=e613]:
+                  - heading "Paillier" [level=3] [ref=e614]
+                  - generic [ref=e615]: history
+                - paragraph [ref=e616]: A cryptographic component used in the GG20/ECDSA signing path discussed in the 2026 exploit report. The report ties malformed Paillier key material to the attack, so Paillier claims should stay attached to dated incident sources.
+                - generic [ref=e618]:
+                  - generic [ref=e619]: Curated
+                  - generic [ref=e620]: Checked 2026-07-13
+                  - generic [ref=e621]: ·
+                  - generic [ref=e622]: Review due 2026-11-17
+                  - generic [ref=e623]: ·
+                  - generic [ref=e624]:
+                    - 'link "THORChain Exploit Report #2" [ref=e625] [cursor=pointer]':
+                      - /url: https://blog.thorchain.org/thorchain-exploit-report-2
+                    - group [ref=e626]: retrieval details
+                - generic [ref=e627]:
+                  - link "Threshold Signatures (TSS)" [ref=e628] [cursor=pointer]:
+                    - /url: /deep-dives/tss
+                  - link "Recovery tracker" [ref=e629] [cursor=pointer]:
+                    - /url: /governance#current-recovery
+              - article [ref=e630]:
+                - generic [ref=e631]:
+                  - heading "MTA" [level=3] [ref=e632]
+                  - generic [ref=e633]: history
+                - paragraph [ref=e634]: Multiplicative-to-additive signing-round terminology from GG20/ECDSA threshold signing. THORChain Exploit Report 2 says repeated failed MTA rounds leaked enough key-share material for the attacker to reproduce one vault key.
+                - generic [ref=e636]:
+                  - generic [ref=e637]: Curated
+                  - generic [ref=e638]: Checked 2026-07-13
+                  - generic [ref=e639]: ·
+                  - generic [ref=e640]: Review due 2026-11-17
+                  - generic [ref=e641]: ·
+                  - generic [ref=e642]:
+                    - 'link "THORChain Exploit Report #2" [ref=e643] [cursor=pointer]':
+                      - /url: https://blog.thorchain.org/thorchain-exploit-report-2
+                    - group [ref=e644]: retrieval details
+                - generic [ref=e645]:
+                  - link "Threshold Signatures (TSS)" [ref=e646] [cursor=pointer]:
+                    - /url: /deep-dives/tss
+                  - link "Recovery tracker" [ref=e647] [cursor=pointer]:
+                    - /url: /governance#current-recovery
+              - article [ref=e648]:
+                - generic [ref=e649]:
+                  - heading "Multi-prime modulus" [level=3] [ref=e650]
+                  - generic [ref=e651]: history
+                - paragraph [ref=e652]: A Paillier-key property discussed in the official exploit report. Use it as incident-root-cause vocabulary, not as a standalone explanation of current THORChain cryptography.
+                - generic [ref=e654]:
+                  - generic [ref=e655]: Curated
+                  - generic [ref=e656]: Checked 2026-07-13
+                  - generic [ref=e657]: ·
+                  - generic [ref=e658]: Review due 2026-11-17
+                  - generic [ref=e659]: ·
+                  - generic [ref=e660]:
+                    - 'link "THORChain Exploit Report #2" [ref=e661] [cursor=pointer]':
+                      - /url: https://blog.thorchain.org/thorchain-exploit-report-2
+                    - group [ref=e662]: retrieval details
+                - generic [ref=e663]:
+                  - link "Threshold Signatures (TSS)" [ref=e664] [cursor=pointer]:
+                    - /url: /deep-dives/tss
+                  - link "Recovery tracker" [ref=e665] [cursor=pointer]:
+                    - /url: /governance#current-recovery
+              - article [ref=e666]:
+                - generic [ref=e667]:
+                  - heading "KeyVerify" [level=3] [ref=e668]
+                  - generic [ref=e669]: history
+                - paragraph [ref=e670]: A temporary recovery check introduced around the v3.19 restart to confirm validators' security keys before trading resumed. It is dated recovery evidence, not a standing guarantee of current vault or signing safety.
+                - generic [ref=e672]:
+                  - generic [ref=e673]: Curated
+                  - generic [ref=e674]: Checked 2026-07-13
+                  - generic [ref=e675]: ·
+                  - generic [ref=e676]: Review due 2026-11-17
+                  - generic [ref=e677]: ·
+                  - generic [ref=e678]:
+                    - link "Protocol Upgrade v3.19.0" [ref=e679] [cursor=pointer]:
+                      - /url: https://blog.thorchain.org/protocol-upgrade-v3-19-0
+                    - group [ref=e680]: retrieval details
+                    - group [ref=e681]:
+                      - generic "Show 1 additional source for Protocol Upgrade v3.19.0" [ref=e682] [cursor=pointer]: +1 source
+                - generic [ref=e683]:
+                  - link "Threshold Signatures (TSS)" [ref=e684] [cursor=pointer]:
+                    - /url: /deep-dives/tss
+                  - link "Recovery tracker" [ref=e685] [cursor=pointer]:
+                    - /url: /governance#current-recovery
+          - generic [ref=e686]:
+            - heading "operations" [level=2] [ref=e687]
+            - generic [ref=e688]:
+              - article [ref=e689]:
+                - generic [ref=e690]:
+                  - heading "Asymmetric withdrawal" [level=3] [ref=e691]
+                  - generic [ref=e692]: operations
+                - paragraph [ref=e693]: A liquidity withdrawal that takes one side of a pool rather than both sides proportionally. Availability can be controlled separately by live Mimir pause keys.
+                - generic [ref=e695]:
+                  - generic [ref=e696]: Curated
+                  - generic [ref=e697]: Checked 2026-07-14
+                  - generic [ref=e698]: ·
+                  - generic [ref=e699]: Review due 2026-11-17
+                  - generic [ref=e700]: ·
+                  - generic [ref=e701]:
+                    - link "Liquidity Providers FAQ" [ref=e702] [cursor=pointer]:
+                      - /url: https://docs.thorchain.org/thornodes/frequently-asked-questions/liquidity-providers
+                    - group [ref=e703]: retrieval details
+                    - group [ref=e704]:
+                      - generic "Show 1 additional source for Liquidity Providers FAQ" [ref=e705] [cursor=pointer]: +1 source
+                - generic [ref=e706]:
+                  - link "Network diagnostics" [ref=e707] [cursor=pointer]:
+                    - /url: /network#network-diagnostics
+                  - link "Continuous Liquidity Pools (CLP)" [ref=e708] [cursor=pointer]:
+                    - /url: /deep-dives/clp
+              - article [ref=e709]:
+                - generic [ref=e710]:
+                  - heading "Current-only" [level=3] [ref=e711]
+                  - generic [ref=e712]: operations
+                - paragraph [ref=e713]: A trust label for live Midgard or THORNode data that should be treated as a fresh snapshot, not durable historical truth.
+                - generic [ref=e715]:
+                  - generic [ref=e716]: Curated
+                  - generic [ref=e717]: Checked 2026-07-13
+                  - generic [ref=e718]: ·
+                  - generic [ref=e719]: Review due 2026-11-17
+                  - generic [ref=e720]: ·
+                  - generic [ref=e721]:
+                    - link "Querying THORChain" [ref=e722] [cursor=pointer]:
+                      - /url: https://dev.thorchain.org/concepts/querying-thorchain.html
+                    - group [ref=e723]: retrieval details
+                - generic [ref=e724]:
+                  - link "Statistics" [ref=e725] [cursor=pointer]:
+                    - /url: /stats
+                  - link "Network" [ref=e726] [cursor=pointer]:
+                    - /url: /network
+              - article [ref=e727]:
+                - generic [ref=e728]:
+                  - heading "Mimir" [level=3] [ref=e729]
+                  - generic [ref=e730]: operations
+                - paragraph [ref=e731]: Operational parameter storage used by THORChain nodes. Halt, pause, enablement, and feature-control keys must be read from live THORNode state.
+                - generic [ref=e733]:
+                  - generic [ref=e734]: Official source
+                  - generic [ref=e735]: Checked 2026-07-13
+                  - generic [ref=e736]: ·
+                  - generic [ref=e737]: Review due 2026-11-17
+                  - generic [ref=e738]: ·
+                  - generic [ref=e739]:
+                    - link "THORChain Network Halts" [ref=e740] [cursor=pointer]:
+                      - /url: https://dev.thorchain.org/concepts/network-halts.html
+                    - group [ref=e741]: retrieval details
+                - generic [ref=e742]:
+                  - link "Network" [ref=e743] [cursor=pointer]:
+                    - /url: /network
+                  - link "Mimir And Halt Controls" [ref=e744] [cursor=pointer]:
+                    - /url: /deep-dives/mimir-halt-controls
+                  - link "Governance" [ref=e745] [cursor=pointer]:
+                    - /url: /governance
+              - article [ref=e746]:
+                - generic [ref=e747]:
+                  - heading "Mimir override" [level=3] [ref=e748]
+                  - generic [ref=e749]: operations
+                - paragraph [ref=e750]: A node-governed runtime value. A Mimir may override a compiled constant or exist without a matching constant, so current behavior requires comparing the constants table with fresh live Mimir state rather than assuming every key is an override.
+                - generic [ref=e752]:
+                  - generic [ref=e753]: Official source
+                  - generic [ref=e754]: Checked 2026-07-14
+                  - generic [ref=e755]: ·
+                  - generic [ref=e756]: Review due 2026-11-17
+                  - generic [ref=e757]: ·
+                  - generic [ref=e758]:
+                    - link "THORChain constants and Mimirs" [ref=e759] [cursor=pointer]:
+                      - /url: https://dev.thorchain.org/mimir.html
+                    - group [ref=e760]: retrieval details
+                    - group [ref=e761]:
+                      - generic "Show 2 additional sources for THORChain constants and Mimirs" [ref=e762] [cursor=pointer]: +2 sources
+                - generic [ref=e763]:
+                  - link "Protocol" [ref=e764] [cursor=pointer]:
+                    - /url: /protocol
+                  - link "Network diagnostics" [ref=e765] [cursor=pointer]:
+                    - /url: /network#network-diagnostics
+              - article [ref=e766]:
+                - generic [ref=e767]:
+                  - heading "Inbound address" [level=3] [ref=e768]
+                  - generic [ref=e769]: operations
+                - paragraph [ref=e770]: A current THORNode record containing an active Asgard address plus chain-specific router, gas-rate, dust, and pause fields. It must not be cached or reused across churns; re-fetch it immediately before constructing a transaction, and do not treat it alone as quote, signing, outbound, or settlement proof.
+                - generic [ref=e772]:
+                  - generic [ref=e773]: Official source
+                  - generic [ref=e774]: Checked 2026-07-14
+                  - generic [ref=e775]: ·
+                  - generic [ref=e776]: Review due 2026-11-17
+                  - generic [ref=e777]: ·
+                  - generic [ref=e778]:
+                    - link "Querying THORChain" [ref=e779] [cursor=pointer]:
+                      - /url: https://dev.thorchain.org/concepts/querying-thorchain.html
+                    - group [ref=e780]: retrieval details
+                    - group [ref=e781]:
+                      - generic "Show 1 additional source for Querying THORChain" [ref=e782] [cursor=pointer]: +1 source
+                - generic [ref=e783]:
+                  - link "Protocol" [ref=e784] [cursor=pointer]:
+                    - /url: /protocol
+                  - link "Current Protocol State" [ref=e785] [cursor=pointer]:
+                    - /url: /docs#current-protocol-state
+              - article [ref=e786]:
+                - generic [ref=e787]:
+                  - heading "Quote" [level=3] [ref=e788]
+                  - generic [ref=e789]: operations
+                - paragraph [ref=e790]: A short-lived THORNode simulation response for a specific swap request. It returns transaction inputs and estimates such as the inbound address, memo, expected output, fees, expiry, dust threshold, and recommended minimum input; it does not sign, broadcast, or prove settlement.
+                - generic [ref=e792]:
+                  - generic [ref=e793]: Official source
+                  - generic [ref=e794]: Checked 2026-07-14
+                  - generic [ref=e795]: ·
+                  - generic [ref=e796]: Review due 2026-11-17
+                  - generic [ref=e797]: ·
+                  - generic [ref=e798]:
+                    - link "THORChain Swap Guide" [ref=e799] [cursor=pointer]:
+                      - /url: https://dev.thorchain.org/swap-guide/quickstart-guide.html
+                    - group [ref=e800]: retrieval details
+                    - group [ref=e801]:
+                      - generic "Show 1 additional source for THORChain Swap Guide" [ref=e802] [cursor=pointer]: +1 source
+                - generic [ref=e803]:
+                  - link "Network diagnostics" [ref=e804] [cursor=pointer]:
+                    - /url: /network#network-diagnostics
+                  - 'link "Streaming Swaps And Refunds: What To Check First" [ref=e805] [cursor=pointer]':
+                    - /url: /deep-dives/streaming-swaps-refunds#what-to-check-first
+              - article [ref=e806]:
+                - generic [ref=e807]:
+                  - heading "Quote expiry" [level=3] [ref=e808]
+                  - generic [ref=e809]: operations
+                - paragraph [ref=e810]: The quote response timestamp after which its inbound address, memo, estimates, and warnings must not be used. Official guidance treats quotes as valid for only ten minutes and says to request a fresh quote immediately before transaction submission.
+                - generic [ref=e812]:
+                  - generic [ref=e813]: Official source
+                  - generic [ref=e814]: Checked 2026-07-14
+                  - generic [ref=e815]: ·
+                  - generic [ref=e816]: Review due 2026-11-17
+                  - generic [ref=e817]: ·
+                  - generic [ref=e818]:
+                    - link "THORChain Swap Guide" [ref=e819] [cursor=pointer]:
+                      - /url: https://dev.thorchain.org/swap-guide/quickstart-guide.html
+                    - group [ref=e820]: retrieval details
+                - generic [ref=e821]:
+                  - link "Network diagnostics" [ref=e822] [cursor=pointer]:
+                    - /url: /network#network-diagnostics
+                  - 'link "Streaming Swaps And Refunds: Memos Limits And Refund Addresses" [ref=e823] [cursor=pointer]':
+                    - /url: /deep-dives/streaming-swaps-refunds#memos-limits-and-refund-addresses
+              - article [ref=e824]:
+                - generic [ref=e825]:
+                  - heading "Dust threshold" [level=3] [ref=e826]
+                  - generic [ref=e827]: operations
+                - paragraph [ref=e828]: A per-chain minimum inbound amount required for THORChain to process a transaction; amounts below it are ignored. Treat the exact value as live chain-specific evidence from a fresh quote or inbound-address response, not a static universal minimum.
+                - generic [ref=e830]:
+                  - generic [ref=e831]: Official source
+                  - generic [ref=e832]: Checked 2026-07-14
+                  - generic [ref=e833]: ·
+                  - generic [ref=e834]: Review due 2026-11-17
+                  - generic [ref=e835]: ·
+                  - generic [ref=e836]:
+                    - link "THORChain transaction memos" [ref=e837] [cursor=pointer]:
+                      - /url: https://dev.thorchain.org/concepts/memos.html
+                    - group [ref=e838]: retrieval details
+                    - group [ref=e839]:
+                      - generic "Show 2 additional sources for THORChain transaction memos" [ref=e840] [cursor=pointer]: +2 sources
+                - generic [ref=e841]:
+                  - link "Network diagnostics" [ref=e842] [cursor=pointer]:
+                    - /url: /network#network-diagnostics
+                  - 'link "Build And Query THORChain Data: Quotes Inbound Addresses And Caching" [ref=e843] [cursor=pointer]':
+                    - /url: /deep-dives/build-query-data#quotes-inbound-addresses-and-caching
+              - article [ref=e844]:
+                - generic [ref=e845]:
+                  - heading "Refund address" [level=3] [ref=e846]
+                  - generic [ref=e847]: operations
+                - paragraph [ref=e848]: An optional swap memo address for returning the inbound asset when execution refunds. It must be valid for the inbound asset chain; when omitted, or invalid in the quote flow, the refund falls back to the original sender. It selects a destination, not a refund cause or delivery proof.
+                - generic [ref=e850]:
+                  - generic [ref=e851]: Official source
+                  - generic [ref=e852]: Checked 2026-07-14
+                  - generic [ref=e853]: ·
+                  - generic [ref=e854]: Review due 2026-11-17
+                  - generic [ref=e855]: ·
+                  - generic [ref=e856]:
+                    - link "THORChain Swap Guide" [ref=e857] [cursor=pointer]:
+                      - /url: https://dev.thorchain.org/swap-guide/quickstart-guide.html
+                    - group [ref=e858]: retrieval details
+                    - group [ref=e859]:
+                      - generic "Show 1 additional source for THORChain Swap Guide" [ref=e860] [cursor=pointer]: +1 source
+                - generic [ref=e861]:
+                  - 'link "Streaming Swaps And Refunds: What To Check First" [ref=e862] [cursor=pointer]':
+                    - /url: /deep-dives/streaming-swaps-refunds#what-to-check-first
+                  - link "Network diagnostics" [ref=e863] [cursor=pointer]:
+                    - /url: /network#network-diagnostics
+              - article [ref=e864]:
+                - generic [ref=e865]:
+                  - heading "Streaming swap" [level=3] [ref=e866]
+                  - generic [ref=e867]: operations
+                - paragraph [ref=e868]: A swap split into sub-swaps to reduce slip and allow pool rebalancing. With the advanced queue, market swaps auto-stream by default, interval 0 enables rapid execution, interval 1 or more spaces sub-swaps by blocks, and quantity 0 lets the network choose; live queue controls and transaction evidence still own actual behavior.
+                - generic [ref=e870]:
+                  - generic [ref=e871]: Official source
+                  - generic [ref=e872]: Checked 2026-07-14
+                  - generic [ref=e873]: ·
+                  - generic [ref=e874]: Review due 2026-11-17
+                  - generic [ref=e875]: ·
+                  - generic [ref=e876]:
+                    - link "THORChain Streaming Swaps" [ref=e877] [cursor=pointer]:
+                      - /url: https://dev.thorchain.org/swap-guide/streaming-swaps.html
+                    - group [ref=e878]: retrieval details
+                    - group [ref=e879]:
+                      - generic "Show 3 additional sources for THORChain Streaming Swaps" [ref=e880] [cursor=pointer]: +3 sources
+                - generic [ref=e881]:
+                  - link "Streaming Swaps And Refunds" [ref=e882] [cursor=pointer]:
+                    - /url: /deep-dives/streaming-swaps-refunds
+                  - link "Network diagnostics" [ref=e883] [cursor=pointer]:
+                    - /url: /network#network-diagnostics
+              - article [ref=e884]:
+                - generic [ref=e885]:
+                  - heading "Key-sign failures" [level=3] [ref=e886]
+                  - generic [ref=e887]: operations
+                - paragraph [ref=e888]: Validator signing failures or failed signing rounds. Exploit Report 2 says many deliberate MTA failures looked like ordinary node flakiness in isolation, so key-sign failure claims need dated incident context and current monitoring evidence.
+                - generic [ref=e890]:
+                  - generic [ref=e891]: Curated
+                  - generic [ref=e892]: Checked 2026-07-13
+                  - generic [ref=e893]: ·
+                  - generic [ref=e894]: Review due 2026-11-17
+                  - generic [ref=e895]: ·
+                  - generic [ref=e896]:
+                    - 'link "THORChain Exploit Report #2" [ref=e897] [cursor=pointer]':
+                      - /url: https://blog.thorchain.org/thorchain-exploit-report-2
+                    - group [ref=e898]: retrieval details
+                    - group [ref=e899]:
+                      - 'generic "Show 2 additional sources for THORChain Exploit Report #2" [ref=e900] [cursor=pointer]': +2 sources
+                - generic [ref=e901]:
+                  - link "Threshold Signatures (TSS)" [ref=e902] [cursor=pointer]:
+                    - /url: /deep-dives/tss
+                  - link "Network diagnostics" [ref=e903] [cursor=pointer]:
+                    - /url: /network#network-diagnostics
+                  - link "Recovery tracker" [ref=e904] [cursor=pointer]:
+                    - /url: /governance#current-recovery
+              - article [ref=e905]:
+                - generic [ref=e906]:
+                  - heading "Compromised vault" [level=3] [ref=e907]
+                  - generic [ref=e908]: operations
+                - paragraph [ref=e909]: A vault treated as unsafe or excluded after key-compromise evidence. Post-exploit upgrade notes discuss compromised-vault exclusion, but current vault status still needs live protocol and incident-source checks.
+                - generic [ref=e911]:
+                  - generic [ref=e912]: Curated
+                  - generic [ref=e913]: Checked 2026-07-13
+                  - generic [ref=e914]: ·
+                  - generic [ref=e915]: Review due 2026-11-17
+                  - generic [ref=e916]: ·
+                  - generic [ref=e917]:
+                    - 'link "THORChain Exploit Report #2" [ref=e918] [cursor=pointer]':
+                      - /url: https://blog.thorchain.org/thorchain-exploit-report-2
+                    - group [ref=e919]: retrieval details
+                    - group [ref=e920]:
+                      - 'generic "Show 2 additional sources for THORChain Exploit Report #2" [ref=e921] [cursor=pointer]': +2 sources
+                - generic [ref=e922]:
+                  - link "Threshold Signatures (TSS)" [ref=e923] [cursor=pointer]:
+                    - /url: /deep-dives/tss
+                  - link "Network diagnostics" [ref=e924] [cursor=pointer]:
+                    - /url: /network#network-diagnostics
+                  - link "Recovery tracker" [ref=e925] [cursor=pointer]:
+                    - /url: /governance#current-recovery
+          - generic [ref=e926]:
+            - heading "protocol" [level=2] [ref=e927]
+            - generic [ref=e928]:
+              - article [ref=e929]:
+                - generic [ref=e930]:
+                  - heading "Asgard vault" [level=3] [ref=e931]
+                  - generic [ref=e932]: protocol
+                - paragraph [ref=e933]: A THORChain vault controlled by the active validator set through threshold signing. Vault membership changes during churns.
+                - generic [ref=e935]:
+                  - generic [ref=e936]: Curated
+                  - generic [ref=e937]: Checked 2026-07-14
+                  - generic [ref=e938]: ·
+                  - generic [ref=e939]: Review due 2026-11-17
+                  - generic [ref=e940]: ·
+                  - generic [ref=e941]:
+                    - link "Bifrost, TSS and Vaults" [ref=e942] [cursor=pointer]:
+                      - /url: https://docs.thorchain.org/technical-documentation/technology/bifrost-tss-and-vaults
+                    - group [ref=e943]: retrieval details
+                    - group [ref=e944]:
+                      - generic "Show 1 additional source for Bifrost, TSS and Vaults" [ref=e945] [cursor=pointer]: +1 source
+                - generic [ref=e946]:
+                  - link "Threshold Signatures (TSS)" [ref=e947] [cursor=pointer]:
+                    - /url: /deep-dives/tss
+                  - link "Churning and Node Lifecycle" [ref=e948] [cursor=pointer]:
+                    - /url: /deep-dives/churning
+              - article [ref=e949]:
+                - generic [ref=e950]:
+                  - heading "Bifrost" [level=3] [ref=e951]
+                  - generic [ref=e952]: protocol
+                - paragraph [ref=e953]: The chain-client layer active nodes use to observe external-chain transactions and submit observations into THORChain.
+                - generic [ref=e955]:
+                  - generic [ref=e956]: Curated
+                  - generic [ref=e957]: Checked 2026-07-14
+                  - generic [ref=e958]: ·
+                  - generic [ref=e959]: Review due 2026-11-17
+                  - generic [ref=e960]: ·
+                  - generic [ref=e961]:
+                    - link "Bifrost, TSS and Vaults" [ref=e962] [cursor=pointer]:
+                      - /url: https://docs.thorchain.org/technical-documentation/technology/bifrost-tss-and-vaults
+                    - group [ref=e963]: retrieval details
+                    - group [ref=e964]:
+                      - generic "Show 1 additional source for Bifrost, TSS and Vaults" [ref=e965] [cursor=pointer]: +1 source
+                - link "Bifrost Bridge and Cross-Chain Observability" [ref=e967] [cursor=pointer]:
+                  - /url: /deep-dives/bifrost
+              - article [ref=e968]:
+                - generic [ref=e969]:
+                  - heading "Secured asset" [level=3] [ref=e970]
+                  - generic [ref=e971]: protocol
+                - paragraph [ref=e972]: A Cosmos bank asset minted from deposited L1 assets, representing shares of deposited-asset depth and usable by accounts, IBC, and CosmWasm. The high-level and developer docs differ on whether this replaces Trade Assets or Trade Accounts; neither wording proves module removal, conversion, or current availability.
+                - generic [ref=e974]:
+                  - generic [ref=e975]: Curated
+                  - generic [ref=e976]: Checked 2026-07-14
+                  - generic [ref=e977]: ·
+                  - generic [ref=e978]: Review due 2026-11-17
+                  - generic [ref=e979]: ·
+                  - generic [ref=e980]:
+                    - link "THORChain Secured Assets docs" [ref=e981] [cursor=pointer]:
+                      - /url: https://docs.thorchain.org/technical-documentation/thorchain-finance/secured-assets
+                    - group [ref=e982]: retrieval details
+                    - group [ref=e983]:
+                      - generic "Show 3 additional sources for THORChain Secured Assets docs" [ref=e984] [cursor=pointer]: +3 sources
+                - generic [ref=e985]:
+                  - link "App Layer, CosmWasm, and Secured Assets" [ref=e986] [cursor=pointer]:
+                    - /url: /deep-dives/app-layer
+                  - link "Economics" [ref=e987] [cursor=pointer]:
+                    - /url: /economics
+                  - link "Network diagnostics" [ref=e988] [cursor=pointer]:
+                    - /url: /network#network-diagnostics
+              - article [ref=e989]:
+                - generic [ref=e990]:
+                  - heading "Trade asset" [level=3] [ref=e991]
+                  - generic [ref=e992]: protocol
+                - paragraph [ref=e993]: "A 1:1 L1-backed balance held outside liquidity pools in THORChain's trade-account module for fast trading flows. Trade assets use `CHAIN~ASSET` notation; enablement and route availability are live controls."
+                - generic [ref=e995]:
+                  - generic [ref=e996]: Curated
+                  - generic [ref=e997]: Checked 2026-07-13
+                  - generic [ref=e998]: ·
+                  - generic [ref=e999]: Review due 2026-11-17
+                  - generic [ref=e1000]: ·
+                  - generic [ref=e1001]:
+                    - link "THORChain Trade Assets docs" [ref=e1002] [cursor=pointer]:
+                      - /url: https://docs.thorchain.org/technical-documentation/thorchain-finance/trade-assets
+                    - group [ref=e1003]: retrieval details
+                    - group [ref=e1004]:
+                      - generic "Show 2 additional sources for THORChain Trade Assets docs" [ref=e1005] [cursor=pointer]: +2 sources
+                - generic [ref=e1006]:
+                  - link "App Layer, CosmWasm, and Secured Assets" [ref=e1007] [cursor=pointer]:
+                    - /url: /deep-dives/app-layer
+                  - link "Economics" [ref=e1008] [cursor=pointer]:
+                    - /url: /economics
+                  - link "Network diagnostics" [ref=e1009] [cursor=pointer]:
+                    - /url: /network#network-diagnostics
+              - article [ref=e1010]:
+                - generic [ref=e1011]:
+                  - heading "TSS" [level=3] [ref=e1012]
+                  - generic [ref=e1013]: protocol
+                - paragraph [ref=e1014]: Threshold Signature Scheme. Validators jointly sign vault transactions without a single node intending to hold the complete private key; current scheme and safety claims require dated incident, release, and live evidence.
+                - generic [ref=e1016]:
+                  - generic [ref=e1017]: Curated
+                  - generic [ref=e1018]: Checked 2026-07-13
+                  - generic [ref=e1019]: ·
+                  - generic [ref=e1020]: Review due 2026-11-17
+                  - generic [ref=e1021]: ·
+                  - generic [ref=e1022]:
+                    - link "Bifrost, TSS and Vaults" [ref=e1023] [cursor=pointer]:
+                      - /url: https://docs.thorchain.org/technical-documentation/technology/bifrost-tss-and-vaults
+                    - group [ref=e1024]: retrieval details
+                    - group [ref=e1025]:
+                      - generic "Show 2 additional sources for Bifrost, TSS and Vaults" [ref=e1026] [cursor=pointer]: +2 sources
+                - link "Threshold Signatures (TSS)" [ref=e1028] [cursor=pointer]:
+                  - /url: /deep-dives/tss
+  - contentinfo [ref=e1029]:
+    - generic [ref=e1030]:
+      - generic [ref=e1031]:
+        - generic [ref=e1032]:
+          - generic [ref=e1033]:
+            - generic [ref=e1034]: ⬡
+            - generic [ref=e1036]: THORChain Wiki
+          - paragraph [ref=e1037]: Community-maintained encyclopedia of THORChain protocol, data, and ecosystem.
+        - generic [ref=e1038]:
+          - heading "Navigate" [level=3] [ref=e1039]
+          - list [ref=e1040]:
+            - listitem [ref=e1041]:
+              - link "Search" [ref=e1042] [cursor=pointer]:
+                - /url: /search
+            - listitem [ref=e1043]:
+              - link "Protocol" [ref=e1044] [cursor=pointer]:
+                - /url: /protocol
+            - listitem [ref=e1045]:
+              - link "Network" [ref=e1046] [cursor=pointer]:
+                - /url: /network
+            - listitem [ref=e1047]:
+              - link "Economics" [ref=e1048] [cursor=pointer]:
+                - /url: /economics
+            - listitem [ref=e1049]:
+              - link "Dynamic Fees" [ref=e1050] [cursor=pointer]:
+                - /url: /dynamic-fees
+            - listitem [ref=e1051]:
+              - link "Ecosystem" [ref=e1052] [cursor=pointer]:
+                - /url: /ecosystem
+            - listitem [ref=e1053]:
+              - link "Governance" [ref=e1054] [cursor=pointer]:
+                - /url: /governance
+            - listitem [ref=e1055]:
+              - link "Statistics" [ref=e1056] [cursor=pointer]:
+                - /url: /stats
+            - listitem [ref=e1057]:
+              - link "RUNE" [ref=e1058] [cursor=pointer]:
+                - /url: /rune
+            - listitem [ref=e1059]:
+              - link "TCY" [ref=e1060] [cursor=pointer]:
+                - /url: /tcy
+            - listitem [ref=e1061]:
+              - link "Deep Dives" [ref=e1062] [cursor=pointer]:
+                - /url: /deep-dives
+            - listitem [ref=e1063]:
+              - link "Glossary" [ref=e1064] [cursor=pointer]:
+                - /url: /glossary
+            - listitem [ref=e1065]:
+              - link "Docs" [ref=e1066] [cursor=pointer]:
+                - /url: /docs
+        - generic [ref=e1067]:
+          - heading "Verify First" [level=3] [ref=e1068]
+          - list [ref=e1069]:
+            - listitem [ref=e1070]:
+              - link "Source map Match source to claim." [ref=e1071] [cursor=pointer]:
+                - /url: /docs#source-map-chooser
+                - generic [ref=e1072]: Source map
+                - generic [ref=e1073]: Match source to claim.
+            - listitem [ref=e1074]:
+              - link "Network diagnostics Check live operational state." [ref=e1075] [cursor=pointer]:
+                - /url: /network#network-diagnostics
+                - generic [ref=e1076]: Network diagnostics
+                - generic [ref=e1077]: Check live operational state.
+            - listitem [ref=e1078]:
+              - link "Interface checklist Review third-party app boundaries." [ref=e1079] [cursor=pointer]:
+                - /url: /ecosystem#interface-use-checklist
+                - generic [ref=e1080]: Interface checklist
+                - generic [ref=e1081]: Review third-party app boundaries.
+            - listitem [ref=e1082]:
+              - link "Guided answers Start from common tasks and reader paths." [ref=e1083] [cursor=pointer]:
+                - /url: /search#search-guided-answers
+                - generic [ref=e1084]: Guided answers
+                - generic [ref=e1085]: Start from common tasks and reader paths.
+        - generic [ref=e1086]:
+          - heading "Official Sources/APIs" [level=3] [ref=e1087]
+          - list [ref=e1088]:
+            - listitem [ref=e1089]:
+              - link "THORChain Docs Official protocol documentation." [ref=e1090] [cursor=pointer]:
+                - /url: https://docs.thorchain.org
+                - generic [ref=e1091]: THORChain Docs
+                - generic [ref=e1092]: Official protocol documentation.
+            - listitem [ref=e1093]:
+              - link "Developer Docs Official builder docs and API guidance." [ref=e1094] [cursor=pointer]:
+                - /url: https://dev.thorchain.org
+                - generic [ref=e1095]: Developer Docs
+                - generic [ref=e1096]: Official builder docs and API guidance.
+            - listitem [ref=e1097]:
+              - link "Midgard API Official indexed dashboard API docs." [ref=e1098] [cursor=pointer]:
+                - /url: https://midgard.thorchain.network/v2/doc
+                - generic [ref=e1099]: Midgard API
+                - generic [ref=e1100]: Official indexed dashboard API docs.
+          - heading "Third-Party Surfaces" [level=3] [ref=e1101]
+          - list [ref=e1102]:
+            - listitem [ref=e1103]:
+              - generic [ref=e1104]:
+                - generic [ref=e1105]: Gateway API
+                - generic [ref=e1106]: Third-party gateway; verify provider and data-source posture before using it as evidence.
+                - generic [ref=e1107]:
+                  - link "Review data-source guide" [ref=e1108] [cursor=pointer]:
+                    - /url: /deep-dives/midgard-thornode-data
+                  - link "Open Gateway API externally" [ref=e1109] [cursor=pointer]:
+                    - /url: https://gateway.liquify.com/chain/thorchain_midgard/v2
+                    - text: Open Gateway API
+            - listitem [ref=e1110]:
+              - generic [ref=e1111]:
+                - generic [ref=e1112]: RuneScan
+                - generic [ref=e1113]: Explorer surface; useful context, not protocol canon or route-availability proof.
+                - generic [ref=e1114]:
+                  - link "Review explorer posture" [ref=e1115] [cursor=pointer]:
+                    - /url: /docs#external-analytics-and-explorers
+                  - link "Open RuneScan externally" [ref=e1116] [cursor=pointer]:
+                    - /url: https://runescan.io
+                    - text: Open RuneScan
+            - listitem [ref=e1117]:
+              - generic [ref=e1118]:
+                - generic [ref=e1119]: THORSwap
+                - generic [ref=e1120]: Interface surface; verify route, recipient, fees, wallet permissions, and app state before signing.
+                - generic [ref=e1121]:
+                  - link "Review interface checklist" [ref=e1122] [cursor=pointer]:
+                    - /url: /ecosystem#interface-use-checklist
+                  - link "Open THORSwap externally" [ref=e1123] [cursor=pointer]:
+                    - /url: https://app.thorswap.finance
+                    - text: Open THORSwap
+        - generic [ref=e1124]:
+          - heading "Community" [level=3] [ref=e1125]
+          - list [ref=e1126]:
+            - listitem [ref=e1127]:
+              - link "Discord" [ref=e1128] [cursor=pointer]:
+                - /url: https://discord.com/invite/thorchaincommunity
+            - listitem [ref=e1129]:
+              - link "Twitter" [ref=e1130] [cursor=pointer]:
+                - /url: https://x.com/thorchain_org
+            - listitem [ref=e1131]:
+              - link "Telegram" [ref=e1132] [cursor=pointer]:
+                - /url: https://t.me/thorchain_org
+            - listitem [ref=e1133]:
+              - link "Reddit" [ref=e1134] [cursor=pointer]:
+                - /url: https://reddit.com/r/THORChain
+            - listitem [ref=e1135]:
+              - link "GitHub" [ref=e1136] [cursor=pointer]:
+                - /url: https://github.com/thorchain
+      - generic [ref=e1137]:
+        - paragraph [ref=e1138]: Live data is current-only from Midgard/THORNode sources. Page and record review dates are authoritative; 2026-06-18 is only the base static-catalog baseline. Not affiliated with THORChain.
+        - paragraph [ref=e1139]: © 2026 THORChain Wiki

@@ -1,0 +1,820 @@
+- generic [active] [ref=e1]:
+  - link "Skip to content" [ref=e2] [cursor=pointer]:
+    - /url: "#main"
+  - banner [ref=e3]:
+    - generic [ref=e5]:
+      - link "⬡ THORChain Wiki" [ref=e6] [cursor=pointer]:
+        - /url: /
+        - generic [ref=e7]: ⬡
+        - generic [ref=e9]: THORChain Wiki
+      - generic [ref=e10]:
+        - button "Open search" [ref=e11]
+        - button "Open navigation menu" [ref=e15]
+  - main [ref=e17]:
+    - generic [ref=e18]:
+      - heading "Protocol Overview" [level=1] [ref=e19]
+      - paragraph [ref=e20]: THORChain is a decentralized cross-chain liquidity protocol for native asset swaps without wrapped assets or centralized custody.
+      - generic [ref=e22]:
+        - region "Source and freshness" [ref=e23]:
+          - group [ref=e24]:
+            - generic "Source & freshness Curated Checked 2026-07-14 · Review due 2026-11-17 · THORChain Docs How to use this page ▾" [ref=e25] [cursor=pointer]:
+              - generic [ref=e26]:
+                - generic [ref=e27]: Source & freshness
+                - generic [ref=e28]:
+                  - generic [ref=e29]: Curated
+                  - generic [ref=e30]: Checked 2026-07-14
+                  - generic [ref=e31]: ·
+                  - generic [ref=e32]: Review due 2026-11-17
+                  - generic [ref=e33]: ·
+                  - generic [ref=e34]:
+                    - link "THORChain Docs" [ref=e35]:
+                      - /url: https://docs.thorchain.org
+                    - group [ref=e36]: retrieval details
+                    - group [ref=e37]:
+                      - generic "Show 9 additional sources for THORChain Docs" [ref=e38]: +9 sources
+              - generic [ref=e39]: How to use this page ▾
+        - group [ref=e40]:
+          - generic "Claim checks by type" [ref=e41] [cursor=pointer]
+        - region [ref=e42]:
+          - generic [ref=e43]:
+            - generic [ref=e44]:
+              - heading "Continue From Here" [level=2] [ref=e45]
+              - paragraph [ref=e46]: Move from the protocol overview into the right deeper read or live-source check before making an availability, implementation, or developer claim.
+            - generic [ref=e47]: claim path
+          - generic [ref=e48]:
+            - link "New to THORChain path Read settlement, pools, Bifrost, and TSS in the recommended order." [ref=e49] [cursor=pointer]:
+              - /url: /deep-dives#deep-dive-path-new-to-thorchain
+              - generic [ref=e50]:
+                - generic [ref=e51]:
+                  - generic [ref=e52]: New to THORChain
+                  - generic [ref=e53]: path
+                - generic [ref=e54]: Read settlement, pools, Bifrost, and TSS in the recommended order.
+            - link "Network diagnostics live state Check current halts, signing, LP controls, and source warnings." [ref=e57] [cursor=pointer]:
+              - /url: /network#network-diagnostics
+              - generic [ref=e58]:
+                - generic [ref=e59]:
+                  - generic [ref=e60]: Network diagnostics
+                  - generic [ref=e61]: live state
+                - generic [ref=e62]: Check current halts, signing, LP controls, and source warnings.
+            - link "Current source map proof Use THORNode/Midgard evidence for current operational claims." [ref=e65] [cursor=pointer]:
+              - /url: /docs#current-protocol-state
+              - generic [ref=e66]:
+                - generic [ref=e67]:
+                  - generic [ref=e68]: Current source map
+                  - generic [ref=e69]: proof
+                - generic [ref=e70]: Use THORNode/Midgard evidence for current operational claims.
+            - link "Build/query path task Open API and endpoint guidance for developer or data-query work." [ref=e73] [cursor=pointer]:
+              - /url: /deep-dives/build-query-data#query-plan
+              - generic [ref=e74]:
+                - generic [ref=e75]:
+                  - generic [ref=e76]: Build/query path
+                  - generic [ref=e77]: task
+                - generic [ref=e78]: Open API and endpoint guidance for developer or data-query work.
+        - heading "Architecture" [level=2] [ref=e81]
+        - generic [ref=e82]:
+          - generic [ref=e83]:
+            - heading "Cosmos SDK" [level=3] [ref=e84]
+            - paragraph [ref=e85]: THORChain runs its own app-chain with Tendermint-style consensus and protocol modules for swaps, pools, vaults, and Mimir.
+            - link "Map source families" [ref=e86] [cursor=pointer]:
+              - /url: /deep-dives/build-query-data#source-families
+          - generic [ref=e87]:
+            - heading "TSS Vaults" [level=3] [ref=e88]
+            - paragraph [ref=e89]: Threshold Signature Schemes distribute vault control across node operators. Current cryptography details should be tied to dated protocol sources.
+            - link "Read TSS details" [ref=e90] [cursor=pointer]:
+              - /url: /deep-dives/tss
+          - generic [ref=e91]:
+            - heading "Bifrost" [level=3] [ref=e92]
+            - paragraph [ref=e93]: Nodes observe external-chain transactions and report them into the THORChain state machine.
+            - link "Read Bifrost details" [ref=e94] [cursor=pointer]:
+              - /url: /deep-dives/bifrost
+          - generic [ref=e95]:
+            - heading "Midgard + THORNode" [level=3] [ref=e96]
+            - paragraph [ref=e97]: Midgard serves analytics and history. THORNode is the source for live operational state such as Mimir, constants, and inbound addresses.
+            - link "Choose the right API" [ref=e98] [cursor=pointer]:
+              - /url: /deep-dives/midgard-thornode-data#source-roles
+        - heading "Current-State Controls" [level=2] [ref=e99]
+        - generic [ref=e100]:
+          - generic [ref=e101]:
+            - heading "Mimir" [level=3] [ref=e102]
+            - paragraph [ref=e103]: Mimir parameters can pause trading, signing, LP actions, churning, TCY claims, RUNEPool, and other protocol behavior. Display these as current-only live data.
+            - link "Interpret Mimir controls" [ref=e104] [cursor=pointer]:
+              - /url: /deep-dives/mimir-halt-controls#what-mimirs-can-prove
+          - generic [ref=e105]:
+            - heading "Network Halts" [level=3] [ref=e106]
+            - paragraph [ref=e107]: Halts can be chain-specific or global. Interfaces should monitor halt flags before presenting swaps, LP actions, or signing state as available.
+            - link "Check live halts" [ref=e108] [cursor=pointer]:
+              - /url: /network#network-diagnostics
+          - generic [ref=e109]:
+            - heading "Inbound Addresses" [level=3] [ref=e110]
+            - paragraph [ref=e111]: Routers, gas rates, chain pause flags, and inbound availability are live THORNode facts, not static wiki facts.
+            - link "Review inbound usage" [ref=e112] [cursor=pointer]:
+              - /url: /deep-dives/build-query-data#quotes-inbound-addresses-and-caching
+          - generic [ref=e113]:
+            - heading "Constants vs Overrides" [level=3] [ref=e114]
+            - paragraph [ref=e115]: Constants describe defaults; Mimir can override them. Current minimum bond or slash settings require reading both sources.
+            - link "Verify override posture" [ref=e116] [cursor=pointer]:
+              - /url: /deep-dives/mimir-halt-controls#what-to-verify-before-claiming
+        - heading "Swap Lifecycle" [level=2] [ref=e117]
+        - generic [ref=e118]:
+          - generic [ref=e119]:
+            - heading "Inbound" [level=3] [ref=e120]
+            - paragraph [ref=e121]: Request a fresh quote immediately before submission, then use its inbound address, memo, expiry, dust threshold, and recommended minimum rather than cached transaction inputs.
+            - link "Check quote timing" [ref=e122] [cursor=pointer]:
+              - /url: /deep-dives/build-query-data#quotes-inbound-addresses-and-caching
+          - generic [ref=e123]:
+            - heading "Execution" [level=3] [ref=e124]
+            - paragraph [ref=e125]: The state machine prices the swap through RUNE-paired pools. Under the advanced queue, market swaps can auto-stream; the quote and memo own limits, interval, and quantity while live controls own availability.
+            - link "Check a live route" [ref=e126] [cursor=pointer]:
+              - /url: /network#check-a-route
+          - generic [ref=e127]:
+            - heading "Outbound or Refund" [level=3] [ref=e128]
+            - paragraph [ref=e129]: Nodes sign the outbound transaction when signing is available; invalid or impossible transactions can refund according to protocol rules.
+            - link "Read refund conditions" [ref=e130] [cursor=pointer]:
+              - /url: /deep-dives/streaming-swaps-refunds#why-refunds-happen
+        - heading "Key Concepts" [level=2] [ref=e131]
+        - generic [ref=e132]:
+          - generic [ref=e133]:
+            - heading "RUNE Settlement" [level=3] [ref=e134]
+            - paragraph [ref=e135]: Every external-asset swap routes through RUNE liquidity, making RUNE the common settlement and bond asset.
+            - link "Read settlement details" [ref=e136] [cursor=pointer]:
+              - /url: /deep-dives/rune-settlement
+          - generic [ref=e137]:
+            - heading "Continuous Liquidity Pools" [level=3] [ref=e138]
+            - paragraph [ref=e139]: Slip-based pricing makes larger trades pay proportionally more, protecting liquidity providers from depth-consuming trades.
+            - link "Read CLP mechanics" [ref=e140] [cursor=pointer]:
+              - /url: /deep-dives/clp
+          - generic [ref=e141]:
+            - heading "App Layer and CosmWasm" [level=3] [ref=e142]
+            - paragraph [ref=e143]: Permissioned CosmWasm contracts add application behavior; secured assets and trade accounts are separate protocol concepts that need their own live checks.
+            - link "Read app-layer scope" [ref=e144] [cursor=pointer]:
+              - /url: /deep-dives/app-layer
+          - generic [ref=e145]:
+            - heading "Minimal Governance" [level=3] [ref=e146]
+            - paragraph [ref=e147]: Node operators and Mimir handle operational parameters; ADRs/TIPs document changes. Avoid saying ordinary RUNE holders directly govern every protocol decision.
+            - link "Check governance framing" [ref=e148] [cursor=pointer]:
+              - /url: /governance
+        - generic [ref=e149]:
+          - heading "Supported Chains" [level=2] [ref=e150]
+          - paragraph [ref=e151]: This curated list mirrors chains observed in live inbound-address sources at the 2026-07-14 chain-catalog review. Availability, routing, signing, LP actions, and pause state remain live/current-only.
+          - generic [ref=e152]:
+            - generic [ref=e153]:
+              - generic [ref=e154]:
+                - paragraph [ref=e155]: Before Reading The Chain Grid
+                - paragraph [ref=e156]: Treat this as a catalog boundary, not a current availability dashboard. Move to the matching live check before telling a user a chain, action, or route is usable now.
+              - generic [ref=e157]: catalog is not availability
+            - generic [ref=e158]:
+              - generic [ref=e159]:
+                - generic [ref=e160]:
+                  - generic [ref=e161]: static boundary
+                  - heading "Catalog Listed" [level=3] [ref=e162]
+                - generic [ref=e163]:
+                  - generic [ref=e164]:
+                    - term [ref=e165]: Can Prove
+                    - definition [ref=e166]: The chain appears in the curated supported-chain catalog refreshed from inbound-address evidence.
+                  - generic [ref=e167]:
+                    - term [ref=e168]: Does Not Prove
+                    - definition [ref=e169]: Swaps, LP actions, signing, gas, outbound availability, or route quoteability right now.
+                - link "Check source boundary" [ref=e170] [cursor=pointer]:
+                  - /url: /docs#current-protocol-state
+              - generic [ref=e171]:
+                - generic [ref=e172]:
+                  - generic [ref=e173]: live state
+                  - heading "Operational Now" [level=3] [ref=e174]
+                - generic [ref=e175]:
+                  - generic [ref=e176]:
+                    - term [ref=e177]: Can Prove
+                    - definition [ref=e178]: Current chain, trading, signing, LP, pool-deposit, and source-warning status at the checked block.
+                  - generic [ref=e179]:
+                    - term [ref=e180]: Does Not Prove
+                    - definition [ref=e181]: Future uptime or that every asset pair on the chain can route.
+                - link "Open diagnostics" [ref=e182] [cursor=pointer]:
+                  - /url: /network#network-diagnostics
+              - generic [ref=e183]:
+                - generic [ref=e184]:
+                  - generic [ref=e185]: quote check
+                  - heading "Specific Route" [level=3] [ref=e186]
+                - generic [ref=e187]:
+                  - generic [ref=e188]:
+                    - term [ref=e189]: Can Prove
+                    - definition [ref=e190]: Whether THORNode can currently quote the selected from/to asset and amount.
+                  - generic [ref=e191]:
+                    - term [ref=e192]: Does Not Prove
+                    - definition [ref=e193]: Wallet support, final execution after quote expiry, or safe recipient/memo handling.
+                - link "Check a route" [ref=e194] [cursor=pointer]:
+                  - /url: /network#check-a-route
+              - generic [ref=e195]:
+                - generic [ref=e196]:
+                  - generic [ref=e197]: builder path
+                  - heading "Implementation Use" [level=3] [ref=e198]
+                - generic [ref=e199]:
+                  - generic [ref=e200]:
+                    - term [ref=e201]: Can Prove
+                    - definition [ref=e202]: Which endpoint family and source posture should be used for product or dashboard code.
+                  - generic [ref=e203]:
+                    - term [ref=e204]: Does Not Prove
+                    - definition [ref=e205]: A complete transaction builder, wallet UX, or production integration contract by itself.
+                - link "Open query plan" [ref=e206] [cursor=pointer]:
+                  - /url: /deep-dives/build-query-data#query-plan
+          - generic [ref=e208]:
+            - generic [ref=e209]:
+              - generic [ref=e211]:
+                - heading "Supported Chain Finder" [level=2] [ref=e212]
+                - paragraph [ref=e213]: Showing 12 of 12 catalog chain records from the 2026-07-14 review.
+                - paragraph [ref=e214]: Search by chain, code, asset notation, address format, source/freshness text, or review note. Live dust thresholds and availability belong in current THORNode evidence.
+              - group "Supported Chain Finder" [ref=e215]:
+                - generic [ref=e216]:
+                  - text: Find
+                  - searchbox "Find supported chains" [ref=e217]
+                - generic [ref=e218]:
+                  - text: Address format
+                  - combobox "Address format" [ref=e219]:
+                    - option "All formats" [selected]
+                    - option "Base58"
+                    - option "Bech32"
+                    - option "Bech32 (Secp256k1 or Ed25519)"
+                    - option "CashAddr"
+                    - option "Classic Base58"
+                    - option "EIP-55"
+                    - option "P2PKH"
+                    - option "P2SH"
+                    - option "P2TR"
+                    - option "P2WPKH"
+                    - option "P2WSH (preferred)"
+                - generic [ref=e220]:
+                  - text: Review notes
+                  - combobox "Review notes" [ref=e221]:
+                    - option "All note states" [selected]
+                    - option "Has review note"
+                    - option "No special note"
+            - generic [ref=e222]:
+              - generic [ref=e223]:
+                - generic [ref=e224]:
+                  - generic [ref=e225]:
+                    - heading "Bitcoin" [level=3] [ref=e226]
+                    - paragraph [ref=e227]: BTC
+                  - generic [ref=e228]: catalog listed
+                - generic [ref=e229]:
+                  - generic [ref=e230]:
+                    - term [ref=e231]: Address Formats
+                    - definition [ref=e232]:
+                      - generic [ref=e233]: P2WSH (preferred)
+                      - generic [ref=e234]: P2WPKH
+                      - generic [ref=e235]: P2PKH
+                      - generic [ref=e236]: P2SH
+                      - generic [ref=e237]: P2TR
+                  - generic [ref=e238]:
+                    - term [ref=e239]: Dust Threshold
+                    - definition [ref=e240]: Live inbound_addresses only
+                - generic [ref=e241]:
+                  - paragraph [ref=e242]: Catalog Boundary
+                  - paragraph [ref=e243]: Listed means this chain was present in the curated inbound-address catalog. It does not prove swaps, signing, LP actions, gas, or a route are open now.
+                - paragraph [ref=e244]: Use the live inbound-address dust threshold and halt fields before constructing or describing a BTC transaction.
+                - generic [ref=e246]:
+                  - generic [ref=e247]: Official source
+                  - generic [ref=e248]: Checked 2026-07-14
+                  - generic [ref=e249]: ·
+                  - generic [ref=e250]: Review due 2026-11-17
+                  - generic [ref=e251]: ·
+                  - generic [ref=e252]:
+                    - link "Liquify THORNode inbound_addresses" [ref=e253] [cursor=pointer]:
+                      - /url: https://gateway.liquify.com/chain/thorchain_api/thorchain/inbound_addresses
+                    - group [ref=e254]: retrieval details
+                    - group [ref=e255]:
+                      - generic "Show 1 additional source for Liquify THORNode inbound_addresses" [ref=e256] [cursor=pointer]: +1 source
+                - generic [ref=e257]:
+                  - link "Check live state" [ref=e258] [cursor=pointer]:
+                    - /url: /network#network-diagnostics
+                  - link "Check a route" [ref=e259] [cursor=pointer]:
+                    - /url: /network?from_asset=BTC.BTC&to_asset=ETH.ETH&amount=0.01#check-a-route
+              - generic [ref=e260]:
+                - generic [ref=e261]:
+                  - generic [ref=e262]:
+                    - heading "Ethereum" [level=3] [ref=e263]
+                    - paragraph [ref=e264]: ETH
+                  - generic [ref=e265]: catalog listed
+                - generic [ref=e266]:
+                  - generic [ref=e267]:
+                    - term [ref=e268]: Address Formats
+                    - definition [ref=e269]:
+                      - generic [ref=e270]: EIP-55
+                  - generic [ref=e271]:
+                    - term [ref=e272]: Dust Threshold
+                    - definition [ref=e273]: Live inbound_addresses only
+                - generic [ref=e274]:
+                  - paragraph [ref=e275]: Catalog Boundary
+                  - paragraph [ref=e276]: Listed means this chain was present in the curated inbound-address catalog. It does not prove swaps, signing, LP actions, gas, or a route are open now.
+                - paragraph [ref=e277]: Router/inbound status is live-state dependent.
+                - generic [ref=e279]:
+                  - generic [ref=e280]: Official source
+                  - generic [ref=e281]: Checked 2026-07-14
+                  - generic [ref=e282]: ·
+                  - generic [ref=e283]: Review due 2026-11-17
+                  - generic [ref=e284]: ·
+                  - generic [ref=e285]:
+                    - link "Liquify THORNode inbound_addresses" [ref=e286] [cursor=pointer]:
+                      - /url: https://gateway.liquify.com/chain/thorchain_api/thorchain/inbound_addresses
+                    - group [ref=e287]: retrieval details
+                    - group [ref=e288]:
+                      - generic "Show 1 additional source for Liquify THORNode inbound_addresses" [ref=e289] [cursor=pointer]: +1 source
+                - generic [ref=e290]:
+                  - link "Check live state" [ref=e291] [cursor=pointer]:
+                    - /url: /network#network-diagnostics
+                  - link "Check a route" [ref=e292] [cursor=pointer]:
+                    - /url: /network?from_asset=ETH.ETH&to_asset=BTC.BTC&amount=0.01#check-a-route
+              - generic [ref=e293]:
+                - generic [ref=e294]:
+                  - generic [ref=e295]:
+                    - heading "BNB Chain" [level=3] [ref=e296]
+                    - paragraph [ref=e297]: BSC
+                  - generic [ref=e298]: catalog listed
+                - generic [ref=e299]:
+                  - generic [ref=e300]:
+                    - term [ref=e301]: Address Formats
+                    - definition [ref=e302]:
+                      - generic [ref=e303]: EIP-55
+                  - generic [ref=e304]:
+                    - term [ref=e305]: Dust Threshold
+                    - definition [ref=e306]: Live inbound_addresses only
+                - generic [ref=e307]:
+                  - paragraph [ref=e308]: Catalog Boundary
+                  - paragraph [ref=e309]: Listed means this chain was present in the curated inbound-address catalog. It does not prove swaps, signing, LP actions, gas, or a route are open now.
+                - paragraph [ref=e310]: No special review note is attached to this catalog entry.
+                - generic [ref=e312]:
+                  - generic [ref=e313]: Official source
+                  - generic [ref=e314]: Checked 2026-07-14
+                  - generic [ref=e315]: ·
+                  - generic [ref=e316]: Review due 2026-11-17
+                  - generic [ref=e317]: ·
+                  - generic [ref=e318]:
+                    - link "Liquify THORNode inbound_addresses" [ref=e319] [cursor=pointer]:
+                      - /url: https://gateway.liquify.com/chain/thorchain_api/thorchain/inbound_addresses
+                    - group [ref=e320]: retrieval details
+                    - group [ref=e321]:
+                      - generic "Show 1 additional source for Liquify THORNode inbound_addresses" [ref=e322] [cursor=pointer]: +1 source
+                - generic [ref=e323]:
+                  - link "Check live state" [ref=e324] [cursor=pointer]:
+                    - /url: /network#network-diagnostics
+                  - link "Check a route" [ref=e325] [cursor=pointer]:
+                    - /url: /network?from_asset=BSC.BNB&to_asset=BTC.BTC&amount=0.01#check-a-route
+              - generic [ref=e326]:
+                - generic [ref=e327]:
+                  - generic [ref=e328]:
+                    - heading "Avalanche" [level=3] [ref=e329]
+                    - paragraph [ref=e330]: AVAX
+                  - generic [ref=e331]: catalog listed
+                - generic [ref=e332]:
+                  - generic [ref=e333]:
+                    - term [ref=e334]: Address Formats
+                    - definition [ref=e335]:
+                      - generic [ref=e336]: EIP-55
+                  - generic [ref=e337]:
+                    - term [ref=e338]: Dust Threshold
+                    - definition [ref=e339]: Live inbound_addresses only
+                - generic [ref=e340]:
+                  - paragraph [ref=e341]: Catalog Boundary
+                  - paragraph [ref=e342]: Listed means this chain was present in the curated inbound-address catalog. It does not prove swaps, signing, LP actions, gas, or a route are open now.
+                - paragraph [ref=e343]: No special review note is attached to this catalog entry.
+                - generic [ref=e345]:
+                  - generic [ref=e346]: Official source
+                  - generic [ref=e347]: Checked 2026-07-14
+                  - generic [ref=e348]: ·
+                  - generic [ref=e349]: Review due 2026-11-17
+                  - generic [ref=e350]: ·
+                  - generic [ref=e351]:
+                    - link "Liquify THORNode inbound_addresses" [ref=e352] [cursor=pointer]:
+                      - /url: https://gateway.liquify.com/chain/thorchain_api/thorchain/inbound_addresses
+                    - group [ref=e353]: retrieval details
+                    - group [ref=e354]:
+                      - generic "Show 1 additional source for Liquify THORNode inbound_addresses" [ref=e355] [cursor=pointer]: +1 source
+                - generic [ref=e356]:
+                  - link "Check live state" [ref=e357] [cursor=pointer]:
+                    - /url: /network#network-diagnostics
+                  - link "Check a route" [ref=e358] [cursor=pointer]:
+                    - /url: /network?from_asset=AVAX.AVAX&to_asset=BTC.BTC&amount=0.01#check-a-route
+              - generic [ref=e359]:
+                - generic [ref=e360]:
+                  - generic [ref=e361]:
+                    - heading "Cosmos Hub" [level=3] [ref=e362]
+                    - paragraph [ref=e363]: GAIA
+                  - generic [ref=e364]: catalog listed
+                - generic [ref=e365]:
+                  - generic [ref=e366]:
+                    - term [ref=e367]: Address Formats
+                    - definition [ref=e368]:
+                      - generic [ref=e369]: Bech32 (Secp256k1 or Ed25519)
+                  - generic [ref=e370]:
+                    - term [ref=e371]: Dust Threshold
+                    - definition [ref=e372]: Live inbound_addresses only
+                - generic [ref=e373]:
+                  - paragraph [ref=e374]: Catalog Boundary
+                  - paragraph [ref=e375]: Listed means this chain was present in the curated inbound-address catalog. It does not prove swaps, signing, LP actions, gas, or a route are open now.
+                - paragraph [ref=e376]: No special review note is attached to this catalog entry.
+                - generic [ref=e378]:
+                  - generic [ref=e379]: Official source
+                  - generic [ref=e380]: Checked 2026-07-14
+                  - generic [ref=e381]: ·
+                  - generic [ref=e382]: Review due 2026-11-17
+                  - generic [ref=e383]: ·
+                  - generic [ref=e384]:
+                    - link "Liquify THORNode inbound_addresses" [ref=e385] [cursor=pointer]:
+                      - /url: https://gateway.liquify.com/chain/thorchain_api/thorchain/inbound_addresses
+                    - group [ref=e386]: retrieval details
+                    - group [ref=e387]:
+                      - generic "Show 1 additional source for Liquify THORNode inbound_addresses" [ref=e388] [cursor=pointer]: +1 source
+                - generic [ref=e389]:
+                  - link "Check live state" [ref=e390] [cursor=pointer]:
+                    - /url: /network#network-diagnostics
+                  - link "Check a route" [ref=e391] [cursor=pointer]:
+                    - /url: /network?from_asset=GAIA.ATOM&to_asset=BTC.BTC&amount=0.01#check-a-route
+              - generic [ref=e392]:
+                - generic [ref=e393]:
+                  - generic [ref=e394]:
+                    - heading "Dogecoin" [level=3] [ref=e395]
+                    - paragraph [ref=e396]: DOGE
+                  - generic [ref=e397]: catalog listed
+                - generic [ref=e398]:
+                  - generic [ref=e399]:
+                    - term [ref=e400]: Address Formats
+                    - definition [ref=e401]:
+                      - generic [ref=e402]: Bech32
+                      - generic [ref=e403]: P2PKH
+                  - generic [ref=e404]:
+                    - term [ref=e405]: Dust Threshold
+                    - definition [ref=e406]: Live inbound_addresses only
+                - generic [ref=e407]:
+                  - paragraph [ref=e408]: Catalog Boundary
+                  - paragraph [ref=e409]: Listed means this chain was present in the curated inbound-address catalog. It does not prove swaps, signing, LP actions, gas, or a route are open now.
+                - paragraph [ref=e410]: No special review note is attached to this catalog entry.
+                - generic [ref=e412]:
+                  - generic [ref=e413]: Official source
+                  - generic [ref=e414]: Checked 2026-07-14
+                  - generic [ref=e415]: ·
+                  - generic [ref=e416]: Review due 2026-11-17
+                  - generic [ref=e417]: ·
+                  - generic [ref=e418]:
+                    - link "Liquify THORNode inbound_addresses" [ref=e419] [cursor=pointer]:
+                      - /url: https://gateway.liquify.com/chain/thorchain_api/thorchain/inbound_addresses
+                    - group [ref=e420]: retrieval details
+                    - group [ref=e421]:
+                      - generic "Show 1 additional source for Liquify THORNode inbound_addresses" [ref=e422] [cursor=pointer]: +1 source
+                - generic [ref=e423]:
+                  - link "Check live state" [ref=e424] [cursor=pointer]:
+                    - /url: /network#network-diagnostics
+                  - link "Check a route" [ref=e425] [cursor=pointer]:
+                    - /url: /network?from_asset=DOGE.DOGE&to_asset=BTC.BTC&amount=0.01#check-a-route
+              - generic [ref=e426]:
+                - generic [ref=e427]:
+                  - generic [ref=e428]:
+                    - heading "Litecoin" [level=3] [ref=e429]
+                    - paragraph [ref=e430]: LTC
+                  - generic [ref=e431]: catalog listed
+                - generic [ref=e432]:
+                  - generic [ref=e433]:
+                    - term [ref=e434]: Address Formats
+                    - definition [ref=e435]:
+                      - generic [ref=e436]: Bech32
+                      - generic [ref=e437]: P2PKH
+                  - generic [ref=e438]:
+                    - term [ref=e439]: Dust Threshold
+                    - definition [ref=e440]: Live inbound_addresses only
+                - generic [ref=e441]:
+                  - paragraph [ref=e442]: Catalog Boundary
+                  - paragraph [ref=e443]: Listed means this chain was present in the curated inbound-address catalog. It does not prove swaps, signing, LP actions, gas, or a route are open now.
+                - paragraph [ref=e444]: MWEB addresses are not supported by the official address-format guide.
+                - generic [ref=e446]:
+                  - generic [ref=e447]: Official source
+                  - generic [ref=e448]: Checked 2026-07-14
+                  - generic [ref=e449]: ·
+                  - generic [ref=e450]: Review due 2026-11-17
+                  - generic [ref=e451]: ·
+                  - generic [ref=e452]:
+                    - link "Liquify THORNode inbound_addresses" [ref=e453] [cursor=pointer]:
+                      - /url: https://gateway.liquify.com/chain/thorchain_api/thorchain/inbound_addresses
+                    - group [ref=e454]: retrieval details
+                    - group [ref=e455]:
+                      - generic "Show 1 additional source for Liquify THORNode inbound_addresses" [ref=e456] [cursor=pointer]: +1 source
+                - generic [ref=e457]:
+                  - link "Check live state" [ref=e458] [cursor=pointer]:
+                    - /url: /network#network-diagnostics
+                  - link "Check a route" [ref=e459] [cursor=pointer]:
+                    - /url: /network?from_asset=LTC.LTC&to_asset=BTC.BTC&amount=0.01#check-a-route
+              - generic [ref=e460]:
+                - generic [ref=e461]:
+                  - generic [ref=e462]:
+                    - heading "Bitcoin Cash" [level=3] [ref=e463]
+                    - paragraph [ref=e464]: BCH
+                  - generic [ref=e465]: catalog listed
+                - generic [ref=e466]:
+                  - generic [ref=e467]:
+                    - term [ref=e468]: Address Formats
+                    - definition [ref=e469]:
+                      - generic [ref=e470]: CashAddr
+                      - generic [ref=e471]: P2PKH
+                  - generic [ref=e472]:
+                    - term [ref=e473]: Dust Threshold
+                    - definition [ref=e474]: Live inbound_addresses only
+                - generic [ref=e475]:
+                  - paragraph [ref=e476]: Catalog Boundary
+                  - paragraph [ref=e477]: Listed means this chain was present in the curated inbound-address catalog. It does not prove swaps, signing, LP actions, gas, or a route are open now.
+                - paragraph [ref=e478]: The official guide labels BCH as Bech32; current inbound addresses use CashAddr, which is Bech32-inspired but not BIP-173 Bech32.
+                - generic [ref=e480]:
+                  - generic [ref=e481]: Official source
+                  - generic [ref=e482]: Checked 2026-07-14
+                  - generic [ref=e483]: ·
+                  - generic [ref=e484]: Review due 2026-11-17
+                  - generic [ref=e485]: ·
+                  - generic [ref=e486]:
+                    - link "Liquify THORNode inbound_addresses" [ref=e487] [cursor=pointer]:
+                      - /url: https://gateway.liquify.com/chain/thorchain_api/thorchain/inbound_addresses
+                    - group [ref=e488]: retrieval details
+                    - group [ref=e489]:
+                      - generic "Show 1 additional source for Liquify THORNode inbound_addresses" [ref=e490] [cursor=pointer]: +1 source
+                - generic [ref=e491]:
+                  - link "Check live state" [ref=e492] [cursor=pointer]:
+                    - /url: /network#network-diagnostics
+                  - link "Check a route" [ref=e493] [cursor=pointer]:
+                    - /url: /network?from_asset=BCH.BCH&to_asset=BTC.BTC&amount=0.01#check-a-route
+              - generic [ref=e494]:
+                - generic [ref=e495]:
+                  - generic [ref=e496]:
+                    - heading "Tron" [level=3] [ref=e497]
+                    - paragraph [ref=e498]: TRON
+                  - generic [ref=e499]: catalog listed
+                - generic [ref=e500]:
+                  - generic [ref=e501]:
+                    - term [ref=e502]: Address Formats
+                    - definition [ref=e503]:
+                      - generic [ref=e504]: Base58
+                  - generic [ref=e505]:
+                    - term [ref=e506]: Dust Threshold
+                    - definition [ref=e507]: Live inbound_addresses only
+                - generic [ref=e508]:
+                  - paragraph [ref=e509]: Catalog Boundary
+                  - paragraph [ref=e510]: Listed means this chain was present in the curated inbound-address catalog. It does not prove swaps, signing, LP actions, gas, or a route are open now.
+                - paragraph [ref=e511]: No special review note is attached to this catalog entry.
+                - generic [ref=e513]:
+                  - generic [ref=e514]: Official source
+                  - generic [ref=e515]: Checked 2026-07-14
+                  - generic [ref=e516]: ·
+                  - generic [ref=e517]: Review due 2026-11-17
+                  - generic [ref=e518]: ·
+                  - generic [ref=e519]:
+                    - link "Liquify THORNode inbound_addresses" [ref=e520] [cursor=pointer]:
+                      - /url: https://gateway.liquify.com/chain/thorchain_api/thorchain/inbound_addresses
+                    - group [ref=e521]: retrieval details
+                    - group [ref=e522]:
+                      - generic "Show 1 additional source for Liquify THORNode inbound_addresses" [ref=e523] [cursor=pointer]: +1 source
+                - generic [ref=e524]:
+                  - link "Check live state" [ref=e525] [cursor=pointer]:
+                    - /url: /network#network-diagnostics
+                  - link "Check a route" [ref=e526] [cursor=pointer]:
+                    - /url: /network?from_asset=TRON.TRX&to_asset=BTC.BTC&amount=0.01#check-a-route
+              - generic [ref=e527]:
+                - generic [ref=e528]:
+                  - generic [ref=e529]:
+                    - heading "Base" [level=3] [ref=e530]
+                    - paragraph [ref=e531]: BASE
+                  - generic [ref=e532]: catalog listed
+                - generic [ref=e533]:
+                  - generic [ref=e534]:
+                    - term [ref=e535]: Address Formats
+                    - definition [ref=e536]:
+                      - generic [ref=e537]: EIP-55
+                  - generic [ref=e538]:
+                    - term [ref=e539]: Dust Threshold
+                    - definition [ref=e540]: Live inbound_addresses only
+                - generic [ref=e541]:
+                  - paragraph [ref=e542]: Catalog Boundary
+                  - paragraph [ref=e543]: Listed means this chain was present in the curated inbound-address catalog. It does not prove swaps, signing, LP actions, gas, or a route are open now.
+                - paragraph [ref=e544]: No special review note is attached to this catalog entry.
+                - generic [ref=e546]:
+                  - generic [ref=e547]: Official source
+                  - generic [ref=e548]: Checked 2026-07-14
+                  - generic [ref=e549]: ·
+                  - generic [ref=e550]: Review due 2026-11-17
+                  - generic [ref=e551]: ·
+                  - generic [ref=e552]:
+                    - link "Liquify THORNode inbound_addresses" [ref=e553] [cursor=pointer]:
+                      - /url: https://gateway.liquify.com/chain/thorchain_api/thorchain/inbound_addresses
+                    - group [ref=e554]: retrieval details
+                    - group [ref=e555]:
+                      - generic "Show 1 additional source for Liquify THORNode inbound_addresses" [ref=e556] [cursor=pointer]: +1 source
+                - generic [ref=e557]:
+                  - link "Check live state" [ref=e558] [cursor=pointer]:
+                    - /url: /network#network-diagnostics
+                  - link "Check a route" [ref=e559] [cursor=pointer]:
+                    - /url: /network?from_asset=BASE.ETH&to_asset=BTC.BTC&amount=0.01#check-a-route
+              - generic [ref=e560]:
+                - generic [ref=e561]:
+                  - generic [ref=e562]:
+                    - heading "Solana" [level=3] [ref=e563]
+                    - paragraph [ref=e564]: SOL
+                  - generic [ref=e565]: catalog listed
+                - generic [ref=e566]:
+                  - generic [ref=e567]:
+                    - term [ref=e568]: Address Formats
+                    - definition [ref=e569]:
+                      - generic [ref=e570]: Base58
+                  - generic [ref=e571]:
+                    - term [ref=e572]: Dust Threshold
+                    - definition [ref=e573]: Live inbound_addresses only
+                - generic [ref=e574]:
+                  - paragraph [ref=e575]: Catalog Boundary
+                  - paragraph [ref=e576]: Listed means this chain was present in the curated inbound-address catalog. It does not prove swaps, signing, LP actions, gas, or a route are open now.
+                - paragraph [ref=e577]: "Live inbound and chain-client sources include SOL even though the high-level supported-blockchains overview omitted it at review time. SOL uses EdDSA signing; Exploit Report #2 says EdDSA chains such as Solana were not exposed to the GG20/Paillier attack path."
+                - generic [ref=e579]:
+                  - generic [ref=e580]: Official source
+                  - generic [ref=e581]: Checked 2026-07-14
+                  - generic [ref=e582]: ·
+                  - generic [ref=e583]: Review due 2026-11-17
+                  - generic [ref=e584]: ·
+                  - generic [ref=e585]:
+                    - link "Liquify THORNode inbound_addresses" [ref=e586] [cursor=pointer]:
+                      - /url: https://gateway.liquify.com/chain/thorchain_api/thorchain/inbound_addresses
+                    - group [ref=e587]: retrieval details
+                    - group [ref=e588]:
+                      - generic "Show 4 additional sources for Liquify THORNode inbound_addresses" [ref=e589] [cursor=pointer]: +4 sources
+                - generic [ref=e590]:
+                  - link "Check live state" [ref=e591] [cursor=pointer]:
+                    - /url: /network#network-diagnostics
+                  - link "Check a route" [ref=e592] [cursor=pointer]:
+                    - /url: /network?from_asset=SOL.SOL&to_asset=BTC.BTC&amount=0.01#check-a-route
+              - generic [ref=e593]:
+                - generic [ref=e594]:
+                  - generic [ref=e595]:
+                    - heading "XRP Ledger" [level=3] [ref=e596]
+                    - paragraph [ref=e597]: XRP
+                  - generic [ref=e598]: catalog listed
+                - generic [ref=e599]:
+                  - generic [ref=e600]:
+                    - term [ref=e601]: Address Formats
+                    - definition [ref=e602]:
+                      - generic [ref=e603]: Classic Base58
+                  - generic [ref=e604]:
+                    - term [ref=e605]: Dust Threshold
+                    - definition [ref=e606]: Live inbound_addresses only
+                - generic [ref=e607]:
+                  - paragraph [ref=e608]: Catalog Boundary
+                  - paragraph [ref=e609]: Listed means this chain was present in the curated inbound-address catalog. It does not prove swaps, signing, LP actions, gas, or a route are open now.
+                - paragraph [ref=e610]: Use a destination tag only when the receiving wallet requires it. The official guide lists Classic Base58 and does not list X-address as a supported format.
+                - generic [ref=e612]:
+                  - generic [ref=e613]: Official source
+                  - generic [ref=e614]: Checked 2026-07-14
+                  - generic [ref=e615]: ·
+                  - generic [ref=e616]: Review due 2026-11-17
+                  - generic [ref=e617]: ·
+                  - generic [ref=e618]:
+                    - link "Liquify THORNode inbound_addresses" [ref=e619] [cursor=pointer]:
+                      - /url: https://gateway.liquify.com/chain/thorchain_api/thorchain/inbound_addresses
+                    - group [ref=e620]: retrieval details
+                    - group [ref=e621]:
+                      - generic "Show 1 additional source for Liquify THORNode inbound_addresses" [ref=e622] [cursor=pointer]: +1 source
+                - generic [ref=e623]:
+                  - link "Check live state" [ref=e624] [cursor=pointer]:
+                    - /url: /network#network-diagnostics
+                  - link "Check a route" [ref=e625] [cursor=pointer]:
+                    - /url: /network?from_asset=XRP.XRP&to_asset=BTC.BTC&amount=0.01#check-a-route
+  - contentinfo [ref=e626]:
+    - generic [ref=e627]:
+      - generic [ref=e628]:
+        - generic [ref=e629]:
+          - generic [ref=e630]:
+            - generic [ref=e631]: ⬡
+            - generic [ref=e633]: THORChain Wiki
+          - paragraph [ref=e634]: Community-maintained encyclopedia of THORChain protocol, data, and ecosystem.
+        - generic [ref=e635]:
+          - heading "Navigate" [level=3] [ref=e636]
+          - list [ref=e637]:
+            - listitem [ref=e638]:
+              - link "Search" [ref=e639] [cursor=pointer]:
+                - /url: /search
+            - listitem [ref=e640]:
+              - link "Protocol" [ref=e641] [cursor=pointer]:
+                - /url: /protocol
+            - listitem [ref=e642]:
+              - link "Network" [ref=e643] [cursor=pointer]:
+                - /url: /network
+            - listitem [ref=e644]:
+              - link "Economics" [ref=e645] [cursor=pointer]:
+                - /url: /economics
+            - listitem [ref=e646]:
+              - link "Dynamic Fees" [ref=e647] [cursor=pointer]:
+                - /url: /dynamic-fees
+            - listitem [ref=e648]:
+              - link "Ecosystem" [ref=e649] [cursor=pointer]:
+                - /url: /ecosystem
+            - listitem [ref=e650]:
+              - link "Governance" [ref=e651] [cursor=pointer]:
+                - /url: /governance
+            - listitem [ref=e652]:
+              - link "Statistics" [ref=e653] [cursor=pointer]:
+                - /url: /stats
+            - listitem [ref=e654]:
+              - link "RUNE" [ref=e655] [cursor=pointer]:
+                - /url: /rune
+            - listitem [ref=e656]:
+              - link "TCY" [ref=e657] [cursor=pointer]:
+                - /url: /tcy
+            - listitem [ref=e658]:
+              - link "Deep Dives" [ref=e659] [cursor=pointer]:
+                - /url: /deep-dives
+            - listitem [ref=e660]:
+              - link "Glossary" [ref=e661] [cursor=pointer]:
+                - /url: /glossary
+            - listitem [ref=e662]:
+              - link "Docs" [ref=e663] [cursor=pointer]:
+                - /url: /docs
+        - generic [ref=e664]:
+          - heading "Verify First" [level=3] [ref=e665]
+          - list [ref=e666]:
+            - listitem [ref=e667]:
+              - link "Source map Match source to claim." [ref=e668] [cursor=pointer]:
+                - /url: /docs#source-map-chooser
+                - generic [ref=e669]: Source map
+                - generic [ref=e670]: Match source to claim.
+            - listitem [ref=e671]:
+              - link "Network diagnostics Check live operational state." [ref=e672] [cursor=pointer]:
+                - /url: /network#network-diagnostics
+                - generic [ref=e673]: Network diagnostics
+                - generic [ref=e674]: Check live operational state.
+            - listitem [ref=e675]:
+              - link "Interface checklist Review third-party app boundaries." [ref=e676] [cursor=pointer]:
+                - /url: /ecosystem#interface-use-checklist
+                - generic [ref=e677]: Interface checklist
+                - generic [ref=e678]: Review third-party app boundaries.
+            - listitem [ref=e679]:
+              - link "Guided answers Start from common tasks and reader paths." [ref=e680] [cursor=pointer]:
+                - /url: /search#search-guided-answers
+                - generic [ref=e681]: Guided answers
+                - generic [ref=e682]: Start from common tasks and reader paths.
+        - generic [ref=e683]:
+          - heading "Official Sources/APIs" [level=3] [ref=e684]
+          - list [ref=e685]:
+            - listitem [ref=e686]:
+              - link "THORChain Docs Official protocol documentation." [ref=e687] [cursor=pointer]:
+                - /url: https://docs.thorchain.org
+                - generic [ref=e688]: THORChain Docs
+                - generic [ref=e689]: Official protocol documentation.
+            - listitem [ref=e690]:
+              - link "Developer Docs Official builder docs and API guidance." [ref=e691] [cursor=pointer]:
+                - /url: https://dev.thorchain.org
+                - generic [ref=e692]: Developer Docs
+                - generic [ref=e693]: Official builder docs and API guidance.
+            - listitem [ref=e694]:
+              - link "Midgard API Official indexed dashboard API docs." [ref=e695] [cursor=pointer]:
+                - /url: https://midgard.thorchain.network/v2/doc
+                - generic [ref=e696]: Midgard API
+                - generic [ref=e697]: Official indexed dashboard API docs.
+          - heading "Third-Party Surfaces" [level=3] [ref=e698]
+          - list [ref=e699]:
+            - listitem [ref=e700]:
+              - generic [ref=e701]:
+                - generic [ref=e702]: Gateway API
+                - generic [ref=e703]: Third-party gateway; verify provider and data-source posture before using it as evidence.
+                - generic [ref=e704]:
+                  - link "Review data-source guide" [ref=e705] [cursor=pointer]:
+                    - /url: /deep-dives/midgard-thornode-data
+                  - link "Open Gateway API externally" [ref=e706] [cursor=pointer]:
+                    - /url: https://gateway.liquify.com/chain/thorchain_midgard/v2
+                    - text: Open Gateway API
+            - listitem [ref=e707]:
+              - generic [ref=e708]:
+                - generic [ref=e709]: RuneScan
+                - generic [ref=e710]: Explorer surface; useful context, not protocol canon or route-availability proof.
+                - generic [ref=e711]:
+                  - link "Review explorer posture" [ref=e712] [cursor=pointer]:
+                    - /url: /docs#external-analytics-and-explorers
+                  - link "Open RuneScan externally" [ref=e713] [cursor=pointer]:
+                    - /url: https://runescan.io
+                    - text: Open RuneScan
+            - listitem [ref=e714]:
+              - generic [ref=e715]:
+                - generic [ref=e716]: THORSwap
+                - generic [ref=e717]: Interface surface; verify route, recipient, fees, wallet permissions, and app state before signing.
+                - generic [ref=e718]:
+                  - link "Review interface checklist" [ref=e719] [cursor=pointer]:
+                    - /url: /ecosystem#interface-use-checklist
+                  - link "Open THORSwap externally" [ref=e720] [cursor=pointer]:
+                    - /url: https://app.thorswap.finance
+                    - text: Open THORSwap
+        - generic [ref=e721]:
+          - heading "Community" [level=3] [ref=e722]
+          - list [ref=e723]:
+            - listitem [ref=e724]:
+              - link "Discord" [ref=e725] [cursor=pointer]:
+                - /url: https://discord.com/invite/thorchaincommunity
+            - listitem [ref=e726]:
+              - link "Twitter" [ref=e727] [cursor=pointer]:
+                - /url: https://x.com/thorchain_org
+            - listitem [ref=e728]:
+              - link "Telegram" [ref=e729] [cursor=pointer]:
+                - /url: https://t.me/thorchain_org
+            - listitem [ref=e730]:
+              - link "Reddit" [ref=e731] [cursor=pointer]:
+                - /url: https://reddit.com/r/THORChain
+            - listitem [ref=e732]:
+              - link "GitHub" [ref=e733] [cursor=pointer]:
+                - /url: https://github.com/thorchain
+      - generic [ref=e734]:
+        - paragraph [ref=e735]: Live data is current-only from Midgard/THORNode sources. Page and record review dates are authoritative; 2026-06-18 is only the base static-catalog baseline. Not affiliated with THORChain.
+        - paragraph [ref=e736]: © 2026 THORChain Wiki
