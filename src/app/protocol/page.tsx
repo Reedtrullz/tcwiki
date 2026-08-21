@@ -323,38 +323,36 @@ export default function ProtocolPage() {
             </p>
 
             <section id="chain-catalog-boundary" className="mb-5 scroll-mt-24">
-              <div className="mb-3 flex flex-col gap-1 md:flex-row md:items-end md:justify-between">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Before Reading The Chain Grid</p>
-                  <p className="mt-1 max-w-3xl text-sm leading-relaxed text-slate-400">
-                    Treat this as a catalog boundary, not a current availability dashboard. Move to the matching live check before telling a user a chain, action, or route is usable now.
-                  </p>
+              <details className="group" open={false}>
+                <summary className="inline-flex cursor-pointer list-none items-center gap-2 text-xs text-slate-500 transition-colors hover:text-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60">
+                  Catalog boundary guidance
+                  <Badge variant="warning">not availability proof</Badge>
+                  <span className="transition-transform group-open:rotate-180" aria-hidden="true">▾</span>
+                </summary>
+                <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+                  {chainCatalogBoundary.map((item) => (
+                    <Card key={item.title} padding="sm">
+                      <div className="mb-2 flex flex-wrap items-center gap-2">
+                        <Badge variant="info">{item.badge}</Badge>
+                        <h3 className="text-sm font-semibold text-slate-100">{item.title}</h3>
+                      </div>
+                      <dl className="space-y-2 text-xs leading-relaxed text-slate-400">
+                        <div>
+                          <dt className="font-semibold uppercase tracking-wider text-slate-500">Can Prove</dt>
+                          <dd>{item.proves}</dd>
+                        </div>
+                        <div>
+                          <dt className="font-semibold uppercase tracking-wider text-amber-300">Does Not Prove</dt>
+                          <dd>{item.doesNotProve}</dd>
+                        </div>
+                      </dl>
+                      <Link href={item.href} className="mt-3 inline-flex text-xs font-semibold text-accent underline-offset-4 hover:underline">
+                        {item.linkLabel}
+                      </Link>
+                    </Card>
+                  ))}
                 </div>
-                <Badge variant="warning">catalog is not availability</Badge>
-              </div>
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
-                {chainCatalogBoundary.map((item) => (
-                  <Card key={item.title} padding="sm">
-                    <div className="mb-2 flex flex-wrap items-center gap-2">
-                      <Badge variant="info">{item.badge}</Badge>
-                      <h3 className="text-sm font-semibold text-slate-100">{item.title}</h3>
-                    </div>
-                    <dl className="space-y-2 text-xs leading-relaxed text-slate-400">
-                      <div>
-                        <dt className="font-semibold uppercase tracking-wider text-slate-500">Can Prove</dt>
-                        <dd>{item.proves}</dd>
-                      </div>
-                      <div>
-                        <dt className="font-semibold uppercase tracking-wider text-amber-300">Does Not Prove</dt>
-                        <dd>{item.doesNotProve}</dd>
-                      </div>
-                    </dl>
-                    <Link href={item.href} className="mt-3 inline-flex text-xs font-semibold text-accent underline-offset-4 hover:underline">
-                      {item.linkLabel}
-                    </Link>
-                  </Card>
-                ))}
-              </div>
+              </details>
             </section>
 
             <div id="supported-chain-finder" className="scroll-mt-24">

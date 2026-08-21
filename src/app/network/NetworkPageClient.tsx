@@ -370,6 +370,8 @@ export default function NetworkPageClient({ children }: NetworkPageClientProps) 
 
       <RelatedChecks checks={networkRelatedChecks} className="mb-12" />
 
+      <div aria-hidden="true" className="my-12 border-t border-border" />
+
       {nodeOperatorGuide}
 
       <SectionHeader id="node-types" level="primary">Node Types</SectionHeader>
