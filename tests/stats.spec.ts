@@ -103,6 +103,7 @@ test.describe('THORChain Wiki Stats Smoke Tests', () => {
     await expect(page.getByRole('heading', { name: /Network Statistics/i })).toBeVisible();
     const sourcePosture = page.getByRole('region', { name: 'Source and freshness' });
     await expect(sourcePosture).toBeVisible();
+    await sourcePosture.locator('details > summary').first().click();
     await expect(page.getByText(/Midgard v2 Health/i)).toBeVisible();
     
     await expect(page.getByRole('heading', { name: /Look Here First/i })).toBeVisible();
@@ -271,4 +272,3 @@ test.describe('THORChain Wiki Stats Smoke Tests', () => {
     ).toBeLessThanOrEqual(layout.viewportWidth + 2);
   });
 });
-

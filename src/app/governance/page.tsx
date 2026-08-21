@@ -400,7 +400,12 @@ export default function GovernancePage() {
         <p className="mb-4 max-w-3xl text-sm text-slate-400">
           Conservative tracker for records explicitly tagged as current or needing current recovery review. Historical unresolved records remain in the incident archive below unless they are re-verified for current tracking.
         </p>
-        <div className="mb-4 grid grid-cols-1 gap-3 lg:grid-cols-3">
+        <details className="group mb-4" open={false}>
+          <summary className="inline-flex cursor-pointer list-none items-center gap-1 text-xs text-slate-500 transition-colors hover:text-slate-300">
+            Show summary and claim-check detail
+            <span className="transition-transform group-open:rotate-180" aria-hidden="true">▾</span>
+          </summary>
+          <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-3">
           {currentRecoveryRecordSummary.map((item) => (
             <Card key={item.label} padding="sm" className="border-border">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">{item.label}</p>
@@ -408,8 +413,8 @@ export default function GovernancePage() {
               <p className="mt-2 text-xs leading-relaxed text-slate-400">{item.description}</p>
             </Card>
           ))}
-        </div>
-        <div className="mb-4 rounded-lg border border-border bg-surface-elevated p-4">
+          </div>
+          <div className="mb-4 rounded-lg border border-border bg-surface-elevated p-4">
           <div className="mb-3">
             <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-400">Recovery State Matrix</h3>
             <p className="mt-1 max-w-3xl text-xs leading-relaxed text-slate-400">
@@ -443,8 +448,8 @@ export default function GovernancePage() {
               </div>
             ))}
           </div>
-        </div>
-        <div className="mb-4 grid grid-cols-1 gap-3 lg:grid-cols-2">
+          </div>
+          <div className="mb-4 grid grid-cols-1 gap-3 lg:grid-cols-2">
           {recoveryClaimChecks.map((item) => (
             <Card key={item.claim} padding="sm" className="border-amber-500/15">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Check Before Claiming</p>
@@ -465,13 +470,14 @@ export default function GovernancePage() {
               </dl>
             </Card>
           ))}
-        </div>
-        <div className="mb-3 rounded-lg border border-amber-500/20 bg-amber-500/5 p-4">
+          </div>
+          <div className="mb-3 rounded-lg border border-amber-500/20 bg-amber-500/5 p-4">
           <p className="text-[11px] font-semibold uppercase tracking-wider text-amber-300">Safe current wording</p>
           <p className="mt-1 max-w-4xl text-sm leading-relaxed text-slate-300">
             The GG20 exploit record remains a current security tracker, while ADR-028 is now source-backed as Accepted and implemented through the one-time v3.19.0 conciliation migration. Use this section to decide what to verify next; neither record proves every loss was restored, final recovery, current vault safety, or user-action availability.
           </p>
-        </div>
+          </div>
+        </details>
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           {currentRecoveryRecords.map((record) => (
             <Card key={`current:${record.id}`} className="border-amber-500/20 bg-amber-500/5">

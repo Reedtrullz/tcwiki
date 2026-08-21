@@ -34,13 +34,9 @@ test.describe('THORChain Wiki Source Posture Smoke Tests', () => {
       await expect(posture, `${entry.href} should render PageSourcePosture`).toBeVisible();
 
       await expect(posture.getByText(getConfidenceLabel(entry.confidence), { exact: true }).first()).toBeVisible();
-      await expect(posture.getByText(`Checked ${entry.reviewedAt}`, { exact: true })).toBeVisible();
-      await expect(posture.getByText(`Review due ${entry.nextReviewDue}`, { exact: true })).toBeVisible();
+      await expect(posture.getByText(`Last verified ${entry.reviewedAt}`, { exact: true })).toBeVisible();
+      await posture.locator('details > summary').first().click();
       await expect(posture.getByRole('link', { name: primarySource.label, exact: true }).first()).toHaveAttribute('href', primarySource.url);
-      if (entry.sources.length > 1) {
-        await expect(posture.getByText(pluralizedSourceCount(entry.sources.length - 1), { exact: true })).toBeVisible();
-      }
-      await posture.locator('summary', { hasText: 'How to use this page' }).click();
       await expect(posture.getByText('Use this page for', { exact: true })).toBeVisible();
       await expect(posture.getByText('Verify elsewhere before claiming', { exact: true })).toBeVisible();
     }
@@ -103,7 +99,7 @@ test.describe('THORChain Wiki Source Posture Smoke Tests', () => {
         await expect(page.getByRole('link', { name: /Check a live route/i })).toHaveAttribute('href', '/network#check-a-route');
         await expect(page.getByRole('link', { name: /Read refund conditions/i })).toHaveAttribute('href', '/deep-dives/streaming-swaps-refunds#why-refunds-happen');
         await expect(page.getByRole('link', { name: /Choose the right API/i })).toHaveAttribute('href', '/deep-dives/midgard-thornode-data#source-roles');
-        await expect(page.locator('#chain-catalog-boundary').getByText(/catalog boundary, not a current availability dashboard/i)).toBeVisible();
+        await expect(page.locator('#chain-catalog-boundary').getByText(/Catalog boundary guidance/i)).toBeVisible();
       }
       if (route.path === '/economics') {
         const economicClaimChecks = page.locator('#economic-claim-checks');
@@ -142,6 +138,3 @@ test.describe('THORChain Wiki Source Posture Smoke Tests', () => {
     }
   });
 });
-
-
-

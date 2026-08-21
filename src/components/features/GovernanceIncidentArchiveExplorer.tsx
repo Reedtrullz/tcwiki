@@ -237,7 +237,7 @@ export function GovernanceIncidentArchiveExplorer({
   return (
     <section id="security-incidents" className="scroll-mt-24">
       <div className="mb-4">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-400">Security Incidents</h2>
+        <h2 className="text-lg font-semibold normal-case tracking-normal text-slate-100">Security Incidents</h2>
         <p aria-live="polite" className="mt-1 text-xs leading-relaxed text-slate-400">
           Showing {filteredRecords.length} of {incidentRecords.length} incident records. Filter by posture before turning a dated incident into a current recovery or safety claim.
         </p>

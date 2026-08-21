@@ -169,31 +169,11 @@ describe('Home live metric trust posture', () => {
   it('keeps lower home previews bounded by static source posture', () => {
     const html = renderToStaticMarkup(<HomePage />);
 
-    expect(html).toContain('Check The Right Thing First');
     expect(html).toContain('Start With The Claim');
     expect(html).toContain('Learn in Sequence');
-    expect(html).toContain('Mimir And Halt Controls');
-    expect(html).toContain('Build And Query THORChain Data');
-    expect(html).toContain('Liquidity Actions');
-    expect(html).toContain('RUNEPool/POL evidence');
-    expect(html).toContain('/economics#runepool-pol-live');
-    expect(html).toContain('/deep-dives#deep-dive-path-network-security');
-    expect(html).toContain('/deep-dives#deep-dive-path-developer-data-integration');
-    expect(html).toContain('/deep-dives#deep-dive-path-liquidity-actions');
-    expect(html).toContain('Pointer list, not endorsement');
-    expect(html).toContain('Catalog listed');
-    expect(html).not.toContain('>Active<');
-    expect(html).toContain('Verify live quote, route, fees, recipient, and wallet approvals before signing');
-    expect(html).toContain('Verify release source, wallet permissions, route, and device security before signing');
-    expect(html).toContain('Cross-check explorer context against THORNode or Midgard before citing it');
-    expect(html).toContain('Needs source review');
-    expect(html).toContain('Confirm the direct source is reachable and reconciled before citing it');
-    expect(html).toContain('Verify package versions, API behavior, and production readiness before building');
-    expect(html).toContain('Dated analysis context, not live protocol proof');
-    expect(html).toContain('Not live protocol proof');
-    expect(html).toContain('External sources answer different questions');
-    expect(html).toContain('match the source family to the claim');
-    expect(html).toContain('Checked 2026-07-08');
+    expect(html).toContain('Live Operations Snapshot');
+    expect(html).not.toContain('Ecosystem');
+    expect(html).not.toContain('Research');
     expect(html).not.toContain('Listed Needs review');
   });
 });

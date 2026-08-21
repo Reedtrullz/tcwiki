@@ -8,7 +8,7 @@ interface SectionHeaderProps extends React.HTMLAttributes<HTMLHeadingElement> {
 export function SectionHeader({ children, className, level = 'secondary', ...props }: SectionHeaderProps) {
   const styles =
     level === 'primary'
-      ? 'text-lg font-semibold text-slate-100 uppercase tracking-wide mb-5'
+      ? 'text-lg font-semibold text-slate-100 normal-case tracking-normal mb-5'
       : 'text-sm font-semibold text-slate-400 uppercase tracking-wider mb-5';
   return (
     <h2

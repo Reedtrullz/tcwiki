@@ -12,6 +12,7 @@ interface FreshnessMetaProps {
 export function FreshnessMeta({ freshness, sources = [], compact = false }: FreshnessMetaProps) {
   const primarySource = sources[0];
   const secondarySources = sources.slice(1);
+  const showReviewDates = !compact;
 
   return (
     <div className="flex min-w-0 flex-wrap items-center gap-2 text-[11px] text-slate-400">
@@ -19,13 +20,13 @@ export function FreshnessMeta({ freshness, sources = [], compact = false }: Fres
         {getConfidenceLabel(freshness.confidence)}
       </Badge>
       <span>{getFreshnessLabel(freshness)}</span>
-      {freshness.nextReviewDue && (
+      {showReviewDates && freshness.nextReviewDue && (
         <>
           <span>·</span>
           <span>Review due {freshness.nextReviewDue}</span>
         </>
       )}
-      {freshness.reviewedBy && (
+      {showReviewDates && freshness.reviewedBy && (
         <>
           <span>·</span>
           <span>Reviewed by {freshness.reviewedBy}</span>

@@ -456,7 +456,7 @@ export function EcosystemFilterList({ projectRecords, chainRecords }: EcosystemF
         </div>
       )}
 
-      <h2 className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-4 mt-12">Curated Chain List ({chainRecords.length})</h2>
+      <h2 className="text-lg font-semibold normal-case tracking-normal text-slate-100 mb-4 mt-12">Curated Chain List ({chainRecords.length})</h2>
       <p className="text-sm text-slate-400 mb-4">
         Use this list as a source-backed index, not as proof that swaps or LP actions are currently open.
         {' '}

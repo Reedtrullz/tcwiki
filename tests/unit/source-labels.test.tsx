@@ -203,7 +203,7 @@ describe('source and freshness labels', () => {
       />
     );
 
-    expect(html).toContain('Reviewed by Protocol review desk');
+    expect(html).not.toContain('Reviewed by Protocol review desk');
     expect(html).toContain('Source retrieved 2026-06-18T10:00:00.000Z');
     expect(html).toContain('Use as a current-only check for live chain availability and pause state.');
     expect(html).toContain('Narrative source used as a cross-check, not live availability proof.');
@@ -226,7 +226,7 @@ describe('source and freshness labels', () => {
     );
 
     expect(html).toContain('Checked 2026-07-13');
-    expect(html).toContain('Review due 2026-11-17');
+    expect(html).not.toContain('Review due 2026-11-17');
     expect(html).toContain('Source retrieved 2026-07-04');
     expect(html).toContain('Source retrieved 2026-07-13');
     expect(html).toContain('Official root-cause report for the May 2026 GG20/TSS vault exploit, patched v3.19.1 recovery, and still-planned migration away from GG20.');
@@ -385,7 +385,7 @@ describe('source and freshness labels', () => {
     expect(html).toContain('Current halt, signing, inbound-address, or Mimir state.');
     expect(html).toContain('Curated');
     expect(html).toContain(`Checked ${entry.reviewedAt}`);
-    expect(html).toContain(`Review due ${entry.nextReviewDue}`);
+    expect(html).not.toContain(`Review due ${entry.nextReviewDue}`);
     expect(html).toContain('THORChain Docs');
     expect(html).toContain('Source retrieved 2026-07-05');
     expect(html).toContain('+9 sources');
@@ -693,7 +693,7 @@ describe('source and freshness labels', () => {
     expect(html).toContain('href="/network#network-diagnostics"');
     expect(html).toContain('href="/docs#current-protocol-state"');
     expect(html).toContain('Checked 2026-07-13');
-    expect(html).toContain('Review due 2026-11-17');
+    expect(html).not.toContain('Review due 2026-11-17');
 
     const historicalHtml = renderToStaticMarkup(
       <DeepDiveShell entryId="deep-dive-savers" editPath="content/deep-dives/savers.mdx">
@@ -742,7 +742,7 @@ describe('source and freshness labels', () => {
 
     expect(html).toContain('Historical');
     expect(html).toContain('Checked 2026-07-08');
-    expect(html).toContain('Review due 2026-11-17');
+    expect(html).not.toContain('Review due 2026-11-17');
     expect(html).toContain('Archived Savers and Lending docs');
     expect(html).toContain('RUNE and TCY tokenomics');
     expect(html).toContain('TCY Developer Guide');

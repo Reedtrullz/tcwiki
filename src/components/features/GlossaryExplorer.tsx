@@ -295,7 +295,7 @@ export function GlossaryExplorer({ terms }: { terms: GlossaryExplorerTerm[] }) {
 
       {visibleCategories.map((group) => (
         <section key={group.category} id={group.category} className="scroll-mt-24">
-          <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-slate-400">{group.category}</h2>
+          <h2 className="mb-4 text-lg font-semibold normal-case tracking-normal text-slate-100">{group.category}</h2>
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             {group.terms.map((term) => (
               <GlossaryTermCard key={term.id} term={term} />

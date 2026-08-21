@@ -17,7 +17,8 @@ test.describe('THORChain Wiki Governance Smoke Tests', () => {
     await expect(page.getByRole('link', { name: /Review recovery tracker/i })).toHaveAttribute('href', '#current-recovery');
     await expect(page.getByText(/Do not present Discord chatter as canonical protocol proof/i)).toBeVisible();
     await expect(page.getByRole('heading', { name: /Current Incident & Recovery Tracker/i })).toBeVisible();
-    await expect(page.getByText('TCY restored the original debt value')).toBeVisible();
+    await expect(page.locator('#current-recovery').getByText('Show summary and claim-check detail')).toBeVisible();
+    await page.locator('#current-recovery').getByText('Show summary and claim-check detail').click();
     await expect(page.getByText(/full recovery is not guaranteed/i)).toBeVisible();
     await expect(page.locator('#current-recovery').getByRole('heading', { name: /ADR-028 Recovery Path/i })).toBeVisible();
     await expect(page.locator('#current-recovery').getByText('Tracked records')).toBeVisible();
