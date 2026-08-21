@@ -39,11 +39,11 @@ test.describe('THORChain Wiki Navigation Smoke Tests', () => {
     await page.goto('/');
 
     const primaryNavigation = page.locator('nav[aria-label="Primary navigation"]');
-    await expect(primaryNavigation.getByRole('link', { name: 'Search' })).toHaveAttribute('href', '/search');
+    await expect(primaryNavigation.getByRole('button', { name: /Tools/i })).toBeVisible();
     await expect(page.locator('button[aria-controls="site-search-panel"] span', { hasText: 'Search' })).toBeHidden();
-    await expect(primaryNavigation.getByRole('link', { name: 'Stats' })).toHaveAttribute('href', '/stats');
-    await expect(primaryNavigation.getByRole('link', { name: 'Live Stats' })).toHaveCount(0);
-    await expect(primaryNavigation.getByRole('link', { name: 'Deep Dives' })).toHaveCount(0);
+    await primaryNavigation.getByRole('button', { name: /Tools/i }).click();
+    await expect(primaryNavigation.getByRole('link', { name: 'Statistics' })).toHaveAttribute('href', '/stats');
+    await page.keyboard.press('Escape');
 
     const navItems = await primaryNavigation.locator('a,button').evaluateAll((items) => (
       items.map((item) => {

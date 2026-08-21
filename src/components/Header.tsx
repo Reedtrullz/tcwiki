@@ -79,14 +79,14 @@ export default function Header() {
         setShowSearch(true);
         // Focus will be handled by autoFocus on the input
       }
-      if (e.key === 'Escape' && (showSearchForPath || isOpenForPath || showGuidesForPath)) {
+      if (e.key === 'Escape' && (showSearchForPath || isOpenForPath || showGuidesForPath || openNavGroup !== null)) {
         e.preventDefault();
         closePanels(true);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [showSearchForPath, isOpenForPath, showGuidesForPath, closePanels, pathname]);
+  }, [showSearchForPath, isOpenForPath, showGuidesForPath, openNavGroup, closePanels, pathname]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -123,7 +123,7 @@ export default function Header() {
                       setIsOpen(false);
                       setShowSearch(false);
                       setShowGuides(false);
-                      setOpenNavGroup((value) => (panelPathname === pathname && value === group.id) ? null : group.id);
+                      setOpenNavGroup(group.id);
                     }}
                     aria-expanded={showNavGroupForPath && openNavGroup === group.id}
                     aria-haspopup="true"

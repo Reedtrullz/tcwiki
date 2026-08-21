@@ -1,4 +1,6 @@
 import type { ContentEntry } from '@/lib/content/registry';
+import { FreshnessMeta } from '@/components/ui/FreshnessMeta';
+import { getConfidenceLabel } from '@/lib/trust';
 import { cn } from '@/lib/utils';
 
 interface PageSourcePostureProps {
@@ -39,6 +41,8 @@ export function PageSourcePosture({
     >
       <details className="group" open={false}>
         <summary className="inline-flex cursor-pointer list-none items-center gap-2 px-3 py-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60">
+          <span className="text-slate-500">{getConfidenceLabel(entry.confidence)}</span>
+          <span className="text-slate-600">·</span>
           <span className="shrink-0 font-medium text-slate-500">
             Last verified {entry.reviewedAt}
           </span>
@@ -50,6 +54,14 @@ export function PageSourcePosture({
           </span>
         </summary>
         <div className="mt-2 grid gap-3 border-t border-border/40 px-3 pb-3 pt-3 md:grid-cols-2">
+          <FreshnessMeta
+            freshness={{
+              checkedAt: entry.reviewedAt,
+              confidence: entry.confidence,
+            }}
+            sources={entry.sources}
+            compact
+          />
           <div className="rounded-md border border-emerald-500/20 bg-emerald-500/5 p-3">
             <p className="text-xs font-semibold uppercase tracking-wider text-emerald-300">Use this page for</p>
             <ul className="mt-2 list-disc space-y-1 pl-4 text-xs leading-relaxed text-slate-300">

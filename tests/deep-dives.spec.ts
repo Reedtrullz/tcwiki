@@ -179,7 +179,8 @@ test.describe('THORChain Wiki Deep Dive Smoke Tests', () => {
     await expect(page.getByRole('heading', { name: /The Problem with Traditional Multisig/i })).toBeVisible();
     if (!isMobile) {
       const primaryNavigation = page.locator('nav[aria-label="Primary navigation"]');
-      await expect(primaryNavigation.locator('a[href="/deep-dives"]')).toHaveCount(0);
+      await primaryNavigation.getByRole('button', { name: /Learn/i }).click();
+      await expect(primaryNavigation.locator('a[href="/deep-dives"]').first()).toBeVisible();
       await expect(primaryNavigation.getByRole('button', { name: /Guides/i })).toHaveClass(/bg-accent\/10/);
     }
     await expect(page.getByText('Curated', { exact: true }).first()).toBeVisible();
@@ -195,8 +196,8 @@ test.describe('THORChain Wiki Deep Dive Smoke Tests', () => {
     await expect(articlePaths.getByText('Reader paths for this article')).toBeVisible();
     await expect(articlePaths.getByRole('link', { name: 'Network Security' })).toHaveAttribute('href', '/deep-dives#deep-dive-path-network-security');
     await expect(articlePaths.getByText(/Current signing, observation, trading/i)).toBeVisible();
-    // Checked date is in the sourcing disclosure above, not the reader paths section
-    await expect(page.getByText(/Review due 2026-11-17/i).first()).toBeVisible();
+    // The sourcing disclosure shows "Checked" rather than "Last verified" in DeepDiveShell
+    await expect(page.getByText(/Checked 2026-07-13/i).first()).toBeVisible();
     await expect(articlePaths.getByRole('link', { name: 'Network diagnostics' }).first()).toHaveAttribute('href', '/network#network-diagnostics');
     const networkSecurityPath = articlePaths.locator('#article-reader-path-network-security');
     await expect(networkSecurityPath.getByText('Step 2 of 5', { exact: true })).toBeVisible();

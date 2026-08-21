@@ -9,8 +9,9 @@ test.describe('THORChain Wiki Protocol Smoke Tests', () => {
     await expect(page.getByText(/2026-07-14 chain-catalog review/i)).toBeVisible();
     await expect(page.getByText(/Availability, routing, signing, LP actions, and pause state remain live\/current-only/i)).toBeVisible();
     await expect(page.locator('#chain-catalog-boundary')).toBeVisible();
-    await expect(page.getByText('catalog is not availability')).toBeVisible();
-    await expect(page.getByRole('heading', { name: /Catalog Listed/i })).toBeVisible();
+    await expect(page.getByText('not availability proof')).toBeVisible();
+    await page.locator('#chain-catalog-boundary').locator('summary').click();
+    await expect(page.locator('#chain-catalog-boundary').getByText(/Catalog boundary guidance/i)).toBeVisible();
     await expect(page.getByText(/Swaps, LP actions, signing, gas, outbound availability, or route quoteability right now/i)).toBeVisible();
     await expect(page.locator('#chain-catalog-boundary').getByRole('link', { name: /Check a route/i })).toHaveAttribute('href', '/network#check-a-route');
     await expect(page.locator('#supported-chain-finder')).toBeVisible();
@@ -108,4 +109,3 @@ test.describe('THORChain Wiki Protocol Smoke Tests', () => {
     expect(overflow).toBe(false);
   });
 });
-
