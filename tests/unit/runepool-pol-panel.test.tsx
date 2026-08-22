@@ -231,7 +231,7 @@ describe('RunepoolPolView', () => {
 
     expect(html).toMatch(/Provider \+ reserve value[\s\S]*Needs review/);
     expect(html).toContain('Difference versus POL total: 1 RUNE');
-    expect(html).toContain('source-shape review signal');
+    expect(html).toContain('Source-shape review signal, not a solvency claim.');
     expect(html).toMatch(/Value split[\s\S]*Needs review/);
     expect(html).toContain('Value split parsed, but provider plus reserve value does not match `pol.value`');
   });

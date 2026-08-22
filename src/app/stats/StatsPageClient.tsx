@@ -507,7 +507,7 @@ export default function StatsPage() {
       <section id="available-pools" className="mb-12 scroll-mt-24">
         <SectionHeader level="primary">Midgard Available-Pool Rows</SectionHeader>
         <p id="available-pools-summary" className="mb-3 max-w-3xl text-sm leading-relaxed text-slate-400">
-          {poolSnapshot.summary} This is liquidity context from Midgard, not proof that a specific route will quote or settle. Full loaded row list stays in this wiki view.
+          {poolSnapshot.summary} This is liquidity context from Midgard, not proof that a specific route will quote or settle.
         </p>
         <div className="mb-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
           <Card padding="sm">

@@ -20,7 +20,7 @@ export default function HomePage() {
           className="border-accent/10"
           useFor={[
             'Choosing the right first proof path for live operations, metrics, guided answers, learning paths, ecosystem pointers, and source maps.',
-            'Checking the reviewed/source-backed posture of the wiki home page before following current-only or dated-context links.',
+            'Knowing which sources back the homepage before following current-only or dated-context links.',
           ]}
           verifyBeforeClaiming={[
             'Current swaps, route availability, signing, LP actions, TCY actions, RUNEPool availability, or data-source health.',

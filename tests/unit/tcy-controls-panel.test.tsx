@@ -74,13 +74,11 @@ describe('TcyControlsView', () => {
     expect(html).toContain('Trading halt check');
     expect(html).toContain('Trading halted');
     expect(html).toContain('Source quality');
-    expect(html).toContain('Non-claim');
+    expect(html).not.toContain('What This Does Not Prove');
     expect(html).not.toContain('Can I claim?');
     expect(html).not.toContain('Can I stake?');
     expect(html).not.toContain('Can I trade?');
-    expect(html).toContain('No recovery proof');
-    expect(html).toContain('address eligibility still need separate proof');
-    expect(html).toContain('do not prove par recovery');
+    expect(html).not.toContain('do not prove par recovery');
     expect(html).toContain('2 halted');
     expect(html).toContain('TCY claim swaps');
     expect(html).toContain('TCYCLAIMINGSWAPHALT');
@@ -100,8 +98,6 @@ describe('TcyControlsView', () => {
     expect(html).toMatch(/Source Posture[\s\S]*First warning: 14 operation-like Mimir keys need review\./);
     expect(html).toContain('Show exact TCY keys and source warnings (1)');
     expect(html).toContain('14 operation-like Mimir keys need review.');
-    expect(html).toContain('does not prove an official claim interface is live');
-    expect(html).toContain('/network#network-diagnostics');
   });
 
   it('labels clear TCY controls as halt checks rather than action availability', () => {

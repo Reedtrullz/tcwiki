@@ -98,30 +98,6 @@ Recommended behavior:
 
 The goal is not to make every warning fatal. The goal is to show the known fact and the source-quality caveat at the same time.
 
-## What To Verify Before Shipping
+## Shipping Boundary
 
-Before shipping a THORChain integration or public analysis, verify:
-
-1. Which source family owns each displayed claim.
-2. Whether live values use one provider, a failover provider, or mixed providers.
-3. Whether quotes are requested on demand, throttled, and discarded after expiry.
-4. Whether inbound addresses, router fields, gas rates, dust thresholds, and halts are fresh at signing time rather than copied from a static chain list.
-5. Whether Midgard metrics are labeled as indexed dashboard data rather than raw protocol state.
-6. Whether base-unit parsing, large numbers, missing fields, and malformed responses fail safely.
-7. Whether error copy separates route unavailability, source unavailability, unsupported assets, and user-input problems.
-
-If those checks are not implemented, call the integration or analysis partial.
-
-## Non-Claims
-
-This page does not prove:
-
-- That any public endpoint will remain available, fast, or rate-limit free.
-- That one provider agrees with all other THORNode or Midgard providers.
-- That a quoted route is safe, cheap, competitive, or executable after expiry.
-- That an inbound address, memo, router, or gas rate copied from this wiki is safe to use.
-- That static developer docs prove a feature is live or unpaused right now.
-- That a third-party SDK, wallet, explorer, or interface is production-ready.
-- That Midgard indexed data is canonical protocol state.
-
-Use this page as a query plan. Use official docs, live diagnostics, fresh quote responses, and integration-specific tests before shipping.
+Before release, confirm source ownership, provider mixing, quote throttling and expiry, fresh inbound/route state at signing time, Midgard labeling, safe unit/error handling, and integration-specific tests. Public endpoints can be unavailable, rate-limited, or inconsistent; copied operational values and third-party SDKs still need their own checks.

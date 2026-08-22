@@ -4,18 +4,9 @@ TCY sits in a sensitive part of THORChain history: deprecated THORFi products, d
 
 Use it to understand what happened and which current checks matter now. Do not use it as proof that a claim can be executed, a route is live, a recovery outcome is complete, or TCY has a guaranteed value.
 
-## What This Timeline Can Prove
-
-This page can support a few narrow claims:
-
-- Savers and Lending are historical THORFi features, not current product instructions.
-- The THORFi unwind converted defaulted THORFi debt into TCY recovery-token framing.
-- Official TCY sources describe `1 TCY` per `$1` of defaulted debt and a 10% system-income allocation to TCY stakers.
-- Official TCY sources also say full debt recovery is market dependent and not guaranteed.
-- The accepted ADR-028 source specifies a one-time v3.19.0 conciliation migration for the May 2026 exploit-created accounting gap.
-- May 2026 exploit conciliation is adjacent recovery context, but it is not the same event as the January-February 2025 THORFi unwind or proof that every loss was restored.
-
-Everything current still needs live or freshly checked evidence.
+- Savers and Lending are historical THORFi features; the unwind converted defaulted THORFi debt into TCY recovery-token framing.
+- Official TCY sources describe `1 TCY` per `$1` of defaulted debt and a 10% system-income allocation to TCY stakers, with full recovery market dependent and not guaranteed.
+- Accepted ADR-028 specifies a one-time v3.19.0 conciliation migration for the May 2026 exploit-created accounting gap; that exploit recovery is adjacent, not identical, to the January-February 2025 THORFi unwind.
 
 ## Timeline
 
@@ -99,39 +90,6 @@ That is why the wiki should say "recovery-token framing" rather than "made whole
 
 ## What To Check Now
 
-Before making a current TCY claim, check:
+For a present-tense claim, check official TCY docs/interfaces, Network diagnostics for controls such as `TCYCLAIMINGHALT`, `TCYSTAKINGHALT`, `TCYSTAKEDISTRIBUTIONHALT`, `TCYUNSTAKINGHALT`, and `HALTTCYTRADING`, address-specific THORNode endpoints where needed, the [TCY page](/tcy), and the [Governance recovery tracker](/governance#current-recovery). If sources disagree, identify which source was checked, when, and what it can prove.
 
-1. The official TCY docs and claim interface for current claiming rules.
-2. `/network#network-diagnostics` for live TCY Mimir controls such as `TCYCLAIMINGHALT`, `TCYSTAKINGHALT`, `TCYSTAKEDISTRIBUTIONHALT`, `TCYUNSTAKINGHALT`, and `HALTTCYTRADING`.
-3. THORNode TCY endpoints for current claim or staking data when a specific address or aggregate claim requires protocol-state evidence.
-4. The [TCY page](/tcy) for wiki-level caveats and source posture.
-5. The [Governance recovery tracker](/governance#current-recovery) for the accepted ADR-028 record and current GG20 incident posture; neither replaces live protocol evidence.
-
-If those checks disagree, say which source was checked, when it was checked, and what it can prove.
-
-## Common Misreadings
-
-**"Savers are back."** The archived docs and TCY framing do not make Savers a current product.
-
-**"Lending is available."** Historical Lending mechanics do not prove current borrowing availability.
-
-**"1 TCY equals $1."** The claim conversion ratio is not a guaranteed market price or redemption value.
-
-**"10% system income means guaranteed yield."** Revenue distributions depend on protocol income, distribution conditions, staking state, and market exposure.
-
-**"TCY recovery and exploit recovery are the same thing."** The THORFi unwind and the May 2026 GG20/TSS exploit conciliation are different events with different liabilities, decisions, and evidence trails.
-
-**"ADR-028 means every loss was restored."** The accepted ADR defines a one-time accounting and loss-allocation migration; its own waterfall includes Saver and treasury impacts, so acceptance is not universal made-whole proof.
-
-## Non-Claims
-
-This page does not prove:
-
-- Current TCY claiming, staking, unstaking, trading, or distribution availability.
-- Current Savers or Lending product availability.
-- Full debt recovery, par redemption, or that any claimant has been made whole.
-- Current solvency, safety, restart, or exploit recovery completion.
-- TCY price, yield, suitability, or investment value.
-- That a third-party interface is safe or using current claim logic.
-
-Use this article as a dated map. Use live diagnostics, official interfaces, and address-specific THORNode evidence before making present-tense claims.
+The conversion ratio is not a guaranteed price; the 10% allocation is not guaranteed yield; and ADR-028's waterfall includes Saver and treasury impacts, so acceptance is not universal made-whole proof. This dated map does not establish current Savers/Lending availability, TCY operations, recovery completion, value, or third-party interface safety.

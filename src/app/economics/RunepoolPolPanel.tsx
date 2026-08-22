@@ -267,7 +267,7 @@ function bucketCheck(
     label,
     value: 'Needs review',
     tone: 'warning' as const,
-    detail: `${detail} Difference versus POL total: ${formatRune(delta.toString())}. Treat this as a source-shape review signal, not a solvency claim.`,
+    detail: `${detail} Difference versus POL total: ${formatRune(delta.toString())}. Source-shape review signal, not a solvency claim.`,
   };
 }
 
@@ -411,7 +411,7 @@ export function RunepoolPolView({
       <div className="mb-4 max-w-3xl">
         <SectionHeader className="mb-3">RUNEPool/POL Current Snapshot</SectionHeader>
         <p className="text-sm leading-relaxed text-slate-400">
-          This panel pairs current THORNode RUNEPool accounting with network diagnostics. Use it to locate the checked value, PnL, enablement flag, and POL scope; do not use it as yield, safety, route-quality, or wallet-flow proof.
+          This panel pairs current THORNode RUNEPool accounting with network diagnostics. Use it to locate the checked value, PnL, enablement flag, and POL scope. Yield, safety, and wallet-flow questions need their own checks.
         </p>
       </div>
 

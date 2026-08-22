@@ -123,7 +123,7 @@ describe('liquidity and economics content review', () => {
     expect(pendulum).not.toContain('During bull markets with high liquidity demand');
     expect(pendulum).toContain('`425M and burning`');
     expect(liquidityActions).toContain('impermanent-loss-protection section is historical');
-    expect(runePool).toContain('same-provider, same-height');
+    expect(runePool).toContain('same-provider same-height');
     expect(runePool).toContain('`current_deposit` is `rune_deposited - rune_withdrawn` and can be negative');
   });
 });

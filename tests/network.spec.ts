@@ -77,7 +77,7 @@ test.describe('THORChain Wiki Network Smoke Tests', () => {
     await expect(page.getByRole('heading', { name: /Node operator actions/i })).toBeVisible();
     await expect(page.getByText(/PauseBond is active in current Mimir/i)).toBeVisible();
     await expect(page.getByText(/HaltOperatorRotate is active in current Mimir/i)).toBeVisible();
-    await expect(page.getByText(/does not prove a specific node can leave safely/i)).toBeVisible();
+    await expect(page.getByText(/Node-level state and operator tooling are separate checks./i)).toBeVisible();
     await expect(page.getByRole('heading', { name: /Check A Route/i })).toBeVisible();
     await expect(page.getByRole('heading', { name: /Refund \/ failed swap triage/i })).toBeVisible();
     await expect(page.getByText(/Refund diagnosis: insufficient evidence/i)).toBeVisible();
@@ -117,7 +117,7 @@ test.describe('THORChain Wiki Network Smoke Tests', () => {
     await quotePanel.getByLabel(/Amount/i).fill('0.01');
     await checkRoute(quotePanel);
     await expect(quotePanel.getByText(/Current quote returned/i)).toBeVisible({ timeout: 15_000 });
-    await expect(quotePanel.getByText(/Current route is quoteable; past refund still needs proof/i)).toBeVisible();
+    await expect(quotePanel.getByText(/Current route is open/i)).toBeVisible();
     await expect(quotePanel.getByText(/Expected output/i)).toBeVisible();
     await expect(quotePanel.getByText(/Fee bps|Total fee bps/i)).toBeVisible();
     await expect(quotePanel.getByText(/same fresh quote flow/i)).toBeVisible();
@@ -259,4 +259,3 @@ test.describe('THORChain Wiki Network Smoke Tests', () => {
     expect(quoteRequests).toBe(2);
   });
 });
-

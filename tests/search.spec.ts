@@ -375,20 +375,20 @@ test.describe('THORChain Wiki Search Smoke Tests', () => {
     await expect(page.getByText(/Current TCY controls/i).first()).toBeVisible();
 
     await page.goto('/search?q=App%20Layer%20claim%20checks');
-    await expect(page.locator('main article').first().locator('a[href="/deep-dives/app-layer#what-to-verify-before-claiming"]')).toBeVisible();
+    await expect(page.locator('main article').first().locator('a[href="/deep-dives/app-layer#evidence-ladder"]')).toBeVisible();
     await expect(page.getByText(/App Layer and secured assets/i).first()).toBeVisible();
     await expect(page.locator('main a[href="/docs#source-map-chooser"]').first()).toBeVisible();
 
     await page.goto('/search?q=secured%20asset%20deposit%20available');
-    await expect(page.locator('main article').first().locator('a[href="/deep-dives/app-layer#what-to-verify-before-claiming"]')).toBeVisible();
+    await expect(page.locator('main article').first().locator('a[href="/deep-dives/app-layer#evidence-ladder"]')).toBeVisible();
     await expect(page.getByText(/App Layer and secured assets/i).first()).toBeVisible();
 
     await page.goto('/search?q=trade%20account%20deposit%20halted');
-    await expect(page.locator('main article').first().locator('a[href="/deep-dives/app-layer#what-to-verify-before-claiming"]')).toBeVisible();
+    await expect(page.locator('main article').first().locator('a[href="/deep-dives/app-layer#evidence-ladder"]')).toBeVisible();
     await expect(page.getByText(/App Layer and secured assets/i).first()).toBeVisible();
 
     await page.goto('/search?q=app%20layer%20route%20available');
-    await expect(page.locator('main article').first().locator('a[href="/deep-dives/app-layer#what-to-verify-before-claiming"]')).toBeVisible();
+    await expect(page.locator('main article').first().locator('a[href="/deep-dives/app-layer#evidence-ladder"]')).toBeVisible();
     await expect(page.getByText(/App Layer and secured assets/i).first()).toBeVisible();
 
     await page.goto('/search?q=HaltWasmContract');

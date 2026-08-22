@@ -104,7 +104,7 @@ describe('NetworkStatusBanner', () => {
     expect(html).toContain('No global swap halt; other operations paused');
     expect(html).toContain('Ordinary swaps');
     expect(html).toContain('No global swap halt detected');
-    expect(html).toContain('Route still needs quote or pair-specific proof');
+    expect(html).toContain('Active pauses are outside ordinary swap execution');
     expect(html).toContain('Other operations');
     expect(html).toContain('LP actions: paused');
     expect(html).toContain('Loans: paused');
@@ -260,7 +260,7 @@ describe('NetworkStatusBanner', () => {
     expect(html).toContain('HaltRebond is active in current Mimir.');
     expect(html).toContain('Operator rotation');
     expect(html).toContain('HaltOperatorRotate is present and not active in current Mimir.');
-    expect(html).toContain('does not prove a specific node can leave safely');
+    expect(html).toContain('Node-level state and operator tooling are separate checks.');
     expect(html).toContain('bonding, unbonding, rebonding, or operator-rotation availability');
   });
 

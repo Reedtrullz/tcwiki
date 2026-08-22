@@ -4,15 +4,7 @@ The Incentive Pendulum is THORChain's reward-balancing mechanism. It adjusts rew
 
 Use it to understand incentive alignment. Do not use it as proof of current APY, fair value, route competitiveness, or network health without live data.
 
-## What The Pendulum Can Prove
-
-This article can support a design claim:
-
-- THORChain intends to balance security capital and liquidity capital through reward allocation.
-- The mechanism points rewards toward the side that is comparatively under-supplied.
-- The commonly cited `2:1` bond-to-stake target is a design frame for security versus liquidity balance.
-
-This article cannot, by itself, prove a current-state claim. If the claim uses words like "now", "healthy", "available", "profitable", "cheap", "safe", or "undervalued", move from the model to live source checks.
+This design balances security capital and liquidity capital through reward allocation, moving rewards toward the comparatively under-supplied side; `2:1` is a commonly cited design target. It does not prove any current-state health, yield, price, or route claim.
 
 ## The Core Problem
 
@@ -48,13 +40,7 @@ The Incentive Pendulum is best treated as an incentive-alignment mechanism rathe
 
 ## Evidence Ladder
 
-Use this ladder before turning the pendulum into a present-tense economics claim:
-
-1. **Design source:** Use the official economic model and security/governance docs to explain why reward allocation moves between node operators and liquidity providers.
-2. **Current metric source:** Use `/stats#stats-look-here-first` for current Midgard health, pooled RUNE, reserve, bonding APY, node count, pool context, and earnings coverage.
-3. **Operational source:** Use `/network#network-diagnostics` for trading, signing, LP controls, pool-deposit pauses, and source warnings that affect whether a reward or liquidity number is actionable.
-4. **Claim type:** Decide whether the statement is about mechanism design, current dashboard state, realized yield, token value, or route quality. Each needs different evidence.
-5. **Non-claim check:** If the source only proves the model, do not upgrade it into health, yield, price, or route-availability proof.
+Separate design sources from live economics: official docs explain the model; source-labeled [stats](/stats#stats-look-here-first) supply pooled RUNE, reserve, bonding APY, node count, and earnings coverage; [Network diagnostics](/network#network-diagnostics) supply the operational state. Do not upgrade a design source into health, yield, price, or route proof.
 
 ## Common Misreadings
 
@@ -64,24 +50,4 @@ Use this ladder before turning the pendulum into a present-tense economics claim
 - **"More LP rewards mean every route is attractive."** Reward allocation does not prove pool depth, slippage, quoteability, settlement, or chain availability for a specific route.
 - **"Reward split proves protocol revenue lift."** Reward distribution and revenue attribution are different claims and should not be mixed without source-backed earnings data.
 
-## What To Verify Before Claiming
-
-Before using this article for a live economics claim, verify:
-
-1. Current pooled RUNE, reserve, bonding APY, node count, pool context, and earnings coverage from source-labeled live dashboards or protocol endpoints.
-2. Whether Midgard health is ok, warning, degraded, provider-mismatched, stale, or missing enough samples.
-3. Whether THORNode live operations show trading, signing, LP actions, pool deposits, or chain-specific controls that change the practical meaning of a reward or liquidity number.
-4. Whether the claim is about design incentives, current APY, actual realized yield, protocol revenue, token value, or route quality.
-5. Whether a third-party dashboard is summarizing Midgard data, THORNode state, or its own model.
-
-## Non-Claims
-
-This page does not prove:
-
-- Current node APY, LP APY, RUNE value, or investment suitability.
-- That the network is healthy just because the pendulum exists.
-- That rewards will attract enough bond or liquidity under all market conditions.
-- That current liquidity is available for every route.
-- That historical reward allocation predicts future yield.
-- That a route is quoteable, cheap, safe, or likely to settle.
-- That reward allocation proves protocol revenue growth or partner attribution.
+Current APY, realized yield, RUNE value, route quality, and revenue attribution are separate claims. Check source health, provider identity, and live operations before treating a reward number as actionable.

@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import { LiveSourceMeta } from '@/components/ui/LiveSourceMeta';
@@ -319,12 +318,6 @@ export function TcyControlsView({ result, status, isLoading }: TcyControlsViewPr
       tone: quality.tone,
       detail: 'Source warnings degrade the snapshot even when a direct TCY blocker is visible.',
     },
-    {
-      label: 'Non-claim',
-      value: 'No recovery proof',
-      tone: 'info' as const,
-      detail: 'These controls do not prove par recovery, market value, user eligibility, or an official interface being live.',
-    },
   ];
 
   return (
@@ -338,7 +331,7 @@ export function TcyControlsView({ result, status, isLoading }: TcyControlsViewPr
 
       <div className="mb-4">
         <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">Read these controls first</p>
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
           {readFirst.map((item) => (
             <div key={item.label} className={`rounded-lg border bg-surface-elevated p-4 ${cardClass(item.tone)}`}>
               <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
@@ -389,16 +382,6 @@ export function TcyControlsView({ result, status, isLoading }: TcyControlsViewPr
               <p className="mt-1 break-words text-amber-100/90">First warning: {warningHeadline.firstWarning}</p>
             </div>
           )}
-        </Card>
-
-        <Card>
-          <h3 className="text-base font-semibold text-slate-100">What This Does Not Prove</h3>
-          <p className="mt-1 text-xs leading-relaxed text-slate-400">
-            A clean halt-control snapshot does not prove an official claim interface is live, that a wallet supports the flow, that a user is eligible, or that recovery value is guaranteed.
-          </p>
-          <Link href="/network#network-diagnostics" className="mt-3 inline-flex text-xs font-semibold text-accent underline-offset-4 hover:underline">
-            Open full Network diagnostics
-          </Link>
         </Card>
       </div>
 

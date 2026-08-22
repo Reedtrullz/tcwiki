@@ -90,32 +90,28 @@ const chainCatalogBoundary = [
     badge: 'static boundary',
     href: '/docs#current-protocol-state',
     linkLabel: 'Check source boundary',
-    proves: 'The chain appears in the curated supported-chain catalog refreshed from inbound-address evidence.',
-    doesNotProve: 'Swaps, LP actions, signing, gas, outbound availability, or route quoteability right now.',
+    summary: 'A listing confirms catalog presence only; swaps, LP actions, signing, and quoteability need current checks.',
   },
   {
     title: 'Operational Now',
     badge: 'live state',
     href: '/network#network-diagnostics',
     linkLabel: 'Open diagnostics',
-    proves: 'Current chain, trading, signing, LP, pool-deposit, and source-warning status at the checked block.',
-    doesNotProve: 'Future uptime or that every asset pair on the chain can route.',
+    summary: 'Diagnostics show status at the checked block, not future uptime or coverage for every asset pair.',
   },
   {
     title: 'Specific Route',
     badge: 'quote check',
     href: '/network#check-a-route',
     linkLabel: 'Check a route',
-    proves: 'Whether THORNode can currently quote the selected from/to asset and amount.',
-    doesNotProve: 'Wallet support, final execution after quote expiry, or safe recipient/memo handling.',
+    summary: 'A quote covers the selected assets and amount only; wallet support and execution still need verification.',
   },
   {
     title: 'Implementation Use',
     badge: 'builder path',
     href: '/deep-dives/build-query-data#query-plan',
     linkLabel: 'Open query plan',
-    proves: 'Which endpoint family and source posture should be used for product or dashboard code.',
-    doesNotProve: 'A complete transaction builder, wallet UX, or production integration contract by itself.',
+    summary: 'The guide points to an endpoint family, not a complete production integration contract.',
   },
 ];
 
@@ -168,7 +164,7 @@ const currentStateControlCards = [
   {
     title: 'Constants vs Overrides',
     desc: 'Constants describe defaults; Mimir can override them. Current minimum bond or slash settings require reading both sources.',
-    href: '/deep-dives/mimir-halt-controls#what-to-verify-before-claiming',
+    href: '/deep-dives/mimir-halt-controls#what-mimirs-can-prove',
     linkLabel: 'Verify override posture',
   },
 ];
@@ -336,16 +332,7 @@ export default function ProtocolPage() {
                         <Badge variant="info">{item.badge}</Badge>
                         <h3 className="text-sm font-semibold text-slate-100">{item.title}</h3>
                       </div>
-                      <dl className="space-y-2 text-xs leading-relaxed text-slate-400">
-                        <div>
-                          <dt className="font-semibold uppercase tracking-wider text-slate-500">Can Prove</dt>
-                          <dd>{item.proves}</dd>
-                        </div>
-                        <div>
-                          <dt className="font-semibold uppercase tracking-wider text-amber-300">Does Not Prove</dt>
-                          <dd>{item.doesNotProve}</dd>
-                        </div>
-                      </dl>
+                      <p className="text-xs leading-relaxed text-slate-400">{item.summary}</p>
                       <Link href={item.href} className="mt-3 inline-flex text-xs font-semibold text-accent underline-offset-4 hover:underline">
                         {item.linkLabel}
                       </Link>

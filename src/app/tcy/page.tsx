@@ -68,7 +68,7 @@ const tcyRelatedChecks: RelatedCheck[] = [
 const tcyDecisionRows = [
   {
     question: 'Was THORFi still available after the unwind?',
-    answer: 'No current-product claim from this page.',
+    answer: 'No; THORFi was deprecated after the unwind.',
     evidence: 'Use archived Savers/Lending docs for historical mechanics and deprecation context.',
     boundary: 'Do not turn historical mechanics into current deposit, borrow, or yield instructions.',
   },
@@ -80,7 +80,7 @@ const tcyDecisionRows = [
   },
   {
     question: 'Can a reader claim, stake, or trade TCY right now?',
-    answer: 'Treat as current-only.',
+    answer: 'Check the live TCY controls first.',
     evidence: 'Check official claim/interface sources and live TCY Mimir controls before making availability claims.',
     boundary: 'Do not infer live availability from old launch or tokenomics pages alone.',
   },

@@ -278,9 +278,9 @@ export default function NetworkPageClient({ children }: NetworkPageClientProps) 
     <section id="node-operator-guide" className="mb-12 scroll-mt-24" aria-labelledby="node-operator-guide-heading">
       <SectionHeader id="node-operator-guide-heading">Node Operator Guide</SectionHeader>
       <p className="mb-4 max-w-3xl text-sm leading-relaxed text-slate-400">
-        Use this as an orientation map before acting. Official operator docs explain setup
-        and maintenance, while this page separates current controls, node lifecycle, bond
-        risk, and rewards context so a guide search does not look like live action proof.
+        Use this as an orientation map before acting. Official operator docs explain setup,
+        maintenance, current controls, node lifecycle, bond risk, and rewards context; none
+        of those entries are live action proof.
       </p>
       <div className="grid gap-3 lg:grid-cols-2">
         <Card padding="sm" className="flex flex-col gap-3">
@@ -290,7 +290,7 @@ export default function NetworkPageClient({ children }: NetworkPageClientProps) 
               <h3 className="text-sm font-semibold text-slate-100">Setup and maintenance</h3>
             </div>
             <p className="text-xs leading-relaxed text-slate-400">
-              Start from the official operator runbook for setup, sync, troubleshooting, and maintenance details. Treat local wiki text as a source map, not installation instructions.
+              Start from the official operator runbook for setup, sync, troubleshooting, and maintenance details. This is a source map, not installation instructions.
             </p>
           </div>
           <a href={nodeManagingSource.url} className="mt-auto text-xs font-semibold text-accent underline-offset-4 hover:underline" target="_blank" rel="noopener noreferrer">
