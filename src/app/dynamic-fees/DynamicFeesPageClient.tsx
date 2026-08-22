@@ -920,7 +920,6 @@ function HistoricalResultsChart({ status }: { status?: DynamicL1FeeStatus }) {
           <Badge variant={sealedSamples > 0 ? 'info' : 'warning'}>
             {sealedSamples > 0 ? 'Sealed samples available' : 'No sealed samples'}
           </Badge>
-          <Badge variant="warning">Not causal proof</Badge>
         </div>
       </div>
 
@@ -1109,7 +1108,6 @@ function PairMovementSnapshot({ status }: { status?: DynamicL1FeeStatus }) {
             Pair movement is controller evidence, not proof of revenue lift or partner attribution quality.
           </p>
         </div>
-        <Badge variant="warning">Not causal proof</Badge>
       </div>
 
       <div className="grid gap-2 md:grid-cols-4">
@@ -1598,7 +1596,7 @@ function InterpretationNotesCard({
       </p>
       <ul className="grid gap-2 text-sm leading-relaxed text-slate-400 md:grid-cols-2">
         <li>L1-to-L1 scope: ADR-026 v1 applies to eligible L1 swaps selected by whitelisted thornames and normalized pairs; trade assets, secured assets, synths, and many arb flows remain outside this model.</li>
-        <li>Current THORNode values can change every block or epoch. This page pins reads to one provider and height; current snapshot: {snapshotLabel}; warnings: {status ? warningCount.toLocaleString() : 'Unavailable'}.</li>
+        <li>Current THORNode values can change every block or epoch. This page pins reads to one provider and height; current snapshot: {snapshotLabel}.</li>
         <li>Affiliate attribution versus applied floor: eligible thornames can receive TOR credit while the applied floor comes from the largest affiliate-bps thorname.</li>
         <li>Discord can explain debate and operating concerns, but it is not canonical protocol evidence.</li>
         <li>Current records and sparse sealed history do not prove revenue lift, route competitiveness, or partner attribution quality.</li>

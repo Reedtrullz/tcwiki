@@ -473,7 +473,7 @@ function getSwapStatusPresentation(
       tone: 'unknown',
       label: 'Needs source review',
       badge: 'needs review',
-      summary: 'No global swap halt is active in current THORNode data, but source warnings mean ordinary swap availability should not be called clean until diagnostics are reviewed.',
+      summary: 'No global swap halt, but source warnings need review before calling swaps clean.',
       detail: 'No swap halt observed; source review needed',
     };
   }
@@ -483,8 +483,8 @@ function getSwapStatusPresentation(
       tone: 'open',
       label: 'No global swap halt detected',
       badge: 'no global halt',
-      summary: 'No global or direct swap halt is active in current THORNode data; the active pauses are outside ordinary swap execution.',
-      detail: 'Route still needs quote or pair-specific proof',
+      summary: 'No global or direct swap halt is active in current THORNode data.',
+      detail: 'Active pauses are outside ordinary swap execution',
     };
   }
 
@@ -835,8 +835,8 @@ function getRefundTriageIntro(
   }
   if (quoteData?.quote) {
     return {
-      title: 'Current route is quoteable; past refund still needs proof',
-      summary: 'A current quote is strong route evidence for this asset pair and amount, but it does not prove why an earlier transaction refunded.',
+      title: 'Current route is open',
+      summary: 'A current quote confirms this route is open for this pair and amount now. Check an explorer for refund causes.',
     };
   }
   if (quoteData?.failure) {
@@ -1703,7 +1703,7 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
             </div>
           )}
           <p className="mt-3 text-[11px] leading-relaxed text-slate-400">
-            This panel is about network-level action gates. It does not prove a specific node can leave safely; node state, churn timing, slash points, and operator tooling still matter.
+            Node-level state and operator tooling are separate checks.
           </p>
         </section>
       )}

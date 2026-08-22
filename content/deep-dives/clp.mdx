@@ -4,14 +4,7 @@ The Continuous Liquidity Pool is the core innovation that allows THORChain to of
 
 ## What CLP Can Prove
 
-CLP explains how THORChain prices a pool-based swap and why larger trades pay more slip/liquidity fee. It can support narrow mechanism claims:
-
-1. THORChain pools pair external assets with RUNE rather than isolated asset-to-asset order books.
-2. The CLP formula links input size, pool depth, slip, liquidity fee, and output amount.
-3. RUNE-paired pools let a cross-chain route compose through shared settlement liquidity.
-4. Slip-based pricing makes depth-consuming trades progressively more expensive and directs the liquidity fee to pool capital; it does not eliminate LP risk.
-
-It does not, by itself, prove that a current route is quoteable, cheap, available, or safe to execute. Current execution still depends on a fresh quote, live pool depth, inbound address state, chain/trading/signing controls, outbound fee economics, memo validity, and source quality.
+CLP explains how THORChain prices a pool-based swap and why larger trades pay more slip/liquidity fee. THORChain pools external assets with RUNE; the formula links input size, depth, slip, fee, and output; shared settlement liquidity composes cross-chain routes. It does not prove that a current route is quoteable, cheap, available, or safe to execute.
 
 ## How CLP Works
 
@@ -36,16 +29,7 @@ If a swap limit is not met, the amount is below the recommended minimum, fees ex
 
 ## Evidence Ladder
 
-Use the narrowest evidence that matches the claim:
-
-1. **Mechanism claim:** use the CLP formula and official THORChain docs to explain slip, liquidity fee, and RUNE-paired pools.
-2. **Current quote claim:** use a fresh THORNode quote for the exact route and amount. Keep expected output, fees, slippage bps, recommended minimum input, expiry, and warning text attached.
-3. **Current availability claim:** use [Network diagnostics](/network#network-diagnostics) for trading, signing, chain observation, source warnings, and quote-probe posture.
-4. **Pool-depth or APY claim:** use Midgard pool and earnings data with source labels, unavailable-interval counts, and degraded-state warnings.
-5. **LP action claim:** use the [Liquidity Actions](/deep-dives/liquidity-actions#what-to-check-first) guide before saying add, withdraw, pool deposit, asymmetric withdrawal, or RUNEPool actions are open.
-6. **Refund or failure claim:** use the [Streaming Swaps And Refunds](/deep-dives/streaming-swaps-refunds#evidence-ladder) evidence ladder with the exact quote, memo, transaction hash, and network state.
-
-If a statement jumps from the formula straight to a present-tense action, label the result as partial evidence.
+Use the narrowest evidence that matches the claim: official docs for mechanics, a fresh THORNode quote for a specific route, [Network diagnostics](/network#network-diagnostics) for availability, labeled Midgard data for depth/APY, [Liquidity Actions](/deep-dives/liquidity-actions#what-to-check-first) for LP operations, and the [Streaming Swaps And Refunds](/deep-dives/streaming-swaps-refunds#evidence-ladder) ladder for refund causes. A formula alone is only partial evidence for a present-tense action.
 
 ## Swap Lifecycle and Refunds
 
@@ -65,24 +49,4 @@ For operational triage, use the dedicated [Streaming Swaps And Refunds](/deep-di
 
 THORChain's CLP is a constant-function pool design with slip-based pricing, adapted to native cross-chain settlement through RUNE-paired pools. Its distinctive claim is the shared RUNE settlement graph and native-asset execution model, not an escape from constant-product-style pool economics. Current chain availability should be checked from live inbound-address and pool status, not from a hard-coded chain count.
 
-## What To Verify Before Claiming
-
-Before making a CLP, swap, fee, liquidity, or LP statement, verify:
-
-1. Whether the statement is about the formula, a current quote, route availability, pool depth, LP availability, or a historical product.
-2. The current quote response for the exact route and amount if the claim is user-facing or route-specific.
-3. Current [Network diagnostics](/network#network-diagnostics) for trading, signing, chain halts, LP controls, and source-warning state.
-4. Current Midgard pool and earnings source quality before quoting depth, APY, or recent earnings.
-5. Whether the claim belongs in the refund guide, liquidity-actions guide, RUNEPool/POL guide, or dynamic-fee tracker instead of the CLP formula page.
-6. The source provider, checked time, block height when available, and whether missing fields were shown as unavailable rather than zero.
-
-## Non-Claims
-
-This page does not prove:
-
-- A route is currently quoteable, executable, cheap, or safe.
-- A swap will not refund, expire, miss minimum output, or fail on memo, dust, fee, halt, signing, or outbound conditions.
-- Current pool depth, APY, liquidity provider earnings, or route competitiveness.
-- That LP adds, withdrawals, pool deposits, asymmetric withdrawals, RUNEPool, Savers, Lending, or secured-asset flows are available.
-- That a static formula is wallet guidance, transaction construction, or support diagnosis.
-- That a current quote or dashboard number proves future yield, profitability, safety, or investment suitability.
+A static formula is neither wallet guidance nor support diagnosis. Route execution, refunds, LP actions, depth/APY, and future outcomes all need the matching live evidence described above.

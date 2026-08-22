@@ -75,26 +75,6 @@ For real transactions, use a fresh official quote flow or interface implementati
 
 ## Evidence Ladder
 
-Use the strongest evidence available:
+Use, in order of strength: the current exact-route quote and its error body; Network diagnostics for route/signing/source state; the actual inbound memo, chains, and refund hash; labeled pool and fee data; then static docs for design meaning alone. They do not prove a past refund's specific cause or a future swap's success.
 
-1. Current THORNode quote result for the exact route and amount.
-2. Exact quote error body, especially errors for price tolerance, destination address, memo length, missing asset, minimum amount, or dust threshold.
-3. Current `/network#network-diagnostics` state for route halts, signing/trading controls, and source quality.
-4. The actual inbound transaction hash, memo, source chain, destination chain, and any refund transaction hash.
-5. Current pool availability and fee fields from source-labeled endpoints.
-6. Static docs for design meaning only.
-
-Static docs explain what a valid swap can look like. They do not prove that a past refund had one specific cause or that a future swap will succeed.
-
-## Non-Claims
-
-This page does not prove:
-
-- A current route is quoteable, cheap, or available.
-- A specific refund cause without transaction-level evidence.
-- That an interface generated a correct memo or used the latest quote.
-- That a copied inbound address or memo is safe to use.
-- That streaming swaps remove all slip, refund, delay, or execution risk.
-- That wallet, frontend, or signing behavior is safe.
-
-Use this page as a triage map. Use live diagnostics, current quotes, transaction evidence, and official integration docs before telling a user why a swap refunded.
+This triage map cannot prove route availability, interface correctness, copied-value safety, or signing behavior. Streaming swaps also do not remove slip, refund, delay, or execution risk; assign a refund cause only from matching transaction evidence.

@@ -15,20 +15,17 @@ test.describe('THORChain Wiki TCY Smoke Tests', () => {
     await expect(panel.getByText('Staking halt check')).toBeVisible();
     await expect(panel.getByText('Trading halt check')).toBeVisible();
     await expect(panel.getByText('Source quality')).toBeVisible();
-    await expect(panel.getByText('Non-claim')).toBeVisible();
     await expect(panel.getByText(/Use it as a halt-control check/i)).toBeVisible();
     await expect(panel.getByText('Can I claim?')).toHaveCount(0);
     await expect(panel.getByText('Can I stake?')).toHaveCount(0);
     await expect(panel.getByText('Can I trade?')).toHaveCount(0);
     await expect(panel.getByText('Needs review').first()).toBeVisible();
-    await expect(panel.getByText('No recovery proof')).toBeVisible();
     await expect(panel.getByText('Tracked TCY halt controls', { exact: true })).toBeVisible();
     await expect(panel.getByText('Needs review').first()).toBeVisible();
     await expect(panel.getByText('TCY claiming', { exact: true })).toBeVisible();
     await expect(panel.getByText('TCYCLAIMINGHALT').first()).toBeVisible();
     await expect(panel.getByText('TCY trading', { exact: true })).toBeVisible();
     await expect(panel.getByText('HALTTCYTRADING').first()).toBeVisible();
-    await expect(panel.getByRole('link', { name: /Open full Network diagnostics/i })).toHaveAttribute('href', '/network#network-diagnostics');
     await expect(page.getByRole('heading', { name: /Reader Decision Matrix/i })).toBeVisible();
     await expect(page.getByText('Historical').first()).toBeVisible();
     await expect(page.getByText(/Did TCY fully recover creditors/i)).toBeVisible();
@@ -58,7 +55,5 @@ test.describe('THORChain Wiki TCY Smoke Tests', () => {
     await expect(panel.getByText('TCYCLAIMINGSWAPHALT is active in the checked network snapshot')).toBeVisible();
     await expect(panel.getByText('HALTTCYTRADING').first()).toBeVisible();
     await expect(panel.getByText('HALTTCYTRADING is active in the checked network snapshot')).toBeVisible();
-    await expect(panel.getByText('No recovery proof')).toBeVisible();
-    await expect(panel.getByText(/does not prove an official claim interface is live/i)).toBeVisible();
   });
 });

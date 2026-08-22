@@ -35,32 +35,6 @@ Current source-tree documentation also separates vault-lifecycle security, obser
 
 ## Operator Evidence Ladder
 
-For a current operator or incident claim, use the strongest evidence available:
+For a current operator or incident claim, use current node status, bond, slash-point, jail, and vault-membership data; current Mimir/constants for thresholds; exact event evidence for observations, signing, keygen, or outbound actions; and dated reports only for historical wording. "Has slash points" is not the same claim as "bond was confiscated."
 
-1. Current node status, bond, slash-point, jail, and vault-membership data from THORNode or operator tooling.
-2. Current Mimir and constants when the claim depends on thresholds or enabled/paused behavior.
-3. Exact observation, signing, keygen, or outbound evidence for a specific event.
-4. Dated incident reports or upgrade notes for historical root-cause and patch wording.
-5. Static docs for design meaning only.
-
-Do not treat "has slash points" as the same claim as "bond was confiscated". Do not treat a historical slash rule as a current parameter without checking current protocol state.
-
-## What To Verify Before Claiming
-
-Before making a slashing claim, verify:
-
-- whether it is reward slashing, slash points, bond slashing, or a broader incident-recovery mechanism,
-- whether the affected node was active, standby, leaving, or already churned out,
-- the current constants/Mimir values if quoting rates or thresholds,
-- the exact event family: observation, signing, keygen, equivocation, theft, or operational downtime,
-- whether a report is describing a specific dated incident rather than the current release.
-
-## Non-Claims
-
-This page does not prove:
-
-- Current slash-point totals, bond balances, or active node risk.
-- That a particular operator fault burned bond rather than reduced rewards.
-- Current slash multipliers, jail periods, minimum bond, churn eligibility, or unbonding availability.
-- That every incident is automatically made whole by slashing.
-- That slashing alone proves present-day network safety.
+A slashing statement should identify the reward-versus-bond ledger, exact event family, affected lifecycle state, and whether it describes a dated incident or the current release. Without those checks, this page cannot establish current totals, balances, parameters, unbonding availability, network safety, or incident recovery.

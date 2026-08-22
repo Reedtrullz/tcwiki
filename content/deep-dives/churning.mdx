@@ -43,22 +43,4 @@ Churn is also a vault-management event. When the active validator set changes, n
 
 That makes churn relevant to users even if they never run a node: vault addresses, signing responsibility, outbound queues, and operational pause controls can all matter during sensitive migration windows. A churned-out node returning to Standby is still not automatically free to unbond while its key remains part of a migrating vault.
 
-## What To Verify Before Claiming
-
-Before making a current churning or node-life-cycle claim, verify:
-
-1. The current network diagnostics state for `HALTCHURNING`, signing, chain halts, and source warnings.
-2. Current THORNode node status, churn height, and Mimir/constant values before quoting an interval.
-3. Whether a node is Whitelisted, Standby, Ready, Active, Disabled, marked to leave, or still part of a migrating vault.
-4. Whether the claim is about normal scheduled churn, a churn-out criterion, failed keygen, vault migration, or incident recovery.
-5. Whether a dated incident or upgrade source still applies to the current release.
-
-## Non-Claims
-
-This page does not prove:
-
-- Current churn height, active-set size, node eligibility, or next rotation time.
-- That a node can safely unbond or leave now merely because it is not Active.
-- That a vault migration is complete or risk-free.
-- That all chain clients are synchronized and ready for churn.
-- That the current network is safe merely because churning exists.
+Current churn claims need Network diagnostics, THORNode node/churn state, current Mimir constants, the exact node lifecycle stage, and release-dated evidence. This design does not reveal the next rotation, current eligibility, migration completion, or chain-client readiness.

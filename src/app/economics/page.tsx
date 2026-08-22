@@ -154,7 +154,7 @@ export default function EconomicsPage() {
           Economic claim checks
         </summary>
         <p className="mt-2 max-w-3xl text-xs leading-relaxed text-slate-400">
-          Start by deciding what kind of economic statement you are making. This page explains mechanisms; live numbers, fee-experiment records, and dated tokenomics claims need their own source path.
+          Mechanisms here; live numbers, fee-experiment records, and dated tokenomics have their own source paths.
         </p>
         <ul className="mt-3 divide-y divide-border">
           {economicClaimChecks.map((check) => (

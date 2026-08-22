@@ -153,16 +153,11 @@ function DeepDiveArticleCard({ article }: { article: DeepDiveLibraryArticle }) {
           <ArrowRight aria-hidden="true" className="h-3.5 w-3.5" />
         </Link>
       </div>
-      <p className="text-sm leading-relaxed text-slate-400">{article.description}</p>
-      <div className="mt-4 grid gap-3 border-t border-border pt-3 text-xs leading-relaxed text-slate-400 sm:grid-cols-2">
-        <div>
-          <p className="mb-1 font-semibold uppercase tracking-wider text-emerald-300">Use For</p>
-          <p>{article.useCase}</p>
-        </div>
-        <div>
-          <p className="mb-1 font-semibold uppercase tracking-wider text-amber-300">Verify First</p>
-          <p>{article.claimBoundary}</p>
-        </div>
+      <div title={[article.useCase, article.claimBoundary].join(' ')} className="mt-3">
+        <p className="line-clamp-2 text-sm leading-relaxed text-slate-400">{article.description}</p>
+        <span className="sr-only">
+          Use For: {article.useCase} Verify First: {article.claimBoundary}
+        </span>
       </div>
       <div className="mt-4">
         <FreshnessMeta

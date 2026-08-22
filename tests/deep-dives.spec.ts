@@ -31,10 +31,10 @@ test.describe('THORChain Wiki Deep Dive Smoke Tests', () => {
     { href: '/deep-dives/build-query-data#query-plan', selector: '#query-plan' },
     { href: '/deep-dives/clp#evidence-ladder', selector: '#evidence-ladder' },
     { href: '/deep-dives/liquidity-actions#what-to-check-first', selector: '#what-to-check-first' },
-    { href: '/deep-dives/runepool-pol#what-this-page-can-prove', selector: '#what-this-page-can-prove' },
+    { href: '/deep-dives/runepool-pol#runepool-versus-lp-positions', selector: '#runepool-versus-lp-positions' },
     { href: '/deep-dives/streaming-swaps-refunds#what-to-check-first', selector: '#what-to-check-first' },
     { href: '/deep-dives/incentive-pendulum#evidence-ladder', selector: '#evidence-ladder' },
-    { href: '/deep-dives/app-layer#what-to-verify-before-claiming', selector: '#what-to-verify-before-claiming' },
+    { href: '/deep-dives/app-layer#evidence-ladder', selector: '#evidence-ladder' },
     { href: '/deep-dives/tcy-recovery-timeline#what-to-check-now', selector: '#what-to-check-now' },
   ];
 
@@ -101,16 +101,14 @@ test.describe('THORChain Wiki Deep Dive Smoke Tests', () => {
       await expect(articleCard).toBeVisible();
       await expect(articleCard.locator('h3 a')).toHaveAttribute('href', entry.href);
       await expect(articleCard.getByText(entry.description)).toBeVisible();
-      await expect(articleCard.getByText('Use For')).toBeVisible();
       const useCase = getDeepDiveArticleUseCase(entry.id, entry.title, entry.confidence);
       expect(useCase).not.toMatch(/^(Curated explanation of|Historical context for)/);
-      await expect(articleCard.getByText(useCase)).toBeVisible();
-      await expect(articleCard.getByText('Verify First')).toBeVisible();
+      await expect(articleCard.getByText(new RegExp(`Use For: ${escapeRegExp(useCase)} Verify First`))).toBeVisible();
       const readerPaths = DEEP_DIVE_READER_PATHS.filter((path) => path.entryIds.includes(entry.id));
       if (readerPaths.length > 0) {
-      const claimBoundary = getDeepDiveArticleClaimBoundary(entry.id, entry.confidence, readerPaths);
-      expect(claimBoundary).not.toBe('Current protocol constants, live Mimir state, chain availability, quote execution, or product status.');
-      await expect(articleCard.getByText(claimBoundary)).toBeVisible();
+        const claimBoundary = getDeepDiveArticleClaimBoundary(entry.id, entry.confidence, readerPaths);
+        expect(claimBoundary).not.toBe('Current protocol constants, live Mimir state, chain availability, quote execution, or product status.');
+        await expect(articleCard.getByText(new RegExp(`Verify First: ${escapeRegExp(claimBoundary)}`))).toBeVisible();
       }
       await expect(articleCard.getByText(new RegExp(`Checked ${escapeRegExp(entry.reviewedAt)}`))).toBeVisible();
     }
@@ -284,14 +282,13 @@ test.describe('THORChain Wiki Deep Dive Smoke Tests', () => {
 
       if (slug === 'rune-settlement') {
         await expect(page.getByRole('heading', { name: /What The Settlement Model Proves/i })).toBeVisible();
-        await expect(page.getByText(/Current RUNE price, fair value, or investment upside/i)).toBeVisible();
+        await expect(page.getByText(/RUNE price, APY, route competitiveness, current enablement/i)).toBeVisible();
       }
       if (slug === 'clp') {
         await expect(page.getByRole('heading', { name: /What CLP Can Prove/i })).toBeVisible();
         await expect(page.getByRole('heading', { name: /Evidence Ladder/i })).toBeVisible();
-        await expect(page.getByRole('heading', { name: /What To Verify Before Claiming/i })).toBeVisible();
-        await expect(page.getByText(/A route is currently quoteable, executable, cheap, or safe/i)).toBeVisible();
-        await expect(page.getByText(/If a statement jumps from the formula straight to a present-tense action/i)).toBeVisible();
+        await expect(page.getByText(/does not prove that a current route is quoteable/i)).toBeVisible();
+        await expect(page.getByText(/formula alone is only partial evidence/i)).toBeVisible();
         await expect(page.getByRole('link', { name: /Evidence Ladder/i })).toHaveAttribute('href', '#evidence-ladder');
       }
       if (slug === 'bifrost') {
@@ -300,26 +297,20 @@ test.describe('THORChain Wiki Deep Dive Smoke Tests', () => {
       }
       if (slug === 'churning') {
         await expect(page.getByRole('heading', { name: /Vault Migration/i })).toBeVisible();
-        await expect(page.getByText(/Current churn height, active-set size/i)).toBeVisible();
+        await expect(page.getByText(/next rotation, current eligibility, migration completion/i)).toBeVisible();
       }
       if (slug === 'slashing') {
         await expect(page.getByRole('heading', { name: /Operator Evidence Ladder/i })).toBeVisible();
-        await expect(page.getByText(/Do not treat "has slash points" as the same claim/i)).toBeVisible();
+        await expect(page.getByText(/separates reward slash points from bond-at-risk events/i)).toBeVisible();
       }
       if (slug === 'tss') {
         await expect(page.getByRole('heading', { name: /Dated Recovery State/i })).toBeVisible();
-        await expect(page.getByRole('heading', { name: /What To Verify Before Claiming/i })).toBeVisible();
-        await expect(page.getByRole('heading', { name: /Non-Claims/i })).toBeVisible();
         await expect(page.getByText(/recovery restored normal network operation with patched GG20-era signing/i)).toBeVisible();
-        await expect(page.getByText(/Current vault safety or present availability merely because the historical v3.19.x restart completed/i)).toBeVisible();
-        await expect(page.getByRole('link', { name: /What To Verify Before Claiming/i })).toHaveAttribute('href', '#what-to-verify-before-claiming');
+        await expect(page.getByText(/Generic TSS context cannot prove every validator's safety/i)).toBeVisible();
       }
       if (slug === 'incentive-pendulum') {
-        await expect(page.getByRole('heading', { name: /What The Pendulum Can Prove/i })).toBeVisible();
         await expect(page.getByRole('heading', { name: /Evidence Ladder/i })).toBeVisible();
-        await expect(page.getByRole('heading', { name: /Common Misreadings/i })).toBeVisible();
-        await expect(page.getByRole('heading', { name: /What To Verify Before Claiming/i })).toBeVisible();
-        await expect(page.getByText(/Current node APY, LP APY, RUNE value/i)).toBeVisible();
+        await expect(page.getByText(/Current APY, realized yield, RUNE value, route quality/i)).toBeVisible();
         await expect(page.getByText(/Reward distribution and revenue attribution are different claims/i)).toBeVisible();
         await expect(page.getByRole('link', { name: /Evidence Ladder/i })).toHaveAttribute('href', '#evidence-ladder');
       }
@@ -327,9 +318,8 @@ test.describe('THORChain Wiki Deep Dive Smoke Tests', () => {
         await expect(page.getByRole('link', { name: 'TCY Recovery Timeline', exact: true }).first()).toHaveAttribute('href', '/deep-dives/tcy-recovery-timeline');
         await expect(page.getByRole('heading', { name: /What This Page Can Prove/i })).toBeVisible();
         await expect(page.getByRole('heading', { name: /Evidence Ladder/i })).toBeVisible();
-        await expect(page.getByRole('heading', { name: /Common Misreadings/i })).toBeVisible();
-        await expect(page.getByText(/Savers or Lending are currently available/i)).toBeVisible();
-        await expect(page.getByText(/Savers are back because TCY exists/i)).toBeVisible();
+        await expect(page.getByText(/TCY is not Savers returning/i)).toBeVisible();
+        await expect(page.getByText(/dated liability snapshots are not current repayment totals/i)).toBeVisible();
         await expect(page.getByRole('link', { name: /Evidence Ladder/i })).toHaveAttribute('href', '#evidence-ladder');
       }
       if (slug === 'app-layer') {
@@ -341,7 +331,7 @@ test.describe('THORChain Wiki Deep Dive Smoke Tests', () => {
         await expect(page.getByRole('heading', { name: /Secured asset movement/i })).toBeVisible();
         await expect(page.getByRole('heading', { name: /Trade-account or arbitrage flow/i })).toBeVisible();
         await expect(page.getByText(/No global WASM halt means every contract is usable/i)).toBeVisible();
-        await expect(page.getByText(/If a claim jumps from "this feature exists in docs"/i)).toBeVisible();
+        await expect(page.getByText(/Design docs alone do not prove that an action works now/i)).toBeVisible();
         await expect(page.getByText(/Do not claim: A contract, deployer, checksum, or app is safe/i)).toBeVisible();
         await expect(page.getByRole('link', { name: /App Layer Claim Checks/i })).toHaveAttribute('href', '#app-layer-claim-checks');
         await expect(page.getByRole('link', { name: /Evidence Ladder/i })).toHaveAttribute('href', '#evidence-ladder');
@@ -356,16 +346,14 @@ test.describe('THORChain Wiki Deep Dive Smoke Tests', () => {
         await expect(page.getByRole('heading', { name: /LP Actions Versus Swaps/i })).toBeVisible();
         await expect(page.getByRole('heading', { name: /Evidence Ladder/i })).toBeVisible();
         await expect(page.getByText(/Those controls can be active while ordinary swaps continue/i)).toBeVisible();
-        await expect(page.getByText(/That APY, pool depth, or 30-day earnings prove future yield/i)).toBeVisible();
+        await expect(page.getByText(/historical metrics do not guarantee future yield/i)).toBeVisible();
         await expect(page.getByRole('link', { name: /What To Check First/i })).toHaveAttribute('href', '#what-to-check-first');
       }
       if (slug === 'runepool-pol') {
-        await expect(page.getByRole('heading', { name: /What This Page Can Prove/i })).toBeVisible();
         await expect(page.getByRole('heading', { name: /RUNEPool Versus LP Positions/i })).toBeVisible();
         await expect(page.getByRole('heading', { name: /Accounting Checks/i })).toBeVisible();
-        await expect(page.getByText(/provider PnL, but aggregate POL exposure can include impermanent loss/i)).toBeVisible();
-        await expect(page.getByText(/That RUNEPool deposits or withdrawals are currently open after the checked block/i)).toBeVisible();
-        await expect(page.getByRole('link', { name: /What This Page Can Prove/i })).toHaveAttribute('href', '#what-this-page-can-prove');
+        await expect(page.getByText(/checked PnL predicts future yield/i)).toBeVisible();
+        await expect(page.getByText(/valid endpoint does not prove that deposits are open/i)).toBeVisible();
       }
       if (slug === 'midgard-thornode-data') {
         await expect(page.getByRole('heading', { name: /What This Guide Can Prove/i })).toBeVisible();
@@ -389,18 +377,17 @@ test.describe('THORChain Wiki Deep Dive Smoke Tests', () => {
       if (slug === 'streaming-swaps-refunds') {
         await expect(page.getByRole('heading', { name: /What To Check First/i })).toBeVisible();
         await expect(page.getByRole('heading', { name: /Why Refunds Happen/i })).toBeVisible();
-        await expect(page.getByText(/A specific refund cause without transaction-level evidence/i)).toBeVisible();
+        await expect(page.getByText(/assign a refund cause only from matching transaction evidence/i)).toBeVisible();
         await expect(page.getByRole('link', { name: /Memos, Limits, And Refund Addresses/i })).toHaveAttribute('href', '#memos-limits-and-refund-addresses');
       }
       if (slug === 'tcy-recovery-timeline') {
-        await expect(page.getByRole('heading', { name: /What This Timeline Can Prove/i })).toBeVisible();
         await expect(page.getByRole('heading', { name: /Separate Exploit Conciliation/i })).toBeVisible();
         await expect(page.getByRole('heading', { name: /What To Check Now/i })).toBeVisible();
         await expect(
           page.locator('p').filter({ hasText: /immutable v3.19.0 ADR-028 source marks the decision Accepted and specifies a one-time Migrate15to16 conciliation waterfall/i })
         ).toBeVisible();
-        await expect(page.getByText(/The THORFi unwind and the May 2026 GG20\/TSS exploit conciliation are different events/i)).toBeVisible();
-        await expect(page.getByText(/Full debt recovery, par redemption, or that any claimant has been made whole/i)).toBeVisible();
+        await expect(page.getByText(/not identical, to the January-February 2025 THORFi unwind/i)).toBeVisible();
+        await expect(page.getByText(/acceptance is not universal made-whole proof/i)).toBeVisible();
       }
     }
   });

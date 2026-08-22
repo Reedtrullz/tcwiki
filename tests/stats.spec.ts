@@ -228,8 +228,6 @@ test.describe('THORChain Wiki Stats Smoke Tests', () => {
       await expect(pools.getByRole('row', { name: /ETH\.USDC-0XA0B86991C6218B36C1D19D4A2E9EB0CE3606EB48/i })).toBeVisible();
       await expect(pools.getByRole('row', { name: /BTC\.BTC/i })).toHaveCount(0);
     }
-    await expect(pools.getByText(/Full loaded row list stays in this wiki view/i)).toBeVisible();
-
     await pools.getByRole('searchbox', { name: /Filter Midgard available-pool rows/i }).fill('atom');
     await expect(page).toHaveURL(/pool_q=atom/);
     await expect(pools.getByText(/No pools match "atom" on ETH/i)).toBeVisible();

@@ -32,27 +32,13 @@ App Layer language gets risky when one sentence tries to cover contracts, secure
 
 ## What This Page Can Prove
 
-This article can support a few narrow claims:
-
-- THORChain App Layer contracts are CosmWasm contracts running in THORNode's Cosmos SDK environment.
-- CosmWasm contracts are sandboxed from THORChain vault logic; an app-layer failure is not evidence of direct vault authority, and the sandbox is not proof that a particular contract is safe.
-- App Layer availability is controlled by scoped live controls, not by one broad "contracts are live" switch.
-- Secured assets, trade assets, trade accounts, and contract-moved tokens are separate concepts with different evidence needs. The reviewed official sources use inconsistent "replaces" wording, so this page preserves that divergence instead of inferring a completed module migration.
-- Static docs can explain design and notation, while current use needs THORNode/Mimir, route, source-freshness, and interface-specific evidence.
-
-It cannot prove that a specific contract, interface, secured asset, wallet path, or arbitrage flow works right now. For that, use the evidence ladder below.
+- App Layer contracts run in the CosmWasm sandbox inside THORNode's Cosmos SDK environment.
+- Scoped controls govern availability; there is no single "contracts are live" switch.
+- Static docs explain design and notation, while current use needs route, source-freshness, and interface-specific evidence.
 
 ## Evidence Ladder
 
-Use the strongest evidence available for the claim being made:
-
-1. **Specific app or contract action:** current Network diagnostics for `HaltWasm*`, `HaltOracle`, signing, trading, and source warnings; then app-specific contract/deployer/checksum evidence.
-2. **Secured asset deposit or withdrawal:** `HaltSecuredGlobal`, chain-scoped `HaltSecuredDeposit-*` and `HaltSecuredWithdraw-*`, asset notation, current route/chain state, and the interface path.
-3. **Trade-account or arbitrage flow:** `TradeAccountsEnabled`, trade-account deposit controls, pool state, quote output, route halts, and current app-layer controls if contracts are involved.
-4. **Wallet or interface support:** the interface implementation, quote/memo construction, recipient behavior, wallet permission surface, source integrity, and current protocol diagnostics.
-5. **Design-only explanation:** official App Layer, CosmWasm, secured-asset, and Mimir docs. Use this only for architecture, not current execution claims.
-
-If a claim jumps from "this feature exists in docs" to "a user can use it now," it is missing live evidence.
+Match the claim to its control family: contracts need current Network diagnostics plus deployer/checksum evidence; secured assets need global or chain-scoped deposit/withdraw halts; trade-account flows need `TradeAccountsEnabled` and related controls; wallets and interfaces also need implementation review. Design docs alone do not prove that an action works now.
 
 ## Common Misreadings
 
@@ -136,25 +122,4 @@ Use the exact control family when describing risk:
 
 These controls can also be malformed, stale, scheduled, or absent from a source snapshot. Absence is not the same as proof of health unless the dashboard has a fresh, pinned, source-labeled THORNode result.
 
-## What To Verify Before Claiming
-
-Before saying an App Layer or secured-asset action is available, verify:
-
-1. The current `/network#network-diagnostics` state for App Layer, secured-asset, trade-account, oracle, signing, trading, and chain-specific controls.
-2. The exact Mimir keys involved, especially scoped `HaltWasm*` and `HaltSecured*` keys.
-3. The destination and asset notation in official developer docs before giving memo or integration guidance.
-4. Whether apparently conflicting source terminology is merely wording drift or is supported by current code, endpoints, and controls; do not resolve it by assumption.
-5. The interface-specific implementation, because a listed wallet or app is not an endorsement or proof of current support.
-6. The source freshness date. Static docs explain design; live endpoint evidence explains current availability.
-
-## Non-Claims
-
-This page does not prove:
-
-- Any specific app, contract, deployer, checksum, or wallet is safe.
-- App Layer revenue, RUJI economics, or fee-share amounts are current.
-- Secured-asset capacity, liquidity, or redemption timing is currently available.
-- Every interface supports secured assets, IBC movement, or App Layer contracts correctly.
-- A missing halt key is enough evidence to claim the feature is healthy.
-
-Use this article as the map. Use live THORNode/Mimir evidence as the current-state proof.
+A listed wallet or app is not a safety review. Static documentation cannot prove current capacity, revenue terms, redemption timing, or interface correctness; use live THORNode/Mimir evidence for present-tense claims.

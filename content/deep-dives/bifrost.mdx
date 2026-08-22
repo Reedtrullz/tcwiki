@@ -44,24 +44,4 @@ Without reliable cross-chain observability, THORChain could not process inbound 
 
 Vault status matters to this flow. Active vaults receive new assignments, Retiring vaults remain monitored while funds migrate, and Inactive vaults are no longer normal inbound or signing targets. Never send funds to a retired or inactive vault address; retrieve the current chain address and router from `inbound_addresses` immediately before constructing an action.
 
-## What To Verify Before Claiming
-
-Before making a current Bifrost or route-health claim, verify:
-
-1. `/network#network-diagnostics` for current chain, trading, signing, and source-warning state.
-2. The relevant THORNode `inbound_addresses` entry for the chain being discussed.
-3. Whether the observed vault was Active, Retiring, or Inactive at the relevant time.
-4. The current quote or transaction evidence when the claim is about one swap, deposit, outbound, or refund.
-5. Whether the issue is observation, finality, memo/intent validation, pool execution, signing, gas, outbound delivery, or interface behavior.
-6. Whether an incident or upgrade source is dated historical context rather than proof of current safety.
-
-## Non-Claims
-
-This page does not prove:
-
-- A chain, route, inbound address, router, or outbound path is currently available.
-- A specific transaction was observed, executed, refunded, or delayed for one cause.
-- That all connected chains have identical finality, gas, or memo behavior.
-- That an observation has reached both consensus and chain-specific finality merely because one provider reports it.
-- That current chain-client health is clean across providers.
-- That Bifrost design alone proves current vault, signing, or route safety.
+Current Bifrost claims need the matching network diagnostics, `inbound_addresses`, vault state, quote/transaction evidence, and source freshness. Design alone does not prove that a route is live, a transaction settled, or every chain behaves the same way.

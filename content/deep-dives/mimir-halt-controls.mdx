@@ -6,19 +6,7 @@ For current availability, start with `/network#network-diagnostics`. This page i
 
 ## What Mimirs Can Prove
 
-Mimirs can support a precise current-state claim when the claim names the action, scope, source, and checked height.
-
-Good wording sounds like:
-
-- "Trading is halted for BSC in this checked THORNode snapshot."
-- "A network-wide LP pause applies, so LP actions should not be described as available from this snapshot."
-- "Operation-like Mimir keys need review, so the source quality is degraded even when a specific route blocker is visible."
-
-Risky wording sounds like:
-
-- "THORChain is paused" when only LP, loan, churn, or one chain route is affected.
-- "Swaps are healthy" because no global halt key appears in one source read.
-- "This app is safe" because a WASM halt key is absent.
+Mimirs can support a precise current-state claim when it names the action, scope, source, and checked height. Say "BSC trading is halted in this checked THORNode snapshot"; avoid turning an LP pause into "THORChain is paused" or a missing WASM halt into "this app is safe."
 
 Mimir evidence is strongest when paired with the exact key, source freshness, block height, and the user action being discussed.
 
@@ -112,26 +100,4 @@ Unknown keys are not automatically active halts. They are a source-quality probl
 
 ## What To Verify Before Claiming
 
-Before saying an action is available, limited, or paused, verify:
-
-1. The current `/network#network-diagnostics` headline and limited-chain list.
-2. Whether the claim is about ordinary swaps, LP actions, pool deposits, secured assets, app-layer contracts, TCY/RUNEPool, node operations, or a specific route quote.
-3. The exact Mimir key or source field behind the blocker.
-4. The source provider, checked time, block height, and data-quality badge.
-5. Whether a network-wide control is being repeated as inherited context or directly blocking the chain/action.
-6. For a concrete route, the current quote result from THORNode rather than a broad chain-level assumption.
-
-Use static docs for design meaning. Use live THORNode, inbound-address, quote, and Midgard evidence for current claims.
-
-## Non-Claims
-
-This page does not prove:
-
-- Future availability after the checked block or epoch.
-- That a missing halt key means an action is safe or healthy.
-- Wallet, interface, memo, inbound-address, or transaction safety.
-- Historical uptime, incident status, or post-upgrade readiness.
-- Route competitiveness, liquidity depth, or expected execution quality.
-- That every unknown operation-like key has no user impact.
-
-Mimir controls are powerful evidence, but only when the claim stays scoped to the action, key, source, and checked snapshot.
+For each claim, identify its control family and exact key or source field; retain provider, checked time, height, data quality, and whether a network-wide control directly blocks that scope. Concrete routes need the current quote result rather than a chain-level assumption. Static docs explain design meaning only; Mimir does not establish future availability, wallet safety, uptime history, route quality, or the impact of every unknown key.

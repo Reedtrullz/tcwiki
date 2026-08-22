@@ -45,7 +45,7 @@ const sourceTriageChoices = [
     label: 'App Layer',
     question: 'Is the claim about a contract, secured asset, or trade-account flow?',
     startWith: 'App Layer Claim Checks',
-    href: '/deep-dives/app-layer#what-to-verify-before-claiming',
+    href: '/deep-dives/app-layer#evidence-ladder',
     avoid: 'Contract safety, wallet support, redemption capacity, or current availability from docs alone.',
   },
   {

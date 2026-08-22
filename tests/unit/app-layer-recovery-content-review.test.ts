@@ -111,7 +111,7 @@ describe('app-layer, interface, and recovery content review', () => {
     expect(appLayer).toContain('developer guide says they replace Trade Accounts');
     expect(appLayer).toContain('does not turn static memo examples into current user instructions');
     expect(savers).toContain('permanently deprecated on January 4, 2025');
-    expect(savers).toContain('A documented handler does not override');
+    expect(savers).toContain('memo handlers are historical evidence, not availability signals');
     expect(refunds).toContain('Documented syntax proves a message shape, not current feature availability');
     expect(refunds).toContain('re-fetch the inbound address rather than caching');
   });

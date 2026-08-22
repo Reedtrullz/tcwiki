@@ -64,26 +64,6 @@ Do not treat a loaded APY, a deep pool, or a valid earnings chart as proof that 
 
 ## Evidence Ladder
 
-Use this ladder before making an LP availability, yield, or troubleshooting claim:
+Name the LP intent first, then match its evidence: Network diagnostics and the exact control scope for availability; labeled Midgard data for depth, APY, and earnings; official memo/interface fields for transaction shape; and inbound/outbound transaction evidence for troubleshooting. A skipped source makes the claim partial.
 
-1. **Intent:** add liquidity, withdraw liquidity, asymmetric withdrawal, pool deposit, RUNEPool action, or APY/yield interpretation.
-2. **Operational state:** current network diagnostics, exact LP-related control family, checked provider, block height, source warning posture, and whether the control is network-wide, chain-scoped, or pool-scoped.
-3. **Pool data:** current Midgard pool listing, depth, APY, earnings interval coverage, and health/source labels.
-4. **Transaction shape:** official memo format, paired address, basis points, optional asset field, affiliate field, dust threshold, and interface-generated parameters.
-5. **Transaction evidence:** inbound tx, observed memo/event, outbound or refund tx, and the current source snapshot used to explain the result.
-
-If the claim skips a rung, label it as partial evidence.
-
-## Non-Claims
-
-This page does not prove:
-
-- That LP deposits, withdrawals, asymmetric withdrawals, or RUNEPool actions are available after the checked block.
-- That a missing LP halt key means a wallet flow is safe, supported, or correctly formed.
-- That APY, pool depth, or 30-day earnings prove future yield, profitability, or investment suitability.
-- That a pool listed in Midgard is available for every LP action.
-- That current LP controls explain a historical failed transaction without transaction-level evidence.
-- That historical impermanent-loss protection is available to a current ordinary LP position.
-- That archived Savers/Lending mechanics are current LP products.
-
-LP claims should stay scoped to the action, pool or chain, source, and checked time.
+A listed pool is not proof that every LP action is open. Missing keys do not make a wallet flow safe, historical metrics do not guarantee future yield, and current controls cannot explain a past transaction without transaction-level evidence.

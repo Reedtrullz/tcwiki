@@ -12,7 +12,7 @@ test.describe('THORChain Wiki Protocol Smoke Tests', () => {
     await expect(page.getByText('not availability proof')).toBeVisible();
     await page.locator('#chain-catalog-boundary').locator('summary').click();
     await expect(page.locator('#chain-catalog-boundary').getByText(/Catalog boundary guidance/i)).toBeVisible();
-    await expect(page.getByText(/Swaps, LP actions, signing, gas, outbound availability, or route quoteability right now/i)).toBeVisible();
+    await expect(page.getByText(/A listing confirms catalog presence only/i)).toBeVisible();
     await expect(page.locator('#chain-catalog-boundary').getByRole('link', { name: /Check a route/i })).toHaveAttribute('href', '/network#check-a-route');
     await expect(page.locator('#supported-chain-finder')).toBeVisible();
     const chainFinder = page.getByRole('group', { name: /Supported Chain Finder/i });

@@ -16,7 +16,7 @@ test.describe('THORChain Wiki Docs And Glossary Smoke Tests', () => {
     const fastSourceTriage = page.locator('[aria-label="Fast source triage"]');
     await expect(fastSourceTriage.getByRole('link', { name: /Current state/i })).toHaveAttribute('href', '/network#network-diagnostics');
     await expect(fastSourceTriage.getByRole('link', { name: /Integration docs/i })).toHaveAttribute('href', '#developer-integration');
-    await expect(fastSourceTriage.getByRole('link', { name: /App Layer/i })).toHaveAttribute('href', '/deep-dives/app-layer#what-to-verify-before-claiming');
+    await expect(fastSourceTriage.getByRole('link', { name: /App Layer/i })).toHaveAttribute('href', '/deep-dives/app-layer#evidence-ladder');
     await expect(page.locator('#developer-integration a[href="/deep-dives/build-query-data#query-plan"]')).toHaveAttribute('href', '/deep-dives/build-query-data#query-plan');
     await expect(fastSourceTriage.getByRole('link', { name: /Dynamic fees/i })).toHaveAttribute('href', '#dynamic-fee-experiment');
     await expect(fastSourceTriage.getByRole('link', { name: /RUNEPool\/POL/i })).toHaveAttribute('href', '/economics#runepool-pol-live');
@@ -40,7 +40,7 @@ test.describe('THORChain Wiki Docs And Glossary Smoke Tests', () => {
     await expect(sourceMap.getByText(/Do not claim from this alone: Durable uptime/i).first()).toBeVisible();
     await expect(sourceMap.getByRole('button', { name: /Copy evidence packet for Something is available/i }).first()).toBeVisible();
     await expect(page.getByRole('link', { name: 'Network diagnostics' }).first()).toHaveAttribute('href', '/network#network-diagnostics');
-    await expect(page.getByRole('link', { name: /App Layer Claim Checks/i }).first()).toHaveAttribute('href', '/deep-dives/app-layer#what-to-verify-before-claiming');
+    await expect(page.getByRole('link', { name: /App Layer Claim Checks/i }).first()).toHaveAttribute('href', '/deep-dives/app-layer#evidence-ladder');
     await expect(page.getByRole('link', { name: /RUNEPool\/POL snapshot Current RUNEPool accounting/i })).toHaveAttribute('href', '/economics#runepool-pol-live');
     await expect(page.getByRole('link', { name: /Current TCY controls Claim, stake/i }).first()).toHaveAttribute('href', '/tcy#tcy-current-controls');
     await expect(page.getByRole('link', { name: 'Interface checklist' }).first()).toHaveAttribute('href', '/ecosystem#interface-use-checklist');
