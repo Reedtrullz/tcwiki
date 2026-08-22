@@ -315,12 +315,12 @@ export function GovernanceIncidentArchiveExplorer({
                   <Badge variant={posture.variant}>{posture.label}</Badge>
                 </div>
                 <p className="mb-1 text-xs text-slate-400">
-                  {incident.description} <span className="text-amber-300">{incident.impact}</span>
+                  {incident.description} {incident.impact}
                 </p>
                 <p className="text-[11px] leading-relaxed text-slate-500">{posture.note}</p>
                 <div className="mb-3 mt-2 flex flex-wrap gap-1">
                   {incident.lessons.map((lesson) => (
-                    <span key={lesson} className="rounded bg-amber-500/10 px-1.5 py-0.5 text-[10px] text-amber-400/80">{lesson}</span>
+                    <span key={lesson} className="rounded bg-surface px-1.5 py-0.5 text-[10px] text-slate-400">{lesson}</span>
                   ))}
                 </div>
                 <div className="space-y-2">

@@ -126,15 +126,10 @@ export default function TCYPage() {
       <div id="tcy-history" className="mb-12 scroll-mt-24 rounded-lg border border-amber-500/20 bg-amber-500/5 p-5">
         <div className="flex flex-wrap items-center gap-2 mb-2">
           <Badge variant="warning">Historical</Badge>
-          <Badge variant="danger">Deprecated products</Badge>
-          <Badge variant="info">Recovery not guaranteed</Badge>
         </div>
         <p className="text-sm text-slate-300">
-          {tcyRecord.data.summary} Do not treat Savers or Lending as active yield products.
+          {tcyRecord.data.summary}
         </p>
-        <div className="mt-3">
-          <FreshnessMeta freshness={tcyRecord.freshness} sources={tcyRecord.sources} compact />
-        </div>
       </div>
 
       <SectionHeader id="tcy-decision-matrix" level="primary">Reader Decision Matrix</SectionHeader>
@@ -165,11 +160,11 @@ export default function TCYPage() {
           },
           {
             title: 'Claims dollarized',
-            desc: 'TCY materials describe claims being dollarized for recovery accounting. Treat exact claim status as current-only.',
+            desc: 'TCY materials describe claims being dollarized for recovery accounting.',
           },
           {
             title: 'Archived products',
-            desc: 'Official docs preserve Savers and Lending content for historical reference, not as current product guidance.',
+            desc: 'Official docs preserve Savers and Lending content for historical reference.',
           },
         ].map((card) => (
           <Card key={card.title}>
@@ -181,20 +176,20 @@ export default function TCYPage() {
 
       <SectionHeader id="tcy-what-changed" level="primary">What Changed</SectionHeader>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-12">
-        <Card className="border-amber-500/20">
-          <h3 className="text-sm font-semibold text-amber-300 mb-2">Savers and Lending</h3>
+        <Card>
+          <h3 className="text-sm font-semibold text-slate-100 mb-2">Savers and Lending</h3>
           <ul className="space-y-2 text-xs text-slate-400">
             <li>Archived docs mark both features as deprecated and no longer available.</li>
-            <li>Historical mechanics are useful for understanding THORFi, but they are not current deposit instructions.</li>
+            <li>Historical mechanics document how these THORFi features operated during the unwind.</li>
             <li>Current claim, stake, and pause state must come from live protocol sources.</li>
           </ul>
         </Card>
-        <Card className="border-accent/20">
-          <h3 className="text-sm font-semibold text-accent mb-2">TCY</h3>
+        <Card>
+          <h3 className="text-sm font-semibold text-slate-100 mb-2">TCY</h3>
           <ul className="space-y-2 text-xs text-slate-400">
             <li>TCY is the recovery-token context for the THORFi unwind.</li>
-            <li>Supply, claiming, and staking details should be dated and source-linked.</li>
-            <li>The wiki should avoid financial or recovery-value advice.</li>
+            <li>Supply, claiming, and staking details are recorded with dated source links.</li>
+            <li>Full creditor recovery remains a separate dated-evidence question.</li>
           </ul>
         </Card>
       </div>

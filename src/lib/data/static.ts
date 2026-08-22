@@ -514,7 +514,7 @@ export const SOURCE_MAP_SECTION_RECORDS: SourcedRecord<SourceMapSection>[] = [
     title: 'RUNEPool/POL Evidence',
     decision: 'Is this RUNEPool accounting, POL scope, or RUNEPool deposit/withdraw availability?',
     use: 'Use the live RUNEPool/POL snapshot for same-provider, height-pinned THORNode `/runepool` accounting, POL-enabled pool Mimirs, and RUNEPool caveat keys. Pair it with Network diagnostics when the claim is about whether deposits or withdrawals are usable now.',
-    caveat: 'RUNEPool accounting is a current-only snapshot. Fixed pool counts in overview prose are not current POL scope, and valid PnL or current-deposit fields can be negative. The snapshot does not prove future yield, profitability, route health, action support, or user-specific outcomes.',
+    caveat: 'RUNEPool accounting is a current-only snapshot. Valid PnL or current-deposit fields can be negative.',
     claimExamples: [
       'Current global RUNEPool value, PnL, provider, reserve, and current-deposit fields from THORNode.',
       'Current POL-enabled pool scope from `POL-<Asset>` Mimir keys.',
@@ -846,7 +846,7 @@ export const ECOSYSTEM_PROJECT_RECORDS: SourcedRecord<EcosystemProject>[] = [
     ],
     verifyBeforeUse: [
       'Confirm the current app route, affiliate fee, slippage, recipient address, and supported chain pair before signing.',
-      'Check live THORNode diagnostics and ShapeShift app availability; this listing is not a wallet-security audit or route guarantee.',
+      'Check live THORNode diagnostics and current ShapeShift app availability.',
     ],
   }, [ecosystemSource, shapeshiftThorchainSource, liquifyLiveInboundSource], 'curated', {
     checkedAt: '2026-07-13',
@@ -865,7 +865,7 @@ export const ECOSYSTEM_PROJECT_RECORDS: SourcedRecord<EcosystemProject>[] = [
     ],
     verifyBeforeUse: [
       'Confirm the current app release, download source, wallet permissions, route quote, recipient address, slippage, and fees before signing.',
-      'Check live THORNode diagnostics first; this listing is not a wallet-security audit, app-uptime proof, or route-quality guarantee.',
+      'Check live THORNode diagnostics first.',
     ],
   }, [ecosystemSourceReviewedAt20260708, thorwalletSource, liveInboundSourceReviewedAt20260708], 'curated', {
     checkedAt: '2026-07-09',
@@ -884,7 +884,7 @@ export const ECOSYSTEM_PROJECT_RECORDS: SourcedRecord<EcosystemProject>[] = [
     ],
     verifyBeforeUse: [
       'Confirm the current release channel, backup/recovery model, device quorum, wallet permissions, quote route, recipient, slippage, and fees before signing.',
-      'Treat MPC and vault claims as project claims to verify upstream; this listing is not a wallet-security audit or custody recommendation.',
+      'Treat MPC and vault claims as project claims to verify upstream before relying on that custody model.',
     ],
   }, [ecosystemSourceReviewedAt20260708, vultisigSource, liveInboundSourceReviewedAt20260708], 'curated', {
     checkedAt: '2026-07-09',

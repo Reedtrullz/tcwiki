@@ -306,20 +306,9 @@ export function ProtocolChainFinder({ chainRecords, catalogReviewedAt }: Protoco
                   </div>
                 </dl>
 
-                <div className="mt-3 rounded-md border border-border bg-surface p-3">
-                  <p className="text-[11px] font-semibold uppercase tracking-wider text-amber-300">Catalog Boundary</p>
-                  <p className="mt-1 text-xs leading-relaxed text-slate-400">
-                    Listed means this chain was present in the curated inbound-address catalog. It does not prove swaps, signing, LP actions, gas, or a route are open now.
-                  </p>
-                </div>
-
-                {chain.statusNote ? (
+                {chain.statusNote && (
                   <p className="mt-3 text-xs leading-relaxed text-slate-400">
                     {chain.statusNote}
-                  </p>
-                ) : (
-                  <p className="mt-3 text-xs leading-relaxed text-slate-500">
-                    No special review note is attached to this catalog entry.
                   </p>
                 )}
 

@@ -15,23 +15,15 @@ test.describe('THORChain Wiki Economics Smoke Tests', () => {
     await expect(panel.getByRole('heading', { name: /RUNEPool\/POL Current Snapshot/i })).toBeVisible();
     await expect(panel.getByText(/current THORNode RUNEPool accounting/i)).toBeVisible();
     await expect(panel.getByText('Read this snapshot first')).toBeVisible();
-    await expect(panel.getByText('Deposit halt check')).toBeVisible();
-    await expect(panel.getByText('No tracked deposit halt')).toBeVisible();
-    await expect(panel.getByText('Withdraw halt check')).toBeVisible();
-    await expect(panel.getByText('No tracked withdraw halt')).toBeVisible();
-    await expect(panel.getByText(/wallet\/interface support or future availability proof/i)).toBeVisible();
-    await expect(panel.getByText(/user position, wallet\/interface, and checked block still matter/i)).toBeVisible();
-    await expect(panel.getByText('Which value matters?')).toBeVisible();
-    await expect(panel.getByText('Provider value/PnL')).toBeVisible();
-    await expect(panel.getByText('What not to infer?')).toBeVisible();
-    await expect(panel.getByText('No yield proof')).toBeVisible();
+    await expect(panel.getByText('Deposit / withdraw')).toBeVisible();
+    await expect(panel.getByText('Deposit / withdraw')).toBeVisible();
+    await expect(panel.getByText('Provider value')).toBeVisible();
     await expect(panel.getByText('Accounting source', { exact: true })).toBeVisible();
     await expect(panel.getByText('Current-only').first()).toBeVisible();
     await expect(panel.getByText('RUNEPool', { exact: true }).first()).toBeVisible();
     await expect(panel.getByText('Control enabled').first()).toBeVisible();
     await expect(panel.getByText(/this is not deposit, withdrawal, wallet, or future-availability proof/i)).toBeVisible();
-    await expect(panel.getByText('Deposits', { exact: true }).first()).toBeVisible();
-    await expect(panel.getByText('No active halt').first()).toBeVisible();
+    await expect(panel.getByText('POL pool scope', { exact: true })).toBeVisible();
     await expect(panel.getByText('POL pool scope', { exact: true })).toBeVisible();
     await expect(panel.getByText('2 active').first()).toBeVisible();
     await expect(panel.getByText('POL current value')).toBeVisible();
@@ -56,8 +48,8 @@ test.describe('THORChain Wiki Economics Smoke Tests', () => {
     await expect(panel.getByText('51.95%')).toBeVisible();
     await panel.getByText('+3 endpoint reads').click();
     await expect(panel.getByText('Liquify THORNode RUNEPool accounting')).toBeVisible();
-    await panel.getByText('Show source warnings and non-claims').click();
-    await expect(panel.getByText(/does not prove future yield/i)).toBeVisible();
+    await panel.getByText(/Show source warnings/).click();
+    await expect(panel.getByText(/User-specific provider balances and post-block wallet actions require separate evidence/i)).toBeVisible();
 
     const layout = await readLayoutSafety(page);
     expect(layout.hasFrameworkOverlay).toBe(false);

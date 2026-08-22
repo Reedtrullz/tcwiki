@@ -30,7 +30,7 @@ test.describe('THORChain Wiki TCY Smoke Tests', () => {
     await expect(panel.getByText('HALTTCYTRADING').first()).toBeVisible();
     await expect(panel.getByRole('link', { name: /Open full Network diagnostics/i })).toHaveAttribute('href', '/network#network-diagnostics');
     await expect(page.getByRole('heading', { name: /Reader Decision Matrix/i })).toBeVisible();
-    await expect(page.getByText('Recovery not guaranteed')).toBeVisible();
+    await expect(page.getByText('Historical').first()).toBeVisible();
     await expect(page.getByText(/Did TCY fully recover creditors/i)).toBeVisible();
     await expect(page.getByText(/Developer docs state full debt recovery is market dependent and not guaranteed/i)).toBeVisible();
     await expect(page.getByText(/Do not describe TCY as governance power/i)).toBeVisible();

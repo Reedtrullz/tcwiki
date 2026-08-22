@@ -12,7 +12,6 @@ import { PageContainer } from '@/components/layout/PageContainer';
 import { PageSourcePosture } from '@/components/features/PageSourcePosture';
 import { PageTableOfContents, type TocItem } from '@/components/layout/PageTableOfContents';
 import { Badge } from '@/components/ui/Badge';
-import { FreshnessMeta } from '@/components/ui/FreshnessMeta';
 import { AdditionalSourceDisclosure, SourceMetaLink } from '@/components/ui/SourceMetaDisclosure';
 import { getConfidenceLabel, getConfidenceTone } from '@/lib/trust';
 import { getSearchQueryTerms, runSafeLunrSearch } from '@/lib/search/lunr-query';
@@ -258,40 +257,6 @@ function SearchExampleQueries() {
             </div>
           </section>
         ))}
-      </div>
-    </section>
-  );
-}
-
-function SearchResultBoundary() {
-  return (
-    <section id="search-result-boundary" aria-labelledby="search-result-boundary-heading" className="mb-4 rounded-lg border border-amber-500/20 bg-amber-500/5 p-4">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-        <div className="min-w-0">
-          <div className="mb-2 flex flex-wrap items-center gap-2">
-            <Badge variant="warning">Result boundary</Badge>
-            <h2 id="search-result-boundary-heading" className="text-sm font-semibold text-slate-100">
-              Ranking is a starting point, not proof
-            </h2>
-          </div>
-          <p className="max-w-3xl text-xs leading-relaxed text-slate-400">
-            Check each result source, review date, and live evidence before treating a high-ranked match as current protocol truth.
-          </p>
-        </div>
-        <div className="min-w-0 text-xs lg:max-w-md">
-          <FreshnessMeta
-            freshness={{
-              checkedAt: SEARCH_PAGE_ENTRY.reviewedAt,
-              confidence: SEARCH_PAGE_ENTRY.confidence,
-              nextReviewDue: SEARCH_PAGE_ENTRY.nextReviewDue,
-            }}
-            sources={SEARCH_PAGE_ENTRY.sources}
-            compact
-          />
-          <Link href="#search-page-source-posture" className="mt-2 inline-flex text-accent underline-offset-4 hover:underline">
-            Full source posture
-          </Link>
-        </div>
       </div>
     </section>
   );
@@ -629,7 +594,7 @@ function SearchResultsInner() {
 
       {query ? (
         <>
-          <SearchResultBoundary />
+          <p className="mb-4 text-sm text-slate-500">Ranking is a starting point, not proof.</p>
           <p aria-live="polite" aria-atomic="true" className="mb-4 text-sm text-slate-400">
             {selectedFilter === 'all'
               ? `${results.length} result${results.length !== 1 ? 's' : ''}`

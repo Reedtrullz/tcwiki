@@ -23,17 +23,6 @@ test.describe('THORChain Wiki Governance Smoke Tests', () => {
     await expect(page.locator('#current-recovery').getByRole('heading', { name: /ADR-028 Recovery Path/i })).toBeVisible();
     await expect(page.locator('#current-recovery').getByText('Tracked records')).toBeVisible();
     await expect(page.locator('#current-recovery').getByText('Record + live check')).toBeVisible();
-    await expect(page.locator('#current-recovery').getByRole('heading', { name: /Recovery State Matrix/i })).toBeVisible();
-    await expect(page.locator('#current-recovery').getByRole('heading', { name: /THORFi debt unwind/i })).toBeVisible();
-    await expect(page.locator('#current-recovery').getByText(/Deprecated products, TCY framing/i)).toBeVisible();
-    await expect(page.locator('#current-recovery').getByRole('heading', { name: /GG20 exploit recovery/i })).toBeVisible();
-    await expect(page.locator('#current-recovery').getByText(/v3.19.x restart and accepted ADR-028 conciliation/i)).toBeVisible();
-    await expect(page.locator('#current-recovery').getByRole('heading', { name: /Current user actions/i })).toBeVisible();
-    await expect(page.locator('#current-recovery').getByText(/TCY claim, stake, distribution, unstake/i)).toBeVisible();
-    await expect(page.locator('#current-recovery').getByText(/No made-whole proof/i)).toBeVisible();
-    await expect(page.locator('#current-recovery').getByText(/Safe current wording/i)).toBeVisible();
-    await expect(page.locator('#current-recovery').getByText(/GG20 exploit record remains a current security tracker/i)).toBeVisible();
-    await expect(page.locator('#current-recovery').getByText(/ADR-028 is now source-backed as Accepted and implemented through the one-time v3.19.0 conciliation migration/i)).toBeVisible();
     await expect(page.locator('#current-recovery').getByText(/Use This For/i).first()).toBeVisible();
     await expect(page.locator('#current-recovery').getByText(/Verify Next/i).first()).toBeVisible();
     await expect(page.locator('#current-recovery').getByText(/Network diagnostics for current halts, signing, route limits/i)).toBeVisible();

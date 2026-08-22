@@ -41,7 +41,6 @@ interface EcosystemFilterState {
 
 interface CategoryTrustGuide {
   label: string;
-  canIndicate: string;
   stillVerify: string;
 }
 
@@ -66,31 +65,26 @@ function categoryTrustGuide(category: string): CategoryTrustGuide {
     case 'Interface':
       return {
         label: 'Swap surface',
-        canIndicate: 'a third-party interface to inspect for swaps, quotes, or account workflows.',
         stillVerify: 'live route state, quote output, recipient, slippage, fees, and wallet approvals.',
       };
     case 'Wallet':
       return {
         label: 'Wallet surface',
-        canIndicate: 'a wallet or app surface to inspect for custody and signing workflows.',
         stillVerify: 'release source, download integrity, wallet permissions, device security, and support status.',
       };
     case 'Explorer':
       return {
         label: 'Explorer surface',
-        canIndicate: 'an explorer to inspect transactions, pools, addresses, nodes, or historical context.',
         stillVerify: 'current availability against live THORNode, Midgard, or the relevant primary source.',
       };
     case 'Developer Tools':
       return {
         label: 'Builder surface',
-        canIndicate: 'an SDK, library, API, or integration project to inspect before building.',
         stillVerify: 'package version, API compatibility, repository activity, licensing, and production readiness.',
       };
     default:
       return {
         label: 'Ecosystem surface',
-        canIndicate: 'a sourced ecosystem pointer that may be useful to inspect.',
         stillVerify: 'current availability, safety, terms, source integrity, and suitability for the intended action.',
       };
   }
@@ -336,9 +330,23 @@ export function EcosystemFilterList({ projectRecords, chainRecords }: EcosystemF
         )}
       </div>
 
-      <p aria-live="polite" className="mb-4 text-sm text-slate-400">
-        Use filters to find a surface to inspect. Listings are references, not recommendations, endorsements, audits, or availability guarantees.
-      </p>
+      <div aria-live="polite" className="mb-4 text-xs leading-relaxed text-slate-500">
+        <p className="sr-only">Category verification reminders</p>
+        <ul className="grid gap-0.5">
+          {categories.map((category) => {
+            const guide = categoryTrustGuide(category);
+
+            return (
+              <li key={category}>
+                {guide.label}: verify {guide.stillVerify}
+              </li>
+            );
+          })}
+          <li>Ecosystem surface: verify current availability, safety, terms, source integrity, and suitability for the intended action.</li>
+          <li>Historical reference: treat it as background only; do not infer current availability or support.</li>
+          <li>Needs source review: keep it as a follow-up pointer until the direct source is refreshed.</li>
+        </ul>
+      </div>
       <p className="mb-4 text-xs leading-relaxed text-slate-500">
         Directory posture describes this wiki record only. Catalog listed means the record is included from cited sources as of the checked date. Neither label reports project uptime, route availability, wallet safety, endorsement, or current product support.
       </p>
@@ -347,7 +355,6 @@ export function EcosystemFilterList({ projectRecords, chainRecords }: EcosystemF
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           {filteredProjects.map((record) => {
             const project = record.data;
-            const trustGuide = categoryTrustGuide(project.category);
             const sampleRouteChain = sampleRouteChainForProject(project, chain);
             const sampleRouteHref = routeCheckHrefForChain(sampleRouteChain);
             const directoryPosture = ecosystemDirectoryPosture(record.freshness.confidence);
@@ -368,20 +375,6 @@ export function EcosystemFilterList({ projectRecords, chainRecords }: EcosystemF
                   </div>
                 </div>
                 <p className="text-xs text-slate-400 leading-relaxed mb-3">{project.description}</p>
-                <div className="mb-3 rounded-md border border-border bg-surface p-3">
-                  <div className="mb-2 flex flex-wrap gap-1.5">
-                    <Badge variant="info">{trustGuide.label}</Badge>
-                    <Badge variant="warning">Not a safety proof</Badge>
-                  </div>
-                  <p className="text-xs leading-relaxed text-slate-400">
-                    <span className="font-medium text-slate-300">This listing can indicate: </span>
-                    {trustGuide.canIndicate}
-                  </p>
-                  <p className="mt-1 text-xs leading-relaxed text-slate-400">
-                    <span className="font-medium text-slate-300">Still verify: </span>
-                    {trustGuide.stillVerify}
-                  </p>
-                </div>
                 {needsSourceReview && (
                   <div className="mb-3 rounded-md border border-amber-400/25 bg-amber-400/10 p-3" role="note" aria-label={`${project.name} source review required`}>
                     <p className="text-[11px] font-semibold uppercase tracking-wider text-amber-200">Review before relying on this entry</p>

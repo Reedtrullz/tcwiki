@@ -31,7 +31,6 @@ test.describe('THORChain Wiki Ecosystem Smoke Tests', () => {
     await expect(page.getByText(/not an endorsement list/i)).toBeVisible();
     await expect(page.getByRole('heading', { name: /Before Using An Interface/i })).toBeVisible();
     await expect(page.getByText(/interface trust journey/i)).toBeVisible();
-    await expect(page.getByText(/Pointer list, not endorsement/i)).toBeVisible();
     await expect(page.locator('[aria-label="Choose ecosystem surface by intent"]')).toBeVisible();
     await expect(page.getByText('Swap or quote', { exact: true })).toBeVisible();
     await expect(page.getByText('Wallet or app', { exact: true })).toBeVisible();
@@ -40,7 +39,7 @@ test.describe('THORChain Wiki Ecosystem Smoke Tests', () => {
     await expect(page.getByRole('link', { name: /Check a route/i })).toHaveAttribute('href', '/network#check-a-route');
     await expect(page.getByRole('link', { name: /Open refund triage/i })).toHaveAttribute('href', '/deep-dives/streaming-swaps-refunds#evidence-ladder');
     await expect(page.getByText(/Do not infer wallet safety/i)).toBeVisible();
-    await expect(page.getByText(/Do not treat a listed SDK as proof/i)).toBeVisible();
+    await expect(page.getByText(/A listed SDK is not production-safe by inclusion/i)).toBeVisible();
     await expect(page.getByText('Choose the surface', { exact: true })).toBeVisible();
     await expect(page.getByText('Check live protocol state', { exact: true })).toBeVisible();
     await expect(page.getByRole('link', { name: /Open source map/i })).toHaveAttribute('href', '/docs#third-party-interfaces-wallets');
@@ -48,10 +47,8 @@ test.describe('THORChain Wiki Ecosystem Smoke Tests', () => {
     await expect(page.getByText(/release source, wallet permissions, quoted route/i)).toBeVisible();
     await expect(page.getByRole('link', { name: /Open network diagnostics/i })).toHaveAttribute('href', '/network#network-diagnostics');
     await expect(page.getByRole('link', { name: /Open external project/i }).first()).toBeVisible();
-    await expect(page.getByText(/Use filters to find a surface to inspect/i)).toBeVisible();
-    await expect(page.getByText(/This listing can indicate/i).first()).toBeVisible();
-    await expect(page.getByText(/Still verify/i).first()).toBeVisible();
-    await expect(page.getByText(/Not a safety proof/i).first()).toBeVisible();
+    await expect(page.getByText(/Swap surface: verify live route state/i)).toBeVisible();
+    await expect(page.getByText(/Wallet surface: verify release source/i)).toBeVisible();
     await expect(page.getByText(/Use for/i).first()).toBeVisible();
     await expect(page.getByText(/Check before use/i).first()).toBeVisible();
     const ecosystemFilters = page.getByRole('group', { name: /Directory filters/i });
@@ -79,7 +76,7 @@ test.describe('THORChain Wiki Ecosystem Smoke Tests', () => {
     const vultisigCard = page.locator('#ecosystem-vultisig');
     await expect(vultisigCard.getByRole('heading', { name: 'Vultisig' })).toBeVisible();
     await expect(vultisigCard.getByText(/Self-custodial MPC wallet/i)).toBeVisible();
-    await expect(vultisigCard.getByText(/not a wallet-security audit/i)).toBeVisible();
+    await expect(vultisigCard.getByText(/verify upstream before relying on that custody model/i)).toBeVisible();
     await page.getByRole('button', { name: /^Reset$/ }).click();
     await expect(page).toHaveURL(/\/ecosystem$/);
     await expect(ecosystemFilters.getByLabel('Find')).toHaveValue('');

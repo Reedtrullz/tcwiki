@@ -99,7 +99,7 @@ function availabilityValue(value: boolean | null | undefined, isLoading: boolean
   if (value === false) {
     return { value: 'Disabled', tone: 'danger' as const, detail: '`RUNEPOOLENABLED` is disabled in the checked network snapshot.' };
   }
-  return { value: 'Unavailable', tone: 'warning' as const, detail: '`RUNEPOOLENABLED` was not available in the checked diagnostics.' };
+  return { value: 'Unavailable', tone: 'info' as const, detail: '`RUNEPOOLENABLED` was not available in the checked diagnostics.' };
 }
 
 function actionPauseValue(
@@ -121,7 +121,7 @@ function actionPauseValue(
   if (paused === false) {
     return { value: 'No active halt', tone: 'success' as const, detail: `\`${key}\` is present and inactive in the checked network snapshot; this clears the tracked halt only.` };
   }
-  return { value: 'Needs review', tone: 'warning' as const, detail: `No clean \`${key}\` state was available; do not treat this as open.` };
+  return { value: 'Unavailable', tone: 'info' as const, detail: `No clean \`${key}\` state was available; do not treat this as open.` };
 }
 
 function sourceQuality(result: LiveDataResult<RunePoolPolStatus> | undefined, isLoading: boolean | undefined) {
@@ -142,13 +142,13 @@ function polScope(status: RunePoolPolStatus | undefined, isLoading: boolean | un
     return { value: 'Loading', tone: 'info' as const, detail: 'Waiting for `POL-<Asset>` Mimir keys.' };
   }
   if (!status) {
-    return { value: 'Unavailable', tone: 'warning' as const, detail: 'POL-enabled pool scope was not loaded.' };
+    return { value: 'Unavailable', tone: 'info' as const, detail: 'POL-enabled pool scope was not loaded.' };
   }
   if (status.polPools.some((pool) => pool.state === 'unparseable')) {
     return { value: 'Needs review', tone: 'warning' as const, detail: 'One or more `POL-<Asset>` keys was unparseable.' };
   }
   if (status.activePolPoolCount === 0) {
-    return { value: 'No active pools', tone: 'warning' as const, detail: 'No active `POL-<Asset>` key was visible in the checked Mimir snapshot.' };
+    return { value: 'No active pools', tone: 'info' as const, detail: 'No active `POL-<Asset>` key was visible in the checked Mimir snapshot.' };
   }
   return {
     value: `${status.activePolPoolCount} active`,
@@ -247,7 +247,7 @@ function bucketCheck(
     return {
       label,
       value: 'Unavailable',
-      tone: 'warning' as const,
+      tone: 'info' as const,
       detail: `${detail} One or more fields were unavailable, so the relationship is not clean evidence.`,
     };
   }
@@ -305,7 +305,7 @@ function bucketRelationship(status: RunePoolPolStatus | undefined) {
     ],
     split: {
       value: splitAvailable ? 'Split parsed' : splitFieldsAvailable ? 'Needs review' : 'Unavailable',
-      tone: splitAvailable ? 'success' as const : 'warning' as const,
+      tone: splitAvailable ? 'success' as const : splitFieldsAvailable ? 'warning' as const : 'info' as const,
       providerShare,
       reserveShare,
       providerWidth: svgUnitsFromBasisPoints(providerBasisPoints),
@@ -383,48 +383,28 @@ export function RunepoolPolView({
   const deposits = actionPauseValue(networkStatus?.runePoolDepositPaused, networkStatus?.runePoolEnabled, 'RUNEPool deposits', 'RUNEPoolHaltDeposit', networkLoading);
   const withdrawals = actionPauseValue(networkStatus?.runePoolWithdrawPaused, networkStatus?.runePoolEnabled, 'RUNEPool withdrawals', 'RUNEPoolHaltWithdraw', networkLoading);
   const scope = polScope(status, isLoading);
-  const facts = [
+  const actionTone = deposits.tone === 'danger' || withdrawals.tone === 'danger' ? 'danger' as const : 'success' as const;
+  const actionDetail = deposits.value === withdrawals.value
+    ? deposits.detail
+    : `Deposit: ${deposits.value}. Withdraw: ${withdrawals.value}. Halt controls do not prove wallet/interface support or future availability.`;
+  const actionValue = deposits.value === withdrawals.value
+    ? actionDecisionValue(deposits.value, 'deposit')
+    : 'Mixed';
+  const decisionCards = [
     { label: 'Accounting source', ...accounting },
     { label: 'RUNEPool', ...enabled },
-    { label: 'Deposits', ...deposits },
-    { label: 'Withdrawals', ...withdrawals },
+    {
+      label: 'Deposit / withdraw',
+      value: actionValue,
+      tone: actionTone,
+      detail: actionDetail,
+    },
     { label: 'POL pool scope', ...scope },
   ];
   const activePools = firstActivePolPools(status);
   const warningHeadline = sourceWarningHeadline(status);
   const relationship = bucketRelationship(status);
-  const readFirst = [
-    {
-      label: 'Deposit halt check',
-      value: actionDecisionValue(deposits.value, 'deposit'),
-      tone: deposits.tone,
-      detail: 'Checks RUNEPool enablement and deposit halt controls only; it is not wallet/interface support or future availability proof.',
-    },
-    {
-      label: 'Withdraw halt check',
-      value: actionDecisionValue(withdrawals.value, 'withdraw'),
-      tone: withdrawals.tone,
-      detail: 'Checks RUNEPool enablement and withdraw halt controls; maturity, reserve backstop, user position, wallet/interface, and checked block still matter.',
-    },
-    {
-      label: 'Which value matters?',
-      value: accounting.value === 'Current-only' ? 'Provider value/PnL' : accounting.value,
-      tone: accounting.tone,
-      detail: 'Use provider value and provider PnL for aggregate provider accounting; do not turn it into APY.',
-    },
-    {
-      label: 'Which pools count?',
-      value: scope.value,
-      tone: scope.tone,
-      detail: '`POL-<Asset>` keys describe current POL scope only, not pool safety or route quality.',
-    },
-    {
-      label: 'What not to infer?',
-      value: 'No yield proof',
-      tone: 'info' as const,
-      detail: 'This snapshot is not investment advice, route proof, wallet support, or future performance evidence.',
-    },
-  ];
+  const snapshotCards = decisionCards;
 
   return (
     <section id="runepool-pol-live" className="mb-12 scroll-mt-24">
@@ -437,29 +417,17 @@ export function RunepoolPolView({
 
       <div className="mb-4">
         <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">Read this snapshot first</p>
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-          {readFirst.map((item) => (
-            <div key={item.label} className={`rounded-lg border bg-surface-elevated p-4 ${factCardClass(item.tone)}`}>
+        <div className="grid gap-3 md:grid-cols-3">
+          {snapshotCards.map((fact) => (
+            <Card key={fact.label} padding="sm" className={factCardClass(fact.tone)}>
               <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">{item.label}</p>
-                <Badge variant={badgeVariant(item.tone)}>{item.value}</Badge>
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">{fact.label}</p>
+                <Badge variant={badgeVariant(fact.tone)}>{fact.value}</Badge>
               </div>
-              <p className="text-xs leading-relaxed text-slate-400">{item.detail}</p>
-            </div>
+              <p className="text-xs leading-relaxed text-slate-400">{fact.detail}</p>
+            </Card>
           ))}
         </div>
-      </div>
-
-      <div className="mb-4 grid gap-3 md:grid-cols-2 xl:grid-cols-5">
-        {facts.map((fact) => (
-          <Card key={fact.label} padding="sm" className={factCardClass(fact.tone)}>
-            <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">{fact.label}</p>
-              <Badge variant={badgeVariant(fact.tone)}>{fact.value}</Badge>
-            </div>
-            <p className="text-xs leading-relaxed text-slate-400">{fact.detail}</p>
-          </Card>
-        ))}
       </div>
 
       <Card className="mb-4">
@@ -554,7 +522,7 @@ export function RunepoolPolView({
             )}
           </div>
           {status?.polPools.some((pool) => pool.state === 'unparseable') && (
-            <p className="mt-3 text-xs leading-relaxed text-amber-300">
+            <p className="mt-3 text-xs leading-relaxed text-slate-400">
               Some POL Mimir keys need review before treating the pool-scope list as clean.
             </p>
           )}
@@ -567,7 +535,7 @@ export function RunepoolPolView({
           </div>
           {warningHeadline && (
             <div className="mt-3 rounded-md border border-amber-500/25 bg-amber-500/10 p-3 text-xs leading-relaxed text-amber-200">
-              <p className="font-semibold">{warningHeadline.label} need review before treating accounting as clean.</p>
+              <p className="font-semibold">{warningHeadline.label}</p>
               <p className="mt-1 break-words text-amber-100/90">First warning: {warningHeadline.firstWarning}</p>
             </div>
           )}
@@ -633,7 +601,7 @@ export function RunepoolPolView({
 
         <details className="rounded-lg border border-border bg-surface-elevated p-4">
           <summary className="cursor-pointer text-sm font-semibold text-slate-200">
-            Show source warnings and non-claims{status?.sourceWarnings.length ? ` (${status.sourceWarnings.length})` : ''}
+            Show source warnings{status?.sourceWarnings.length ? ` (${status.sourceWarnings.length})` : ''}
           </summary>
           <div className="mt-3 space-y-3 text-xs leading-relaxed text-slate-400">
             {status?.sourceWarnings.length ? (
@@ -645,9 +613,7 @@ export function RunepoolPolView({
             ) : (
               <p>No RUNEPool parser warnings in the current loaded snapshot.</p>
             )}
-            <p>
-              This panel does not prove future yield, investment suitability, route competitiveness, user-specific provider balances, or that a wallet can deposit or withdraw after this checked block.
-            </p>
+            <p>User-specific provider balances and post-block wallet actions require separate evidence.</p>
           </div>
         </details>
       </div>

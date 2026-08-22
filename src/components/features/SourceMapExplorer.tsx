@@ -91,7 +91,7 @@ function TriageCard({ choice }: { choice: SourceMapExplorerChoice }) {
       <span className="block text-[11px] font-semibold uppercase tracking-wider text-slate-500">{choice.label}</span>
       <span className="mt-2 block text-sm font-semibold leading-snug text-slate-100">{choice.question}</span>
       <span className="mt-3 block text-xs leading-relaxed text-accent">Start with: {choice.startWith}</span>
-      <span className="mt-2 block text-xs leading-relaxed text-amber-200/80">Do not infer: {choice.avoid}</span>
+      <span className="mt-2 block text-xs leading-relaxed text-slate-400">Do not infer: {choice.avoid}</span>
     </SourceChoiceLink>
   );
 }
@@ -144,15 +144,15 @@ function DecisionCard({ decision }: { decision: SourceMapExplorerDecision }) {
           </SourceChoiceLink>
         ))}
       </div>
-      <p className="mt-4 rounded-md border border-amber-500/20 bg-amber-500/5 px-3 py-2 text-xs leading-relaxed text-amber-200">
-        Do not claim: {decision.avoidClaiming}
-      </p>
       <details className="mt-3 rounded-md border border-border bg-surface/70 p-3">
         <summary className="cursor-pointer text-xs font-semibold uppercase tracking-wider text-slate-400 marker:text-slate-500">
           Evidence packet
         </summary>
         <div className="mt-3">
           <div className="grid gap-2 text-xs leading-relaxed text-slate-400">
+            <p>
+              <span className="font-semibold text-slate-300">Do not claim:</span> {decision.avoidClaiming}
+            </p>
             <p>
               <span className="font-semibold text-slate-300">Start source:</span> {decision.startWith.label}
             </p>
@@ -169,9 +169,6 @@ function DecisionCard({ decision }: { decision: SourceMapExplorerDecision }) {
                 </p>
               </>
             )}
-            <p>
-              <span className="font-semibold text-slate-300">Carry forward:</span> cite the start source, run the next checks that match the claim, and keep the non-claim boundary attached.
-            </p>
           </div>
           <button
             type="button"
@@ -328,7 +325,7 @@ export function SourceMapExplorer({
       </div>
 
       {explorer.totalVisible === 0 ? (
-        <div className="mb-7 rounded-lg border border-amber-500/20 bg-amber-500/5 p-4 text-sm leading-relaxed text-amber-100">
+        <div className="mb-7 rounded-lg border border-border bg-surface-elevated p-4 text-sm leading-relaxed text-slate-400">
           {explorer.emptyMessage}
         </div>
       ) : (

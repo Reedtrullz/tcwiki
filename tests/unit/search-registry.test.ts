@@ -985,7 +985,7 @@ describe('SEARCH_DOCUMENTS', () => {
     expect(docsMatching('Provider health, sync, lag').some((doc) => doc.id === 'source-map:runtime-live-data-failover')).toBe(true);
     expect(docsMatching('RUNEPool accounting, POL scope').some((doc) => doc.id === 'source-map:runepool-pol-evidence')).toBe(true);
     expect(docsMatching('Current global RUNEPool value, PnL').some((doc) => doc.id === 'source-map:runepool-pol-evidence')).toBe(true);
-    expect(docsMatching('does not prove future yield').some((doc) => doc.id === 'source-map:runepool-pol-evidence')).toBe(true);
+    expect(docsMatching('Future yield, profitability').some((doc) => doc.id === 'source-map:runepool-pol-evidence')).toBe(true);
     expect(docsMatching('Which source family should back a RUNE number').some((doc) => doc.id === 'source-map:rune-tokenomics-and-value')).toBe(true);
     expect(docsMatching('security constant, or value claim').some((doc) => doc.id === 'source-map:rune-tokenomics-and-value')).toBe(true);
     expect(docsMatching('price targets, fair-value models').some((doc) => doc.id === 'source-map:rune-tokenomics-and-value')).toBe(true);

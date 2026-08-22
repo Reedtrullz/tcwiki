@@ -397,8 +397,6 @@ export default function StatsPage() {
     poolCount: poolSnapshot.totalPools,
   });
   const headlineSourceIssue = midgardSourceIssueIsVisible(networkResult, midgardHealthResult, networkLoading);
-  const poolsSourceIssue = midgardSourceIssueIsVisible(poolsResult, midgardHealthResult, poolsLoading);
-  const earningsSourceIssue = midgardSourceIssueIsVisible(earningsResult, midgardHealthResult, earningsLoading);
   const poolRowsValue = poolsLoading && poolSnapshot.totalPools === 0
     ? 'Loading'
     : poolsHasError || !poolsResult?.data
@@ -511,12 +509,6 @@ export default function StatsPage() {
         <p id="available-pools-summary" className="mb-3 max-w-3xl text-sm leading-relaxed text-slate-400">
           {poolSnapshot.summary} This is liquidity context from Midgard, not proof that a specific route will quote or settle. Full loaded row list stays in this wiki view.
         </p>
-        {poolsSourceIssue && (
-          <StatsSourceIssueNotice
-            title="Pool snapshot source needs review"
-            detail="Pool rows loaded, but their source posture is degraded or provider-mismatched. Treat depth, volume, and APY labels as review-needed until the source strip is clean."
-          />
-        )}
         <div className="mb-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
           <Card padding="sm">
             <p className="text-[11px] uppercase tracking-wider text-slate-400">Midgard pool rows</p>
@@ -542,22 +534,17 @@ export default function StatsPage() {
         <div className="mb-3">
           <LiveSourceMeta result={poolsResult} healthResult={midgardHealthResult} />
         </div>
-        <div className="mb-4 rounded-md border border-border bg-surface-elevated px-4 py-3">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="min-w-0">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Route proof is separate</p>
-              <p className="mt-1 max-w-3xl text-sm leading-relaxed text-slate-400">
-                Pool rows show liquidity context. A current route still needs a THORNode quote, source freshness, and network diagnostics.
-              </p>
-            </div>
-            <Link
-              href="/network#check-a-route"
-              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-md border border-accent/40 px-3 py-2 text-sm font-semibold text-accent transition hover:border-accent hover:bg-accent/10"
-            >
-              <Zap className="h-4 w-4" aria-hidden="true" />
-              Check a route
-            </Link>
-          </div>
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="min-w-0 max-w-3xl text-sm leading-relaxed text-slate-400">
+            Pool rows show liquidity context. A current route still needs a THORNode quote, source freshness, and network diagnostics.
+          </p>
+          <Link
+            href="/network#check-a-route"
+            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-md border border-accent/40 px-3 py-2 text-sm font-semibold text-accent transition hover:border-accent hover:bg-accent/10"
+          >
+            <Zap className="h-4 w-4" aria-hidden="true" />
+            Check a route
+          </Link>
         </div>
         <Card padding="lg" aria-describedby="available-pools-summary">
           {poolsLoading && poolSnapshot.rows.length === 0 ? (
@@ -759,12 +746,6 @@ export default function StatsPage() {
         <p id="earnings-history-summary" className="mb-3 text-sm text-slate-400">
           {earningsSummary}
         </p>
-        {earningsSourceIssue && (
-          <StatsSourceIssueNotice
-            title="Earnings history source needs review"
-            detail="Intervals loaded, but Midgard health, provider matching, or source warnings do not confirm clean chart freshness. Do not read the chart as clean historical evidence without the source strip."
-          />
-        )}
         <div className="mb-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
           <Card padding="sm">
             <p className="text-[11px] uppercase tracking-wider text-slate-400">Usable intervals</p>
@@ -791,9 +772,6 @@ export default function StatsPage() {
             <p className="mt-1 text-[11px] text-slate-500">{loadedIntervalTotalDetail}</p>
           </Card>
         </div>
-        <p className="mb-3 text-xs leading-relaxed text-slate-400">
-          Earnings history is a Midgard-sourced current readback of available intervals. Use it to inspect recent distribution shape, not as durable revenue proof or protocol-attribution proof.
-        </p>
         <div className="mb-3">
           <LiveSourceMeta result={earningsResult} healthResult={midgardHealthResult} />
         </div>

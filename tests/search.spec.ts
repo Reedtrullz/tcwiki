@@ -61,18 +61,12 @@ test.describe('THORChain Wiki Search Smoke Tests', () => {
     await expect(page.getByText(/Application error|Unhandled Runtime Error/i)).toHaveCount(0);
 
     await page.goto('/search?q=current-only%20snapshots');
-    const resultBoundary = page.locator('#search-result-boundary');
-    await expect(resultBoundary.getByRole('heading', { name: /Ranking is a starting point, not proof/i })).toBeVisible();
-    await expect(resultBoundary.getByText(/Check each result source, review date, and live evidence/i)).toBeVisible();
-    await expect(resultBoundary.getByRole('link', { name: /Full source posture/i })).toHaveAttribute('href', '#search-page-source-posture');
-    const resultBoundaryBox = await resultBoundary.boundingBox();
-    const firstResultBox = await page.locator('main article').first().boundingBox();
-    expect(resultBoundaryBox?.y ?? Number.POSITIVE_INFINITY).toBeLessThan(firstResultBox?.y ?? 0);
+    await expect(page.getByText(/Ranking is a starting point, not proof/i)).toBeVisible();
     await expect(page.locator('main article').first().locator('a[href="/docs#current-protocol-state"]')).toBeVisible();
     await expect(page.getByText(/Next wiki review/i).first()).toBeVisible();
     await expect(page.getByText(/2026-07-04 to 2026-07-05/i).first()).toBeVisible();
     await expect(page.getByText(/\+4 sources/i).first()).toBeVisible();
-    await resultBoundary.getByText('+4 sources', { exact: true }).click();
+    await page.locator('main article').first().getByText('+4 sources', { exact: true }).click();
     const boundaryLayout = await readLayoutSafety(page);
     expect(
       boundaryLayout.overflowing,

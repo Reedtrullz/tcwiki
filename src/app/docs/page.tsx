@@ -180,7 +180,7 @@ export default function DocsPage() {
                 Start with the source family that matches the claim. A good source for one claim can still be weak evidence for another.
               </p>
             </div>
-            <span className="w-fit rounded-md border border-amber-400/20 bg-amber-400/10 px-2.5 py-1 text-xs font-medium text-amber-200">
+            <span className="w-fit rounded-md border border-border bg-surface-elevated px-2.5 py-1 text-xs font-medium text-slate-400">
               Match source to claim
             </span>
           </div>
@@ -222,7 +222,13 @@ export default function DocsPage() {
               <FreshnessMeta freshness={record.freshness} sources={record.sources} compact />
             </div>
             <p className="mb-2 text-sm leading-relaxed text-slate-400">{record.data.use}</p>
-            <p className="mb-5 text-sm leading-relaxed text-amber-300/80">{record.data.caveat}</p>
+            <p className="mb-5 text-sm leading-relaxed text-slate-400">
+              {record.data.id === 'current-protocol-state'
+                ? 'Live API responses are current-only snapshots.'
+                : record.data.id === 'runepool-pol-evidence'
+                  ? 'RUNEPool accounting is a current-only snapshot. Valid PnL or current-deposit fields can be negative.'
+                  : record.data.caveat}
+            </p>
             {record.data.id === 'developer-integration' && (
               <div className="mb-5 rounded-lg border border-accent/20 bg-accent/5 p-4">
                 <p className="text-xs font-semibold uppercase tracking-wider text-accent">Implementation Workflow</p>

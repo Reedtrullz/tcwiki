@@ -6,10 +6,6 @@ import {
 } from '../src/lib/content/registry';
 import { getConfidenceLabel } from '../src/lib/trust';
 
-function pluralizedSourceCount(count: number) {
-  return `+${count} source${count === 1 ? '' : 's'}`;
-}
-
 function expectedPrimarySource(entry: ContentEntry) {
   const [primarySource] = entry.sources;
   if (!primarySource) {
@@ -92,7 +88,7 @@ test.describe('THORChain Wiki Source Posture Smoke Tests', () => {
         await expect(claimChecks.getByText(/Developer integration claim/i)).toBeVisible();
         await expect(claimChecks.getByRole('link', { name: /Check live diagnostics/i })).toHaveAttribute('href', '/network#network-diagnostics');
         await expect(claimChecks.getByRole('link', { name: /Read security path/i })).toHaveAttribute('href', '/deep-dives#deep-dive-path-network-security');
-        await expect(claimChecks.getByText(/Do not infer live state from supported-chain listings/i)).toBeVisible();
+        await expect(claimChecks.getByText(/Do not infer live state from a catalog listing alone/i)).toBeVisible();
         await expect(page.getByRole('link', { name: /Interpret Mimir controls/i })).toHaveAttribute('href', '/deep-dives/mimir-halt-controls#what-mimirs-can-prove');
         await expect(page.getByRole('link', { name: /Check live halts/i })).toHaveAttribute('href', '/network#network-diagnostics');
         await expect(page.getByRole('link', { name: /Review inbound usage/i })).toHaveAttribute('href', '/deep-dives/build-query-data#quotes-inbound-addresses-and-caching');
@@ -123,7 +119,6 @@ test.describe('THORChain Wiki Source Posture Smoke Tests', () => {
         await expect(page.getByRole('link', { name: /Start with Stats decision panel/i })).toHaveAttribute('href', '/stats#stats-look-here-first');
         await expect(page.getByRole('link', { name: /Start with Network diagnostics/i })).toHaveAttribute('href', '/network#network-diagnostics');
         await expect(page.getByRole('link', { name: /Start with Source map/i })).toHaveAttribute('href', '/docs#rune-tokenomics-and-value');
-        await expect(page.getByText(/Do not use live metrics as price, fair value/i)).toBeVisible();
         await expect(page.locator('#rune-claim-checks')).toBeVisible();
         await expect(page.getByRole('heading', { name: /RUNE Claim Checks/i })).toBeVisible();
         await expect(page.getByRole('heading', { name: /Settlement role/i })).toBeVisible();
