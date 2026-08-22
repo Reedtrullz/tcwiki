@@ -108,26 +108,20 @@ describe('RunepoolPolView', () => {
 
     expect(html).toContain('RUNEPool/POL Current Snapshot');
     expect(html).toContain('Read this snapshot first');
-    expect(html).toContain('Deposit halt check');
-    expect(html).toContain('No tracked deposit halt');
-    expect(html).toContain('Withdraw halt check');
-    expect(html).toContain('Withdrawals paused');
-    expect(html).toContain('wallet/interface support or future availability proof');
-    expect(html).toContain('user position, wallet/interface, and checked block still matter');
-    expect(html).toContain('Which value matters?');
-    expect(html).toContain('Provider value/PnL');
-    expect(html).toContain('Which pools count?');
-    expect(html).toContain('What not to infer?');
-    expect(html).toContain('No yield proof');
+    expect(html).toContain('Deposit / withdraw');
+    expect(html).toContain('No active halt');
+    expect(html).toContain('Mixed');
+    expect(html).toContain('Withdraw: Paused');
+    expect(html).toContain('wallet/interface support or future availability');
+    expect(html).toContain(
+      'Deposit: No active halt. Withdraw: Paused. Halt controls do not prove wallet/interface support or future availability.'
+    );
     expect(html).toContain('Accounting source');
     expect(html).toContain('Current-only');
     expect(html).toContain('RUNEPool');
     expect(html).toContain('Control enabled');
     expect(html).toContain('this is not deposit, withdrawal, wallet, or future-availability proof');
-    expect(html).toContain('Deposits');
-    expect(html).toContain('No active halt');
-    expect(html).toContain('Withdrawals');
-    expect(html).toContain('Paused');
+    expect(html).toContain('Deposit: No active halt. Withdraw: Paused.');
     expect(html).toContain('POL pool scope');
     expect(html).toContain('Minimum RUNEPool depth');
     expect(html).toContain('10,000 RUNE');
@@ -163,8 +157,8 @@ describe('RunepoolPolView', () => {
     expect(html).toContain('Arithmetic checks are source-shape checks, not solvency or yield proof.');
     expect(html).toContain('Liquify THORNode RUNEPool accounting');
     expect(html).toContain('Show exact RUNEPool fields used');
-    expect(html).toContain('Show source warnings and non-claims');
-    expect(html).toContain('does not prove future yield');
+    expect(html).toContain('Show source warnings');
+    expect(html).toContain('require separate evidence');
     expect(html).not.toContain('$0.00');
   });
 
@@ -206,12 +200,12 @@ describe('RunepoolPolView', () => {
 
     expect(html).toContain('Source warning');
     expect(html).toContain('2 RUNEPool source warnings');
-    expect(html).toContain('need review before treating accounting as clean');
+    expect(html).toContain('2 RUNEPool source warnings</p>');
     expect(html).toMatch(/Source Posture[\s\S]*First warning: THORNode runepool\.pol\.value included an invalid RUNE base-unit value\./);
-    expect(html).toContain('Show source warnings and non-claims (2)');
+    expect(html).toContain('Show source warnings (2)');
     expect(html).toContain('Needs review');
     expect(html).toContain('Unavailable');
-    expect(html).toContain('No clean `RUNEPoolHaltDeposit` state was available');
+    expect(html).toContain('Deposit: Unavailable. Withdraw: Paused.');
     expect(html).toMatch(/Provider \+ reserve value[\s\S]*Unavailable/);
     expect(html).toMatch(/Value split[\s\S]*Unavailable/);
     expect(html).toContain('THORNode runepool.pol.value included an invalid RUNE base-unit value.');

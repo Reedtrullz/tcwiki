@@ -235,6 +235,9 @@ function operationalFact(result?: LiveDataResult<NetworkStatus>): StatsDecisionF
   };
 }
 
+const sourceMismatchDetail =
+  'Data loaded, but Midgard health came from a different provider; use source labels before treating freshness as clean.';
+
 function metricsFact(input: StatsDecisionInput): StatsDecisionFact {
   if (input.networkLoading && !input.networkResult?.data) {
     return {
@@ -257,7 +260,7 @@ function metricsFact(input: StatsDecisionInput): StatsDecisionFact {
       label: 'Headline metrics',
       value: 'Source mismatch',
       tone: 'warning',
-      detail: 'Metrics loaded, but Midgard health came from a different provider; use source labels before treating freshness as clean.',
+      detail: sourceMismatchDetail,
     };
   }
   return {
@@ -290,7 +293,7 @@ function poolsFact(input: StatsDecisionInput): StatsDecisionFact {
       label: 'Midgard pool rows',
       value: 'Source mismatch',
       tone: 'warning',
-      detail: 'Pool rows loaded, but Midgard health came from a different provider; use source labels before treating freshness as clean.',
+      detail: sourceMismatchDetail,
     };
   }
 
@@ -350,7 +353,7 @@ function earningsFact(input: StatsDecisionInput): StatsDecisionFact {
       label: 'Earnings history',
       value: 'Source mismatch',
       tone: 'warning',
-      detail: 'Intervals loaded, but Midgard health came from a different provider; avoid treating chart freshness as clean.',
+      detail: sourceMismatchDetail,
     };
   }
   return {

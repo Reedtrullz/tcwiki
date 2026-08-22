@@ -251,7 +251,7 @@ export default function EconomicsPage() {
         {[
           {
             title: 'RUNEPool',
-            desc: 'RUNEPool lets RUNE providers participate in protocol-owned liquidity. The enablement flag, aggregate provider value, and PnL are current-only THORNode fields, not wallet-flow proof.',
+            desc: 'RUNEPool lets RUNE providers participate in protocol-owned liquidity. The enablement flag, aggregate provider value, and PnL are current-only THORNode fields.',
             href: '/deep-dives/runepool-pol#runepool-versus-lp-positions',
             linkLabel: 'Read RUNEPool evidence',
           },
@@ -263,7 +263,7 @@ export default function EconomicsPage() {
           },
           {
             title: 'Trade And Secured Assets',
-            desc: 'Trade-account flows and secured assets are separate concepts. Check live trade-account, secured-asset, chain, and app-layer controls before current-use claims.',
+            desc: 'Trade-account flows and secured assets are separate concepts. Check the linked trade-account, secured-asset, chain, and app-layer controls.',
             href: '/deep-dives/app-layer#app-layer-claim-checks',
             linkLabel: 'Read App Layer boundaries',
           },

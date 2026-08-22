@@ -133,7 +133,6 @@ test.describe('THORChain Wiki Stats Smoke Tests', () => {
     await expect(page.getByText(/Liquidity depth signal/i)).toBeVisible();
     await expect(page.getByText(/Security-set signal/i)).toBeVisible();
     await expect(page.getByText(/Usable intervals/i)).toBeVisible();
-    await expect(page.getByText(/not as durable revenue proof/i)).toBeVisible();
     await expect(page.getByText(/Current-only|Source warning|Source degraded|Degraded|Loading live source/i).first()).toBeVisible();
   });
 
@@ -173,7 +172,6 @@ test.describe('THORChain Wiki Stats Smoke Tests', () => {
     await expect(page.getByRole('heading', { name: /Midgard Available-Pool Rows/i })).toBeVisible();
     await expect(page.getByText(/Showing 4 Midgard available-pool rows across 3 chains/i)).toBeVisible();
     await expect(page.getByText(/not proof that a specific route will quote/i)).toBeVisible();
-    await expect(page.getByText(/Route proof is separate/i)).toBeVisible();
     await expect(page.getByText(/A current route still needs a THORNode quote/i)).toBeVisible();
     await expect(page.getByRole('link', { name: /Check a route/i })).toHaveAttribute('href', '/network#check-a-route');
     await expect(page.getByRole('searchbox', { name: /Filter Midgard available-pool rows/i })).toBeVisible();

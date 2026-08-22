@@ -29,10 +29,9 @@ test.describe('THORChain Wiki Docs And Glossary Smoke Tests', () => {
     await expect(fastSourceTriage.getByText(/User eligibility, recovery value, par redemption/i)).toBeVisible();
     await expect(fastSourceTriage.getByText(/Price targets, fair value, market cap/i)).toBeVisible();
     await expect(fastSourceTriage.getByText(/Wallet safety, app uptime, endorsement, or quote quality/i)).toBeVisible();
-    await expect(page.getByText(/Do not claim: Durable uptime, safety, or future availability/i)).toBeVisible();
-    await expect(page.getByText(/Do not claim: Contract safety, wallet support, redemption capacity/i)).toBeVisible();
     await expect(sourceMap.getByText('Evidence packet', { exact: true }).first()).toBeVisible();
     await sourceMap.locator('details').filter({ hasText: 'Evidence packet' }).first().locator('summary').click();
+    await expect(sourceMap.getByText(/Do not claim: Durable uptime, safety, or future availability/i).first()).toBeVisible();
     await expect(sourceMap.getByText(/THORChain Wiki source-map evidence packet/i).first()).toBeVisible();
     await expect(sourceMap.getByText(/Start with: Current Protocol State/i).first()).toBeVisible();
     await expect(sourceMap.getByText(/Source posture: official/i).first()).toBeVisible();
@@ -48,7 +47,7 @@ test.describe('THORChain Wiki Docs And Glossary Smoke Tests', () => {
     await page.getByText('Full source-family reference').first().click();
     await expect(page.getByRole('heading', { name: /Current Protocol State/i })).toBeVisible();
     await expect(page.locator('#runepool-pol-evidence').getByText(/Current global RUNEPool value, PnL/i)).toBeVisible();
-    await expect(page.locator('#runepool-pol-evidence').getByText(/does not prove future yield/i)).toBeVisible();
+    await expect(page.locator('#runepool-pol-evidence').getByText(/Future yield, profitability/i)).toBeVisible();
     await expect(page.locator('#historical-features-and-recovery').getByText(/Which current TCY controls need review/i)).toBeVisible();
     await expect(page.locator('#historical-features-and-recovery').getByText(/TCY claiming, staking, trading, distributions/i)).toBeVisible();
     await expect(page.locator('#rune-tokenomics-and-value').getByText(/RUNE Tokenomics And Value Claims/i)).toBeVisible();

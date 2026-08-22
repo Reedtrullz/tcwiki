@@ -85,10 +85,8 @@ describe('source and freshness labels', () => {
     expect(html).toContain('Directory posture describes this wiki record only');
     expect(html).not.toContain('Listed Active');
     expect(html).not.toContain('All statuses');
-    expect(html).toContain('Use filters to find a surface to inspect');
-    expect(html).toContain('This listing can indicate');
-    expect(html).toContain('Still verify');
-    expect(html).toContain('Not a safety proof');
+    expect(html).toContain('Swap surface: verify live route state');
+    expect(html).toContain('Wallet surface: verify release source');
     expect(html).toContain('Swap surface');
     expect(html).toContain('Wallet surface');
     expect(html).toContain('Use for');
@@ -169,9 +167,8 @@ describe('source and freshness labels', () => {
     expect(html).toContain('Find supported chains');
     expect(html).toContain('Address format');
     expect(html).toContain('Review notes');
-    expect(html).toContain('Catalog Boundary');
-    expect(html).toContain('Listed means this chain was present in the curated inbound-address catalog.');
-    expect(html).toContain('It does not prove swaps, signing, LP actions, gas, or a route are open now.');
+    expect(html).not.toContain('Catalog Boundary');
+    expect(html).not.toContain('No special review note is attached to this catalog entry.');
     expect(html).toContain('Check live state');
     expect(html).toContain('Check a route');
     expect(html).toContain('Use the live inbound-address dust threshold and halt fields before constructing or describing a BTC transaction.');

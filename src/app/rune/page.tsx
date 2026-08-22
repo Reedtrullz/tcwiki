@@ -110,7 +110,6 @@ const runeNumberRoutes = [
     use: 'Pooled RUNE, reserve context, active nodes, bond/liquidity posture, earnings, APY, and source-health labels.',
     start: 'Stats decision panel',
     href: '/stats#stats-look-here-first',
-    avoid: 'Do not use live metrics as price, fair value, circulating-supply, or future-yield proof.',
   },
   {
     title: 'Security constants',
@@ -119,7 +118,6 @@ const runeNumberRoutes = [
     use: 'Minimum bond, slash settings, Mimir overrides, signing state, node set, and operational controls.',
     start: 'Network diagnostics',
     href: '/network#network-diagnostics',
-    avoid: 'Do not infer current bond or safety posture from the RUNE role summary or old docs.',
   },
   {
     title: 'Supply framing',
@@ -147,7 +145,6 @@ const runeActionRoutes = [
     badge: 'route + interface',
     badgeVariant: 'info' as const,
     use: 'Check whether a concrete route can quote, then inspect the interface or wallet you plan to use.',
-    avoid: 'Do not treat this page as exchange availability, route safety, wallet safety, or execution instructions.',
     links: [
       { label: 'Check route availability', href: '/network#check-a-route' },
       { label: 'Review interface checklist', href: '/ecosystem#interface-use-checklist' },
@@ -158,7 +155,6 @@ const runeActionRoutes = [
     badge: 'claim split',
     badgeVariant: 'warning' as const,
     use: 'Separate RUNEPool/POL accounting, LP positions, node bonding, and TCY staking before calling anything yield.',
-    avoid: 'Do not describe RUNEPool, LP APY, or node rewards as guaranteed staking yield.',
     links: [
       { label: 'Check RUNEPool evidence', href: '/economics#runepool-pol-live' },
       { label: 'Review liquidity actions', href: '/deep-dives/liquidity-actions#what-to-check-first' },
@@ -169,7 +165,6 @@ const runeActionRoutes = [
     badge: 'node ops',
     badgeVariant: 'warning' as const,
     use: 'Use node-operator sources and live controls before relying on bond, unbond, rebond, rotation, or slash settings.',
-    avoid: 'Do not infer current node-operation availability from tokenomics or historical node docs.',
     links: [
       { label: 'Open node guide', href: '/network#node-operator-guide' },
       { label: 'Check node controls', href: '/network#node-operator-actions' },
@@ -246,10 +241,6 @@ export default function RunePage() {
                 <div>
                   <dt className="font-semibold uppercase tracking-wider text-slate-500">Use For</dt>
                   <dd>{route.use}</dd>
-                </div>
-                <div>
-                  <dt className="font-semibold uppercase tracking-wider text-amber-300">Do Not Use For</dt>
-                  <dd>{route.avoid}</dd>
                 </div>
               </dl>
               <div className="mt-3 flex flex-wrap gap-x-3 gap-y-2">

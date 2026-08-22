@@ -62,7 +62,7 @@ const protocolClaimChecks = [
     title: 'Current availability claim',
     summary: 'Whether swaps, signing, inbound addresses, LP actions, secured assets, or app-layer controls are open now.',
     verify: 'Use Network diagnostics and current source-map guidance before presenting availability as live.',
-    avoid: 'Do not infer live state from supported-chain listings, old docs, or a missing halt mention.',
+    avoid: 'Do not infer live state from a catalog listing alone.',
     href: '/network#network-diagnostics',
     linkLabel: 'Check live diagnostics',
   },

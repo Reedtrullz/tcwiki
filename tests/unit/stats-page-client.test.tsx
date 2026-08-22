@@ -155,7 +155,6 @@ describe('StatsPageClient source posture', () => {
     const html = renderToStaticMarkup(<StatsPageClient />);
 
     expect(html).toContain('Live Metrics');
-    expect(html).toContain('Route proof is separate');
     expect(html).toContain('Pool rows show liquidity context. A current route still needs a THORNode quote, source freshness, and network diagnostics.');
     expect(html).toContain('href="/network#check-a-route"');
     expect(html).not.toContain('Headline metric source needs review');
@@ -182,10 +181,9 @@ describe('StatsPageClient source posture', () => {
     const html = renderToStaticMarkup(<StatsPageClient />);
 
     expect(html).toMatch(/Headline metric source needs review[\s\S]*Pooled RUNE/);
-    expect(html).toMatch(/Pool snapshot source needs review[\s\S]*Midgard pool rows/);
-    expect(html).toMatch(/Earnings history source needs review[\s\S]*Usable intervals/);
+    expect(html).toMatch(/Headline metric source needs review[\s\S]*Midgard pool rows/);
     expect(html).toContain('Source needs review');
-    expect(html).toContain('provider-mismatched');
+    expect(html).toContain('Source mismatch');
   });
 
   it('does not render zero pool counts when the pool source is unavailable', () => {

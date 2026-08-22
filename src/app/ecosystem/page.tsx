@@ -27,7 +27,7 @@ const interfaceIntentGuides = [
     intent: 'Swap or quote',
     startWith: 'Live route status and a fresh quote check.',
     verify: 'Trading, signing, chain state, quote amount, recipient, slippage, fees, and expiry.',
-    nonClaim: 'Do not infer that every listed interface can currently settle the route.',
+    nonClaim: 'Do not infer current route settlement from catalog presence.',
     actionLabel: 'Check a route',
     href: '/network#check-a-route',
   },
@@ -36,7 +36,7 @@ const interfaceIntentGuides = [
     intent: 'Wallet or app',
     startWith: 'The project card, source map, and upstream release path.',
     verify: 'Download source, wallet permissions, connected accounts, signing prompts, and current support.',
-    nonClaim: 'Do not infer wallet safety, custody quality, or app uptime from this directory.',
+    nonClaim: 'Do not infer wallet safety or custody quality.',
     actionLabel: 'Read interface source map',
     href: '/docs#third-party-interfaces-wallets',
   },
@@ -45,7 +45,7 @@ const interfaceIntentGuides = [
     intent: 'Transaction or refund evidence',
     startWith: 'Explorer records plus the refund evidence ladder.',
     verify: 'Inbound transaction hash, observed memo, source chain, destination chain, outbound, and refund transaction.',
-    nonClaim: 'Do not assign a refund cause from explorer display without quote and transaction evidence.',
+    nonClaim: 'Explorer display alone does not establish a refund cause.',
     actionLabel: 'Open refund triage',
     href: '/deep-dives/streaming-swaps-refunds#evidence-ladder',
   },
@@ -54,7 +54,7 @@ const interfaceIntentGuides = [
     intent: 'Build an integration',
     startWith: 'Developer docs, SDK records, and live quote behavior.',
     verify: 'Package version, API compatibility, memo handling, affiliate settings, quote errors, and production readiness.',
-    nonClaim: 'Do not treat a listed SDK as proof that an integration is production-safe.',
+    nonClaim: 'A listed SDK is not production-safe by inclusion.',
     actionLabel: 'Open build/query guide',
     href: '/deep-dives/build-query-data#query-plan',
   },
@@ -114,16 +114,13 @@ export default function EcosystemPage() {
       />
 
       <section id="interface-use-checklist" className="mb-10 scroll-mt-24">
-        <div className="mb-3 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+        <div className="mb-3">
           <div>
             <SectionHeader level="primary">Before Using An Interface</SectionHeader>
             <p className="mt-2 max-w-3xl text-sm leading-relaxed text-slate-400">
               Use this as an interface trust journey: choose by intent, check live protocol state, read what the sources actually prove, then inspect the transaction or download path before signing.
             </p>
           </div>
-          <span className="w-fit rounded-md border border-amber-400/20 bg-amber-400/10 px-2.5 py-1 text-xs font-medium text-amber-200">
-            Pointer list, not endorsement
-          </span>
         </div>
 
         <div className="mb-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4" aria-label="Choose ecosystem surface by intent">

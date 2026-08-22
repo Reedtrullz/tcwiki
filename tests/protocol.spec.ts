@@ -102,7 +102,6 @@ test.describe('THORChain Wiki Protocol Smoke Tests', () => {
     await expect(page.locator('#supported-chain-finder')).toBeVisible();
     await expect(page.getByLabel('Active supported-chain filters').getByText('Search: sol')).toBeVisible();
     await expect(page.locator('#chain-sol')).toBeVisible();
-    await expect(page.locator('#chain-sol').getByText('Catalog Boundary', { exact: true })).toBeVisible();
     await expect(page.locator('#chain-sol').getByText(/Live inbound and chain-client sources include SOL.*EdDSA/i)).toBeVisible();
 
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);

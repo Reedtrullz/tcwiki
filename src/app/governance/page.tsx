@@ -142,39 +142,6 @@ const recoveryClaimChecks = [
   },
 ];
 
-const recoveryStateMatrix = [
-  {
-    title: 'THORFi debt unwind',
-    badge: 'historical',
-    badgeVariant: 'info' as const,
-    status: 'Deprecated products, TCY framing, and historical-open liabilities belong in dated THORFi and TCY records.',
-    evidence: 'Use archived Savers/Lending docs, Proposal 6/TCY sources, and the TCY recovery timeline.',
-    nonClaim: 'No made-whole proof, current Savers/Lending availability, or deposit/borrow instruction.',
-    href: '/deep-dives/tcy-recovery-timeline#timeline',
-    linkLabel: 'Open TCY timeline',
-  },
-  {
-    title: 'GG20 exploit recovery',
-    badge: 'current review',
-    badgeVariant: 'warning' as const,
-    status: 'The v3.19.x restart and accepted ADR-028 conciliation are separate from the earlier THORFi debt unwind and from the still-planned migration away from GG20.',
-    evidence: 'Use exploit reports, v3.19 upgrade notes, the immutable accepted ADR-028 source, and full incident records.',
-    nonClaim: 'No final recovery-complete or present-day safety proof.',
-    href: '/deep-dives#deep-dive-path-network-security',
-    linkLabel: 'Read TSS context',
-  },
-  {
-    title: 'Current user actions',
-    badge: 'live checks',
-    badgeVariant: 'danger' as const,
-    status: 'TCY claim, stake, distribution, unstake, claim-swap, and trading state are live-control questions.',
-    evidence: 'Use Network diagnostics, TCY controls, official interface evidence, and source warnings.',
-    nonClaim: 'No user eligibility, redemption value, or transaction-success proof.',
-    href: '/tcy#tcy-current-controls',
-    linkLabel: 'Check TCY controls',
-  },
-];
-
 const recoveryReviewGuidanceById: Record<string, {
   focus: string;
   verifyNow: string[];
@@ -279,11 +246,6 @@ export default function GovernancePage() {
       value: 'Record + live check',
       description: 'Use the full dated record first, then current Network diagnostics before present-tense claims.',
     },
-    {
-      label: 'Non-claim',
-      value: 'Not final recovery proof',
-      description: 'Tracker inclusion does not prove solvency, restitution, product availability, or completion.',
-    },
   ];
   const operationalGovernanceRecords = GOVERNANCE_PROPOSAL_RECORDS.filter((record) => (
     record.data.status === 'Live' ||
@@ -307,7 +269,6 @@ export default function GovernancePage() {
       href: '#current-recovery',
       count: currentRecoveryRecords.length,
       countLabel: 'promoted records',
-      firstCheck: 'Pair each record with live diagnostics before present-tense claims.',
       summary: 'Start here for records explicitly promoted from the archive into current recovery review.',
     },
     {
@@ -317,7 +278,6 @@ export default function GovernancePage() {
       href: '#governance-records',
       count: GOVERNANCE_PROPOSAL_RECORDS.length,
       countLabel: `${operationalGovernanceRecords.length} operational/current-only`,
-      firstCheck: 'Read the record status before treating an ADR, Mimir item, or proposal as live behavior.',
       summary: 'Use for ADRs, operational parameters, recovery-path records, and historical unwind context.',
     },
     {
@@ -327,7 +287,6 @@ export default function GovernancePage() {
       href: '#security-incidents',
       count: SECURITY_INCIDENT_RECORDS.length,
       countLabel: `${currentOrReviewIncidentRecords.length} current/review, ${historicalOpenIncidentRecords.length} historical-open`,
-      firstCheck: 'Use the posture badge first: resolved, current tracker, needs review, or historical open.',
       summary: 'Use for exploit root-cause, illicit-flow, and recovery-history records without flattening them into today.',
     },
     {
@@ -337,7 +296,6 @@ export default function GovernancePage() {
       href: '#protocol-milestones',
       count: PROTOCOL_MILESTONE_RECORDS.length + RESEARCH_REPORT_RECORDS.length,
       countLabel: `${PROTOCOL_MILESTONE_RECORDS.length} milestones, ${RESEARCH_REPORT_RECORDS.length} reports`,
-      firstCheck: 'Good for period framing; not enough for current protocol, route, or recovery claims.',
       summary: 'Use for timeline context and third-party or ecosystem analysis before checking current evidence.',
     },
   ];
@@ -380,7 +338,11 @@ export default function GovernancePage() {
         </p>
         <ul className="mt-3 divide-y divide-border">
           {governanceClaimChecks.map((check) => (
-            <li key={check.title} id="governance-proposal-status" className="py-3 first:pt-0 last:pb-0">
+            <li
+              key={check.title}
+              id={check.id ?? recordAnchor('claim-check', check.title)}
+              className="py-3 first:pt-0 last:pb-0"
+            >
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="text-sm font-semibold text-slate-200">{check.title}</span>
                 <Link href={check.href} className="text-xs font-semibold text-accent underline-offset-4 hover:underline">
@@ -414,41 +376,6 @@ export default function GovernancePage() {
             </Card>
           ))}
           </div>
-          <div className="mb-4 rounded-lg border border-border bg-surface-elevated p-4">
-          <div className="mb-3">
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-slate-400">Recovery State Matrix</h3>
-            <p className="mt-1 max-w-3xl text-xs leading-relaxed text-slate-400">
-              Separate the historical debt unwind, post-exploit recovery review, and live user-action checks before using recovery language.
-            </p>
-          </div>
-          <div className="grid grid-cols-1 gap-3 lg:grid-cols-3">
-            {recoveryStateMatrix.map((item) => (
-              <div key={item.title} className="rounded-lg border border-border bg-surface p-4">
-                <div className="mb-3 flex flex-wrap items-center gap-2">
-                  <Badge variant={item.badgeVariant}>{item.badge}</Badge>
-                  <h4 className="text-sm font-semibold text-slate-100">{item.title}</h4>
-                </div>
-                <dl className="space-y-3 text-xs leading-relaxed text-slate-400">
-                  <div>
-                    <dt className="font-semibold uppercase tracking-wider text-slate-500">State</dt>
-                    <dd className="mt-1">{item.status}</dd>
-                  </div>
-                  <div>
-                    <dt className="font-semibold uppercase tracking-wider text-slate-500">Evidence</dt>
-                    <dd className="mt-1">{item.evidence}</dd>
-                  </div>
-                  <div>
-                    <dt className="font-semibold uppercase tracking-wider text-amber-300">Boundary</dt>
-                    <dd className="mt-1">{item.nonClaim}</dd>
-                  </div>
-                </dl>
-                <Link href={item.href} className="mt-4 inline-flex text-xs font-semibold text-accent underline-offset-4 hover:underline">
-                  {item.linkLabel}
-                </Link>
-              </div>
-            ))}
-          </div>
-          </div>
           <div className="mb-4 grid grid-cols-1 gap-3 lg:grid-cols-2">
           {recoveryClaimChecks.map((item) => (
             <Card key={item.claim} padding="sm" className="border-amber-500/15">
@@ -471,16 +398,10 @@ export default function GovernancePage() {
             </Card>
           ))}
           </div>
-          <div className="mb-3 rounded-lg border border-amber-500/20 bg-amber-500/5 p-4">
-          <p className="text-[11px] font-semibold uppercase tracking-wider text-amber-300">Safe current wording</p>
-          <p className="mt-1 max-w-4xl text-sm leading-relaxed text-slate-300">
-            The GG20 exploit record remains a current security tracker, while ADR-028 is now source-backed as Accepted and implemented through the one-time v3.19.0 conciliation migration. Use this section to decide what to verify next; neither record proves every loss was restored, final recovery, current vault safety, or user-action availability.
-          </p>
-          </div>
         </details>
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
           {currentRecoveryRecords.map((record) => (
-            <Card key={`current:${record.id}`} className="border-amber-500/20 bg-amber-500/5">
+            <Card key={`current:${record.id}`}>
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div className="min-w-0">
                   <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">{record.recordType}</p>
@@ -489,7 +410,7 @@ export default function GovernancePage() {
                 <Badge variant={record.badge.variant}>{record.badge.label}</Badge>
               </div>
               <p className="mt-2 text-xs leading-relaxed text-slate-400">{record.description}</p>
-              <p className="mt-2 text-xs text-amber-300">{record.impact}</p>
+              <p className="mt-2 text-xs text-slate-400">{record.impact}</p>
               <dl className="mt-4 space-y-3 rounded-md border border-border bg-surface p-3 text-xs leading-relaxed text-slate-400">
                 <div>
                   <dt className="font-semibold uppercase tracking-wider text-slate-500">Use This For</dt>
@@ -506,17 +427,17 @@ export default function GovernancePage() {
                   </dd>
                 </div>
                 <div>
-                  <dt className="font-semibold uppercase tracking-wider text-amber-300">Do Not Use This For</dt>
+                  <dt className="font-semibold uppercase tracking-wider text-slate-500">Boundary</dt>
                   <dd className="mt-1">{record.guidance.boundary}</dd>
                 </div>
               </dl>
               <div className="mt-3">
                 <FreshnessMeta freshness={record.freshness} sources={record.sources} compact />
               </div>
-              <div className="mt-4 grid gap-2 border-t border-amber-500/15 pt-3 sm:grid-cols-2">
+              <div className="mt-4 grid gap-2 border-t border-border pt-3 sm:grid-cols-2">
                 <Link
                   href={record.archiveHref}
-                  className="rounded-md border border-amber-500/20 bg-surface px-3 py-2 text-xs font-semibold text-amber-200 transition-colors hover:border-amber-400/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
+                  className="rounded-md border border-border bg-surface px-3 py-2 text-xs font-semibold text-accent transition-colors hover:border-accent/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
                 >
                   {record.archiveLinkLabel}
                   <span className="mt-1 block font-normal leading-relaxed text-slate-400">
@@ -528,9 +449,6 @@ export default function GovernancePage() {
                   className="rounded-md border border-border bg-surface px-3 py-2 text-xs font-semibold text-accent transition-colors hover:border-accent/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
                 >
                   Check current diagnostics
-                  <span className="mt-1 block font-normal leading-relaxed text-slate-400">
-                    Verify live halts, signing, TCY controls, and source warnings.
-                  </span>
                 </Link>
               </div>
             </Card>
@@ -543,6 +461,7 @@ export default function GovernancePage() {
           <SectionHeader className="mb-3" level="primary">Dated Archive Map</SectionHeader>
           <p className="text-sm leading-relaxed text-slate-400">
             Use the lane map before diving into the archive. Counts are navigation aids, not health scores, and every lane still needs the claim-specific checks above.
+            Read each record or posture badge on its own terms before treating dated material as current protocol behavior.
           </p>
         </div>
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-4">
@@ -562,10 +481,6 @@ export default function GovernancePage() {
                 <div>
                   <dt className="font-semibold uppercase tracking-wider text-slate-500">Archive mix</dt>
                   <dd>{lane.countLabel}</dd>
-                </div>
-                <div>
-                  <dt className="font-semibold uppercase tracking-wider text-slate-500">First check</dt>
-                  <dd>{lane.firstCheck}</dd>
                 </div>
               </dl>
             </Link>
