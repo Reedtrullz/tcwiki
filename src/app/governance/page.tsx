@@ -333,6 +333,8 @@ export default function GovernancePage() {
         <summary className="cursor-pointer list-none text-sm font-semibold text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60">
           Claim checks by type
         </summary>
+        {/* Legacy anchor for registry and search links that target the proposal-status claim check. */}
+        <span id="governance-proposal-status" className="sr-only" aria-hidden="true" />
         <p className="mt-2 max-w-3xl text-xs leading-relaxed text-slate-400">
           Start with the claim type. Governance records are useful for dated decisions and history; live controls, incident root-cause wording, recovery status, and community interpretation need separate proof paths.
         </p>
@@ -340,9 +342,10 @@ export default function GovernancePage() {
           {governanceClaimChecks.map((check) => (
             <li
               key={check.title}
-              id={check.id ?? recordAnchor('claim-check', check.title)}
+              id={recordAnchor('claim-check', check.title)}
               className="py-3 first:pt-0 last:pb-0"
             >
+              {check.id ? <span id={check.id} className="sr-only" aria-hidden="true" /> : null}
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <span className="text-sm font-semibold text-slate-200">{check.title}</span>
                 <Link href={check.href} className="text-xs font-semibold text-accent underline-offset-4 hover:underline">
