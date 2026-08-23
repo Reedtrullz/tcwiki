@@ -10,7 +10,7 @@
 
 ## Why this is the next release
 
-The content-review report has no overdue records, but 120 records become due within 30 days. The best first batch is not all 120: the security/recovery records below share the same official incident, upgrade, tokenomics, and recovery sources, and they already cross-link through search, guides, glossary terms, governance records, and two deep dives. Reviewing them atomically reduces contradictory wording while keeping the pull request independently reviewable.
+The current content-review report has 155 deduplicated records; none are overdue or due within 30 days as of 2026-08-24. The security/recovery records below remain a useful bounded cohort because they share the same official incident, upgrade, tokenomics, and recovery sources, and they already cross-link through search, guides, glossary terms, governance records, and two deep dives. Reviewing them atomically reduces contradictory wording while keeping the pull request independently reviewable.
 
 The deployed readiness monitor remains a separate operational concern. A valid `503 degraded` response from `/api/ready?contract=strict` does not invalidate a content release, and this plan must not change readiness thresholds, provider selection, host monitoring, systemd configuration, or issue `#63` merely to make deployment proof look green.
 

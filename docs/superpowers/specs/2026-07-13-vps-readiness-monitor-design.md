@@ -1,6 +1,6 @@
 # Credential-Free VPS Readiness Monitor Design
 
-**Status:** Approved for implementation planning
+**Status:** Implemented in PR #67 / commit `93391e2`; current timer-triggered live evidence remains unverified
 **Date:** 2026-07-13
 
 ## Context

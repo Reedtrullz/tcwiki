@@ -4,6 +4,8 @@
 
 **Goal:** Add an independent, credential-free VPS systemd timer that samples public strict readiness three times, publishes bounded local evidence, and records degraded/recovered transitions without changing application availability.
 
+**Status note (2026-08-24):** The implementation assets and tests from this plan are present on `origin/main` via merged commit `93391e2`. The checklist remains intentionally incomplete for VPS installation, host-side execution, and public readiness readback; those steps require a separately evidenced operational run and must not be inferred from repository or CI state.
+
 **Architecture:** A repository-owned POSIX shell monitor uses only `curl`, `jq`, `flock`, and standard host tools. Ansible installs it before container mutation and enables a hardened twice-hourly systemd timer. GitHub Actions remains the full-contract, direct-provider, and remote-notification lane.
 
 **Tech Stack:** POSIX shell, curl 8.x, jq 1.7, util-linux flock 2.39, systemd 255, Ansible 10.7, TypeScript 6, Vitest 4, Node.js 22.

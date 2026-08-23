@@ -1,7 +1,7 @@
 # THORChain Wiki — Project Knowledge Base
 
 **Generated:** 2026-06-18
-**Branch:** codex/thorchain-wiki-remediation
+**Branch:** codex/wave3b-ghcr-login-safety
 
 ## OVERVIEW
 
