@@ -330,6 +330,20 @@ describe('release and browser test wiring', () => {
     expect(docs).toContain('accepts degraded source confidence by default');
   });
 
+  it('keeps the reserved candidate-port conflict path fail-closed', () => {
+    const staleCandidateIndex = playbook.indexOf('name: Remove stale candidate container');
+    const startCandidateIndex = playbook.indexOf('name: Start candidate container');
+
+    expect(playbook).toContain('candidate_port: "3009"');
+    expect(staleCandidateIndex).toBeGreaterThan(-1);
+    expect(startCandidateIndex).toBeGreaterThan(staleCandidateIndex);
+    expect(playbook).toContain('name: Login to GHCR');
+    expect(playbook.match(/name: Login to GHCR/g)?.length).toBe(1);
+    expect(playbook).not.toContain('Force remove any stale container binding candidate port');
+    expect(playbook).not.toContain('docker stop "$cid"');
+    expect(playbook).not.toContain('docker rm -f "$cid"');
+  });
+
   it('provides a local Docker candidate smoke that mirrors PR runtime proof', () => {
     const docs = [readme, contributing, maintenance].join('\n');
 
