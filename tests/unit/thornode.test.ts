@@ -755,6 +755,79 @@ describe('deriveNetworkStatus', () => {
     ]);
   });
 
+  it('classifies chain-scoped trade-account halts without suppressing near-miss keys', () => {
+    const active = deriveNetworkStatus(
+      {
+        'HaltTradeDeposit-BASE': 1,
+        'HaltTradeWithdraw-BSC': 100,
+        'HaltTradeDeposit-ETH': 0,
+      },
+      [completeInbound('BASE'), completeInbound('BSC'), completeInbound('ETH')],
+      '3.19.3',
+      100
+    );
+
+    expect(active.state).toBe('paused');
+    expect(active.tradeAccountDepositPauseKeys).toEqual(['HaltTradeDeposit-BASE']);
+    expect(active.tradeAccountWithdrawPauseKeys).toEqual(['HaltTradeWithdraw-BSC']);
+    expect(active.activeControlKeys).toEqual(['HaltTradeDeposit-*', 'HaltTradeWithdraw-*']);
+    expect(active.activeEvidenceKeys).toEqual(['HaltTradeDeposit-BASE', 'HaltTradeWithdraw-BSC']);
+    expect(active.chainStatuses.find((chain) => chain.chain === 'BASE')).toMatchObject({
+      tradeAccountDepositPaused: true,
+      tradeAccountDepositPauseKeys: ['HaltTradeDeposit-BASE'],
+    });
+    expect(active.chainStatuses.find((chain) => chain.chain === 'BSC')).toMatchObject({
+      tradeAccountWithdrawPaused: true,
+      tradeAccountWithdrawPauseKeys: ['HaltTradeWithdraw-BSC'],
+    });
+
+    const scheduled = deriveNetworkStatus(
+      { 'HaltTradeDeposit-BSC': 200 },
+      [completeInbound('BSC')],
+      '3.19.3',
+      100
+    );
+    expect(scheduled.state).toBe('operational');
+    expect(scheduled.scheduledMimirKeys).toEqual(['HaltTradeDeposit-BSC']);
+    expect(scheduled.chainStatuses[0]?.scheduledMimirKeys).toEqual(['HaltTradeDeposit-BSC']);
+    expect(scheduled.monitoredControls.find((control) => control.key === 'HaltTradeDeposit-*')?.state).toBe('scheduled');
+
+    const malformed = deriveNetworkStatus(
+      { 'HaltTradeWithdraw-BASE': 'not-a-height' },
+      [completeInbound('BASE')],
+      '3.19.3',
+      100
+    );
+    expect(malformed.state).toBe('degraded');
+    expect(malformed.invalidMimirKeys).toEqual(['HaltTradeWithdraw-BASE']);
+    expect(malformed.chainStatuses[0]?.unparseableMimirKeys).toEqual(['HaltTradeWithdraw-BASE']);
+    expect(malformed.monitoredControls.find((control) => control.key === 'HaltTradeWithdraw-*')?.state).toBe('unparseable');
+
+    const nearMiss = deriveNetworkStatus(
+      {
+        HALTTRRONTRADING: 1,
+        'HaltTradeDeposit-': 1,
+        'HaltTradeDeposit-BASE-extra': 1,
+        'HaltTradeWithdraw-FOO': 1,
+      },
+      [completeInbound('BASE'), completeInbound('TRON')],
+      '3.19.3',
+      100
+    );
+    expect(nearMiss.state).toBe('degraded');
+    expect(nearMiss.activePauseKeys).toEqual([]);
+    expect(nearMiss.sourceWarnings).toEqual([
+      'Unknown chain-scoped Mimir key ignored: HALTTRRONTRADING.',
+      'Unknown operation-like Mimir keys need review: HaltTradeDeposit-, HaltTradeDeposit-BASE-extra, HaltTradeWithdraw-FOO.',
+    ]);
+    expect((nearMiss.sourceWarningDetails ?? []).flatMap((warning) => warning.keys ?? [])).toEqual([
+      'HALTTRRONTRADING',
+      'HaltTradeDeposit-',
+      'HaltTradeDeposit-BASE-extra',
+      'HaltTradeWithdraw-FOO',
+    ]);
+  });
+
   it('marks per-chain signing halts as paused even when global signing is open', () => {
     const status = deriveNetworkStatus(
       { HALTSIGNING: 0, HALTSIGNINGBTC: 1 },

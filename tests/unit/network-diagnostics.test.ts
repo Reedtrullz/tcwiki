@@ -133,7 +133,7 @@ describe('network diagnostics view models', () => {
     });
   });
 
-  it('surfaces secured-asset and asym-withdrawal pauses without limiting ordinary swaps', () => {
+  it('surfaces secured-asset, trade-account, and asym-withdrawal pauses without limiting ordinary swaps', () => {
     const availability = deriveChainAvailability({
       ...baseStatus,
       chainStatuses: [
@@ -147,10 +147,16 @@ describe('network diagnostics view models', () => {
           asymWithdrawalPaused: true,
           asymWithdrawalPauseKeys: ['PauseAsymWithdrawal-BTC-BTC'],
         }),
+        chain({
+          chain: 'BASE',
+          tradeAccountWithdrawPaused: true,
+          tradeAccountWithdrawPauseKeys: ['HaltTradeWithdraw-BASE'],
+        }),
       ],
     });
     const eth = availability.find((entry) => entry.chain === 'ETH');
     const btc = availability.find((entry) => entry.chain === 'BTC');
+    const base = availability.find((entry) => entry.chain === 'BASE');
 
     expect(eth?.swapIn.state).toBe('available');
     expect(eth?.swapOut.state).toBe('available');
@@ -163,6 +169,13 @@ describe('network diagnostics view models', () => {
       state: 'limited',
       reasons: ['Asym withdrawals paused'],
     });
+    expect(base?.swapIn.state).toBe('available');
+    expect(base?.swapOut.state).toBe('available');
+    expect(base?.scopedOperations).toMatchObject({
+      state: 'limited',
+      reasons: ['Trade-account withdrawals paused'],
+    });
+    expect(base?.reasons).toContain('Trade-account withdrawal halt: HaltTradeWithdraw-BASE');
   });
 
   it('applies global swap blockers to pre-quote route fallback while keeping LP-only controls separate', () => {

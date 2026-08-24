@@ -74,6 +74,7 @@ export function resetThornodeEndpointForTests() {
 const MIMIR_INTEGER_PATTERN = /^[+-]?\d+$/;
 const NON_CHAIN_SCOPED_MIMIR_CODES = new Set(['TCY']);
 const CURATED_CHAIN_CODES = new Set([...CHAINS.map((chain) => chain.chain.toUpperCase()), 'THOR']);
+const TRADE_ACCOUNT_CHAIN_SCOPED_MIMIR_PREFIXES = ['HaltTradeDeposit-', 'HaltTradeWithdraw-'] as const;
 const KNOWN_NON_OPERATIONAL_PAUSE_KEYS = new Set(['PAUSEONSLASHTHRESHOLD']);
 const DYNAMIC_L1_FEE_WHITELIST_PREFIX = 'DYNAMICFEE-WHITELIST-';
 const TOR_BASE_UNIT_MAX_DIGITS = 80;
@@ -1880,21 +1881,56 @@ function getChainCodeFromDashScopedMimirKey(key: string, prefix: string): string
   return chainCode && !NON_CHAIN_SCOPED_MIMIR_CODES.has(chainCode) ? chainCode : null;
 }
 
-function isKnownMonitoredMimirKey(key: string) {
+function getTradeAccountChainCodeFromMimirKey(
+  key: string,
+  recognizedChainCodes: Set<string>
+): string | null {
+  const upperKey = key.toUpperCase();
+  const prefix = TRADE_ACCOUNT_CHAIN_SCOPED_MIMIR_PREFIXES.find((candidate) => (
+    upperKey.startsWith(candidate.toUpperCase())
+  ));
+  if (!prefix) {
+    return null;
+  }
+
+  const chainCode = upperKey.slice(prefix.length);
+  return /^[A-Z0-9]+$/.test(chainCode) && recognizedChainCodes.has(chainCode)
+    ? chainCode
+    : null;
+}
+
+function isTradeAccountChainScopedPrefix(prefix: string) {
+  const upperPrefix = prefix.toUpperCase();
+  return TRADE_ACCOUNT_CHAIN_SCOPED_MIMIR_PREFIXES.some((candidate) => (
+    candidate.toUpperCase() === upperPrefix
+  ));
+}
+
+function onlyRecognizedTradeAccountChainKeys(keys: string[], recognizedChainCodes: Set<string>) {
+  return keys.filter((key) => getTradeAccountChainCodeFromMimirKey(key, recognizedChainCodes) !== null);
+}
+
+function isKnownMonitoredMimirKey(key: string, recognizedChainCodes: Set<string>) {
   const upperKey = key.toUpperCase();
   return EXACT_MONITORED_MIMIR_KEYS.some((monitoredKey) => monitoredKey.toUpperCase() === upperKey) ||
-    PREFIX_MONITORED_MIMIR_KEYS.some((prefix) => upperKey.startsWith(prefix.toUpperCase())) ||
+    PREFIX_MONITORED_MIMIR_KEYS.some((prefix) => (
+      !isTradeAccountChainScopedPrefix(prefix) && upperKey.startsWith(prefix.toUpperCase())
+    )) ||
+    getTradeAccountChainCodeFromMimirKey(key, recognizedChainCodes) !== null ||
     getChainCodeFromScopedMimirKey(key) !== null;
 }
 
-function getUnknownOperationMimirKeys(mimir: Record<string, unknown>): string[] {
+function getUnknownOperationMimirKeys(
+  mimir: Record<string, unknown>,
+  recognizedChainCodes: Set<string>
+): string[] {
   return Object.entries(mimir)
     .filter(([key, value]) => {
       const upperKey = key.toUpperCase();
       if (REVIEWED_NON_PAUSING_OPERATIONAL_MIMIR_PREFIXES.some((prefix) => upperKey.startsWith(prefix))) {
         return false;
       }
-      if (KNOWN_NON_OPERATIONAL_PAUSE_KEYS.has(upperKey) || isKnownMonitoredMimirKey(key)) {
+      if (KNOWN_NON_OPERATIONAL_PAUSE_KEYS.has(upperKey) || isKnownMonitoredMimirKey(key, recognizedChainCodes)) {
         return false;
       }
       if (REVIEWED_OPERATIONAL_SUPPORT_MIMIR_PREFIXES.some((prefix) => upperKey.startsWith(prefix))) {
@@ -1944,7 +1980,12 @@ function collectInvalidMimirKeys(mimir: Record<string, unknown>, recognizedChain
     EXACT_MONITORED_MIMIR_KEYS
       .map((key) => getInvalidExactMimirKey(mimir, key))
       .filter((key): key is string => key !== null),
-    PREFIX_MONITORED_MIMIR_KEYS.flatMap((prefix) => getInvalidMimirKeysByPrefix(mimir, prefix)),
+    PREFIX_MONITORED_MIMIR_KEYS.flatMap((prefix) => {
+      const invalidKeys = getInvalidMimirKeysByPrefix(mimir, prefix);
+      return isTradeAccountChainScopedPrefix(prefix)
+        ? onlyRecognizedTradeAccountChainKeys(invalidKeys, recognizedChainCodes)
+        : invalidKeys;
+    }),
     getInvalidChainScopedMimirKeys(mimir).filter((key) => {
       const chainCode = getChainCodeFromScopedMimirKey(key);
       return chainCode !== null && recognizedChainCodes.has(chainCode);
@@ -2195,6 +2236,8 @@ function getInvalidMimirKeysForChain(
   invalidPoolDepositPauseKeys: string[],
   invalidSecuredAssetDepositPauseKeys: string[],
   invalidSecuredAssetWithdrawPauseKeys: string[],
+  invalidTradeAccountDepositPauseKeys: string[],
+  invalidTradeAccountWithdrawPauseKeys: string[],
   invalidAsymWithdrawalPauseKeys: string[]
 ): string[] {
   const directScopedKeys = [
@@ -2216,6 +2259,12 @@ function getInvalidMimirKeysForChain(
   const securedAssetWithdrawScopedKeys = invalidSecuredAssetWithdrawPauseKeys.filter((key) => (
     getChainCodeFromDashScopedMimirKey(key, 'HaltSecuredWithdraw-') === chainCode
   ));
+  const tradeAccountDepositScopedKeys = invalidTradeAccountDepositPauseKeys.filter((key) => (
+    getChainCodeFromDashScopedMimirKey(key, 'HaltTradeDeposit-') === chainCode
+  ));
+  const tradeAccountWithdrawScopedKeys = invalidTradeAccountWithdrawPauseKeys.filter((key) => (
+    getChainCodeFromDashScopedMimirKey(key, 'HaltTradeWithdraw-') === chainCode
+  ));
   const asymWithdrawalScopedKeys = invalidAsymWithdrawalPauseKeys.filter((key) => (
     getChainCodeFromDashScopedMimirKey(key, 'PauseAsymWithdrawal-') === chainCode
   ));
@@ -2225,6 +2274,8 @@ function getInvalidMimirKeysForChain(
     poolScopedKeys,
     securedAssetDepositScopedKeys,
     securedAssetWithdrawScopedKeys,
+    tradeAccountDepositScopedKeys,
+    tradeAccountWithdrawScopedKeys,
     asymWithdrawalScopedKeys
   ).sort((a, b) => a.localeCompare(b));
 }
@@ -2288,6 +2339,9 @@ export function deriveNetworkStatus(
     thorchainBlockAgeSeconds?: number;
   } = {}
 ): NetworkStatus {
+  const inboundByChain = new Map(inboundAddresses.map((chain) => [chain.chain.trim().toUpperCase(), chain]));
+  const inboundChainCodes = inboundAddresses.map((chain) => chain.chain.trim().toUpperCase());
+  const recognizedChainCodes = new Set([...CURATED_CHAIN_CODES, ...inboundChainCodes]);
   const tradingPausedKey = getActiveMimirKeyByMode(mimir, 'HALTTRADING', 'at-or-after-height', thorchainHeight);
   const signingPausedKey = getActiveMimirKeyByMode(mimir, 'HALTSIGNING', 'at-or-after-height', thorchainHeight);
   const lpPausedKey = getActiveMimirKeyByMode(mimir, 'PAUSELP', 'at-or-after-height', thorchainHeight);
@@ -2324,6 +2378,14 @@ export function deriveNetworkStatus(
   const asymWithdrawalPauseKeys = getActiveMimirKeysByPrefix(mimir, 'PauseAsymWithdrawal-');
   const securedAssetDepositPauseKeys = getActiveMimirKeysByPrefix(mimir, 'HaltSecuredDeposit-', 'at-or-after-height', thorchainHeight);
   const securedAssetWithdrawPauseKeys = getActiveMimirKeysByPrefix(mimir, 'HaltSecuredWithdraw-', 'at-or-after-height', thorchainHeight);
+  const tradeAccountDepositPauseKeys = onlyRecognizedTradeAccountChainKeys(
+    getActiveMimirKeysByPrefix(mimir, 'HaltTradeDeposit-', 'at-or-after-height', thorchainHeight),
+    recognizedChainCodes
+  );
+  const tradeAccountWithdrawPauseKeys = onlyRecognizedTradeAccountChainKeys(
+    getActiveMimirKeysByPrefix(mimir, 'HaltTradeWithdraw-', 'at-or-after-height', thorchainHeight),
+    recognizedChainCodes
+  );
   const wasmDeployerHaltKeys = getActiveMimirKeysByPrefix(mimir, 'HaltWasmDeployer-', 'after-height', thorchainHeight);
   const wasmCodeHashHaltKeys = getActiveMimirKeysByPrefix(mimir, 'HaltWasmCs-', 'after-height', thorchainHeight);
   const wasmContractHaltKeys = getActiveMimirKeysByPrefix(mimir, 'HaltWasmContract-', 'after-height', thorchainHeight);
@@ -2341,6 +2403,14 @@ export function deriveNetworkStatus(
   ].filter((key): key is string => key !== null);
   const scheduledSecuredAssetDepositPauseKeys = getScheduledMimirKeysByPrefix(mimir, 'HaltSecuredDeposit-', 'at-or-after-height', thorchainHeight);
   const scheduledSecuredAssetWithdrawPauseKeys = getScheduledMimirKeysByPrefix(mimir, 'HaltSecuredWithdraw-', 'at-or-after-height', thorchainHeight);
+  const scheduledTradeAccountDepositPauseKeys = onlyRecognizedTradeAccountChainKeys(
+    getScheduledMimirKeysByPrefix(mimir, 'HaltTradeDeposit-', 'at-or-after-height', thorchainHeight),
+    recognizedChainCodes
+  );
+  const scheduledTradeAccountWithdrawPauseKeys = onlyRecognizedTradeAccountChainKeys(
+    getScheduledMimirKeysByPrefix(mimir, 'HaltTradeWithdraw-', 'at-or-after-height', thorchainHeight),
+    recognizedChainCodes
+  );
   const scheduledWasmDeployerHaltKeys = getScheduledMimirKeysByPrefix(mimir, 'HaltWasmDeployer-', 'after-height', thorchainHeight);
   const scheduledWasmCodeHashHaltKeys = getScheduledMimirKeysByPrefix(mimir, 'HaltWasmCs-', 'after-height', thorchainHeight);
   const scheduledWasmContractHaltKeys = getScheduledMimirKeysByPrefix(mimir, 'HaltWasmContract-', 'after-height', thorchainHeight);
@@ -2348,6 +2418,14 @@ export function deriveNetworkStatus(
   const invalidAsymWithdrawalPauseKeys = getInvalidMimirKeysByPrefix(mimir, 'PauseAsymWithdrawal-');
   const invalidSecuredAssetDepositPauseKeys = getInvalidMimirKeysByPrefix(mimir, 'HaltSecuredDeposit-');
   const invalidSecuredAssetWithdrawPauseKeys = getInvalidMimirKeysByPrefix(mimir, 'HaltSecuredWithdraw-');
+  const invalidTradeAccountDepositPauseKeys = onlyRecognizedTradeAccountChainKeys(
+    getInvalidMimirKeysByPrefix(mimir, 'HaltTradeDeposit-'),
+    recognizedChainCodes
+  );
+  const invalidTradeAccountWithdrawPauseKeys = onlyRecognizedTradeAccountChainKeys(
+    getInvalidMimirKeysByPrefix(mimir, 'HaltTradeWithdraw-'),
+    recognizedChainCodes
+  );
   const invalidWasmDeployerHaltKeys = getInvalidMimirKeysByPrefix(mimir, 'HaltWasmDeployer-');
   const invalidWasmCodeHashHaltKeys = getInvalidMimirKeysByPrefix(mimir, 'HaltWasmCs-');
   const invalidWasmContractHaltKeys = getInvalidMimirKeysByPrefix(mimir, 'HaltWasmContract-');
@@ -2355,16 +2433,15 @@ export function deriveNetworkStatus(
   const scheduledScopedWasmHaltKeys = uniqueKeys(scheduledWasmDeployerHaltKeys, scheduledWasmCodeHashHaltKeys, scheduledWasmContractHaltKeys);
   const nodePauseChainGlobalKey = getActiveMimirKeyByMode(mimir, 'NODEPAUSECHAINGLOBAL', 'until-height', thorchainHeight);
   const nodePauseChainGlobalKeys = nodePauseChainGlobalKey ? [nodePauseChainGlobalKey] : [];
-  const inboundByChain = new Map(inboundAddresses.map((chain) => [chain.chain.trim().toUpperCase(), chain]));
-  const inboundChainCodes = inboundAddresses.map((chain) => chain.chain.trim().toUpperCase());
-  const recognizedChainCodes = new Set([...CURATED_CHAIN_CODES, ...inboundChainCodes]);
   const unknownChainScopedMimirKeys = getUnknownChainScopedMimirKeys(mimir, recognizedChainCodes);
-  const unknownOperationMimirKeys = getUnknownOperationMimirKeys(mimir);
+  const unknownOperationMimirKeys = getUnknownOperationMimirKeys(mimir, recognizedChainCodes);
   const reviewedOperationalSupportMimirKeys = getReviewedOperationalSupportMimirKeys(mimir);
   const scheduledMimirKeys = uniqueKeys(
     scheduledExactMimirKeys,
     scheduledSecuredAssetDepositPauseKeys,
     scheduledSecuredAssetWithdrawPauseKeys,
+    scheduledTradeAccountDepositPauseKeys,
+    scheduledTradeAccountWithdrawPauseKeys,
     scheduledScopedWasmHaltKeys
   ).sort((a, b) => a.localeCompare(b));
   const mimirOnlyChainCodes = extractChainCodesFromMimir(
@@ -2380,6 +2457,12 @@ export function deriveNetworkStatus(
       ...invalidSecuredAssetWithdrawPauseKeys,
       ...scheduledSecuredAssetDepositPauseKeys,
       ...scheduledSecuredAssetWithdrawPauseKeys,
+      ...tradeAccountDepositPauseKeys,
+      ...invalidTradeAccountDepositPauseKeys,
+      ...tradeAccountWithdrawPauseKeys,
+      ...invalidTradeAccountWithdrawPauseKeys,
+      ...scheduledTradeAccountDepositPauseKeys,
+      ...scheduledTradeAccountWithdrawPauseKeys,
     ],
     recognizedChainCodes
   )
@@ -2422,6 +2505,12 @@ export function deriveNetworkStatus(
     const securedAssetWithdrawChainKeys = securedAssetWithdrawPauseKeys.filter((key) => (
       getChainCodeFromDashScopedMimirKey(key, 'HaltSecuredWithdraw-') === chainCode
     ));
+    const tradeAccountDepositChainKeys = tradeAccountDepositPauseKeys.filter((key) => (
+      getChainCodeFromDashScopedMimirKey(key, 'HaltTradeDeposit-') === chainCode
+    ));
+    const tradeAccountWithdrawChainKeys = tradeAccountWithdrawPauseKeys.filter((key) => (
+      getChainCodeFromDashScopedMimirKey(key, 'HaltTradeWithdraw-') === chainCode
+    ));
     const asymWithdrawalChainKeys = asymWithdrawalPauseKeys.filter((key) => (
       getChainCodeFromDashScopedMimirKey(key, 'PauseAsymWithdrawal-') === chainCode
     ));
@@ -2431,10 +2520,18 @@ export function deriveNetworkStatus(
     const scheduledSecuredAssetWithdrawChainKeys = scheduledSecuredAssetWithdrawPauseKeys.filter((key) => (
       getChainCodeFromDashScopedMimirKey(key, 'HaltSecuredWithdraw-') === chainCode
     ));
+    const scheduledTradeAccountDepositChainKeys = scheduledTradeAccountDepositPauseKeys.filter((key) => (
+      getChainCodeFromDashScopedMimirKey(key, 'HaltTradeDeposit-') === chainCode
+    ));
+    const scheduledTradeAccountWithdrawChainKeys = scheduledTradeAccountWithdrawPauseKeys.filter((key) => (
+      getChainCodeFromDashScopedMimirKey(key, 'HaltTradeWithdraw-') === chainCode
+    ));
     const chainScheduledMimirKeys = uniqueKeys(
       scheduledChainMimirKeys,
       scheduledSecuredAssetDepositChainKeys,
-      scheduledSecuredAssetWithdrawChainKeys
+      scheduledSecuredAssetWithdrawChainKeys,
+      scheduledTradeAccountDepositChainKeys,
+      scheduledTradeAccountWithdrawChainKeys
     ).sort((a, b) => a.localeCompare(b));
     const unparseableMimirKeys = getInvalidMimirKeysForChain(
       mimir,
@@ -2442,6 +2539,8 @@ export function deriveNetworkStatus(
       invalidPoolDepositPauseKeys,
       invalidSecuredAssetDepositPauseKeys,
       invalidSecuredAssetWithdrawPauseKeys,
+      invalidTradeAccountDepositPauseKeys,
+      invalidTradeAccountWithdrawPauseKeys,
       invalidAsymWithdrawalPauseKeys
     );
     const missingInboundFields = missingInboundOperationFields(chain);
@@ -2486,6 +2585,12 @@ export function deriveNetworkStatus(
         : {}),
       ...(securedAssetWithdrawChainKeys.length > 0
         ? { securedAssetWithdrawPaused: true, securedAssetWithdrawPauseKeys: securedAssetWithdrawChainKeys }
+        : {}),
+      ...(tradeAccountDepositChainKeys.length > 0
+        ? { tradeAccountDepositPaused: true, tradeAccountDepositPauseKeys: tradeAccountDepositChainKeys }
+        : {}),
+      ...(tradeAccountWithdrawChainKeys.length > 0
+        ? { tradeAccountWithdrawPaused: true, tradeAccountWithdrawPauseKeys: tradeAccountWithdrawChainKeys }
         : {}),
       ...(asymWithdrawalChainKeys.length > 0
         ? { asymWithdrawalPaused: true, asymWithdrawalPauseKeys: asymWithdrawalChainKeys }
@@ -2586,6 +2691,24 @@ export function deriveNetworkStatus(
     ),
     enablementControl(mimir, 'TRADEACCOUNTSENABLED', controlLabel('TRADEACCOUNTSENABLED'), controlDescription('TRADEACCOUNTSENABLED')),
     enablementControl(mimir, 'TRADEACCOUNTSDEPOSITENABLED', controlLabel('TRADEACCOUNTSDEPOSITENABLED'), controlDescription('TRADEACCOUNTSDEPOSITENABLED')),
+    aggregatePauseControl(
+      'HaltTradeDeposit-*',
+      controlLabel('HaltTradeDeposit-*'),
+      tradeAccountDepositPauseKeys,
+      invalidTradeAccountDepositPauseKeys,
+      'No active chain-specific trade-account deposit halt keys were observed.',
+      aggregateControlDescription('HaltTradeDeposit-*'),
+      scheduledTradeAccountDepositPauseKeys
+    ),
+    aggregatePauseControl(
+      'HaltTradeWithdraw-*',
+      controlLabel('HaltTradeWithdraw-*'),
+      tradeAccountWithdrawPauseKeys,
+      invalidTradeAccountWithdrawPauseKeys,
+      'No active chain-specific trade-account withdrawal halt keys were observed.',
+      aggregateControlDescription('HaltTradeWithdraw-*'),
+      scheduledTradeAccountWithdrawPauseKeys
+    ),
     optionalPauseControl(mimir, 'MANUALSWAPSTOSYNTHDISABLED', controlLabel('MANUALSWAPSTOSYNTHDISABLED'), controlDescription('MANUALSWAPSTOSYNTHDISABLED')),
     enablementControl(mimir, 'RUNEPOOLENABLED', controlLabel('RUNEPOOLENABLED'), controlDescription('RUNEPOOLENABLED')),
     enablementControl(mimir, 'BANKSENDENABLED', controlLabel('BANKSENDENABLED'), controlDescription('BANKSENDENABLED')),
@@ -2678,6 +2801,8 @@ export function deriveNetworkStatus(
     asymWithdrawalPauseKeys,
     securedAssetDepositPauseKeys,
     securedAssetWithdrawPauseKeys,
+    tradeAccountDepositPauseKeys,
+    tradeAccountWithdrawPauseKeys,
     scopedWasmHaltKeys,
     nodePauseChainGlobalKeys
   );
@@ -2692,6 +2817,8 @@ export function deriveNetworkStatus(
       chain.signingPaused ||
       chain.securedAssetDepositPaused ||
       chain.securedAssetWithdrawPaused ||
+      chain.tradeAccountDepositPaused ||
+      chain.tradeAccountWithdrawPaused ||
       chain.asymWithdrawalPaused
     )
   ).length;
@@ -2732,6 +2859,8 @@ export function deriveNetworkStatus(
     tcyTradingPaused,
     tradeAccountsEnabled,
     tradeAccountDepositsEnabled,
+    tradeAccountDepositPauseKeys,
+    tradeAccountWithdrawPauseKeys,
     manualSwapsToSynthDisabled,
     runePoolEnabled,
     bankSendEnabled,

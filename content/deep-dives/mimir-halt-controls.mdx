@@ -45,9 +45,9 @@ App Layer and account-style flows have their own controls:
 - `HaltWasmGlobal`, `HaltWasmDeployer-*`, `HaltWasmCs-*`, and `HaltWasmContract-*`.
 - `HaltOracle`.
 - `HaltSecuredGlobal`, `HaltSecuredDeposit-*`, and `HaltSecuredWithdraw-*`.
-- `TradeAccountsEnabled` and related trade-account deposit controls.
+- `TradeAccountsEnabled`, `TradeAccountsDepositEnabled`, `HaltTradeDeposit-<CHAIN>`, and `HaltTradeWithdraw-<CHAIN>`.
 
-These controls are scoped. A specific contract, code checksum, deployer, secured-asset flow, or trade-account action can be limited while ordinary swaps remain available.
+These controls are scoped. A specific contract, code checksum, deployer, secured-asset flow, or trade-account action can be limited while ordinary swaps remain available. The trade-account deposit and withdrawal halt values are activation heights: the matching chain action is halted when the checked THORChain height reaches or passes the configured positive value.
 
 ### Node and operator controls
 

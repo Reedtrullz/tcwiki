@@ -21,7 +21,7 @@ App Layer language gets risky when one sentence tries to cover contracts, secure
 ### Trade-account or arbitrage flow
 
 - **Use:** Separate older trade-account terminology from secured assets and contract-moved tokens.
-- **Verify:** Check `TradeAccountsEnabled`, trade-account deposit controls, pool state, quote output, and route-specific halts.
+- **Verify:** Check `TradeAccountsEnabled`, `TradeAccountsDepositEnabled`, the exact `HaltTradeDeposit-<CHAIN>` and `HaltTradeWithdraw-<CHAIN>` families, pool state, quote output, and route-specific halts.
 - **Do not claim:** That an arbitrage bot, professional-trader path, or trade-account flow is available just because the design exists.
 
 ### Interface or wallet support
@@ -38,7 +38,7 @@ App Layer language gets risky when one sentence tries to cover contracts, secure
 
 ## Evidence Ladder
 
-Match the claim to its control family: contracts need current Network diagnostics plus deployer/checksum evidence; secured assets need global or chain-scoped deposit/withdraw halts; trade-account flows need `TradeAccountsEnabled` and related controls; wallets and interfaces also need implementation review. Design docs alone do not prove that an action works now.
+Match the claim to its control family: contracts need current Network diagnostics plus deployer/checksum evidence; secured assets need global or chain-scoped deposit/withdraw halts; trade-account flows need `TradeAccountsEnabled`, `TradeAccountsDepositEnabled`, `HaltTradeDeposit-<CHAIN>`, and `HaltTradeWithdraw-<CHAIN>`; wallets and interfaces also need implementation review. Design docs alone do not prove that an action works now.
 
 ## Common Misreadings
 
@@ -104,7 +104,7 @@ The clean distinction:
 - Trade assets/accounts are accounting and execution concepts for fast THORChain trading flows.
 - Secured assets are App Layer-compatible assets backed by L1 deposits.
 - CosmWasm docs explicitly warn that trade assets are not supported as contract-moved tokens.
-- Current trade-account enablement is a live-control question, not a static docs claim.
+- Current trade-account enablement, chain-scoped deposit availability, and chain-scoped withdrawal availability are live-control questions, not static docs claims.
 
 If a reader asks whether a bot, interface, or contract can use a specific asset today, send them to live network diagnostics and the current protocol source map before answering.
 
@@ -117,7 +117,10 @@ Use the exact control family when describing risk:
 - `HaltSecuredGlobal`: deposits and withdrawals of all secured assets across base and App Layers.
 - `HaltSecuredDeposit-<CHAIN>`: deposits for secured assets scoped to a chain.
 - `HaltSecuredWithdraw-<CHAIN>`: withdrawals for secured assets scoped to a chain.
-- `TradeAccountsEnabled` and related trade-account deposit controls: whether trade-account behavior is available.
+- `TradeAccountsEnabled`: whether the trade-account feature is enabled.
+- `TradeAccountsDepositEnabled`: whether trade-account deposits are enabled globally.
+- `HaltTradeDeposit-<CHAIN>`: the activation height for halting trade-account deposits on exactly one recognized chain.
+- `HaltTradeWithdraw-<CHAIN>`: the activation height for halting trade-account withdrawals on exactly one recognized chain.
 - `HaltWasm*` controls: whether all contracts, deployer-scoped contracts, checksum-scoped contracts, or one contract instance is halted.
 
 These controls can also be malformed, stale, scheduled, or absent from a source snapshot. Absence is not the same as proof of health unless the dashboard has a fresh, pinned, source-labeled THORNode result.

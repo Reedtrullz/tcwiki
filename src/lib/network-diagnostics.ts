@@ -140,6 +140,8 @@ function chainReasonGroups(chain: ChainOperationalStatus) {
   const scopedOperationReasons = [
     chain.securedAssetDepositPaused ? 'Secured deposits paused' : null,
     chain.securedAssetWithdrawPaused ? 'Secured withdrawals paused' : null,
+    chain.tradeAccountDepositPaused ? 'Trade-account deposits paused' : null,
+    chain.tradeAccountWithdrawPaused ? 'Trade-account withdrawals paused' : null,
     chain.asymWithdrawalPaused ? 'Asym withdrawals paused' : null,
   ].filter((reason): reason is string => reason !== null);
 
@@ -160,6 +162,8 @@ function evidenceReasons(chain: ChainOperationalStatus) {
     ...chain.lpDepositPauseKeys.map((key) => `Pool-specific deposit pause: ${key}`),
     ...(chain.securedAssetDepositPauseKeys ?? []).map((key) => `Secured deposit halt: ${key}`),
     ...(chain.securedAssetWithdrawPauseKeys ?? []).map((key) => `Secured withdrawal halt: ${key}`),
+    ...(chain.tradeAccountDepositPauseKeys ?? []).map((key) => `Trade-account deposit halt: ${key}`),
+    ...(chain.tradeAccountWithdrawPauseKeys ?? []).map((key) => `Trade-account withdrawal halt: ${key}`),
     ...(chain.asymWithdrawalPauseKeys ?? []).map((key) => `Asym withdrawal pause: ${key}`),
     ...inbound.map((field) => `THORNode inbound flag: ${field}`),
     ...(chain.sourceWarnings ?? []),
@@ -262,6 +266,8 @@ export function deriveChainAvailability(status: NetworkStatus | undefined): Chai
             ...chain.lpDepositPauseKeys,
             ...(chain.securedAssetDepositPauseKeys ?? []),
             ...(chain.securedAssetWithdrawPauseKeys ?? []),
+            ...(chain.tradeAccountDepositPauseKeys ?? []),
+            ...(chain.tradeAccountWithdrawPauseKeys ?? []),
             ...(chain.asymWithdrawalPauseKeys ?? []),
           ]),
           inbound: chain.inboundAddressEvidenceFields ?? [],

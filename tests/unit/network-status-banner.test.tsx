@@ -297,12 +297,12 @@ describe('NetworkStatusBanner', () => {
     expect(html).toContain('No clean optional node-operation Mimir controls were returned');
   });
 
-  it('shows secured/asym operation pauses as their own chain status lane', () => {
+  it('shows secured, trade-account, and asym operation pauses in a scoped-operations lane', () => {
     const html = renderStatus({
       ...baseStatus,
       state: 'paused',
-      activeEvidenceKeys: ['HaltSecuredDeposit-ETH-ETH', 'PauseAsymWithdrawal-BTC-BTC'],
-      activePauseKeys: ['HaltSecuredDeposit-ETH-ETH', 'PauseAsymWithdrawal-BTC-BTC'],
+      activeEvidenceKeys: ['HaltSecuredDeposit-ETH-ETH', 'PauseAsymWithdrawal-BTC-BTC', 'HaltTradeDeposit-BASE'],
+      activePauseKeys: ['HaltSecuredDeposit-ETH-ETH', 'PauseAsymWithdrawal-BTC-BTC', 'HaltTradeDeposit-BASE'],
       chainStatuses: [
         chain({
           chain: 'ETH',
@@ -314,17 +314,24 @@ describe('NetworkStatusBanner', () => {
           asymWithdrawalPaused: true,
           asymWithdrawalPauseKeys: ['PauseAsymWithdrawal-BTC-BTC'],
         }),
+        chain({
+          chain: 'BASE',
+          tradeAccountDepositPaused: true,
+          tradeAccountDepositPauseKeys: ['HaltTradeDeposit-BASE'],
+        }),
       ],
     });
 
     expect(html).toContain('No global swap halt; other operations paused');
     expect(html).toContain('Limited chains');
     expect(html).toContain('None observed');
-    expect(html).toContain('Secured / asym');
+    expect(html).toContain('Scoped operations');
     expect(html).toContain('Secured deposits paused');
     expect(html).toContain('Asym withdrawals paused');
+    expect(html).toContain('Trade-account deposits paused');
     expect(html).toContain('HaltSecuredDeposit-ETH-ETH');
     expect(html).toContain('PauseAsymWithdrawal-BTC-BTC');
+    expect(html).toContain('HaltTradeDeposit-BASE');
   });
 
   it('keeps source warnings visible without hiding direct chain blockers', () => {
