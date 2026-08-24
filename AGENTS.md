@@ -1,7 +1,7 @@
 # THORChain Wiki — Project Knowledge Base
 
 **Generated:** 2026-06-18
-**Branch:** codex/wave3b-ghcr-login-safety
+**Branch:** Use the current checkout; this file is shared across branches.
 
 ## OVERVIEW
 
