@@ -689,9 +689,13 @@ export interface ChainOperationalStatus {
   sourceWarnings?: string[];
   securedAssetDepositPaused?: boolean;
   securedAssetWithdrawPaused?: boolean;
+  tradeAccountDepositPaused?: boolean;
+  tradeAccountWithdrawPaused?: boolean;
   asymWithdrawalPaused?: boolean;
   securedAssetDepositPauseKeys?: string[];
   securedAssetWithdrawPauseKeys?: string[];
+  tradeAccountDepositPauseKeys?: string[];
+  tradeAccountWithdrawPauseKeys?: string[];
   asymWithdrawalPauseKeys?: string[];
   scheduledMimirKeys?: string[];
   unparseableMimirKeys?: string[];
@@ -759,6 +763,8 @@ export interface NetworkStatus {
   tcyTradingPaused: boolean | null;
   tradeAccountsEnabled: boolean | null;
   tradeAccountDepositsEnabled?: boolean | null;
+  tradeAccountDepositPauseKeys?: string[];
+  tradeAccountWithdrawPauseKeys?: string[];
   manualSwapsToSynthDisabled?: boolean | null;
   runePoolEnabled: boolean | null;
   bankSendEnabled?: boolean | null;

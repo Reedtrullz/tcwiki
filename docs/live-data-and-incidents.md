@@ -32,10 +32,10 @@ Minimum coverage to keep visible or searchable:
 - Global and chain operations: `HALTTRADING`, `HALTSIGNING`, `HALTCHAINGLOBAL`, `HALT<CHAIN>TRADING`, `HALTSIGNING<CHAIN>`, `HALT<CHAIN>CHAIN`, `NODEPAUSECHAINGLOBAL`.
 - Liquidity operations: `PAUSELP`, `PAUSELP<CHAIN>`, `PAUSELPDEPOSIT-<ASSET>`, `PauseAsymWithdrawal-<CHAIN>`, `StreamingSwapPause`.
 - TCY and legacy THORFi: `PAUSELOANS`, `HALTTCYTRADING`, `TCYCLAIMINGHALT`, `TCYCLAIMINGSWAPHALT`, `TCYSTAKINGHALT`, `TCYSTAKEDISTRIBUTIONHALT`, `TCYUNSTAKINGHALT`.
-- Trade, secured, and RUNEPool operations: `TRADEACCOUNTSENABLED`, `TRADEACCOUNTSDEPOSITENABLED`, `HALTSECUREDGLOBAL`, `HaltSecuredDeposit-<CHAIN>`, `HaltSecuredWithdraw-<CHAIN>`, `RUNEPOOLENABLED`, `RUNEPoolHaltDeposit`, `RUNEPoolHaltWithdraw`, `BANKSENDENABLED`.
+- Trade, secured, and RUNEPool operations: `TRADEACCOUNTSENABLED`, `TRADEACCOUNTSDEPOSITENABLED`, `HaltTradeDeposit-<CHAIN>`, `HaltTradeWithdraw-<CHAIN>`, `HALTSECUREDGLOBAL`, `HaltSecuredDeposit-<CHAIN>`, `HaltSecuredWithdraw-<CHAIN>`, `RUNEPOOLENABLED`, `RUNEPoolHaltDeposit`, `RUNEPoolHaltWithdraw`, `BANKSENDENABLED`.
 - App-layer and operator controls: `HaltWasmGlobal`, `HaltWasmDeployer-<ADDRESS>`, `HaltWasmCs-<CHECKSUM>`, `HaltWasmContract-<SUFFIX>`, `HaltOracle`, `HaltMemoless`, `PauseBond`, `PauseUnbond`, `HaltRebond`, `HaltOperatorRotate`.
 
-Height-shaped controls require a live THORChain height from `/thorchain/lastblock`; do not interpret every positive value as active. Most halt controls activate at or after their configured height, `NodePauseChainGlobal` is active until its expiry height, and WASM halt controls activate after their configured height. Pure toggles and enablement controls must stay explicitly classified.
+Height-shaped controls require a live THORChain height from `/thorchain/lastblock`; do not interpret every positive value as active. Most halt controls, including chain-scoped trade deposit and withdrawal halts, activate at or after their configured height; `NodePauseChainGlobal` is active until its expiry height, and WASM halt controls activate after their configured height. Pure toggles and enablement controls must stay explicitly classified.
 
 ## Updating Static Records
 

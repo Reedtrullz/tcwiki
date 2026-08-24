@@ -261,6 +261,22 @@ export const OPERATIONAL_CONTROL_CATALOG: OperationalControlCatalogEntry[] = [
     searchTerms: ['trade account deposits', 'trade deposit enabled', 'trade asset deposit'],
   },
   {
+    key: 'HaltTradeDeposit-*',
+    label: 'Trade deposits by chain',
+    area: 'trade accounts',
+    description: 'Trade-account deposits are halted for one or more chains.',
+    searchTerms: ['trade account deposit halt', 'trade deposit paused', 'trade asset deposit chain'],
+    scoped: true,
+  },
+  {
+    key: 'HaltTradeWithdraw-*',
+    label: 'Trade withdrawals by chain',
+    area: 'trade accounts',
+    description: 'Trade-account withdrawals are halted for one or more chains.',
+    searchTerms: ['trade account withdrawal halt', 'trade withdrawal paused', 'trade asset withdrawal chain'],
+    scoped: true,
+  },
+  {
     key: 'MANUALSWAPSTOSYNTHDISABLED',
     label: 'Manual synth swaps',
     area: 'synths',

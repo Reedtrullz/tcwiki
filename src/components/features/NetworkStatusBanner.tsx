@@ -1437,6 +1437,8 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
         ...chain.lpDepositPauseKeys,
         ...(chain.securedAssetDepositPauseKeys ?? []),
         ...(chain.securedAssetWithdrawPauseKeys ?? []),
+        ...(chain.tradeAccountDepositPauseKeys ?? []),
+        ...(chain.tradeAccountWithdrawPauseKeys ?? []),
         ...(chain.asymWithdrawalPauseKeys ?? []),
       ]),
       inboundFields: chain.inboundAddressEvidenceFields ?? [],
@@ -1796,7 +1798,7 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
                 Chain availability
               </h3>
               <p className="mt-1 text-[11px] leading-relaxed text-slate-400">
-                Swap columns show chain-level route blockers. LP and secured/asym columns are separate because those controls are not the same as an ordinary swap halt; network-wide LP controls are named once above.
+                Swap columns show chain-level route blockers. LP and scoped-operation columns are separate because LP, secured-asset, trade-account, and asymmetric-withdrawal controls are not the same as an ordinary swap halt; network-wide LP controls are named once above.
               </p>
             </div>
           </div>
@@ -1825,7 +1827,7 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
                     <div className="mt-1">{renderStatusCell(chain.poolDeposits)}</div>
                   </div>
                   <div className="col-span-2">
-                    <p className="text-[10px] uppercase tracking-wider text-slate-500">Secured / asym withdrawals</p>
+                    <p className="text-[10px] uppercase tracking-wider text-slate-500">Scoped operations</p>
                     <div className="mt-1">{renderStatusCell(chain.scopedOperations)}</div>
                   </div>
                   <div className="col-span-2">
@@ -1850,7 +1852,7 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
                   <th scope="col" className="whitespace-nowrap px-3 py-2 font-semibold">Swap out</th>
                   <th scope="col" className="whitespace-nowrap px-3 py-2 font-semibold">LP actions</th>
                   <th scope="col" className="whitespace-nowrap px-3 py-2 font-semibold">Pool deposits</th>
-                  <th scope="col" className="whitespace-nowrap px-3 py-2 font-semibold">Secured / asym</th>
+                  <th scope="col" className="whitespace-nowrap px-3 py-2 font-semibold">Scoped operations</th>
                   <th scope="col" className="whitespace-nowrap px-3 py-2 font-semibold">Data quality</th>
                   <th scope="col" className="px-3 py-2 font-semibold">Why</th>
                 </tr>
