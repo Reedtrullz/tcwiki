@@ -1,7 +1,7 @@
 # THORChain Wiki — Project Knowledge Base
 
 **Generated:** 2026-06-18
-**Branch:** codex/thorchain-wiki-remediation
+**Branch:** Use the current checkout; this file is shared across branches.
 
 ## OVERVIEW
 

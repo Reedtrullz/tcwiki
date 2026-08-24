@@ -166,13 +166,6 @@
             password: "{{ ghcr_token }}"
           when: ghcr_token | length > 0
 
-        - name: Login to GHCR
-          community.docker.docker_login:
-            registry: ghcr.io
-            username: Reedtrullz
-            password: "{{ ghcr_token }}"
-          when: ghcr_token | length > 0
-
         - name: Pull immutable image from GHCR
           community.docker.docker_image:
             name: "{{ image_ref }}"
@@ -182,17 +175,6 @@
         - name: Mark live container as not yet replaced
           set_fact:
             deployment_replaced: false
-
-        - name: Force remove any stale container binding candidate port
-          shell: |
-            for cid in $(docker ps -q); do
-              if docker port "$cid" 2>/dev/null | grep -q ":{{ candidate_port }}->"; then
-                docker stop "$cid" 2>/dev/null || true
-                docker rm -f "$cid" 2>/dev/null || true
-              fi
-            done
-          changed_when: false
-          failed_when: false
 
         - name: Remove stale candidate container
           community.docker.docker_container:
