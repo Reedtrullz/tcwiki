@@ -44,3 +44,9 @@ Churn is also a vault-management event. When the active validator set changes, n
 That makes churn relevant to users even if they never run a node: vault addresses, signing responsibility, outbound queues, and operational pause controls can all matter during sensitive migration windows. A churned-out node returning to Standby is still not automatically free to unbond while its key remains part of a migrating vault.
 
 Current churn claims need Network diagnostics, THORNode node/churn state, current Mimir constants, the exact node lifecycle stage, and release-dated evidence. This design does not reveal the next rotation, current eligibility, migration completion, or chain-client readiness.
+
+## Delegated Node Operations (ADR-030)
+
+ADR-030 is a proposed design for separating node management authority from bond custody. Under the proposal, an operator could register delegate addresses with permission bits for MAINT, LEAVE, bond-provider-whitelist changes, and operator-fee updates, each with an optional block-offset expiry. Custody of bonded RUNE and fee rewards would stay with the operator key, and OPERATOR_ROTATE, UNBOND, and delegation management would remain non-delegable.
+
+That is design context only. The develop ADR is still marked Proposed; the official v3.20 blog recap says the framework ships in v3.20 code with activation expected in v3.21, so no delegate registry is active on mainnet yet. Node-lifecycle claims should keep using current THORNode state; do not describe delegated maintenance, leave requests, or fee changes as available behavior until activation lands.

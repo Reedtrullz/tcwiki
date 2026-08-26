@@ -427,6 +427,34 @@ export const protocolUpgradeV319Source: SourceMeta = {
   notes: 'Official v3.19.0 release summary for post-exploit restart controls, including TSS patches, compromised-vault exclusion, temporary KeyVerify, and pause safety.',
 };
 
+export const protocolUpgradeV320Source: SourceMeta = {
+  label: 'THORNode v3.20.0 Release Notes (GitLab)',
+  url: 'https://gitlab.com/thorchain/thornode/-/releases/v3.20.0',
+  retrievedAt: '2026-08-26',
+  notes: 'Official v3.20.0 release notes plus blog recap: proposed block 27580000 on 25-Aug-2026, private binary, TSS/Bifrost hardening, memoless ERC20 work, XMR/ZEC chain clients, churn resumption prep, operational POL Mimirs, and the Stable Reserve experiment (ships disabled).',
+};
+
+export const adr030DelegatedOpsSource: SourceMeta = {
+  label: 'ADR-030 Delegated Node Operator Permissions (develop)',
+  url: 'https://gitlab.com/thorchain/thornode/-/blob/develop/docs/architecture/adr-030-delegated-node-operator-permissions.md',
+  retrievedAt: '2026-08-26',
+  notes: 'Official develop-branch ADR text marked Proposed: per-node delegate registry with MAINT/LEAVE/WHITELIST_BP/SET_FEE permission bits, optional block-offset expiry, non-delegable custody and OPERATOR_ROTATE.',
+};
+
+export const adr027AffiliateRevShareSource: SourceMeta = {
+  label: 'ADR-027 Affiliate Revenue Share / REVSHARE (develop)',
+  url: 'https://gitlab.com/thorchain/thornode/-/blob/develop/docs/architecture/adr-027-affiliate-revshare.md',
+  retrievedAt: '2026-08-26',
+  notes: 'Official develop-branch ADR text marked Proposed: per-thorname REVSHARE-<name> operational Mimirs capped at 5000 bps, reserve-funded payouts through AffiliateCollector at end of block.',
+};
+
+export const adr031RujiraAlignmentSource: SourceMeta = {
+  label: 'ADR031 - The Path Forward With Rujira (blog)',
+  url: 'https://blog.thorchain.org/adr031-the-path-forward-with-rujira',
+  retrievedAt: '2026-08-26',
+  notes: 'Official 2026-07-29 post: node vote selected Option 1, confirming the THORChain-Rujira cooperation with an updated revenue split after the initial ADR-020 collaboration period expired.',
+};
+
 export const adr028ExploitConciliationSource: SourceMeta = {
   label: 'ADR-028 Exploit Conciliation (v3.19.0)',
   url: 'https://gitlab.com/thorchain/thornode/-/blob/v3.19.0/docs/architecture/adr-028-exploit-conciliation.md',
