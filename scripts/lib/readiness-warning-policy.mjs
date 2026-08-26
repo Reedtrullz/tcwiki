@@ -3,7 +3,14 @@ export function normalizeReadinessWarningMessage(value) {
 }
 
 export function isNonBlockingReadinessWarning(detail) {
-  return detail?.severity === 'review' && detail?.category === 'mimir-support';
+  if (detail?.severity !== 'review') {
+    return false;
+  }
+
+  // Chain-scoped keys only reach the unknown-chain classifier when their chain
+  // is absent from inbound_addresses, so they cannot pause routable flows;
+  // the warning itself stays visible for review.
+  return detail?.category === 'mimir-support' || detail?.category === 'unknown-chain';
 }
 
 export function partitionReadinessWarnings(warnings, details) {
