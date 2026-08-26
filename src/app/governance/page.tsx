@@ -165,6 +165,24 @@ const recoveryReviewGuidanceById: Record<string, {
     ],
     boundary: 'ADR-028 acceptance proves the conciliation decision and migration design, not that every loss was restored, recovery is complete, current vaults are safe, or any user action is enabled.',
   },
+  'governance:adr-030-delegated-node-ops': {
+    focus: 'Proposed ADR-030 delegate registry for node-management permissions without custody transfer.',
+    verifyNow: [
+      'The develop ADR status before saying delegation is proposed, accepted, or live.',
+      'Release notes and Mimir state before tying ADR-030 to a specific network upgrade.',
+      'Node-operator documentation before describing operator workflows that do not exist on mainnet yet.',
+    ],
+    boundary: 'ADR-030 is design context. It does not prove delegated actions are possible today, and custody remains with the operator key in the proposal.',
+  },
+  'incident:memoless-spam-2026-08': {
+    focus: 'August 2026 memoless halt, cost vote, spam re-halt, and v3.20.0-era feature work.',
+    verifyNow: [
+      'Current HALTMEMOLESS and MEMOLESSTXNCOST values in Network diagnostics before any present-tense memoless claim.',
+      'The v3.20.0 release notes for dated handler, refund, and chain-client work.',
+      'Route quotes for concrete swaps; a memoless halt does not prove ordinary swap routes are blocked.',
+    ],
+    boundary: 'This record proves a scoped availability cycle, not a global outage or a permanent fee level. Cost parameters can be re-voted after the incident window.',
+  },
 };
 
 function recoveryReviewGuidance(id: string) {

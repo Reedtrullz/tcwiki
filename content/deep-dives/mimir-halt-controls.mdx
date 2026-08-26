@@ -101,3 +101,17 @@ Unknown keys are not automatically active halts. They are a source-quality probl
 ## What To Verify Before Claiming
 
 For each claim, identify its control family and exact key or source field; retain provider, checked time, height, data quality, and whether a network-wide control directly blocks that scope. Concrete routes need the current quote result rather than a chain-level assumption. Static docs explain design meaning only; Mimir does not establish future availability, wallet safety, uptime history, route quality, or the impact of every unknown key.
+
+## Memoless Cost And Halt Cycle (August 2026)
+
+The August 2026 memoless spam window shows why cost parameters and halt keys are different controls. Community reporting and live Mimir snapshots describe a halt, a re-enable with MEMOLESSTXNCOST raised to 200000 base units, a spam-driven re-halt, and HALTMEMOLESS=1 active after the v3.20.0 upgrade.
+
+Read that cycle as three separate claims:
+
+- MEMOLESSTXNCOST=200000 is a parameter snapshot: the checked cost of memoless handling, subject to later votes.
+- HALTMEMOLESS=1 is the active control that blocks memoless handling while present; it is what made memoless flows unavailable, not the cost value by itself.
+- The v3.20.0 release notes include memoless ERC-20 handler and refund work, which is release evidence for the feature path, not proof of current availability.
+
+Do not collapse this history into "swaps were down". Ordinary memo-based swaps continued whenever global and chain trading controls were clear; the incident record on the Governance page keeps the dated timeline.
+
+The same v3.20 window carries two positive control changes worth separating from the halt cycle: POL System Income and POL Asset Whitelist Mimirs are described as operational in the official upgrade recap, and churn was set to resume after being blocked through the consensus-fault window. Operational Mimir claims still need a live snapshot check before present-tense use.

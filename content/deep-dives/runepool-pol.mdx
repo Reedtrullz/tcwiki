@@ -50,3 +50,12 @@ Those fields are RUNE-denominated base-unit values. A dashboard can display them
 The developer docs also state that `current_deposit` is `rune_deposited - rune_withdrawn` and can be negative. A negative value is therefore valid accounting evidence, not a parser error or an instruction to clamp the field to zero.
 
 A valid endpoint does not prove that deposits are open, that every POL pool is deep, or that checked PnL predicts future yield. RUNEPool, POL, ordinary LP positions, secured assets, trade accounts, and archived Savers/Lending remain distinct; public position queries also need address-privacy review.
+
+## Reserve Income Direction (August 2026 Context)
+
+Two August 2026 governance threads affect how reserve income interacts with POL, but neither is a settled accounting change yet:
+
+- ADR-027/ADR-029 (REVSHARE) proposes paying per-thorname shares of attributed swap liquidity fees out of reserve system income before other splits run. Numbering differs by source: the thornode repo files it as ADR-027 (Proposed) and merged MR #4779 points to that doc, while official blog posts label the same mechanism ADR-029 and report the vote as passed. Cite the source you used; live payout Mimirs remain absent at last check.
+- A community vote on redirecting the system-income burn toward the POL reserve was reported after the v3.20.0 upgrade. Treat it as an open proposal until release notes, Mimir keys, or official docs confirm the outcome; do not rewrite the burn or POL funding model from chatter alone.
+
+For either thread, keep the evidence order: dated ADR or release first, then live Mimir and RUNEPool snapshots. A vote headline is not an accounting invariant.

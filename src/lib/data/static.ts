@@ -39,6 +39,10 @@ import {
   multichainChaosnetLaunchSource,
   networkHaltsSource,
   protocolUpgradeV319Source,
+  protocolUpgradeV320Source,
+  adr030DelegatedOpsSource,
+  adr027AffiliateRevShareSource,
+  adr031RujiraAlignmentSource,
   postRestartSecuritySource,
   queryingThorchainSource,
   runePoolDevSource,
@@ -1141,6 +1145,25 @@ export const SECURITY_INCIDENT_RECORDS: SourcedRecord<SecurityIncident>[] = [
     checkedAt: '2026-07-13',
     nextReviewDue: '2026-11-17',
   }),
+  record({
+    id: 'memoless-spam-2026-08',
+    title: 'Memoless Transaction Halt Cycle',
+    date: '2026-08-21 to 2026-08-26',
+    type: 'Operational Incident',
+    description: 'Community reporting and live Mimir snapshots show a memoless halt, re-enable with a raised transaction cost (MEMOLESSTXNCOST=200000), a spam-driven re-halt, and HALTMEMOLESS=1 active after the v3.20.0 upgrade. The official release notes include memoless ERC-20 handler and refund work in the same window.',
+    impact: 'Memoless flows were repeatedly unavailable for roughly five days; ordinary memo-based swaps continued when global trading controls were clear. Current state remains a Mimir snapshot question.',
+    resolved: false,
+    trackerStatus: 'current',
+    lessons: [
+      'A cost vote alone did not stop the spam; the halt key stayed the effective control.',
+      'Read HaltMemoless as scoped: it blocks memoless handling, not every swap route.',
+      'Treat MEMOLESSTXNCOST as a parameter snapshot that can be re-voted after an incident.',
+    ],
+    url: 'https://gitlab.com/thorchain/thornode/-/releases/v3.20.0',
+  }, [protocolUpgradeV320Source, liquifyThornodeMimirSource], 'curated', {
+    checkedAt: '2026-08-26',
+    nextReviewDue: '2026-09-25',
+  }),
 ];
 
 export const SECURITY_INCIDENTS: SecurityIncident[] = SECURITY_INCIDENT_RECORDS.map(unwrapRecord);
@@ -1208,6 +1231,48 @@ export const GOVERNANCE_PROPOSAL_RECORDS: SourcedRecord<GovernanceProposal>[] = 
     checkedAt: '2026-07-08',
     nextReviewDue: '2026-11-17',
   }),
+  record({
+    id: 'adr-030-delegated-node-ops',
+    title: 'ADR-030 Delegated Node Operator Permissions',
+    description: 'Proposed ADR for a per-node delegate registry: the operator could grant MAINT, LEAVE, bond-provider-whitelist, and set-fee permissions to delegate addresses with optional block-offset expiry. Custody, UNBOND, OPERATOR_ROTATE, and delegation management would stay exclusive to the operator key. The official v3.20 recap says the framework ships in v3.20 code with activation expected in v3.21; no delegate registry is active on mainnet yet.',
+    type: 'ADR / Node Operations',
+    status: 'Proposed ADR',
+    votingPeriod: 'Open community review; no mainnet activation evidence',
+    createdDate: '2026-07-17',
+    expiryDate: 'Check develop ADR status and release notes before present-tense claims',
+    sourceUrl: 'https://gitlab.com/thorchain/thornode/-/blob/develop/docs/architecture/adr-030-delegated-node-operator-permissions.md',
+  }, [adr030DelegatedOpsSource], 'official', {
+    checkedAt: '2026-08-26',
+    nextReviewDue: '2026-11-17',
+  }),
+  record({
+    id: 'adr-027-revshare',
+    title: 'ADR-027 Affiliate Revenue Share (REVSHARE)',
+    description: 'Proposed ADR for per-thorname protocol revenue share: operational REVSHARE-<thorname> Mimirs (capped at 5000 bps) would pay attributed swap liquidity fees from reserve system income through AffiliateCollector at end of block. Community reporting says SwapKit accounting is accumulating data ahead of QA; payout configuration and start dates remain unconfirmed.',
+    type: 'ADR / Economics',
+    status: 'Proposed ADR; SwapKit accounting reported in progress',
+    votingPeriod: 'Community review and integration QA',
+    createdDate: '2026-04-27',
+    expiryDate: 'Confirm final payout settings and activation from official releases before claims',
+    sourceUrl: 'https://gitlab.com/thorchain/thornode/-/blob/develop/docs/architecture/adr-027-affiliate-revshare.md',
+  }, [adr027AffiliateRevShareSource], 'curated', {
+    checkedAt: '2026-08-26',
+    nextReviewDue: '2026-10-26',
+  }),
+  record({
+    id: 'adr-031-rujira-alignment',
+    title: 'ADR-031 THORChain x Rujira Alignment',
+    description: "Official blog post reports that after the initial ADR-020 collaboration period expired, nodes voted on the future of the Rujira cooperation and selected Option 1, confirming and reinforcing it with an updated revenue split. Treat vote mechanics and any payout configuration as source-dated claims until protocol releases confirm them.",
+    type: 'ADR / Ecosystem Governance',
+    status: 'Passed per official blog (2026-07-29)',
+    votingPeriod: 'Node vote completed before 2026-07-29 publication',
+    createdDate: '2026-07-29',
+    expiryDate: 'Confirm implementation details from release notes before present-tense payout or App-Layer POL claims',
+    sourceUrl: 'https://blog.thorchain.org/adr031-the-path-forward-with-rujira',
+  }, [adr031RujiraAlignmentSource], 'official', {
+    checkedAt: '2026-08-26',
+    nextReviewDue: '2026-11-17',
+  }),
 ];
 
 export const GOVERNANCE_PROPOSALS: GovernanceProposal[] = GOVERNANCE_PROPOSAL_RECORDS.map(unwrapRecord);
@@ -1251,6 +1316,14 @@ export const PROTOCOL_MILESTONE_RECORDS = [
     description: 'Official reports say attackers drained roughly $10M from one vault after an upstream GG20/TSS cryptographic attack. v3.19.0 supplied emergency restart controls, v3.19.1 patched the incident class, and migration away from GG20 remained planned.',
   }, [exploitReport2Source, protocolUpgradeV319Source, exploitReportSource, postRestartSecuritySource], 'official', {
     checkedAt: '2026-07-14',
+    nextReviewDue: '2026-11-17',
+  }),
+  record({
+    date: '2026-08-26',
+    title: 'THORNode v3.20.0 Upgrade',
+    description: 'The official v3.20.0 tag notes a proposed block of 27,580,000 on 25-Aug-2026, a private binary with security patches, the ADR-028 residual migration (Migrate17to18), TSS/Bifrost hardening, memoless ERC-20 work, and XMR/ZEC chain-client updates. The blog recap adds churn resumption prep, operational POL System Income and Asset Whitelist Mimirs, and an experimental Stable Reserve shipping disabled.',
+  }, [protocolUpgradeV320Source], 'official', {
+    checkedAt: '2026-08-26',
     nextReviewDue: '2026-11-17',
   }),
 ];
