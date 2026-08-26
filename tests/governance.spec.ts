@@ -28,7 +28,7 @@ test.describe('THORChain Wiki Governance Smoke Tests', () => {
     await expect(page.locator('#current-recovery').getByText(/Network diagnostics for current halts, signing, route limits/i)).toBeVisible();
     await expect(page.locator('#current-recovery').getByText(/immutable v3.19.0 ADR before describing its reserve, Saver, treasury, or stuck-swap allocation waterfall/i)).toBeVisible();
     await expect(page.locator('#current-recovery').getByText(/ADR-028 acceptance proves the conciliation decision and migration design, not that every loss was restored/i)).toBeVisible();
-    await expect(page.locator('#current-recovery').getByRole('link', { name: /Open incident record/i })).toHaveAttribute('href', '/governance#incident-gg20-vault-exploit-2026');
+    await expect(page.locator('#current-recovery').locator('a[href="/governance#incident-gg20-vault-exploit-2026"]').first()).toBeVisible();
     await expect(page.locator('#current-recovery').getByRole('link', { name: /Open governance record/i })).toHaveAttribute('href', '/governance#governance-adr-028-recovery');
     await expect(page.locator('#current-recovery').getByRole('link', { name: /Check current diagnostics/i }).first()).toHaveAttribute('href', '/network#network-diagnostics');
     await expect(page.locator('#governance-archive-map')).toBeVisible();
@@ -54,33 +54,34 @@ test.describe('THORChain Wiki Governance Smoke Tests', () => {
     await expect(incidentArchive.getByRole('button', { name: /Current tracker/i })).toBeVisible();
     await expect(incidentArchive.getByRole('button', { name: /Historical open/i })).toBeVisible();
     await expect(incidentArchive.getByRole('button', { name: /Resolved/i })).toBeVisible();
-    await expect(incidentArchive.getByText(/Showing 5 of 5 incident records/i)).toBeVisible();
+    await expect(incidentArchive.getByText(/Showing 6 of 6 incident records/i)).toBeVisible();
     await expect(page.locator('#incident-thorfi-unwind-2025').getByText('Historical open record')).toBeVisible();
     await expect(page.locator('#incident-thorfi-unwind-2025').getByText(/not promoted to current recovery status/i)).toBeVisible();
     await expect(page.locator('#incident-gg20-vault-exploit-2026').getByText('Current tracker')).toBeVisible();
+    await expect(page.locator('#incident-memoless-spam-2026-08').getByText('Current tracker')).toBeVisible();
     await incidentArchive.getByRole('button', { name: /Historical open/i }).click();
     await expect(page).toHaveURL(/posture=historical-open/);
     await expect(incidentArchive.getByText('Posture: Historical open')).toBeVisible();
-    await expect(incidentArchive.getByText(/Showing 2 of 5 incident records/i)).toBeVisible();
+    await expect(incidentArchive.getByText(/Showing 2 of 6 incident records/i)).toBeVisible();
     await expect(page.locator('#incident-thorfi-unwind-2025')).toBeVisible();
     await expect(page.locator('#incident-bybit-laundering-2025')).toBeVisible();
     await expect(page.locator('#incident-gg20-vault-exploit-2026')).toHaveCount(0);
     await incidentArchive.getByRole('searchbox', { name: /Filter security incidents/i }).fill('Bybit');
     await expect(page).toHaveURL(/q=Bybit/);
     await expect(incidentArchive.getByText('Search: Bybit')).toBeVisible();
-    await expect(incidentArchive.getByText(/Showing 1 of 5 incident records/i)).toBeVisible();
+    await expect(incidentArchive.getByText(/Showing 1 of 6 incident records/i)).toBeVisible();
     await expect(page.locator('#incident-bybit-laundering-2025')).toBeVisible();
     await expect(page.locator('#incident-thorfi-unwind-2025')).toHaveCount(0);
     await incidentArchive.getByRole('button', { name: /Reset filters/i }).click();
     await expect(page).toHaveURL(/\/governance$/);
-    await expect(incidentArchive.getByText(/Showing 5 of 5 incident records/i)).toBeVisible();
+    await expect(incidentArchive.getByText(/Showing 6 of 6 incident records/i)).toBeVisible();
     await expect(page.locator('#governance-research').getByText(/Dated analysis and roadmap context/i)).toBeVisible();
 
     await page.goto('/governance?posture=current&q=GG20');
     const hydratedIncidentArchive = page.locator('#security-incidents');
     await expect(hydratedIncidentArchive.getByText('Posture: Current tracker')).toBeVisible();
     await expect(hydratedIncidentArchive.getByText('Search: GG20')).toBeVisible();
-    await expect(hydratedIncidentArchive.getByText(/Showing 1 of 5 incident records/i)).toBeVisible();
+    await expect(hydratedIncidentArchive.getByText(/Showing 1 of 6 incident records/i)).toBeVisible();
     await expect(page.locator('#incident-gg20-vault-exploit-2026')).toBeVisible();
     await expect(page.locator('#incident-thorfi-unwind-2025')).toHaveCount(0);
 
