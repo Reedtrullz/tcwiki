@@ -48,6 +48,32 @@ describe('readiness warning policy', () => {
     });
   });
 
+  it('treats unknown-chain review warnings as non-blocking because unrecognized chains are not routable', () => {
+    const typoKeyMessage = 'Unknown chain-scoped Mimir key ignored: HALTTRRONTRADING.';
+
+    expect(isNonBlockingReadinessWarning(detail(typoKeyMessage, { category: 'unknown-chain' }))).toBe(true);
+    expect(partitionReadinessWarnings(
+      [typoKeyMessage],
+      [detail(typoKeyMessage, { category: 'unknown-chain' })]
+    )).toEqual({
+      blocking: [],
+      nonBlocking: [typoKeyMessage],
+    });
+  });
+
+  it('still blocks unknown-chain warnings that escape review severity', () => {
+    const escalated = 'Unknown chain-scoped Mimir key ignored: HALTSOMETHINGTRADING.';
+
+    expect(isNonBlockingReadinessWarning(detail(escalated, { category: 'unknown-chain', severity: 'warning' }))).toBe(false);
+    expect(partitionReadinessWarnings(
+      [escalated],
+      [detail(escalated, { category: 'unknown-chain', severity: 'warning' })]
+    )).toEqual({
+      blocking: [escalated],
+      nonBlocking: [],
+    });
+  });
+
   it('fails raw, unmatched, and conflicting warning messages closed', () => {
     const support = 'Known operational-support Mimir keys present: SCHEDULEDMIGRATION.';
     const raw = 'Unclassified warning.';
