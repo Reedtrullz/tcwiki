@@ -19,6 +19,7 @@ const articleUseCases: Record<string, string> = {
   'deep-dive-rune-settlement': 'A settlement-role guide for RUNE as the pool-pairing and security asset without turning mechanism language into price, fair-value, or investment claims.',
   'deep-dive-tcy-recovery-timeline': 'A dated recovery-context guide for TCY, deprecated THORFi products, and current-state claims that need separate proof.',
   'deep-dive-app-layer': 'A source-boundary guide for app-layer contracts, secured assets, trade accounts, and live control checks.',
+  'deep-dive-governance-comprehensive': 'A Discord-sourced governance archive covering ADRs, chain halts, exploits, node votes, revenue debates, and chain-specific incidents across every supported chain.',
   'deep-dive-savers': 'A historical-product guide for archived Savers/Lending context, THORFi unwind boundaries, and why old yield mechanics are not current user instructions.',
 };
 
@@ -38,6 +39,7 @@ const articleClaimBoundaries: Record<string, string> = {
   'deep-dive-bifrost': 'Current inbound-address state, observation lag, finality assumptions, chain halts, signing state, transaction evidence, and whether a chain-client claim is live or architectural.',
   'deep-dive-app-layer': 'Current Mimir app-layer controls, contract/deployer/checksum state, secured/trade-asset enablement, source warnings, and dated product scope.',
   'deep-dive-rune-settlement': 'Current RUNE price, supply framing, pooled RUNE, security constants, route liquidity, source freshness, and whether the claim belongs to live metrics or tokenomics records.',
+  'deep-dive-governance-comprehensive': 'Dated Discord governance records, ADR status, incident timelines, node vote tallies, and chain-specific issue history — not current live state.',
   'deep-dive-savers': 'Current product availability, archived Savers/Lending status, TCY recovery context, THORFi unwind records, and whether old yield or lending behavior is being misread as live.',
 };
 
