@@ -36,6 +36,12 @@ const governanceToc: TocItem[] = [
 
 const governanceRelatedChecks: RelatedCheck[] = [
   {
+    label: 'Comprehensive overview',
+    href: '/deep-dives/governance-comprehensive',
+    badge: 'deep dive',
+    description: 'All ADRs, chain halts, security events, node votes, revenue governance, and community debates in one page.',
+  },
+  {
     label: 'Recovery tracker',
     href: '/governance#current-recovery',
     badge: 'current review',

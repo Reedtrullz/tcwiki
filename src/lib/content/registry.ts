@@ -821,6 +821,19 @@ export const CONTENT_ENTRIES: ContentEntry[] = [
     nextReviewDue: '2026-11-17',
     sources: [archivedSaversSource, archivedLendingSource, thorfiUnwindSource, tcyGuideSource, tokenomicsSource, docsPageSource],
   },
+  {
+    id: 'deep-dive-governance-comprehensive',
+    title: 'Governance Comprehensive Overview',
+    href: '/deep-dives/governance-comprehensive',
+    category: 'deep-dive',
+    confidence: 'curated',
+    description: 'Consolidated overview of all THORChain governance activity from Discord: ADRs, chain halts, security events, node votes, revenue governance, and community debates.',
+    body: 'Governance comprehensive ADR chain halt security exploit node vote revenue economic Rujira alignment THORFi Asgard vault GG20 TSS yevlec wasm consensus LTC reorg memoless spam dev fund POL burn rate ecosystem fund marketing.',
+    tags: ['governance', 'adr', 'halts', 'security', 'comprehensive'],
+    reviewedAt: '2026-08-26',
+    nextReviewDue: '2026-12-26',
+    sources: [],
+  },
 ];
 
 export const ROUTE_SOURCE_POSTURE_ENTRY_IDS = [
@@ -2170,5 +2183,16 @@ export const DEEP_DIVE_TOC: Record<string, DeepDiveTocItem[]> = {
     tocItem('Security Properties'),
     tocItem('Real-World Impact'),
     tocItem('Dated Recovery State'),
+  ],
+  'deep-dive-governance-comprehensive': [
+    tocItem('ADR Registry'),
+    tocItem('Chain Halts, Upgrades and Maintenance'),
+    tocItem('Security Events and Exploits'),
+    tocItem('Active and Recent Node Votes'),
+    tocItem('Revenue and Economic Governance'),
+    tocItem('ADR-031 Deep Dive'),
+    tocItem('General Governance Discussions'),
+    tocItem('Governance Mechanism Issues'),
+    tocItem('Mimir Parameter Quick Reference'),
   ],
 };
