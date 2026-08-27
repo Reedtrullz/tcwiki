@@ -832,7 +832,7 @@ export const CONTENT_ENTRIES: ContentEntry[] = [
     tags: ['governance', 'adr', 'halts', 'security', 'comprehensive'],
     reviewedAt: '2026-08-26',
     nextReviewDue: '2026-12-26',
-    sources: [],
+    sources: [docsPageSource],
   },
 ];
 
@@ -2186,11 +2186,11 @@ export const DEEP_DIVE_TOC: Record<string, DeepDiveTocItem[]> = {
   ],
   'deep-dive-governance-comprehensive': [
     tocItem('ADR Registry'),
-    tocItem('Chain Halts, Upgrades and Maintenance'),
+    tocItem('All Chain Halts, Exploits, and Negative Events'),
     tocItem('Security Events and Exploits'),
-    tocItem('Active and Recent Node Votes'),
+    tocItem('Chain-Specific Issues'),
     tocItem('Revenue and Economic Governance'),
-    tocItem('ADR-031 Deep Dive'),
+    tocItem('ADR-031 Deep Dive: THORChain x Rujira'),
     tocItem('General Governance Discussions'),
     tocItem('Governance Mechanism Issues'),
     tocItem('Mimir Parameter Quick Reference'),
