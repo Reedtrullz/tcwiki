@@ -619,3 +619,182 @@ The year of major upgrades: Cosmos SDK migration, Ledger crisis, slashing overha
 **Dec 22 -- Lending New Loan Openings Halted.**
 
 **Dec 27 -- 3.1.0 Store Migration Failed.** "We dont have a working migration method."
+
+## Appendix: Events from Genesis (2021) through 2024
+
+The sections above cover 2025-2026 in detail. This appendix adds every significant event from the protocol's launch year through 2024.
+
+### 2021 -- The Summer of Exploits
+
+The most turbulent year in THORChain history. Three exploits in 18 days, plus a full network halt from a token parsing bug.
+
+**May 13 -- Halt Mechanism Limitations.** `Halt%sChain` only halted inbounds, not outbounds. Critical gap: funds could bleed out on a halted chain.
+
+**May 17 -- Centralization vs Safety Debate.** _sonofodin: "Mimir should NEVER be between a user and their funds. Halting a chain should require a supermajority, never a single person."
+
+**May 21 -- Stuck BTC / 3.8 BTC at Risk.** Yggdrasil return stuck on BTC due to high fees. Churn delayed ~5 days.
+
+**May 25-28 -- ETH Stuck / Slash Points Crisis.** Yggdrasil vault stuck on ETH. Bifrost auto-cancel failed. Nodes accumulating slash points.
+
+**Jun 2 -- Midgard SPOF.** Just 2 AWS instances in Germany with naive DNS load balancing.
+
+**Jun 3 -- ETH Sync Stuck Post-Update.** Multiple nodes stuck 95-140 blocks behind on ETH.
+
+**Jun 7 -- Repeated ETH Daemon Failures.** Persistent slashing from stuck sync.
+
+**Jun 20 -- 9 Nodes Out of Sync on BTC / Near-Halt.** "Failing to do so will result in loss of funds. If not actioned asap, the network may need to be halted."
+
+**Jun 24 -- MKR Symbol Bug / Full Network Halt (High).** MKR returns hex bytes as token symbol. Bifrost panicked, halted all ins/outs. Mimir halted ALL trading across all chains. Fix in v0.56.1.
+
+**Jun 28 -- HACK #1: ETH Parsing Exploit (~$140K stolen, Critical).** First major exploit. Attacker used custom attack contract on ETH router. Bifrost did not distinguish router events from called transactions. Network halted within ~1 hour. Funds declared safe overall.
+
+**Jul 7 -- HACK #2: ERC777/XRUNE (~$15M returned, Critical).** Whitehat extracted all XRUNE from ETH contract. Returned funds minus bounty. Network halted to prevent further loss.
+
+**Jul 15 -- HACK #3: Live ETH Attack (~$5M stolen, Critical).** ~4,000 ETH extracted. Attacker could have stolen BTC/BEP2 but chose not to. Community halted THORChain within ~1 hour. Treasury covered stolen amount. Three bugs: (1) smart contract, (2) slow response, (3) ETH chain should have been halted earlier.
+
+**Jul 19 -- ETH Chain Paused Pending Audit.** ETH chain officially paused until v0.62.0.
+
+**Jun 30-Jul 1 -- Synth Exploit Disclosed.** Synth limits bypassable by adding liquidity, minting, then removing.
+
+**Jul 14 -- Stuck Pool Creation.** RUNE leg succeeded while asset leg failed. Affected MKR, LINK, BAT pools.
+
+### 2022 -- Stabilization Year
+
+No new exploits. Year defined by recurring solvency checker halts (especially ETH), DOGE launch issues, and infrastructure hardening.
+
+**Jan 2 -- ETH Halt (Solvency Checker).** Asgard vault out of ETH gas during migration. ~0.02 ETH insolvency triggered halt.
+
+**Jan 5 -- ETH Halt (778 ETH Inbound).** Large inbound caused asgard imbalance. "Out of gas" bug during migrations.
+
+**Jan 9 -- v0.78.0 (6 Critical Fixes).** Binance Daemon double-spend, affiliate fee slash, ETH gas issues.
+
+**Jan 11 -- Cream ygg Outbounds ($1,500 Loss).** High gas costs drained user funds. No refund ("bad precedent").
+
+**Jan 14 -- ETH Halt (Observation Bug).** "ETH is halted for an insolvency due to an observation bug."
+
+**Jan 17 -- DOGE Launch Mishap (High).** haltTrading refund logic overlooked. 4.8M DOGE stuck. Price spiked to $0.82.
+
+**Jan 18 -- Midgard WBTC State Inconsistency.**
+
+**Feb 19 -- Solvency Checker False Positive.** Auto-paused ETH chain unnecessarily.
+
+**Mar 10 -- DOGE Paused (Mempool Overload).** Bifrost couldn't keep up.
+
+**Mar 14 -- DOGE Paused Again.** Same mempool issue.
+
+**May 11 -- BTC Paused (Mempool + Slashes).** Observation inconsistencies leading to rescheduling and slashes.
+
+**May 11 -- Terra Daemon Lag.** Most Terra daemons lagging by hundreds of blocks.
+
+### 2023 -- Security Year
+
+Critical TSS vulnerability halted churn for 3 weeks. No external exploits. Feature launches: Savers growing, Lending designed, BSC debated, Streaming Swaps launched.
+
+**Jan 3-4 -- Binance Daemon 20-Min Crash Loop.** Crash consistently after 20 minutes during state sync.
+
+**Jan 5 -- Quote Swap Divide-by-Zero.** Error in THORChain quote endpoint.
+
+**Jan 10-22 -- Churn Failures (TSS Timeouts).** Multiple keygen tries failed. Root cause: TCP Simultaneous Open.
+
+**Jan 22-23 -- Synth Affiliate Fee Bug (~4.9k tokens stuck).** Refund never credited. Tokens stuck in Pool Module.
+
+**Jan 23 -- v1.103.0 Accounting Bug (Trading Halt).** Critical accounting bug. Trading halted.
+
+**Feb 16 -- GAIA Chain Crash.** All nodes likely had crashed GAIA images.
+
+**Feb 15-18 -- ATOM Crash Loop / Bifrost Issues.** Multiple crash loops.
+
+**Mar 2 -- Retired Asgard Stuck Funds (~0.82 BTC).**
+
+**Mar 3-7 -- LTC Daemon Stuck / MWEB Issues.**
+
+**Mar 28-Apr 20 -- Critical TSS Vulnerability (Critical).** Churn halted 3 weeks. pluto_x1: "We have one confirmed patch... but 10+ other vulnerabilities." Immunefi bounty launched.
+
+**Jul 20 -- Verichains TSS Disclosure.** Already patched.
+
+### 2024 -- The Upgrade Gauntlet
+
+The year of major upgrades: Cosmos SDK migration, Ledger crisis, slashing overhaul, and the birth of pause ceremonies.
+
+**Jul 5 -- Accidental make pause Triggers.** Multiple nodes triggered pause/resume on mainnet.
+
+**Jul 16 -- GAIA Hardfork (Planned).** THORChain halted Gaia at height 16867300.
+
+**Jul 19 -- v1.134.0: No Pause During Rollout.** Major Cosmos SDK upgrade with BTC taproot support.
+
+**Jul 25 -- v1.134.0 Blocked by Single Operator.** Waiting for major exchange.
+
+**Jul 28 -- Pause Ceremony #1 (First Practice Drill).** 11 min 54 sec to pause LTC Trading. Reversed in less than 2 min. First-ever documented practice pause drill.
+
+**Jul 29 -- Protocol Guard Attack Scenarios.** "As soon as you see Large RUNE transfer from Reserve, instantly make pause."
+
+**Aug 2 -- Massive TSS/Keygen Failures.** Cluster of TSS timeouts across multiple operators.
+
+**Aug 23 -- Lending Pause Vote ("Sunset Lending").** Node voted to pause new loans.
+
+**Aug 28 -- Pause Ceremony #2.** 3 min 26 sec to pause.
+
+**Sep 4 -- v2.135.0 Upgrade Halt.** Halt-height at block 17,562,000.
+
+**Sep 5-6 -- ATOM Chain Halted During Migration.**
+
+**Sep 27 -- Single Node Pause Incident.** One node paused all of THORChain.
+
+**Nov 4 -- BTC Signing Halted (Suspected Kraken Compromise).** ~$10M+ swap. olegpetrov: "All coming in large clips from Kraken. Swapping with no regard to slippage seems sus."
+
+**Dec 6 -- v3.0.0 Stagenet Caught Consensus Failure.** Fixed before mainnet.
+
+**Dec 12 -- v3.0.0 Upgrade (Critical).** Cosmos SDK v0.45 to v0.50. ~5 hour chain halt. ~350 bond slash per non-upgraded node. IAVL migration caused widespread node corruption.
+
+**Dec 15 -- Ledger Signing Crisis (Critical).** MsgDeposit deprecated. Ledger/KeepKey/ShapeShift affected. Emergency v3.1.0.
+
+**Dec 18 -- v3.1.0 URGENT Upgrade (Critical).** Chain halted for Ledger signing fix.
+
+**Dec 20 -- Slashing Broken.** pluto_x1: "Tbh slashing seems completely broken."
+
+**Dec 22 -- Lending New Loan Openings Halted.**
+
+**Dec 27 -- 3.1.0 Store Migration Failed.** "We dont have a working migration method."
+
+
+### Additional 2021 Events (from final sweep)
+
+**Jun 15 -- BEP2 Rune Leak on MCCN.** Swaps returning BEP2 Rune instead of expected assets. BEP2 Rune inadvertently tradeable on multichain.
+
+**Jun 30 -- Oracle Manipulation Attack Vector.** Attacker could manipulate pool price between blocks using synths/LPs, then abuse ILP or drain RUNE at incorrect price.
+
+**Jul 27 -- Affiliate Overflow + ERC20 Combined Vector.** Potential exploit chain involving affiliate fee overflow combined with ERC20 interactions.
+
+**Oct 7 -- ERC20 Gas Fee MEV (v0.69 fix).** Node could mine own small outbound ERC20 tx with extremely high gas fee (e.g. 30 ETH), recognized as legitimate fee. Fixed with hard cap.
+
+**Nov 18 -- BNB Chain Auto-Halt from Mempool Overflow.** Chains auto-halted due to insolvency checker not seeing Bifrost-sent txs when mempool overflowed (>5000 tx). 10-30 tx sent after last block. Required store migration.
+
+**May 19 -- BTC UTXO Consolidation Signing Bug (v0.53.0).** System created two UTXOs with same txid but different index; bifrost signing logic could not handle it. Hotfix released.
+
+### Additional Governance Disputes
+
+**Jul 2024 -- Immunefi Bounty Arbitration Dispute.** pluto_x1: "Immunefi team made changes to our bounty program without our knowledge... requesting a payout for something we never authorized."
+
+**Mar 2026 -- Nine Realms Departure.** ronanarc: "Nine Realms will be gradually stepping back from our active roles." Infrastructure handoff to Liquify and Maya teams. Raised questions about who actually runs THORChain.
+
+**Mar 2026 -- ADR-025 Dev Fund Migration.** _sonofodin: "Migrate the dev fund from 9R controlled address to a multisig controlled by myself, aaluxx, and mazze." Power transfer from 9R to new multisig.
+
+**May 2025 -- Multipartite MR Conflict.** MRs "suddenly unilaterally closed." Repository membership revoked by "any single dev with a sufficiently powerful Role." Validated bus factor concerns.
+
+**Jan 2024 -- Churn Interval Gridlock.** pluto_x1: "General lack of consensus on extending from 3 to 7 days." Tension between decentralization (mimir v2) and business relationships.
+
+**Jul-Aug 2026 -- Burn vs Dev Fund Debate.** _sonofodin: "The burn does very little for the token outside of human psychology." thorfocus: "Lowering the intrinsic value of the asset and affecting the entire system negatively." Protocol leadership wants to eliminate 5% burn to fund operations; community sees burn as critical value accrual.
+
+**Aug 2026 -- Monero Launch Controversy.** erudite0545: "Lets YOLO Monero to Mainnet. Who cares if it is full of bugs." aaluxxmyth: "Dev team has retained Least Authority for an audit... XMR will be launched in parallel to the audit."
+
+**Jul 2026 -- Treasury Front-Running.** nipseyhodl: "People are actively front running the Treasurys buys so most of the time the protocol is not spending to defend the backing."
+
+**Jul 2026 -- Rujira Trust Deficit.** erudite0545: "Integrators not enthusiastic about RUJI due to ongoing drama, chain issues, and exploits. THORChain needs to rebuild trust with front ends and wallets."
+
+**Jul 2026 -- koitsu Exit.** Long-standing community member announces departing TC participation except anti-scam work.
+
+**May 2026 -- GG20 Decoy Theory.** whysideas: "Is it being considered that the hacker used the obvious GG20 exploit as a decoy to coverup for how they actually exploited the protocol?"
+
+### Additional 2026 Events
+
+**Aug 13 -- Coordination Quarterly Report.** cryptomaze: First public transparency report. Treasury covered $617k shortfall. Costs reduced $70k/month. "Efforts have significantly improved the chain's regulatory positioning" (details withheld).
