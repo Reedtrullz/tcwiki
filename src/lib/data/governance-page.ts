@@ -1,5 +1,9 @@
 import type { TocItem } from '@/components/layout/PageTableOfContents';
 import type { RelatedCheck } from '@/components/features/RelatedChecks';
+import type { FreshnessMeta, SourceMeta } from '@/lib/types';
+import { GOVERNANCE_PROPOSAL_RECORDS, SECURITY_INCIDENT_RECORDS, PROTOCOL_MILESTONE_RECORDS, RESEARCH_REPORT_RECORDS } from '@/lib/data/static';
+import { recordAnchor } from '@/lib/utils';
+
 
 export const governanceToc: TocItem[] = [
   { id: 'current-recovery', label: 'Recovery tracker' },
@@ -172,3 +176,179 @@ export const archiveLaneBadgeVariants = {
   danger: 'danger',
   default: 'default',
 } as const;
+
+/* -------------------------------------------------------------------------- */
+/*  Helper functions (moved from governance/page.tsx)                        */
+/* -------------------------------------------------------------------------- */
+
+export function recoveryReviewGuidance(id: string) {
+  return recoveryReviewGuidanceById[id] ?? {
+    focus: 'Promoted recovery record that needs claim-specific review before present-tense wording.',
+    verifyNow: [
+      'Open the dated record and source metadata.',
+      'Check current Network diagnostics and relevant product controls.',
+      'Look for newer official sources before claiming final recovery or user-action availability.',
+    ],
+    boundary: 'Do not use tracker inclusion alone as proof of current safety, solvency, restitution, or product availability.',
+  };
+}
+
+export function incidentTrackerBadge(status: 'current' | 'needs-review') {
+  return status === 'needs-review'
+    ? { label: 'Needs current review', variant: 'danger' as const }
+    : { label: 'Explicit current tracker', variant: 'warning' as const };
+}
+
+export function governanceRecoveryTrackerBadge(status: string) {
+  return status.toLowerCase().includes('needs')
+    ? { label: 'Needs current review', variant: 'danger' as const }
+    : { label: 'Explicit recovery tracker', variant: 'warning' as const };
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Computation logic (moved from governance/page.tsx)                       */
+/* -------------------------------------------------------------------------- */
+
+export interface RecoveryRecord {
+  id: string;
+  title: string;
+  description: string;
+  impact: string;
+  badge: { label: string; variant: 'danger' | 'warning' | 'info' | 'success' | 'default' };
+  freshness: FreshnessMeta;
+  sources: SourceMeta[];
+  recordType: string;
+  archiveHref: string;
+  archiveLinkLabel: string;
+  guidance: { focus: string; verifyNow: string[]; boundary: string };
+}
+
+export interface RecoveryRecordSummary {
+  label: string;
+  value: string;
+  description: string;
+}
+
+export interface ArchiveLane {
+  title: string;
+  badge: string;
+  badgeVariant: 'default' | 'success' | 'warning' | 'danger' | 'info';
+  href: string;
+  count: number;
+  countLabel: string;
+  summary: string;
+}
+
+export function buildCurrentRecoveryRecords(): {
+  records: RecoveryRecord[];
+  summary: RecoveryRecordSummary[];
+} {
+  const currentIncidentRecords = SECURITY_INCIDENT_RECORDS
+    .flatMap((record) => {
+      const trackerStatus = record.data.trackerStatus;
+      if (trackerStatus !== 'current' && trackerStatus !== 'needs-review') {
+        return [];
+      }
+      return [{
+        id: `incident:${record.data.id}`,
+        title: record.data.title,
+        description: record.data.description,
+        impact: record.data.impact,
+        badge: incidentTrackerBadge(trackerStatus as 'current' | 'needs-review'),
+        freshness: record.freshness,
+        sources: record.sources,
+        recordType: 'Incident record',
+        archiveHref: `/governance#${recordAnchor('incident', record.data.id)}`,
+        archiveLinkLabel: 'Open incident record',
+        guidance: recoveryReviewGuidance(`incident:${record.data.id}`),
+      }];
+    });
+
+  const currentGovernanceRecoveryRecords = GOVERNANCE_PROPOSAL_RECORDS
+    .filter((record) => record.data.trackerStatus === 'current' || record.data.trackerStatus === 'needs-review')
+    .map((record) => ({
+      id: `governance:${record.data.id}`,
+      title: record.data.title,
+      description: record.data.description,
+      impact: record.data.status,
+      badge: governanceRecoveryTrackerBadge(record.data.status),
+      freshness: record.freshness,
+      sources: record.sources,
+      recordType: 'Governance record',
+      archiveHref: `/governance#${recordAnchor('governance', record.data.id)}`,
+      archiveLinkLabel: 'Open governance record',
+      guidance: recoveryReviewGuidance(`governance:${record.data.id}`),
+    }));
+
+  const records = [...currentIncidentRecords, ...currentGovernanceRecoveryRecords];
+  const summary: RecoveryRecordSummary[] = [
+    {
+      label: 'Tracked records',
+      value: String(records.length),
+      description: 'Current or needs-review records promoted from the full governance and incident archive.',
+    },
+    {
+      label: 'Evidence path',
+      value: 'Record + live check',
+      description: 'Use the full dated record first, then current Network diagnostics before present-tense claims.',
+    },
+  ];
+
+  return { records, summary };
+}
+
+export function buildArchiveLanes(currentRecoveryRecordCount: number): ArchiveLane[] {
+  const operationalGovernanceRecords = GOVERNANCE_PROPOSAL_RECORDS.filter((record) => (
+    record.data.status === 'Live' ||
+    record.data.votingPeriod.toLowerCase().includes('current-only') ||
+    record.data.status.toLowerCase().includes('live')
+  ));
+  const currentOrReviewIncidentRecords = SECURITY_INCIDENT_RECORDS.filter((record) => (
+    record.data.trackerStatus === 'current' ||
+    record.data.trackerStatus === 'needs-review' ||
+    record.freshness.confidence === 'needs-review'
+  ));
+  const historicalOpenIncidentRecords = SECURITY_INCIDENT_RECORDS.filter((record) => (
+    record.data.trackerStatus === 'historical-open' ||
+    (!record.data.resolved && record.data.trackerStatus !== 'current' && record.data.trackerStatus !== 'needs-review')
+  ));
+
+  return [
+    {
+      title: 'Current recovery lane',
+      badge: 'current review',
+      badgeVariant: archiveLaneBadgeVariants.warning,
+      href: '#current-recovery',
+      count: currentRecoveryRecordCount,
+      countLabel: 'promoted records',
+      summary: 'Start here for records explicitly promoted from the archive into current recovery review.',
+    },
+    {
+      title: 'Governance records lane',
+      badge: 'dated + live',
+      badgeVariant: archiveLaneBadgeVariants.info,
+      href: '#governance-records',
+      count: GOVERNANCE_PROPOSAL_RECORDS.length,
+      countLabel: `${operationalGovernanceRecords.length} operational/current-only`,
+      summary: 'Use for ADRs, operational parameters, recovery-path records, and historical unwind context.',
+    },
+    {
+      title: 'Incident archive lane',
+      badge: 'security history',
+      badgeVariant: archiveLaneBadgeVariants.danger,
+      href: '#security-incidents',
+      count: SECURITY_INCIDENT_RECORDS.length,
+      countLabel: `${currentOrReviewIncidentRecords.length} current/review, ${historicalOpenIncidentRecords.length} historical-open`,
+      summary: 'Use for exploit root-cause, illicit-flow, and recovery-history records without flattening them into today.',
+    },
+    {
+      title: 'Research and milestones lane',
+      badge: 'dated context',
+      badgeVariant: archiveLaneBadgeVariants.default,
+      href: '#protocol-milestones',
+      count: PROTOCOL_MILESTONE_RECORDS.length + RESEARCH_REPORT_RECORDS.length,
+      countLabel: `${PROTOCOL_MILESTONE_RECORDS.length} milestones, ${RESEARCH_REPORT_RECORDS.length} reports`,
+      summary: 'Use for timeline context and third-party or ecosystem analysis before checking current evidence.',
+    },
+  ];
+}

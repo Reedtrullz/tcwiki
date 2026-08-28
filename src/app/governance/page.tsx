@@ -1,4 +1,4 @@
-import Link from 'next/link';
+
 import {
   GOVERNANCE_PROPOSAL_RECORDS,
   PROTOCOL_MILESTONE_RECORDS,
@@ -9,9 +9,8 @@ import {
   governanceToc,
   governanceRelatedChecks,
   governanceClaimChecks,
-  recoveryClaimChecks,
-  recoveryReviewGuidanceById,
-  archiveLaneBadgeVariants,
+  buildCurrentRecoveryRecords,
+  buildArchiveLanes,
 } from '@/lib/data/governance-page';
 import { Badge } from '@/components/ui/Badge';
 import { SectionHeader } from '@/components/ui/SectionHeader';
@@ -23,6 +22,8 @@ import { PageTableOfContents } from '@/components/layout/PageTableOfContents';
 import { RelatedChecks } from '@/components/features/RelatedChecks';
 import { GovernanceIncidentArchiveExplorer } from '@/components/features/GovernanceIncidentArchiveExplorer';
 import { ClaimCheckCard } from '@/components/features/ClaimCheckCard';
+import { GovernanceRecoveryTracker } from '@/components/features/GovernanceRecoveryTracker';
+import { GovernanceArchiveMap } from '@/components/features/GovernanceArchiveMap';
 import { getContentEntry } from '@/lib/content/registry';
 import { createRouteMetadata } from '@/lib/metadata';
 import { recordAnchor } from '@/lib/utils';
@@ -35,132 +36,9 @@ export const metadata = createRouteMetadata({
 
 const entry = getContentEntry('governance');
 
-
-function recoveryReviewGuidance(id: string) {
-  return recoveryReviewGuidanceById[id] ?? {
-    focus: 'Promoted recovery record that needs claim-specific review before present-tense wording.',
-    verifyNow: [
-      'Open the dated record and source metadata.',
-      'Check current Network diagnostics and relevant product controls.',
-      'Look for newer official sources before claiming final recovery or user-action availability.',
-    ],
-    boundary: 'Do not use tracker inclusion alone as proof of current safety, solvency, restitution, or product availability.',
-  };
-}
-
-function incidentTrackerBadge(status: 'current' | 'needs-review') {
-  return status === 'needs-review'
-    ? { label: 'Needs current review', variant: 'danger' as const }
-    : { label: 'Explicit current tracker', variant: 'warning' as const };
-}
-
-function governanceRecoveryTrackerBadge(status: string) {
-  return status.toLowerCase().includes('needs')
-    ? { label: 'Needs current review', variant: 'danger' as const }
-    : { label: 'Explicit recovery tracker', variant: 'warning' as const };
-}
-
 export default function GovernancePage() {
-  const currentIncidentRecords = SECURITY_INCIDENT_RECORDS
-    .flatMap((record) => {
-      const trackerStatus = record.data.trackerStatus;
-      if (trackerStatus !== 'current' && trackerStatus !== 'needs-review') {
-        return [];
-      }
-      return [{
-        id: `incident:${record.data.id}`,
-        title: record.data.title,
-        description: record.data.description,
-        impact: record.data.impact,
-        badge: incidentTrackerBadge(trackerStatus),
-        freshness: record.freshness,
-        sources: record.sources,
-        recordType: 'Incident record',
-        archiveHref: `/governance#${recordAnchor('incident', record.data.id)}`,
-        archiveLinkLabel: 'Open incident record',
-        guidance: recoveryReviewGuidance(`incident:${record.data.id}`),
-      }];
-    });
-  const currentGovernanceRecoveryRecords = GOVERNANCE_PROPOSAL_RECORDS
-    .filter((record) => record.data.trackerStatus === 'current' || record.data.trackerStatus === 'needs-review')
-    .map((record) => ({
-      id: `governance:${record.data.id}`,
-      title: record.data.title,
-      description: record.data.description,
-      impact: record.data.status,
-      badge: governanceRecoveryTrackerBadge(record.data.status),
-      freshness: record.freshness,
-      sources: record.sources,
-      recordType: 'Governance record',
-      archiveHref: `/governance#${recordAnchor('governance', record.data.id)}`,
-      archiveLinkLabel: 'Open governance record',
-      guidance: recoveryReviewGuidance(`governance:${record.data.id}`),
-    }));
-  const currentRecoveryRecords = [...currentIncidentRecords, ...currentGovernanceRecoveryRecords];
-  const currentRecoveryRecordSummary = [
-    {
-      label: 'Tracked records',
-      value: String(currentRecoveryRecords.length),
-      description: 'Current or needs-review records promoted from the full governance and incident archive.',
-    },
-    {
-      label: 'Evidence path',
-      value: 'Record + live check',
-      description: 'Use the full dated record first, then current Network diagnostics before present-tense claims.',
-    },
-  ];
-  const operationalGovernanceRecords = GOVERNANCE_PROPOSAL_RECORDS.filter((record) => (
-    record.data.status === 'Live' ||
-    record.data.votingPeriod.toLowerCase().includes('current-only') ||
-    record.data.status.toLowerCase().includes('live')
-  ));
-  const currentOrReviewIncidentRecords = SECURITY_INCIDENT_RECORDS.filter((record) => (
-    record.data.trackerStatus === 'current' ||
-    record.data.trackerStatus === 'needs-review' ||
-    record.freshness.confidence === 'needs-review'
-  ));
-  const historicalOpenIncidentRecords = SECURITY_INCIDENT_RECORDS.filter((record) => (
-    record.data.trackerStatus === 'historical-open' ||
-    (!record.data.resolved && record.data.trackerStatus !== 'current' && record.data.trackerStatus !== 'needs-review')
-  ));
-  const archiveLanes = [
-    {
-      title: 'Current recovery lane',
-      badge: 'current review',
-      badgeVariant: archiveLaneBadgeVariants.warning,
-      href: '#current-recovery',
-      count: currentRecoveryRecords.length,
-      countLabel: 'promoted records',
-      summary: 'Start here for records explicitly promoted from the archive into current recovery review.',
-    },
-    {
-      title: 'Governance records lane',
-      badge: 'dated + live',
-      badgeVariant: archiveLaneBadgeVariants.info,
-      href: '#governance-records',
-      count: GOVERNANCE_PROPOSAL_RECORDS.length,
-      countLabel: `${operationalGovernanceRecords.length} operational/current-only`,
-      summary: 'Use for ADRs, operational parameters, recovery-path records, and historical unwind context.',
-    },
-    {
-      title: 'Incident archive lane',
-      badge: 'security history',
-      badgeVariant: archiveLaneBadgeVariants.danger,
-      href: '#security-incidents',
-      count: SECURITY_INCIDENT_RECORDS.length,
-      countLabel: `${currentOrReviewIncidentRecords.length} current/review, ${historicalOpenIncidentRecords.length} historical-open`,
-      summary: 'Use for exploit root-cause, illicit-flow, and recovery-history records without flattening them into today.',
-    },
-    {
-      title: 'Research and milestones lane',
-      badge: 'dated context',
-      badgeVariant: archiveLaneBadgeVariants.default,
-      href: '#protocol-milestones',
-      count: PROTOCOL_MILESTONE_RECORDS.length + RESEARCH_REPORT_RECORDS.length,
-      countLabel: `${PROTOCOL_MILESTONE_RECORDS.length} milestones, ${RESEARCH_REPORT_RECORDS.length} reports`,
-      summary: 'Use for timeline context and third-party or ecosystem analysis before checking current evidence.',
-    },
-  ];
+  const { records: currentRecoveryRecords, summary: currentRecoveryRecordSummary } = buildCurrentRecoveryRecords();
+  const archiveLanes = buildArchiveLanes(currentRecoveryRecords.length);
 
   return (
     <PageContainer>
@@ -220,136 +98,16 @@ export default function GovernancePage() {
       </details>
       </div>
 
-      <section id="current-recovery" className="scroll-mt-24 mb-12">
-        <SectionHeader level="primary">Current Incident & Recovery Tracker</SectionHeader>
-        <p className="mb-4 max-w-3xl text-sm text-slate-400">
-          Conservative tracker for records explicitly tagged as current or needing current recovery review. Historical unresolved records remain in the incident archive below unless they are re-verified for current tracking.
-        </p>
-        <details className="group mb-4" open={true}>
-          <summary className="inline-flex cursor-pointer list-none items-center gap-1 text-xs text-slate-500 transition-colors hover:text-slate-300">
-            Show summary and claim-check detail
-            <span className="transition-transform group-open:rotate-180" aria-hidden="true">▾</span>
-          </summary>
-          <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-3">
-          {currentRecoveryRecordSummary.map((item) => (
-            <Card key={item.label} padding="sm" className="border-border">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">{item.label}</p>
-              <p className="mt-1 text-sm font-semibold text-slate-100">{item.value}</p>
-              <p className="mt-2 text-xs leading-relaxed text-slate-400">{item.description}</p>
-            </Card>
-          ))}
-          </div>
-          <div className="mb-4 grid grid-cols-1 gap-3 lg:grid-cols-2">
-          {recoveryClaimChecks.map((item) => (
-            <Card key={item.claim} padding="sm" className="border-amber-500/15">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Check Before Claiming</p>
-              <h3 className="mt-1 text-sm font-semibold text-slate-200">{item.claim}</h3>
-              <dl className="mt-3 space-y-2 text-xs leading-relaxed text-slate-400">
-                <div>
-                  <dt className="font-semibold text-slate-300">Start with</dt>
-                  <dd>{item.startWith}</dd>
-                </div>
-                <div>
-                  <dt className="font-semibold text-slate-300">Verify</dt>
-                  <dd>{item.verify}</dd>
-                </div>
-                <div>
-                  <dt className="font-semibold text-amber-300">Do not claim</dt>
-                  <dd>{item.avoid}</dd>
-                </div>
-              </dl>
-            </Card>
-          ))}
-          </div>
-        </details>
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-          {currentRecoveryRecords.map((record) => (
-            <Card key={`current:${record.id}`}>
-              <div className="flex flex-wrap items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">{record.recordType}</p>
-                  <h3 className="mt-1 text-sm font-semibold">{record.title}</h3>
-                </div>
-                <Badge variant={record.badge.variant}>{record.badge.label}</Badge>
-              </div>
-              <p className="mt-2 text-xs leading-relaxed text-slate-400">{record.description}</p>
-              <p className="mt-2 text-xs text-slate-400">{record.impact}</p>
-              <dl className="mt-4 space-y-3 rounded-md border border-border bg-surface p-3 text-xs leading-relaxed text-slate-400">
-                <div>
-                  <dt className="font-semibold uppercase tracking-wider text-slate-500">Use This For</dt>
-                  <dd className="mt-1">{record.guidance.focus}</dd>
-                </div>
-                <div>
-                  <dt className="font-semibold uppercase tracking-wider text-slate-500">Verify Next</dt>
-                  <dd className="mt-1">
-                    <ul className="space-y-1">
-                      {record.guidance.verifyNow.map((step) => (
-                        <li key={step}>- {step}</li>
-                      ))}
-                    </ul>
-                  </dd>
-                </div>
-                <div>
-                  <dt className="font-semibold uppercase tracking-wider text-slate-500">Boundary</dt>
-                  <dd className="mt-1">{record.guidance.boundary}</dd>
-                </div>
-              </dl>
-              <div className="mt-3">
-                <FreshnessMeta freshness={record.freshness} sources={record.sources} compact />
-              </div>
-              <div className="mt-4 grid gap-2 border-t border-border pt-3 sm:grid-cols-2">
-                <Link
-                  href={record.archiveHref}
-                  className="rounded-md border border-border bg-surface px-3 py-2 text-xs font-semibold text-accent transition-colors hover:border-accent/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
-                >
-                  {record.archiveLinkLabel}
-                  <span className="mt-1 block font-normal leading-relaxed text-slate-400">
-                    Jump to the full dated record and source metadata below.
-                  </span>
-                </Link>
-                <Link
-                  href="/network#network-diagnostics"
-                  className="rounded-md border border-border bg-surface px-3 py-2 text-xs font-semibold text-accent transition-colors hover:border-accent/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
-                >
-                  Check current diagnostics
-                </Link>
-              </div>
-            </Card>
-          ))}
-        </div>
-      </section>
+      <div id="current-recovery" className="scroll-mt-24">
+        <GovernanceRecoveryTracker
+          currentRecoveryRecords={currentRecoveryRecords}
+          currentRecoveryRecordSummary={currentRecoveryRecordSummary}
+        />
+      </div>
 
-      <section id="governance-archive-map" className="mb-12 scroll-mt-24">
-        <div className="mb-4 max-w-3xl">
-          <SectionHeader className="mb-3" level="primary">Dated Archive Map</SectionHeader>
-          <p className="text-sm leading-relaxed text-slate-400">
-            Use the lane map before diving into the archive. Counts are navigation aids, not health scores, and every lane still needs the claim-specific checks above.
-            Read each record or posture badge on its own terms before treating dated material as current protocol behavior.
-          </p>
-        </div>
-        <div className="grid grid-cols-1 gap-3 lg:grid-cols-4">
-          {archiveLanes.map((lane) => (
-            <Link
-              key={lane.title}
-              href={lane.href}
-              className="block rounded-lg border border-border bg-surface-elevated p-4 transition-colors hover:border-accent/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
-            >
-              <div className="mb-3 flex flex-wrap items-center gap-2">
-                <Badge variant={lane.badgeVariant}>{lane.badge}</Badge>
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">{lane.count} records</span>
-              </div>
-              <h3 className="text-sm font-semibold text-slate-100">{lane.title}</h3>
-              <p className="mt-2 text-xs leading-relaxed text-slate-400">{lane.summary}</p>
-              <dl className="mt-4 space-y-2 border-t border-border pt-3 text-[11px] leading-relaxed text-slate-400">
-                <div>
-                  <dt className="font-semibold uppercase tracking-wider text-slate-500">Archive mix</dt>
-                  <dd>{lane.countLabel}</dd>
-                </div>
-              </dl>
-            </Link>
-          ))}
-        </div>
-      </section>
+      <div id="governance-archive-map" className="mb-12 scroll-mt-24">
+        <GovernanceArchiveMap archiveLanes={archiveLanes} />
+      </div>
 
       <section id="governance-records" className="mb-12 scroll-mt-24">
         <div className="mb-4 max-w-3xl">

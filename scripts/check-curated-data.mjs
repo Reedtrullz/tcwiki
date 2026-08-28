@@ -2031,12 +2031,13 @@ function validateSearchSurface(collections, contentEntries, taskGuides, glossary
   }
 
   const governanceSource = readFileSync(routePathForHref('/governance'), 'utf8');
+  const governanceIncidentSource = readFileSync('src/components/features/GovernanceIncidentArchiveExplorer.tsx', 'utf8');
   const ecosystemSource = readFileSync(ecosystemFilterPath, 'utf8');
   const glossaryPageSource = readFileSync(routePathForHref('/glossary'), 'utf8');
   const glossaryExplorerSource = readFileSync(glossaryExplorerPath, 'utf8');
 
   for (const prefix of ['governance', 'incident', 'research', 'milestone']) {
-    if (!governanceSource.includes(`recordAnchor('${prefix}'`)) {
+    if (!governanceSource.includes(`recordAnchor('${prefix}'`) && !governanceIncidentSource.includes(`recordAnchor('${prefix}'`)) {
       fail('src/app/governance/page.tsx', `missing ${prefix} record anchors for search results`);
     }
   }
