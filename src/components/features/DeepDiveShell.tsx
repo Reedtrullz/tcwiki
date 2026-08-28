@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { PageContainer } from '@/components/layout/PageContainer';
+import { PageTableOfContents, type TocItem } from '@/components/layout/PageTableOfContents';
 import { Badge } from '@/components/ui/Badge';
 import { FreshnessMeta } from '@/components/ui/FreshnessMeta';
 import { DEEP_DIVE_ENTRIES, DEEP_DIVE_READER_PATHS, DEEP_DIVE_TOC, getContentEntry } from '@/lib/content/registry';
@@ -51,6 +52,8 @@ export function DeepDiveShell({ entryId, editPath, children }: DeepDiveShellProp
     }
   }
   const verifyNowLinks = Array.from(verifyNowLinkMap.values()).slice(0, 4);
+  const onPageNavItems: ReadonlyArray<TocItem> = entry.onPageNav ?? [];
+  const useRightRail = onPageNavItems.length > 0;
   const related = DEEP_DIVE_ENTRIES
     .filter((candidate) => candidate.id !== entryId)
     .map((candidate) => ({
@@ -61,11 +64,179 @@ export function DeepDiveShell({ entryId, editPath, children }: DeepDiveShellProp
     .sort((a, b) => b.score - a.score || a.entry.title.localeCompare(b.entry.title))
     .slice(0, 3);
 
+  const articleBody = (
+    <article className="prose prose-invert prose-slate max-w-none prose-headings:tracking-tight prose-h2:text-xl prose-h2:mt-10 prose-p:text-slate-300 prose-li:text-slate-300 [&>h1:first-child]:hidden">
+      {children}
+    </article>
+  );
+
+  const footerBlock = (
+    <div className="mt-12 border-t border-border pt-6">
+      <div className="flex flex-wrap items-center gap-2">
+        <Link href="/glossary#glossary-definition-map" className="rounded border border-border px-2 py-1 text-xs text-slate-400 hover:border-accent/30 hover:text-slate-100">
+          Glossary
+        </Link>
+        {entry.tags.map((tag) => (
+          <span key={tag} className="rounded bg-slate-800 px-2 py-1 text-xs text-slate-400">
+            {tag}
+          </span>
+        ))}
+      </div>
+
+      {readerPaths.length > 0 && (
+        <details className="mt-6 rounded-lg border border-border bg-surface-elevated/60 p-4">
+          <summary className="cursor-pointer list-none text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+            Reader paths for this article
+          </summary>
+          <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="mt-1 max-w-2xl text-sm leading-relaxed text-slate-400">
+                Use these paths to connect this explainer with the current-state checks needed before making live protocol claims.
+              </p>
+            </div>
+            <Link href="/deep-dives#deep-dive-reader-paths" className="text-xs font-semibold text-accent underline-offset-4 hover:underline">
+              View all paths
+            </Link>
+          </div>
+
+          <div className="mt-4 grid gap-3">
+            {articleReaderPaths.map(({ path, stepNumber, totalSteps, previousPathEntry, nextPathEntry }) => (
+              <div key={path.id} id={`article-reader-path-${path.id}`} className="scroll-mt-24 rounded-md border border-border bg-surface p-3">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <Link
+                      href={`/deep-dives#deep-dive-path-${path.id}`}
+                      className="font-semibold text-slate-200 underline-offset-4 hover:text-accent hover:underline"
+                    >
+                      {path.title}
+                    </Link>
+                    <p className="mt-1 text-xs leading-relaxed text-slate-400">{path.audience}</p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="rounded border border-border bg-surface-elevated px-2 py-1 text-[11px] font-medium text-slate-400">
+                      Step {stepNumber} of {totalSteps}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="mt-3 grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(220px,0.85fr)]">
+                  <div>
+                    <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Verify Before Claiming</p>
+                    <ul className="space-y-1 text-xs leading-relaxed text-slate-400">
+                      {path.verifyBeforeClaiming.map((claim) => (
+                        <li key={claim}>{claim}</li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div>
+                    <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                      {nextPathEntry ? 'Then Check' : 'Path Follow-Ups'}
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {path.followUpLinks.map((followUp) => (
+                        <Link
+                          key={followUp.href}
+                          href={followUp.href}
+                          className="rounded border border-border px-2 py-1 text-xs text-slate-400 hover:border-accent/30 hover:text-slate-100"
+                        >
+                          {followUp.label}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-3 rounded-md border border-border bg-surface-elevated/70 p-3">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Continue This Path</p>
+                      <p className="mt-1 text-xs leading-relaxed text-slate-400">
+                        {nextPathEntry
+                          ? `Continue with ${nextPathEntry.title} before treating this path as complete.`
+                          : 'This is the final article in this path; use the follow-up checks before making live or current-state claims.'}
+                      </p>
+                    </div>
+                    <span className="text-[11px] text-slate-500">
+                      {path.title} step {stepNumber}/{totalSteps}
+                    </span>
+                  </div>
+                  <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                    {previousPathEntry ? (
+                      <Link href={previousPathEntry.href} className="rounded-md border border-border bg-surface px-3 py-2 text-xs hover:border-accent/30">
+                        <span className="block uppercase tracking-wider text-slate-500">Previous in path</span>
+                        <span className="mt-1 block font-semibold text-slate-300">{previousPathEntry.title}</span>
+                      </Link>
+                    ) : (
+                      <div className="rounded-md border border-border bg-surface px-3 py-2 text-xs text-slate-500">
+                        <span className="block uppercase tracking-wider">Path start</span>
+                        <span className="mt-1 block">This article opens the path.</span>
+                      </div>
+                    )}
+                    {nextPathEntry ? (
+                      <Link href={nextPathEntry.href} className="rounded-md border border-accent/25 bg-accent/10 px-3 py-2 text-xs hover:border-accent/50 sm:text-right">
+                        <span className="block uppercase tracking-wider text-accent">Next in path</span>
+                        <span className="mt-1 block font-semibold text-slate-100">{nextPathEntry.title}</span>
+                      </Link>
+                    ) : (
+                      <div className="rounded-md border border-emerald-500/20 bg-emerald-500/5 px-3 py-2 text-xs text-emerald-200 sm:text-right">
+                        <span className="block uppercase tracking-wider">Path complete</span>
+                        <span className="mt-1 block">Move to the follow-up checks above.</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </details>
+      )}
+
+      {(previous || next) && (
+        <section aria-labelledby="all-deep-dives-navigation" className="mt-6">
+          <div className="mb-2 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+            <p id="all-deep-dives-navigation" className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+              Browse All Deep Dives
+            </p>
+            <p className="text-xs text-slate-500">Article library order, separate from reader-path order.</p>
+          </div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {previous ? (
+            <Link href={previous.href} className="rounded-lg border border-border bg-surface-elevated p-4 text-sm hover:border-accent/30">
+              <span className="block text-[11px] uppercase tracking-wider text-slate-400">Previous in library</span>
+              <span className="mt-1 block font-semibold text-slate-300">{previous.title}</span>
+            </Link>
+          ) : <div />}
+          {next && (
+            <Link href={next.href} className="rounded-lg border border-border bg-surface-elevated p-4 text-sm hover:border-accent/30 sm:text-right">
+              <span className="block text-[11px] uppercase tracking-wider text-slate-400">Next in library</span>
+              <span className="mt-1 block font-semibold text-slate-300">{next.title}</span>
+            </Link>
+          )}
+          </div>
+        </section>
+      )}
+
+      {related.length > 0 && (
+        <div className="mt-6">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Related Reading</p>
+          <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
+            {related.map(({ entry: relatedEntry }) => (
+              <Link key={relatedEntry.id} href={relatedEntry.href} className="rounded-lg border border-border bg-surface-elevated p-3 text-sm hover:border-accent/30">
+                <span className="font-semibold text-slate-300">{relatedEntry.title}</span>
+                <span className="mt-1 block text-xs leading-relaxed text-slate-400">{relatedEntry.description}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <PageContainer maxWidth="narrow">
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Link href="/deep-dives" className="text-sm text-slate-400 hover:text-accent transition-colors">
-          ← All Deep Dives
+          \u2190 All Deep Dives
         </Link>
         <a
           href={editUrl}
@@ -73,7 +244,7 @@ export function DeepDiveShell({ entryId, editPath, children }: DeepDiveShellProp
           rel="noopener noreferrer"
           className="text-xs text-slate-400 hover:text-accent transition-colors"
         >
-          Edit this page on GitHub →
+          Edit this page on GitHub \u2192
         </a>
       </div>
 
@@ -146,169 +317,25 @@ export function DeepDiveShell({ entryId, editPath, children }: DeepDiveShellProp
         </nav>
       )}
 
-      <article className="prose prose-invert prose-slate max-w-none prose-headings:tracking-tight prose-h2:text-xl prose-h2:mt-10 prose-p:text-slate-300 prose-li:text-slate-300 [&>h1:first-child]:hidden">
-        {children}
-      </article>
-
-      <div className="mt-12 border-t border-border pt-6">
-        <div className="flex flex-wrap items-center gap-2">
-          <Link href="/glossary#glossary-definition-map" className="rounded border border-border px-2 py-1 text-xs text-slate-400 hover:border-accent/30 hover:text-slate-100">
-            Glossary
-          </Link>
-          {entry.tags.map((tag) => (
-            <span key={tag} className="rounded bg-slate-800 px-2 py-1 text-xs text-slate-400">
-              {tag}
-            </span>
-          ))}
-        </div>
-
-        {readerPaths.length > 0 && (
-          <details className="mt-6 rounded-lg border border-border bg-surface-elevated/60 p-4">
-            <summary className="cursor-pointer list-none text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-              Reader paths for this article
-            </summary>
-            <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-              <div>
-                <p className="mt-1 max-w-2xl text-sm leading-relaxed text-slate-400">
-                  Use these paths to connect this explainer with the current-state checks needed before making live protocol claims.
-                </p>
-              </div>
-              <Link href="/deep-dives#deep-dive-reader-paths" className="text-xs font-semibold text-accent underline-offset-4 hover:underline">
-                View all paths
-              </Link>
-            </div>
-
-            <div className="mt-4 grid gap-3">
-              {articleReaderPaths.map(({ path, stepNumber, totalSteps, previousPathEntry, nextPathEntry }) => (
-                <div key={path.id} id={`article-reader-path-${path.id}`} className="scroll-mt-24 rounded-md border border-border bg-surface p-3">
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                    <div>
-                      <Link
-                        href={`/deep-dives#deep-dive-path-${path.id}`}
-                        className="font-semibold text-slate-200 underline-offset-4 hover:text-accent hover:underline"
-                      >
-                        {path.title}
-                      </Link>
-                      <p className="mt-1 text-xs leading-relaxed text-slate-400">{path.audience}</p>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="rounded border border-border bg-surface-elevated px-2 py-1 text-[11px] font-medium text-slate-400">
-                        Step {stepNumber} of {totalSteps}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="mt-3 grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(220px,0.85fr)]">
-                    <div>
-                      <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Verify Before Claiming</p>
-                      <ul className="space-y-1 text-xs leading-relaxed text-slate-400">
-                        {path.verifyBeforeClaiming.map((claim) => (
-                          <li key={claim}>{claim}</li>
-                        ))}
-                      </ul>
-                    </div>
-                    <div>
-                      <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-                        {nextPathEntry ? 'Then Check' : 'Path Follow-Ups'}
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        {path.followUpLinks.map((followUp) => (
-                          <Link
-                            key={followUp.href}
-                            href={followUp.href}
-                            className="rounded border border-border px-2 py-1 text-xs text-slate-400 hover:border-accent/30 hover:text-slate-100"
-                          >
-                            {followUp.label}
-                          </Link>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-3 rounded-md border border-border bg-surface-elevated/70 p-3">
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                      <div>
-                        <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Continue This Path</p>
-                        <p className="mt-1 text-xs leading-relaxed text-slate-400">
-                          {nextPathEntry
-                            ? `Continue with ${nextPathEntry.title} before treating this path as complete.`
-                            : 'This is the final article in this path; use the follow-up checks before making live or current-state claims.'}
-                        </p>
-                      </div>
-                      <span className="text-[11px] text-slate-500">
-                        {path.title} step {stepNumber}/{totalSteps}
-                      </span>
-                    </div>
-                    <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                      {previousPathEntry ? (
-                        <Link href={previousPathEntry.href} className="rounded-md border border-border bg-surface px-3 py-2 text-xs hover:border-accent/30">
-                          <span className="block uppercase tracking-wider text-slate-500">Previous in path</span>
-                          <span className="mt-1 block font-semibold text-slate-300">{previousPathEntry.title}</span>
-                        </Link>
-                      ) : (
-                        <div className="rounded-md border border-border bg-surface px-3 py-2 text-xs text-slate-500">
-                          <span className="block uppercase tracking-wider">Path start</span>
-                          <span className="mt-1 block">This article opens the path.</span>
-                        </div>
-                      )}
-                      {nextPathEntry ? (
-                        <Link href={nextPathEntry.href} className="rounded-md border border-accent/25 bg-accent/10 px-3 py-2 text-xs hover:border-accent/50 sm:text-right">
-                          <span className="block uppercase tracking-wider text-accent">Next in path</span>
-                          <span className="mt-1 block font-semibold text-slate-100">{nextPathEntry.title}</span>
-                        </Link>
-                      ) : (
-                        <div className="rounded-md border border-emerald-500/20 bg-emerald-500/5 px-3 py-2 text-xs text-emerald-200 sm:text-right">
-                          <span className="block uppercase tracking-wider">Path complete</span>
-                          <span className="mt-1 block">Move to the follow-up checks above.</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </details>
-        )}
-
-        {(previous || next) && (
-          <section aria-labelledby="all-deep-dives-navigation" className="mt-6">
-            <div className="mb-2 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-              <p id="all-deep-dives-navigation" className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-                Browse All Deep Dives
-              </p>
-              <p className="text-xs text-slate-500">Article library order, separate from reader-path order.</p>
-            </div>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {previous ? (
-              <Link href={previous.href} className="rounded-lg border border-border bg-surface-elevated p-4 text-sm hover:border-accent/30">
-                <span className="block text-[11px] uppercase tracking-wider text-slate-400">Previous in library</span>
-                <span className="mt-1 block font-semibold text-slate-300">{previous.title}</span>
-              </Link>
-            ) : <div />}
-            {next && (
-              <Link href={next.href} className="rounded-lg border border-border bg-surface-elevated p-4 text-sm hover:border-accent/30 sm:text-right">
-                <span className="block text-[11px] uppercase tracking-wider text-slate-400">Next in library</span>
-                <span className="mt-1 block font-semibold text-slate-300">{next.title}</span>
-              </Link>
-            )}
-            </div>
-          </section>
-        )}
-
-        {related.length > 0 && (
-          <div className="mt-6">
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Related Reading</p>
-            <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
-              {related.map(({ entry: relatedEntry }) => (
-                <Link key={relatedEntry.id} href={relatedEntry.href} className="rounded-lg border border-border bg-surface-elevated p-3 text-sm hover:border-accent/30">
-                  <span className="font-semibold text-slate-300">{relatedEntry.title}</span>
-                  <span className="mt-1 block text-xs leading-relaxed text-slate-400">{relatedEntry.description}</span>
-                </Link>
-              ))}
-            </div>
+      {useRightRail ? (
+        <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_200px] lg:gap-10">
+          <div className="min-w-0">
+            {articleBody}
+            {footerBlock}
           </div>
-        )}
-      </div>
+          <aside className="hidden lg:block">
+            <div className="sticky top-[72px]">
+              <PageTableOfContents items={onPageNavItems as TocItem[]} />
+            </div>
+          </aside>
+        </div>
+      ) : (
+        <>
+          {articleBody}
+          {footerBlock}
+        </>
+      )}
     </PageContainer>
   );
 }
+

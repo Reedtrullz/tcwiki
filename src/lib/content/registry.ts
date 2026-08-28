@@ -85,6 +85,14 @@ export interface ContentEntry {
   nav?: boolean;
   footer?: boolean;
   featured?: boolean;
+  /**
+   * Optional in-page navigator. When set, the DeepDiveShell renders a sticky
+   * right-rail PageTableOfContents using these items instead of the top-of-page
+   * chip strip. Use only for long deep-dives where readers need scroll-spy to
+   * find their place. Each id must match the auto-generated slug of the
+   * matching h2/h3 in the MDX body (see slugifyFragment in src/lib/utils.ts).
+   */
+  onPageNav?: ReadonlyArray<{ id: string; label: string; level?: 1 | 2 }>;
 }
 
 export interface JourneyLink {
@@ -833,6 +841,17 @@ export const CONTENT_ENTRIES: ContentEntry[] = [
     reviewedAt: '2026-08-26',
     nextReviewDue: '2026-12-26',
     sources: [docsPageSource],
+    onPageNav: [
+      { id: 'at-a-glance', label: 'At a Glance' },
+      { id: 'adr-registry-and-vote-tallies', label: 'ADR Registry & Vote Tallies' },
+      { id: 'chain-halts-and-major-incidents', label: 'Chain Halts & Incidents' },
+      { id: 'security-events-and-exploits', label: 'Security Events' },
+      { id: 'chain-specific-issues', label: 'Chain-Specific Issues' },
+      { id: 'active-node-votes', label: 'Active Node Votes' },
+      { id: 'revenue-and-adr-031', label: 'Revenue & ADR-031' },
+      { id: 'governance-process-and-culture', label: 'Governance Process' },
+      { id: 'mimir-parameter-quick-reference', label: 'Mimir Reference' },
+    ],
   },
 ];
 
@@ -2185,15 +2204,14 @@ export const DEEP_DIVE_TOC: Record<string, DeepDiveTocItem[]> = {
     tocItem('Dated Recovery State'),
   ],
   'deep-dive-governance-comprehensive': [
-    tocItem('ADR Registry'),
-    tocItem('Node Vote Tally Analysis: Close Calls, Clear Winners, and Procedural Wins'),
-    tocItem('All Chain Halts, Exploits, and Negative Events'),
+    tocItem('At a Glance'),
+    tocItem('ADR Registry and Vote Tallies'),
+    tocItem('Chain Halts and Major Incidents'),
     tocItem('Security Events and Exploits'),
     tocItem('Chain-Specific Issues'),
-    tocItem('Revenue and Economic Governance'),
-    tocItem('ADR-031 Deep Dive: THORChain x Rujira'),
-    tocItem('General Governance Discussions'),
-    tocItem('Governance Mechanism Issues'),
+    tocItem('Active Node Votes'),
+    tocItem('Revenue and ADR-031'),
+    tocItem('Governance Process and Culture'),
     tocItem('Mimir Parameter Quick Reference'),
   ],
 };
