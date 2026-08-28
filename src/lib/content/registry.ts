@@ -2186,6 +2186,7 @@ export const DEEP_DIVE_TOC: Record<string, DeepDiveTocItem[]> = {
   ],
   'deep-dive-governance-comprehensive': [
     tocItem('ADR Registry'),
+    tocItem('Node Vote Tally Analysis: Close Calls, Clear Winners, and Procedural Wins'),
     tocItem('All Chain Halts, Exploits, and Negative Events'),
     tocItem('Security Events and Exploits'),
     tocItem('Chain-Specific Issues'),

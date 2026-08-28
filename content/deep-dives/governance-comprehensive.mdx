@@ -8,35 +8,83 @@ For current live state, check `/network#network-diagnostics`. For dated incident
 
 ## ADR Registry
 
-| # | Title | Status | Summary |
-|---|-------|--------|---------|
-| 001 | THORChat | Not Passed | Chat system proposal |
-| 007 | Increase Fund Migration & Churn Interval | Withdrawn | Replaced by simpler refund |
-| 008 | Dynamic Outbound Fee Multiplier (DOFM) | Passed | Dynamic outbound fees |
-| 009 | Reserve Income & Fee Overhaul | Passed | USD-based fees, ~500k annual |
-| 010 | Streaming Swaps | Passed | 5 bps swap fees |
-| 011 | Lending | Passed | TORdollar debt, 500M RUNE circuit breaker |
-| 012 | (Vote referenced) | Passed | Details sparse |
-| 013 | Synth Backstop | Passed | Forced ejections vs haircuts |
-| 014 | Reduce Saver Yield Target | Passed | Scaled down saver yield |
-| 015 | Refund Synth Positions After Ragnarok | Passed | ~24,601 RUNE refunded |
-| 016 | Affiliate Fee Revenue Share | Passed | 12% protocol affiliate fee |
-| 017 | Burn System Income Lever | Passed | EIP-1559-style fee-burn |
-| 018 | Core Protocol Sustainability | Passed | Sustainability series |
-| 019 | AutoBond | Pending | RUNEPool-style bond mechanism |
-| 020 | App Layer | Pending | AppLayer norms, non-compete |
-| 021 | Marketing Budget | Pending | Marketing budget proposal |
-| 022 | Per Block Swap Scoring | Passed | Motion to Bypass |
-| 023 | Reserve Supply Restructure | Passed | Burned ~64.4M RUNE |
-| 024 | System Income to POL | Pending | 10-30% POL proposals |
-| 025 | Move Dev Fund Address | Passed | Nine Realms stepping back |
-| 026 | Dynamic Fee Model | Testing | 24h fee revenue adjustment |
-| 027 | WasmArbSlipMinBps to 0 | Passed | App-layer arb friction |
-| 028 | TSS Exploit Recovery | Active | Post-$10M exploit recovery |
-| 029 | Revenue Share (SwapKit) | Passed | 56/95 nodes voted for |
-| 030 | Delegated Node Permissions | Voting | Per-node delegation registry |
-| 031 | Rujira Long-Term Alignment | Passed (Option 1) | Joint venture, 33/33/34 split |
-| 032 | Limit Orders | Draft | Base-layer resting liquidity |
+| # | Title | Status | Tally | Mimir key / mechanism | Summary |
+|---|-------|--------|-------|------------------------|---------|
+| 001 | THORChat | Not Passed | n/a | Rejected by community | Chat system proposal |
+| 007 | Increase Fund Migration & Churn Interval | Withdrawn | n/a | Withdrawn before vote | Replaced by simpler refund (PR !2869) |
+| 008 | Dynamic Outbound Fee Multiplier (DOFM) | Passed (close) | **58/85 = 68.2%** (final) | `VoteDOFM`; needed supermajority, 10-day window | Dynamic outbound fees. Crossed 50% on day 4 (50/85), crossed 67% on day 10 |
+| 009 | Reserve Income & Fee Overhaul | Partially implemented | n/a | `NativeTransactionFeeUSD`, `NativeOutboundFeeUSD`, `EnableUSDFees` | USD-fees code shipped 1.114.0 (Jun 2023) but `EnableUSDFees` never activated; Reserve Income section **removed** as "contentiously large" |
+| 010 | Streaming Swaps | Passed | Default-pass (16% dissent threshold) | `VoteStreamingSwaps` | 5 bps swap fees |
+| 011 | Lending | Passed | **63/86 = 73.3%** (final, 1 dissent) | `VoteLending`; 7-day vote | TORdollar debt, 500M RUNE circuit breaker. Largest feature since MCCN |
+| 012 | Scale Lending (Burn 60M RUNE, CR 200%) | Passed (close) | **~52% in favor** at one snapshot; some nodes later removed votes | `ADR012` | Burned 60M RUNE from standby reserve, lowered max CR from 500% to 200% |
+| 013 | Synth Backstop | Passed (clear) | "Vote looks decided" — 1 dissent per channel | `VoteSynthBackstop` | Forced ejections vs haircuts for synth pools |
+| 014 | Reduce Saver Yield Target | Passed (default) | Motion to Bypass, no dissent | `VoteScaleSaversYield` | Scaled down saver yield |
+| 015 | Refund Synth Positions After Ragnarok | Passed (default) | Motion to Bypass, no dissent | `VoteRefundSynths` | ~24,601 RUNE refunded (46 addresses >10 RUNE) |
+| 016 | Affiliate Fee Revenue Share | Passed | **72/100 = 72%** (final) | `ProtocolAffiliateFeeBasisPoints = 1200` | 12% protocol affiliate fee. Crossed 67% in 2 days |
+| 017 | Burn System Income Lever | Passed mechanism, rate gridlocked | 0.01% initial; current debate ongoing (see Active Votes) | `SystemIncomeBurnRateBP` | EIP-1559-style fee-burn lever shipped; **rate setting is contentious** |
+| 018 | Core Protocol Sustainability | Passed (controversial) | Motion to Bypass after 3-year sunset added | `VoteSustainability` | Heavy opposition from yeguls, proofofsteve, multipartite; 9R conflict-of-interest concern raised; passed only after sunset amendment |
+| 019 | AutoBond | Pending | Discussion ongoing since 2024 | n/a (open) | RUNEPool-style bond mechanism |
+| 020 | App Layer | Pending | Discussion ongoing | n/a (open) | AppLayer norms, non-compete |
+| 021 | Marketing Budget | Voting | Two options (1 = 5% fund, 2 = 5% fund + 5% burn) | `ADR021` | Sponsored by two long-time node ops; $250k kickstart |
+| 022 | Per Block Swap Scoring | Passed (default) | Motion to Bypass, no dissent within 7 days | `VotePerBlockSwapScoring` | Bug-fix-flavored ADR; devs in consensus |
+| 023 | Reserve Supply Restructure | Passed | 2/3 of active validator set required | `ADR23` | Burned ~64.4M RUNE. Required supermajority due to tokenomics change |
+| 024 | System Income to POL | Pending (problematic) | Vote stalled; cow stepped down before formal vote | `ADR024` | 4 possible implementation options, "rat's nest" of discussion |
+| 025 | Move Dev Fund Address | Passed (default) | Motion to Bypass, no objection | `ADR25` | Nine Realms dev fund → new multisig (sonofodin, aaluxx, mazze) |
+| 026 | Dynamic Fee Model | Testing | n/a | `EnableDynamicFees` | 24h fee revenue adjustment |
+| 027 | WasmArbSlipMinBps to 0 | Passed | n/a (follow-up to ADR-031) | `WasmArbSlipMinBps = 0` | Removes min slip floor for Virtualization Strategy swaps |
+| 028 | TSS Exploit Recovery | Active | n/a (recovery plan, not a vote) | ADR-028 docs (snippet 5992927) | Post-$10M exploit recovery |
+| 029 | Revenue Share (SwapKit) | Passed (close) | **56/95 = 58.9%** (final) | `ADR029` | 12% rev share. Crossed 50% on day ~9, finished with razor-thin supermajority |
+| 030 | Delegated Node Permissions | Voting | Open | `ADR030` (1=approve, 0=against) | Per-node delegation registry |
+| 031 | Rujira Long-Term Alignment | Passed (Option 1) | **Option 1** won (joint venture) | `ADR031` (1=JV, 2=limited, 3=discontinue) | 33/33/34 split; secured-asset cap 20% |
+| 032 | Limit Orders | Draft | n/a (not yet voting) | n/a | Base-layer resting liquidity (post-only, Trade Assets v1) |
+
+**Tally column key:** "Passed (close)" = within ~10% of the rejection threshold or required explicit campaigning. "Passed (clear)" = comfortable supermajority. "Passed (default)" = Motion to Bypass with no dissent. "Passed (controversial)" = passed procedurally but with significant opposition in the commentary period.
+
+---
+
+## Node Vote Tally Analysis: Close Calls, Clear Winners, and Procedural Wins
+
+This section breaks down every ADR by *how* it passed (or didn't) — which ones were genuine nail-biters, which ones sailed through, and which ones only passed because a Motion to Bypass avoided a formal vote.
+
+### Clear Winners (>70% support, little controversy)
+
+- **ADR-011 Lending — 73.3% (63/86, 1 dissent).** "The biggest, and most difficult feature since MCCN." Even with 86 active validators, only one node voted against. Lending took nearly a year from inception to launch, and node operators were urged to vote explicitly because the community "will interpret a lack of vote as being apathetic."
+- **ADR-016 Affiliate Fee — 72% (72/100).** The cleanest large-validator-set win in the archive. Reached supermajority within days, finished with 28 explicit dissents (all zeros, no commentary relays).
+- **ADR-008 DOFM — 68.2% (58/85) — close-but-comfortable.** Passed the supermajority threshold on the last day of the 10-day window. The community had to publicly campaign for the last two votes ("We need two more votes from the nodes to pass adr 008. Any suggestions why they need so much time?") and ghostrider4486 was openly frustrated: "comon guys weak up and pass ADR 008!? devs please say something!"
+
+### Close Calls (passed but barely, or required active campaigning)
+
+- **ADR-029 Revenue Share (SwapKit) — 58.9% (56/95).** The closest of the recent ADRs. Started the voting period needing active campaigning, with several nodes openly on the fence. SamYap and others ran a multi-week push ("Reminder for the NO to vote ADR029 (thanks SamYap) .. if there are any concerns to don't vote or vote against, it would be great to know why"). The YES vote only crossed 50% in the last days of the voting window.
+- **ADR-012 Scale Lending — ~52% in favor at one snapshot.** This was the closest lending-related vote. Several nodes **later removed their votes** (climber2391: "It seems some nodes removed their vote towards ADR012. Is that right? Only 66 votes now. It used to be more than 70"). Vote decay and fatigue were real issues. Passed only because the 60M RUNE burn was bundled with the CR-200% change.
+- **ADR-031 Rujira Long-Term Alignment — Option 1 (JV) won, but voting fatigue noted.** The vote request explicitly asked nodes to consider the recent $10M Asgard vault exploit and to choose a path forward. Option 1 was the strong consensus choice (sonofodin and aaluxx both endorsed it), but multiple commenters noted "voter fatigue" with simultaneous open votes (ADR-029, ADR-031, ADR-030, TORANCHOR mimirs all open at once).
+
+### Passed via Motion to Bypass (no formal vote — interpretive as "no one objected loudly enough")
+
+These ADRs did not go through a `make mimir` vote. Instead, a contributor called a Motion to Bypass, which means the ADR takes effect after 7 days unless a node operator files an explicit `make relay` dissent. They are *de facto* unanimous but did not receive a positive vote of confidence.
+
+- **ADR-014 Reduce Saver Yield Target** — pluto_x1: "Motion to Bypass succeeds. Devs will proceed to implement."
+- **ADR-015 Refund Synth Positions After Ragnarok** — same, in the same hour.
+- **ADR-022 Per Block Swap Scoring** — familiarcow: "Discussion on this ADR has been ongoing for ~1 month. Devs are in consensus. Will be calling a motion to bypass a vote."
+- **ADR-025 Move Dev Fund Address** — _sonofodin: "I expect there to be no resistance here, imo." (prophetic — none came).
+
+### Contested / Controversial (passed but with significant opposition)
+
+- **ADR-018 Core Protocol Sustainability.** Procedurally a Motion to Bypass, but with **strong public opposition** from yeguls, proofofsteve, multipartite, and others. The core concerns: (1) conflict of interest — 9R-controlled nodes would be voting on 9R's own funding; (2) ADR framework is not a funding framework; (3) the proposal was too centralizing; (4) Monero-style Community Crowdfunding System was proposed as a counter. **The ADR was amended to add a 3-year sunset clause** before passing. This was a hard-won compromise, not a clean win.
+- **ADR-017 Burn System Income Lever.** The *mechanism* passed, but the *rate* has been gridlocked ever since. Current vote (Aug 2026): 5% — 35/95 (36.8%); 2.5% — 4/95 (4.2%); 1% — 25/95 (26.3%); 0.01% — 1/95 (1.1%). No single value has a supermajority.
+- **ADR-009 Reserve Income & Fee Overhaul.** Procedurally passed, but the **Reserve Income section was removed before passage** as "contentiously large (may be addressed in a separate ADR)." The remaining USD-fee code shipped but `EnableUSDFees` was never set, so the protocol still uses RUNE-denominated fees. This is a *de facto* partial implementation.
+
+### Rejected / Withdrawn
+
+- **ADR-001 THORChat — not passed.** Merged as a proposal in 2022 but never received node support. The chrisgrc ADR audit from 2024-08-06 still lists this as "the only one [not passed] that has been merged as an ADR doc."
+- **ADR-007 Increase Fund Migration & Churn Interval — withdrawn.** _sonofodin argued the proposal "utilizes the churn and migration which have their own purposes to solve a problem that is unrelating" and that the same problem was better solved by a refund PR. pluto_x1 agreed: "ADR 007 withdrawn. Alternative 1 is being pursued instead."
+
+### Pending / Stuck Votes (as of Aug 2026)
+
+- **ADR-019 AutoBond.** Open since 2024. moonmonkey_666: "Same solution: ADR 019" has been the punchline in dozens of debates about passive RUNE holders and bond providers, but no formal vote has been called.
+- **ADR-020 App Layer.** Active in discussion, no formal vote.
+- **ADR-024 System Income to POL.** "Rat's nest of discussion" per runetard. The vote is structurally unclear: "ADR024 > 1 = Yes — but yes to what? There are 4 possibilities as to how a Yes vote can be implemented." The original champion (cow) stepped down; boonedub took over. The discussion has stalled.
+
+---
 
 ---
 
