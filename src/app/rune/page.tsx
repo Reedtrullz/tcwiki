@@ -206,21 +206,9 @@ export default function RunePage() {
         ))}
       </div>
 
-      <SectionHeader level="primary">How RUNE Flows</SectionHeader>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-12">
-        <Card>
-          <h3 className="text-sm font-semibold text-accent mb-2">1. Swaps</h3>
-          <p className="text-xs text-slate-400">A swap routes through RUNE-paired pools. RUNE acts as the common settlement layer between native assets.</p>
-        </Card>
-        <Card>
-          <h3 className="text-sm font-semibold text-accent mb-2">2. Liquidity</h3>
-          <p className="text-xs text-slate-400">Liquidity providers supply pool depth and earn source-dependent fees and rewards according to current protocol rules.</p>
-        </Card>
-        <Card>
-          <h3 className="text-sm font-semibold text-accent mb-2">3. Security</h3>
-          <p className="text-xs text-slate-400">Node operators bond RUNE. Misbehavior can put that bond at risk through slash mechanisms and churn rules.</p>
-        </Card>
-      </div>
+      <p className="mb-12 max-w-3xl text-xs leading-relaxed text-slate-500">
+        For how RUNE flows through swaps, liquidity, and security, see the <Link href="/deep-dives/rune-settlement" className="text-accent hover:underline">RUNE Settlement</Link> deep dive and the <Link href="/protocol" className="text-accent hover:underline">Protocol Overview</Link>.
+      </p>
         </div>
 
         <aside className="hidden lg:block">

@@ -67,3 +67,8 @@ Do not treat a loaded APY, a deep pool, or a valid earnings chart as proof that 
 Name the LP intent first, then match its evidence: Network diagnostics and the exact control scope for availability; labeled Midgard data for depth, APY, and earnings; official memo/interface fields for transaction shape; and inbound/outbound transaction evidence for troubleshooting. A skipped source makes the claim partial.
 
 A listed pool is not proof that every LP action is open. Missing keys do not make a wallet flow safe, historical metrics do not guarantee future yield, and current controls cannot explain a past transaction without transaction-level evidence.
+
+### Common Misreadings
+
+- **"LP actions are always available"** — Mimir controls can pause deposits, withdrawals, and pool-specific actions independently. A pool can keep quoting swaps while LP actions are paused.
+- **"Asymmetric deposit means same asset on both sides"** — Asymmetric deposits add only one asset. The protocol internally swaps half to RUNE to complete the pool position.

@@ -44,7 +44,6 @@ test.describe('THORChain Wiki Docs And Glossary Smoke Tests', () => {
     await expect(page.getByRole('link', { name: /RUNEPool\/POL snapshot Current RUNEPool accounting/i })).toHaveAttribute('href', '/economics#runepool-pol-live');
     await expect(page.getByRole('link', { name: /Current TCY controls Claim, stake/i }).first()).toHaveAttribute('href', '/tcy#tcy-current-controls');
     await expect(page.getByRole('link', { name: 'Interface checklist' }).first()).toHaveAttribute('href', '/ecosystem#interface-use-checklist');
-    await page.getByText('Full source-family reference').first().click();
     await expect(page.getByRole('heading', { name: /Current Protocol State/i })).toBeVisible();
     await expect(page.locator('#runepool-pol-evidence').getByText(/Current global RUNEPool value, PnL/i)).toBeVisible();
     await expect(page.locator('#runepool-pol-evidence').getByText(/Future yield, profitability/i)).toBeVisible();

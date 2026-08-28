@@ -93,3 +93,9 @@ That is why the wiki should say "recovery-token framing" rather than "made whole
 For a present-tense claim, check official TCY docs/interfaces, Network diagnostics for controls such as `TCYCLAIMINGHALT`, `TCYSTAKINGHALT`, `TCYSTAKEDISTRIBUTIONHALT`, `TCYUNSTAKINGHALT`, and `HALTTCYTRADING`, address-specific THORNode endpoints where needed, the [TCY page](/tcy), and the [Governance recovery tracker](/governance#current-recovery). If sources disagree, identify which source was checked, when, and what it can prove.
 
 The conversion ratio is not a guaranteed price; the 10% allocation is not guaranteed yield; and ADR-028's waterfall includes Saver and treasury impacts, so acceptance is not universal made-whole proof. This dated map does not establish current Savers/Lending availability, TCY operations, recovery completion, value, or third-party interface safety.
+
+### Common Misreadings
+
+- **"TCY guarantees par recovery"** — The developer docs state that full debt recovery is market dependent and not guaranteed. The conversion ratio describes an accounting frame, not a guaranteed payout.
+- **"ADR-028 means everyone was made whole"** — ADR-028 established a one-time conciliation migration for the May 2026 exploit accounting gap. It did not guarantee that every affected user recovered every loss.
+- **"TCY is the old Savers product returning"** — TCY is a recovery-token framing for defaulted THORFi debt. It is not a relaunch of Savers or Lending under a new name.

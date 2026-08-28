@@ -204,7 +204,7 @@ export default function DocsPage() {
         />
       </section>
 
-      <details className="mb-12 rounded-lg border border-border bg-surface/40 p-4">
+      <details open className="mb-12 rounded-lg border border-border bg-surface/40 p-4">
         <summary className="cursor-pointer text-sm font-semibold uppercase tracking-wider text-slate-300">
           Full source-family reference
         </summary>
