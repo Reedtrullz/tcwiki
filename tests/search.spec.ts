@@ -19,7 +19,7 @@ test.describe('THORChain Wiki Search Smoke Tests', () => {
     expect(searchSectionOrder.guidedAnswers, 'guided-answer catalogue should be present').toBeGreaterThan(searchSectionOrder.primer);
     await expect(page.getByRole('link', { name: /Can this route quote/i })).toHaveAttribute('href', '/network#check-a-route');
     await expect(page.getByRole('link', { name: /Which proof fits/i })).toHaveAttribute('href', '/docs#source-map-chooser');
-    await expect(page.getByRole('link', { name: /What does this term mean/i })).toHaveAttribute('href', '/glossary#glossary-definition-map');
+    await expect(page.getByRole('link', { name: /What does this term mean/i })).toHaveAttribute('href', '/glossary');
     await expect(page.getByRole('link', { name: /Which endpoint should I use/i })).toHaveAttribute('href', '/deep-dives/build-query-data#query-plan');
     await expect(page.getByRole('heading', { name: 'Example Queries', exact: true })).toBeVisible();
     const exampleQueries = page.locator('section[aria-labelledby="search-example-queries-heading"]');

@@ -7,6 +7,7 @@ import { FreshnessMeta } from '@/components/ui/FreshnessMeta';
 import { PageSourcePosture } from '@/components/features/PageSourcePosture';
 import { PageTableOfContents, type TocItem } from '@/components/layout/PageTableOfContents';
 import { RelatedChecks } from '@/components/features/RelatedChecks';
+import { ClaimCheckCard } from '@/components/features/ClaimCheckCard';
 import { runeRelatedChecks, runeActionRoutes, getRuneNumberRoutes, getRuneClaimChecks } from '@/lib/data/rune-page';
 import { getTokenomicsRecord } from '@/lib/data/static';
 import { getContentEntry } from '@/lib/content/registry';
@@ -152,29 +153,17 @@ export default function RunePage() {
         </div>
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
           {runeClaimChecks.map((check) => (
-            <Card key={check.title} padding="md">
-              <div className="mb-3 flex flex-wrap items-center gap-2">
-                <Badge variant={check.badgeVariant}>{check.badge}</Badge>
-                <h3 className="text-base font-semibold text-slate-100">{check.title}</h3>
-              </div>
-              <dl className="grid gap-3 text-xs leading-relaxed text-slate-400 sm:grid-cols-3">
-                <div>
-                  <dt className="font-semibold uppercase tracking-wider text-slate-500">Use For</dt>
-                  <dd className="mt-1">{check.use}</dd>
-                </div>
-                <div>
-                  <dt className="font-semibold uppercase tracking-wider text-slate-500">Verify</dt>
-                  <dd className="mt-1">{check.verify}</dd>
-                </div>
-                <div>
-                  <dt className="font-semibold uppercase tracking-wider text-amber-300">Do Not Claim</dt>
-                  <dd className="mt-1">{check.avoid}</dd>
-                </div>
-              </dl>
-              <Link href={check.href} className="mt-4 inline-flex text-xs font-semibold text-accent underline-offset-4 hover:underline">
-                {check.linkLabel}
-              </Link>
-            </Card>
+            <ClaimCheckCard
+              key={check.title}
+              badge={check.badge}
+              badgeVariant={check.badgeVariant}
+              title={check.title}
+              use={check.use}
+              verify={check.verify}
+              avoid={check.avoid}
+              href={check.href}
+              linkLabel={check.linkLabel}
+            />
           ))}
         </div>
       </section>
@@ -207,7 +196,7 @@ export default function RunePage() {
       </div>
 
       <p className="mb-12 max-w-3xl text-xs leading-relaxed text-slate-500">
-        For how RUNE flows through swaps, liquidity, and security, see the <Link href="/deep-dives/rune-settlement" className="text-accent hover:underline">RUNE Settlement</Link> deep dive and the <Link href="/protocol" className="text-accent hover:underline">Protocol Overview</Link>.
+        These figures are dated snapshots — check the <span className="text-slate-400">FreshnessMeta</span> above for exactly when they were last verified. The split between reserve and circulating supply matters because it shapes how bonds, LP positions, and emissions interact: reserve RUNE backs node security while circulating RUNE includes the portion available for swaps and liquidity. For how RUNE actually flows through the system, see the <Link href="/deep-dives/rune-settlement" className="text-accent hover:underline">RUNE Settlement</Link> deep dive; for current protocol economics including POL and emissions, see <Link href="/economics" className="text-accent hover:underline">Economics</Link>. Do not treat any figure here as live or investment-grade data.
       </p>
         </div>
 

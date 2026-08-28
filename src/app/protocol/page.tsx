@@ -17,6 +17,7 @@ import { PageSourcePosture } from '@/components/features/PageSourcePosture';
 import { PageTableOfContents, type TocItem } from '@/components/layout/PageTableOfContents';
 import { RelatedChecks } from '@/components/features/RelatedChecks';
 import { ProtocolChainFinder } from '@/components/features/ProtocolChainFinder';
+import { ClaimCheckCard } from '@/components/features/ClaimCheckCard';
 import { getContentEntry } from '@/lib/content/registry';
 import { createRouteMetadata } from '@/lib/metadata';
 
@@ -75,28 +76,29 @@ export default function ProtocolPage() {
             ]}
           />
 
-          <details id="protocol-claim-checks" className="mb-6 rounded-lg border border-border bg-surface-elevated px-4 py-3 scroll-mt-24">
-            <summary className="cursor-pointer list-none text-sm font-semibold text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60">
-              Claim checks by type
-            </summary>
-            <p className="mt-2 max-w-3xl text-xs leading-relaxed text-slate-400">
-              Start with the claim type. The overview explains how the system fits together; current availability, vault safety, and developer behavior need stronger source paths.
-            </p>
-            <ul className="mt-3 divide-y divide-border">
+          <div id="protocol-claim-checks" className="scroll-mt-24 mb-6">
+            <details className="mb-3 rounded-lg border border-border bg-surface-elevated px-4 py-3">
+              <summary className="cursor-pointer list-none text-sm font-semibold text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60">
+                Claim checks by type
+              </summary>
+              <p className="mt-2 max-w-3xl text-xs leading-relaxed text-slate-400">
+                Start with the claim type. The overview explains how the system fits together; current availability, vault safety, and developer behavior need stronger source paths.
+              </p>
+            </details>
+            <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
               {protocolClaimChecks.map((check) => (
-                <li key={check.title} className="py-3 first:pt-0 last:pb-0">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="text-sm font-semibold text-slate-200">{check.title}</span>
-                    <Link href={check.href} className="text-xs font-semibold text-accent underline-offset-4 hover:underline">
-                      {check.linkLabel}
-                    </Link>
-                  </div>
-                  <p className="mt-1 text-xs leading-relaxed text-slate-400">{check.summary}</p>
-                  <p className="mt-1 text-xs leading-relaxed text-amber-300/90">{check.avoid}</p>
-                </li>
+                <ClaimCheckCard
+                  key={check.title}
+                  title={check.title}
+                  use={check.use}
+                  verify={check.verify}
+                  avoid={check.avoid}
+                  href={check.href}
+                  linkLabel={check.linkLabel}
+                />
               ))}
-            </ul>
-          </details>
+            </div>
+          </div>
 
           <RelatedChecks
             checks={protocolRelatedChecks}

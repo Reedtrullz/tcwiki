@@ -79,7 +79,7 @@ test.describe('THORChain Wiki Source Posture Smoke Tests', () => {
       await expect(page.getByRole('link', { name: route.link }).first()).toHaveAttribute('href', route.href);
       await expect(page.getByText(route.evidence).first()).toBeVisible();
       if (route.path === '/protocol') {
-        const claimChecks = page.locator('details', { hasText: 'Claim checks by type' });
+        const claimChecks = page.locator("#protocol-claim-checks");
         await expect(claimChecks).toBeVisible();
         await claimChecks.locator('summary').click();
         await expect(claimChecks.getByText(/Architecture explanation/i)).toBeVisible();

@@ -89,9 +89,9 @@ If an integration mixes native token decimals, THORChain base units, USD strings
 
 ## Error Handling And Provider Posture
 
-A safe integration should plan for upstream failure before the first request ships.
+For the canonical dashboard evidence rules — including never rendering missing data as `0`, keeping `null` and `unavailable` distinct, and letting malformed provider data fail that provider — see [Dashboard Evidence Rules](/deep-dives/midgard-thornode-data#dashboard-evidence-rules) in the Midgard and THORNode Data guide.
 
-Recommended behavior:
+Builder-specific guidance for upstream failure:
 
 - Handle `429` rate limits and `503` overload responses with backoff instead of tight retry loops.
 - Fail over only after validating response shape.
@@ -99,8 +99,6 @@ Recommended behavior:
 - Do not mix independent provider reads into one confident snapshot unless the UI says the sources differ.
 - Treat malformed Mimir values, duplicate scoped records, missing required fields, and unknown operation-like keys as degraded source posture.
 - Keep raw response bodies out of transaction instructions unless the user intentionally opens diagnostics.
-
-The goal is not to make every warning fatal. The goal is to show the known fact and the source-quality caveat at the same time.
 
 ## Shipping Boundary
 

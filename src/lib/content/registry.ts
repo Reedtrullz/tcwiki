@@ -298,71 +298,21 @@ const cosmWasmSource: SourceMeta = {
   notes: 'Official permissioned-mainnet and sandbox-boundary reference; current contract execution still depends on live scoped controls.',
 };
 
-const docsPageSource: SourceMeta = {
-  ...docsSource,
-  retrievedAt: '2026-07-05',
-};
+const PAGE_RETRIEVED_AT = '2026-07-05';
 
-const devDocsPageSource: SourceMeta = {
-  ...devDocsSource,
-  retrievedAt: '2026-07-05',
-};
-
-const networkHaltsPageSource: SourceMeta = {
-  ...networkHaltsSource,
-  retrievedAt: '2026-07-05',
-};
-
-const feesPageSource: SourceMeta = {
-  ...feesSource,
-  retrievedAt: '2026-07-05',
-};
-
-const adr026DynamicFeesPageSource: SourceMeta = {
-  ...adr026DynamicFeesSource,
-  retrievedAt: '2026-07-05',
-};
-
-const thornameGuidePageSource: SourceMeta = {
-  ...thornameGuideSource,
-  retrievedAt: '2026-07-05',
-};
-
-const liveInboundPageSource: SourceMeta = {
-  ...liveInboundSource,
-  retrievedAt: '2026-07-05',
-};
-
-const thornodeMimirPageSource: SourceMeta = {
-  ...thornodeMimirSource,
-  retrievedAt: '2026-07-05',
-};
-
-const midgardHealthPageSource: SourceMeta = {
-  ...midgardHealthSource,
-  retrievedAt: '2026-07-05',
-};
-
-const midgardNetworkPageSource: SourceMeta = {
-  ...midgardNetworkSource,
-  retrievedAt: '2026-07-05',
-};
-
-const midgardPoolsPageSource: SourceMeta = {
-  ...midgardPoolsSource,
-  retrievedAt: '2026-07-05',
-};
-
-const midgardEarningsPageSource: SourceMeta = {
-  ...midgardEarningsSource,
-  retrievedAt: '2026-07-05',
-};
-
-const ecosystemPageSource: SourceMeta = {
-  ...ecosystemSource,
-  retrievedAt: '2026-07-05',
-};
-
+const docsPageSource: SourceMeta = { ...docsSource, retrievedAt: PAGE_RETRIEVED_AT };
+const devDocsPageSource: SourceMeta = { ...devDocsSource, retrievedAt: PAGE_RETRIEVED_AT };
+const networkHaltsPageSource: SourceMeta = { ...networkHaltsSource, retrievedAt: PAGE_RETRIEVED_AT };
+const feesPageSource: SourceMeta = { ...feesSource, retrievedAt: PAGE_RETRIEVED_AT };
+const adr026DynamicFeesPageSource: SourceMeta = { ...adr026DynamicFeesSource, retrievedAt: PAGE_RETRIEVED_AT };
+const thornameGuidePageSource: SourceMeta = { ...thornameGuideSource, retrievedAt: PAGE_RETRIEVED_AT };
+const liveInboundPageSource: SourceMeta = { ...liveInboundSource, retrievedAt: PAGE_RETRIEVED_AT };
+const thornodeMimirPageSource: SourceMeta = { ...thornodeMimirSource, retrievedAt: PAGE_RETRIEVED_AT };
+const midgardHealthPageSource: SourceMeta = { ...midgardHealthSource, retrievedAt: PAGE_RETRIEVED_AT };
+const midgardNetworkPageSource: SourceMeta = { ...midgardNetworkSource, retrievedAt: PAGE_RETRIEVED_AT };
+const midgardPoolsPageSource: SourceMeta = { ...midgardPoolsSource, retrievedAt: PAGE_RETRIEVED_AT };
+const midgardEarningsPageSource: SourceMeta = { ...midgardEarningsSource, retrievedAt: PAGE_RETRIEVED_AT };
+const ecosystemPageSource: SourceMeta = { ...ecosystemSource, retrievedAt: PAGE_RETRIEVED_AT };
 export const CONTENT_ENTRIES: ContentEntry[] = [
   HOME_PAGE_ENTRY,
   SEARCH_PAGE_ENTRY,
@@ -1295,7 +1245,7 @@ export const SOURCE_CHOICE_DECISIONS: SourceChoiceDecision[] = [
       },
       {
         label: 'Glossary',
-        href: '/glossary#glossary-definition-map',
+        href: '/glossary',
         description: 'Short definitions for Mimir, inbound addresses, memos, fees, and related terms.',
       },
     ],
@@ -2086,12 +2036,13 @@ export const DEEP_DIVE_TOC: Record<string, DeepDiveTocItem[]> = {
     tocItem('Why It Matters'),
   ],
   'deep-dive-midgard-thornode-data': [
-    tocItem('What This Guide Can Prove'),
+    tocItem('What This Page Can Prove'),
     tocItem('Source Roles'),
     tocItem('Claim-To-Source Matrix'),
+    tocItem('Current State Versus Indexed State'),
     tocItem('Provider Failover And Same-Source Evidence'),
     tocItem('What Source Warnings Mean'),
-    tocItem('Which Wiki Surface Uses Which Source'),
+    tocItem('Dashboard Evidence Rules'),
     tocItem('Evidence Checklist'),
     tocItem('Non-Claims'),
   ],

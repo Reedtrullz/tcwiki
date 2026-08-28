@@ -19,6 +19,9 @@ export interface BoundaryCard {
 
 export interface ClaimCheck {
   title: string;
+  badge?: string;
+  badgeVariant?: 'default' | 'success' | 'warning' | 'danger' | 'info';
+  use: string;
   summary: string;
   verify: string;
   avoid: string;
@@ -58,6 +61,7 @@ export const protocolRelatedChecks: RelatedCheck[] = [
 export const protocolClaimChecks: ClaimCheck[] = [
   {
     title: 'Architecture explanation',
+    use: 'Concept context for Cosmos app-chain, Bifrost, vaults, pools, Mimir, and the swap lifecycle.',
     summary: 'Concept context for Cosmos app-chain, Bifrost, vaults, pools, Mimir, and the swap lifecycle.',
     verify: 'Use the New to THORChain path or the relevant deep dive before turning this into implementation detail.',
     avoid: 'Do not treat architecture cards as proof that a chain, route, or action is currently available.',
@@ -66,6 +70,7 @@ export const protocolClaimChecks: ClaimCheck[] = [
   },
   {
     title: 'Current availability claim',
+    use: 'Whether swaps, signing, inbound addresses, LP actions, secured assets, or app-layer controls are open now.',
     summary: 'Whether swaps, signing, inbound addresses, LP actions, secured assets, or app-layer controls are open now.',
     verify: 'Use Network diagnostics and current source-map guidance before presenting availability as live.',
     avoid: 'Do not infer live state from a catalog listing alone.',
@@ -74,6 +79,7 @@ export const protocolClaimChecks: ClaimCheck[] = [
   },
   {
     title: 'Security or vault claim',
+    use: 'TSS, vault signing, churn, Bifrost observation, slash exposure, and post-exploit migration language.',
     summary: 'TSS, vault signing, churn, Bifrost observation, slash exposure, and post-exploit migration language.',
     verify: 'Use the Network Security path plus dated incident or upgrade reports before describing current safety.',
     avoid: 'Do not convert a dated exploit report or migration discussion into present-day safety proof.',
@@ -82,6 +88,7 @@ export const protocolClaimChecks: ClaimCheck[] = [
   },
   {
     title: 'Developer integration claim',
+    use: 'Memos, asset notation, constants, Mimir keys, inbound-address fields, quote behavior, and API usage.',
     summary: 'Memos, asset notation, constants, Mimir keys, inbound-address fields, quote behavior, and API usage.',
     verify: 'Use official developer docs and live endpoint evidence before giving transaction or implementation guidance.',
     avoid: 'Do not use wiki summaries as send instructions, wallet guidance, or complete API contracts.',

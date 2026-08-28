@@ -22,6 +22,7 @@ import { PageSourcePosture } from '@/components/features/PageSourcePosture';
 import { PageTableOfContents } from '@/components/layout/PageTableOfContents';
 import { RelatedChecks } from '@/components/features/RelatedChecks';
 import { GovernanceIncidentArchiveExplorer } from '@/components/features/GovernanceIncidentArchiveExplorer';
+import { ClaimCheckCard } from '@/components/features/ClaimCheckCard';
 import { getContentEntry } from '@/lib/content/registry';
 import { createRouteMetadata } from '@/lib/metadata';
 import { recordAnchor } from '@/lib/utils';
@@ -199,25 +200,23 @@ export default function GovernancePage() {
         <p className="mt-2 max-w-3xl text-xs leading-relaxed text-slate-400">
           Start with the claim type. Governance records are useful for dated decisions and history; live controls, incident root-cause wording, recovery status, and community interpretation need separate proof paths.
         </p>
-        <ul className="mt-3 divide-y divide-border">
+        <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-2">
           {governanceClaimChecks.map((check) => (
-            <li
+            <ClaimCheckCard
               key={check.title}
               id={recordAnchor('claim-check', check.title)}
-              className="py-3 first:pt-0 last:pb-0"
-            >
-              {check.id ? <span id={check.id} className="sr-only" aria-hidden="true" /> : null}
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="text-sm font-semibold text-slate-200">{check.title}</span>
-                <Link href={check.href} className="text-xs font-semibold text-accent underline-offset-4 hover:underline">
-                  {check.linkLabel}
-                </Link>
-              </div>
-              <p className="mt-1 text-xs leading-relaxed text-slate-400">{check.use}</p>
-              <p className="mt-1 text-xs leading-relaxed text-amber-300/90">{check.avoid}</p>
-            </li>
+              anchorId={check.id}
+              badge={check.badge}
+              badgeVariant={check.badgeVariant}
+              title={check.title}
+              use={check.use}
+              verify={check.verify}
+              avoid={check.avoid}
+              href={check.href}
+              linkLabel={check.linkLabel}
+            />
           ))}
-        </ul>
+        </div>
       </details>
       </div>
 

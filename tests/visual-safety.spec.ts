@@ -35,7 +35,6 @@ const ANCHOR_TARGETS: Array<{ href: string; selector: string; settleMs?: number 
   { href: '/docs#rune-tokenomics-and-value', selector: '#rune-tokenomics-and-value' },
   { href: '/docs#third-party-interfaces-wallets', selector: '#third-party-interfaces-wallets' },
   { href: '/governance#current-recovery', selector: '#current-recovery' },
-  { href: '/glossary#glossary-definition-map', selector: '#glossary-definition-map' },
 ];
 
 test.describe('THORChain Wiki Visual Safety Smoke Tests', () => {

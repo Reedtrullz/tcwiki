@@ -4,9 +4,9 @@ The wiki uses live data in two different ways. THORNode is closest to raw protoc
 
 Both are useful. They are not interchangeable. This article explains which source should answer which question, and how to avoid turning a convenient dashboard number into stronger proof than it really is.
 
-## What This Guide Can Prove
+## What This Page Can Prove
 
-This guide can support source-selection claims:
+This page can support source-selection claims:
 
 - THORNode is the stronger starting point for current protocol-state evidence such as Mimirs, inbound fields, quotes, versions, block heights, and route errors.
 - Midgard is the stronger starting point for indexed dashboard context such as available pools, network totals, earnings intervals, APY-style views, and consumer-normalized history.
@@ -48,6 +48,11 @@ Use the narrowest source that can actually prove the claim:
 | Earnings or APY-style dashboard history | Midgard earnings intervals plus source coverage | `/stats` | A 30-day chart proves durable protocol revenue, user yield, or partner attribution. |
 | ADR-026 dynamic-fee experiment state | THORNode dynamic-fee endpoints and Mimirs | `/dynamic-fees#dynamic-fees-live` | Current accumulators prove revenue lift, route competitiveness, or attribution quality. |
 | Incident, recovery, or deprecated-product history | Dated official reports, upgrade notes, and curated records | `/governance`, `/tcy`, and recovery deep dives | A historical source proves present-day safety, solvency, or recovery completion. |
+| `/network` source posture | THORNode operational evidence: Mimirs, inbound fields, quote probes | `/network#network-diagnostics` | A degraded source on one page should not be quietly converted to a healthy number on another. |
+| `/stats` source posture | Midgard dashboard metrics with source health and coverage labels | `/stats` | Interpreting liquidity, earnings, APY, or node-count figures without provider health labels. |
+| `/dynamic-fees` source posture | THORNode dynamic-fee endpoints and Mimirs for current ADR-026 state | `/dynamic-fees#dynamic-fees-live` | Claims about durable revenue lift from current-only accumulator records. |
+| `/docs` source guidance | Source family selection guidance | `/docs` | Choosing the wrong source family for the claim type. |
+| `/api/ready` source posture | Live source usability check for the app | `/api/ready` | Confusing a degraded readiness response with protocol failure. |
 
 When a claim crosses rows, carry both proof paths. For example, "BTC has a deep available pool and BTC swaps are available" needs Midgard pool context and THORNode route or operation evidence.
 
@@ -115,18 +120,6 @@ A live dashboard should follow a few boring rules because boring is good for tru
 - Treat source warnings as a degraded source posture until reviewed.
 
 This is why the wiki often uses "current-only" labels. A value can be fresh and useful without being a permanent governance record, an uptime proof, or a historical attribution model.
-
-## Which Wiki Surface Uses Which Source
-
-The main live surfaces use the sources differently:
-
-- `/network#network-diagnostics` should lead with THORNode operational evidence: Mimirs, inbound fields, quote probes, and exact blockers.
-- `/stats` should use Midgard for dashboard metrics, with source health and coverage labels before interpreting liquidity, earnings, APY, or node-count figures.
-- `/dynamic-fees` should use THORNode dynamic-fee endpoints and Mimirs for current ADR-026 experiment state, while avoiding claims about durable revenue lift.
-- `/docs` should help readers choose the right source family before making a claim.
-- `/api/ready` can say whether live sources are usable for this app, but a degraded readiness response is not the same thing as "the protocol is down".
-
-Those surfaces should agree on source posture. If one page says data is degraded, another page should not quietly convert the same condition into a healthy dashboard number.
 
 ## Evidence Checklist
 

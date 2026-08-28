@@ -1,7 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { GLOSSARY_DEFINITION_PATHS, GLOSSARY_TERMS } from '../src/lib/content/glossary';
-
-const glossaryTermsById = new Map(GLOSSARY_TERMS.map((term) => [term.id, term]));
+import { GLOSSARY_TERMS } from '../src/lib/content/glossary';
 const developerTermCount = GLOSSARY_TERMS.filter((term) => term.category === 'developer').length;
 
 test.describe('THORChain Wiki Docs And Glossary Smoke Tests', () => {
@@ -101,39 +99,14 @@ test.describe('THORChain Wiki Docs And Glossary Smoke Tests', () => {
     await expect(sourceMap.getByRole('link', { name: /RUNE numbers/i })).toHaveCount(0);
   });
 
-  test('glossary definition map lands every curated term chip on its exact anchor', async ({ page }) => {
+  test('glossary explorer provides term cards with anchors and filtering', async ({ page }) => {
     await page.goto('/glossary', { waitUntil: 'domcontentloaded' });
     await expect(page.getByRole('heading', { name: /Glossary/i })).toBeVisible();
-    await expect(page.getByRole('heading', { name: /Definition Map/i })).toBeVisible();
-    await expect(page.locator('#glossary-definition-map')).toBeVisible();
-    await expect(page.locator('#glossary-definition-map').getByRole('link', { name: /Find a term/i })).toHaveAttribute('href', '#glossary-explorer');
-    await expect(page.getByText(/Definitions explain vocabulary/i)).toBeVisible();
-    await expect(page.getByText(/Each term card carries its own review date and source row/i)).toBeVisible();
-    await expect(page.getByRole('heading', { name: /Live State Terms/i })).toBeVisible();
-    await expect(page.getByRole('heading', { name: /Vault, Signing, And Observation Terms/i })).toBeVisible();
-    await expect(page.getByRole('heading', { name: /Swap And Fee Terms/i })).toBeVisible();
-    await expect(page.getByRole('heading', { name: /Liquidity And Pool Accounting Terms/i })).toBeVisible();
-    await expect(page.getByRole('heading', { name: /App Layer And Asset Terms/i })).toBeVisible();
-    await expect(page.getByRole('heading', { name: /Incident And Recovery Terms/i })).toBeVisible();
-    const definitionMap = page.locator('#glossary-definition-map');
-
-    for (const path of GLOSSARY_DEFINITION_PATHS) {
-      await expect(definitionMap.getByRole('link', { name: path.verifyLabel })).toHaveAttribute('href', path.verifyHref);
-      for (const termId of path.termIds) {
-        const term = glossaryTermsById.get(termId);
-        expect(term, `${path.title} references known glossary term ${termId}`).toBeDefined();
-        if (!term) {
-          continue;
-        }
-        await expect(definitionMap.getByRole('link', { name: term.term, exact: true })).toHaveAttribute('href', `/glossary#term-${term.id}`);
-      }
-    }
-
-    await expect(definitionMap.getByText(/Dated incident vocabulary is not present-day safety/i)).toBeVisible();
     await expect(page.getByRole('heading', { name: /Term Finder/i })).toBeVisible();
     const filterInput = page.getByRole('searchbox', { name: /Filter glossary terms/i });
     await expect(filterInput).toBeVisible();
     await expect(page.getByText(/Searches terms, definitions, source labels, and related proof links/i)).toBeVisible();
+    // Verify the explorer shows category sections with term anchors
     await expect(page.locator('#term-mimir')).toBeVisible();
     await expect(page.getByText(/Operational parameter storage/i)).toBeVisible();
     await expect(page.locator('#term-quote')).toBeVisible();

@@ -62,7 +62,7 @@ const SEARCH_DECISION_CARDS = [
     id: 'definition',
     eyebrow: 'Definition',
     title: 'What does this term mean?',
-    href: '/glossary#glossary-definition-map',
+    href: '/glossary',
     query: 'what is quote expiry',
     description: 'Use source-aware definitions before jumping into memos, quotes, vaults, Mimir, secured assets, or recovery terms.',
   },

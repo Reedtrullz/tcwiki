@@ -73,7 +73,7 @@ export function DeepDiveShell({ entryId, editPath, children }: DeepDiveShellProp
   const footerBlock = (
     <div className="mt-12 border-t border-border pt-6">
       <div className="flex flex-wrap items-center gap-2">
-        <Link href="/glossary#glossary-definition-map" className="rounded border border-border px-2 py-1 text-xs text-slate-400 hover:border-accent/30 hover:text-slate-100">
+        <Link href="/glossary" className="rounded border border-border px-2 py-1 text-xs text-slate-400 hover:border-accent/30 hover:text-slate-100">
           Glossary
         </Link>
         {entry.tags.map((tag) => (

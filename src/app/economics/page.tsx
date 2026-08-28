@@ -47,12 +47,6 @@ const economicsRelatedChecks: RelatedCheck[] = [
     description: 'Check current liquidity, reward, source-health, and earnings coverage.',
   },
   {
-    label: 'RUNEPool/POL evidence',
-    href: '/economics#runepool-pol-live',
-    badge: 'live state',
-    description: 'Check current RUNEPool accounting, availability caveats, POL scope, and source labels.',
-  },
-  {
     label: 'Dynamic fee tracker',
     href: '/dynamic-fees#dynamic-fees-live',
     badge: 'ADR-026',

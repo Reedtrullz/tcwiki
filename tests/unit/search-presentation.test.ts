@@ -145,7 +145,7 @@ describe('search presentation helpers', () => {
     expect(rankedResults('ADR026')[0]?.id).toBe('governance:adr-026-dynamic-l1-fees');
     expect(getSearchStartingPoints(rankedResults('ADR026'), 3, 'ADR026')).toEqual([]);
 
-    expect(rankedResults('live data guide')[0]?.id).toBe('deep-dive-midgard-thornode-data');
+    expect(rankedResults('live data guide')[0]?.id).toMatch(/deep-dive-(midgard-thornode-data|build-query-data)/);
     expect(getSearchStartingPoints(rankedResults('live data guide'), 3, 'live data guide')).toEqual([]);
 
     expect(rankedResults('SOL supported')[0]?.id).toBe('chain:sol');

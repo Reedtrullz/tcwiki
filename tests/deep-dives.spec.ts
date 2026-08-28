@@ -356,13 +356,13 @@ test.describe('THORChain Wiki Deep Dive Smoke Tests', () => {
         await expect(page.getByText(/valid endpoint does not prove that deposits are open/i)).toBeVisible();
       }
       if (slug === 'midgard-thornode-data') {
-        await expect(page.getByRole('heading', { name: /What This Guide Can Prove/i })).toBeVisible();
+        await expect(page.getByRole('heading', { name: /What This Page Can Prove/i })).toBeVisible();
         await expect(page.getByRole('heading', { name: /Source Roles/i })).toBeVisible();
         await expect(page.getByRole('heading', { name: /Claim-To-Source Matrix/i })).toBeVisible();
         await expect(page.getByText(/Use THORNode when the claim is about current protocol state/i)).toBeVisible();
         await expect(page.getByText(/Pool presence, 24h volume, or a healthy Midgard metrics call proves a route will quote or settle/i)).toBeVisible();
         await expect(page.getByText(/When a claim crosses rows, carry both proof paths/i)).toBeVisible();
-        await expect(page.getByRole('link', { name: /What This Guide Can Prove/i })).toHaveAttribute('href', '#what-this-guide-can-prove');
+        await expect(page.getByRole('link', { name: /What This Page Can Prove/i })).toHaveAttribute('href', '#what-this-page-can-prove');
         await expect(page.getByRole('link', { name: /Claim-To-Source Matrix/i })).toHaveAttribute('href', '#claim-to-source-matrix');
         await expect(page.getByRole('link', { name: /Provider Failover And Same-Source Evidence/i })).toHaveAttribute('href', '#provider-failover-and-same-source-evidence');
       }

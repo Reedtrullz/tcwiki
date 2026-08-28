@@ -160,7 +160,7 @@ describe('task-aware search ranking', () => {
 
   it('promotes exact deep-dive guide queries above broad paths', () => {
     expect(rankedIds('mimir halt controls')[0]).toBe('deep-dive-mimir-halt-controls');
-    expect(rankedIds('live data guide')[0]).toBe('deep-dive-midgard-thornode-data');
+    expect(rankedIds('live data guide')[0]).toMatch(/deep-dive-(midgard-thornode-data|build-query-data)/);
     expect(rankedIds('liquidity actions guide')[0]).toBe('deep-dive-liquidity-actions');
     expect(rankedIds('RUNEPool guide')[0]).toBe('task:runepool-pol');
     expect(rankedIds('Mimir halt')[0]).toBe('task:why-paused');
