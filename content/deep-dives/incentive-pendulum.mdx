@@ -41,6 +41,7 @@ The Incentive Pendulum is best treated as an incentive-alignment mechanism rathe
 ## Evidence Ladder
 
 Separate design sources from live economics: official docs explain the model; source-labeled [stats](/stats#stats-look-here-first) supply pooled RUNE, reserve, bonding APY, node count, and earnings coverage; [Network diagnostics](/network#network-diagnostics) supply the operational state. Do not upgrade a design source into health, yield, price, or route proof.
+For how RUNE settlement interacts with the pendulum-driven reward allocation, see the [RUNE Settlement](/deep-dives/rune-settlement) deep dive.
 
 ## Common Misreadings
 
@@ -49,5 +50,6 @@ Separate design sources from live economics: official docs explain the model; so
 - **"The `2:1` target means the ratio is always exactly `2:1`."** The target describes an incentive direction, not a guarantee that market behavior will keep the ratio fixed.
 - **"More LP rewards mean every route is attractive."** Reward allocation does not prove pool depth, slippage, quoteability, settlement, or chain availability for a specific route.
 - **"Reward split proves protocol revenue lift."** Reward distribution and revenue attribution are different claims and should not be mixed without source-backed earnings data.
+- **"Bond rewards and LP rewards are equal."** The 2:1 target is a design ratio for incentive alignment, not an outcome. Actual reward splits depend on current bond, pooled liquidity, and the pendulum active state; equality is not guaranteed.
 
 Current APY, realized yield, RUNE value, route quality, and revenue attribution are separate claims. Check source health, provider identity, and live operations before treating a reward number as actionable.

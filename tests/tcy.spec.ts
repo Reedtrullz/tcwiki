@@ -6,7 +6,7 @@ test.describe('THORChain Wiki TCY Smoke Tests', () => {
     await mockSwapperFirstNetwork(page);
     await page.goto('/tcy');
     await expect(page.getByRole('heading', { name: /TCY, Savers, and THORFi History/i })).toBeVisible();
-    await expect(page.getByRole('link', { name: /Current TCY controls/i })).toHaveAttribute('href', '/tcy#tcy-current-controls');
+    await expect(page.getByRole('link', { name: /Current TCY controls/i })).toHaveAttribute('href', '/tcy#tcy-controls');
     await page.locator('#tcy-controls details').first().click();
     const panel = page.locator('#tcy-current-controls');
     await expect(panel.getByRole('heading', { name: /Current TCY Controls/i })).toBeVisible();
@@ -57,3 +57,4 @@ test.describe('THORChain Wiki TCY Smoke Tests', () => {
     await expect(panel.getByText('HALTTCYTRADING is active in the checked network snapshot')).toBeVisible();
   });
 });
+

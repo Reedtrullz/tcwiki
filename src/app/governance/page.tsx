@@ -226,7 +226,7 @@ export default function GovernancePage() {
         <p className="mb-4 max-w-3xl text-sm text-slate-400">
           Conservative tracker for records explicitly tagged as current or needing current recovery review. Historical unresolved records remain in the incident archive below unless they are re-verified for current tracking.
         </p>
-        <details className="group mb-4" open={false}>
+        <details className="group mb-4" open={true}>
           <summary className="inline-flex cursor-pointer list-none items-center gap-1 text-xs text-slate-500 transition-colors hover:text-slate-300">
             Show summary and claim-check detail
             <span className="transition-transform group-open:rotate-180" aria-hidden="true">▾</span>

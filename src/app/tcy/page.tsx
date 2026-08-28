@@ -35,7 +35,7 @@ const tcyRecord = getTokenomicsRecord('tcy-recovery-context');
 const tcyRelatedChecks: RelatedCheck[] = [
   {
     label: 'Current TCY controls',
-    href: '/tcy#tcy-current-controls',
+    href: '/tcy#tcy-controls',
     badge: 'live state',
     description: 'Check current TCY halt controls before making claim, stake, distribution, unstake, or trading availability claims.',
   },
@@ -211,19 +211,6 @@ export default function TCYPage() {
       <SectionHeader id="tcy-sources" level="primary">Sources</SectionHeader>
       <div className="mb-4">
         <FreshnessMeta freshness={tcyRecord.freshness} sources={tcyRecord.sources} />
-      </div>
-      <div className="flex flex-wrap gap-2">
-        {tcyRecord.sources.map((source) => (
-          <a
-            key={source.url}
-            href={source.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="rounded-lg border border-border bg-surface-elevated px-4 py-3 text-sm text-slate-400 hover:border-accent/30 hover:text-slate-200 transition-colors"
-          >
-            {source.label}
-          </a>
-        ))}
       </div>
         </div>
 

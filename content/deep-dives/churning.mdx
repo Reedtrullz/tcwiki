@@ -50,3 +50,8 @@ Current churn claims need Network diagnostics, THORNode node/churn state, curren
 ADR-030 is a proposed design for separating node management authority from bond custody. Under the proposal, an operator could register delegate addresses with permission bits for MAINT, LEAVE, bond-provider-whitelist changes, and operator-fee updates, each with an optional block-offset expiry. Custody of bonded RUNE and fee rewards would stay with the operator key, and OPERATOR_ROTATE, UNBOND, and delegation management would remain non-delegable.
 
 That is design context only. The develop ADR is still marked Proposed; the official v3.20 blog recap says the framework ships in v3.20 code with activation expected in v3.21, so no delegate registry is active on mainnet yet. Node-lifecycle claims should keep using current THORNode state; do not describe delegated maintenance, leave requests, or fee changes as available behavior until activation lands.
+
+### Common Misreadings
+
+- **"Churn interval is always 2.5 days."** Official docs currently describe the normal cadence as roughly 43,200 blocks, but `ChurnInterval`, `HaltChurning`, failed keygen, and migration state can change or delay what happens. Treat the quoted cadence as a documentation snapshot, not a next-churn promise.
+- **"Higher slash points = immediate churn out."** Slash points are one churn-out input alongside leave requests, bans, age, bad performance, low version, and low bond. `MinSlashPointsForBadValidator` is a threshold, not an immediate-trigger guarantee; the exact selection set remains protocol-state dependent.

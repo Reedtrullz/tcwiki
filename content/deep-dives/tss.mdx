@@ -47,3 +47,8 @@ The source-backed July 2026 boundary is narrower than either "nothing changed" o
 Therefore, the safe statement is: **the v3.19.x recovery restored normal network operation with patched GG20-era signing, while migration away from GG20 remained planned.** Current signing and vault-safety claims still need live diagnostics and newer release evidence.
 
 For present-tense claims, separate historical GG20/exploit/restart wording from the running release; check Network diagnostics and exact validator rollout evidence before calling any mitigation network-wide. Planned DKLS/Schnorr/dual-scheme work is live only when a newer source proves it. Generic TSS context cannot prove every validator's safety, eliminate GG20/Paillier risk, establish route availability, or assign a transaction failure to TSS without transaction-level evidence.
+
+### Common Misreadings
+
+- **"TSS means THORChain controls your keys."** TSS distributes key shares across nodes using threshold signing. No single party — not the protocol, not any operator, not THORChain — holds the full private key.
+- **"The GG20 exploit compromised all vaults."** The May 15, 2026 exploit reports say one vault was drained through a specific cryptographic attack against the GG20/TSS signing path. The attacker targeted one vault by joining as a validator and exploiting Paillier key generation, not all vaults simultaneously.

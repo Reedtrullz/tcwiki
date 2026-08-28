@@ -42,3 +42,8 @@ The CLP pricing formula — slip, fee, and output — runs at step 4 of that lif
 THORChain's CLP is a constant-function pool design with slip-based pricing, adapted to native cross-chain settlement through RUNE-paired pools. Its distinctive claim is the shared RUNE settlement graph and native-asset execution model, not an escape from constant-product-style pool economics. Current chain availability should be checked from live inbound-address and pool status, not from a hard-coded chain count.
 
 A static formula is neither wallet guidance nor support diagnosis. Route execution, refunds, LP actions, depth/APY, and future outcomes all need the matching live evidence described above.
+
+### Common Misreadings
+
+- **"The slip ratio IS the fee."** The slip ratio is the input size relative to pool depth. The fee is derived from that ratio but denominated in the output asset, not equal to the slip ratio itself.
+- **"LPs always earn from swap fees."** Impermanent loss protection can exceed swap fees in volatile markets. LP returns depend on pool depth, price movement, ILP mechanics, and current availability — not on the existence of swap fees alone.

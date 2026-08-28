@@ -45,3 +45,10 @@ Without reliable cross-chain observability, THORChain could not process inbound 
 Vault status matters to this flow. Active vaults receive new assignments, Retiring vaults remain monitored while funds migrate, and Inactive vaults are no longer normal inbound or signing targets. Never send funds to a retired or inactive vault address; retrieve the current chain address and router from `inbound_addresses` immediately before constructing an action.
 
 Current Bifrost claims need the matching network diagnostics, `inbound_addresses`, vault state, quote/transaction evidence, and source freshness. Design alone does not prove that a route is live, a transaction settled, or every chain behaves the same way.
+
+Observation failures can lead to node penalties. See the [Slashing](/deep-dives/slashing) deep dive for how missed or incorrect observations accumulate slash points and affect node standing.
+
+### Common Misreadings
+
+- **"Bifrost observed it = transaction is complete."** Observation is reporting, not confirmation. A transaction can be observed while the relevant route is still constrained by halted trading, halted signing, chain-specific controls, dust or fee thresholds, memo validity, pool status, or outbound delivery conditions.
+- **"Bifrost only watches one chain."** Each node runs Bifrost per-chain clients for every supported chain. The official stack documentation says THORNode operators run connected-chain clients for the network's supported chains, so a single node participates in observing all active chains.

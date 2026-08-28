@@ -49,6 +49,8 @@ App Layer and account-style flows have their own controls:
 
 These controls are scoped. A specific contract, code checksum, deployer, secured-asset flow, or trade-account action can be limited while ordinary swaps remain available. The trade-account deposit and withdrawal halt values are activation heights: the matching chain action is halted when the checked THORChain height reaches or passes the configured positive value.
 
+See the [App Layer](/deep-dives/app-layer) deep dive for the full picture of WASM, oracle, secured-asset, and trade-account mechanics beyond halt controls.
+
 ### Node and operator controls
 
 Node operations use another family:
@@ -102,7 +104,7 @@ Unknown keys are not automatically active halts. They are a source-quality probl
 
 For each claim, identify its control family and exact key or source field; retain provider, checked time, height, data quality, and whether a network-wide control directly blocks that scope. Concrete routes need the current quote result rather than a chain-level assumption. Static docs explain design meaning only; Mimir does not establish future availability, wallet safety, uptime history, route quality, or the impact of every unknown key.
 
-## Memoless Cost And Halt Cycle (August 2026)
+## Memoless Cost And Halt Cycle (August 2026 context:)
 
 The August 2026 memoless spam window shows why cost parameters and halt keys are different controls. Community reporting and live Mimir snapshots describe a halt, a re-enable with MEMOLESSTXNCOST raised to 200000 base units, a spam-driven re-halt, and HALTMEMOLESS=1 active after the v3.20.0 upgrade.
 

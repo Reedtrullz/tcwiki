@@ -80,9 +80,9 @@ describe('swap glossary and route content review', () => {
       expect(searchDoc?.content, id).toContain(term?.definition);
     }
 
-    const protocolPage = readFileSync('src/app/protocol/page.tsx', 'utf8');
-    expect(protocolPage).toContain('Request a fresh quote immediately before submission');
-    expect(protocolPage).toContain('market swaps can auto-stream');
+    const protocolData = readFileSync('src/lib/data/protocol-page.ts', 'utf8');
+    expect(protocolData).toContain('Request a fresh quote immediately before submission');
+    expect(protocolData).toContain('market swaps can auto-stream');
     expect(getContentEntry('protocol').sources).toContainEqual(streamingSwapsSource);
   });
 });

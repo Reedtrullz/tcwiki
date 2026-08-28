@@ -10,7 +10,7 @@ test.describe('THORChain Wiki Protocol Smoke Tests', () => {
     await expect(page.getByText(/Availability, routing, signing, LP actions, and pause state remain live\/current-only/i)).toBeVisible();
     await expect(page.locator('#chain-catalog-boundary')).toBeVisible();
     await expect(page.getByText('not availability proof')).toBeVisible();
-    await page.locator('#chain-catalog-boundary').locator('summary').click();
+    // Chain catalog boundary is now visible by default — no click needed
     await expect(page.locator('#chain-catalog-boundary').getByText(/Catalog boundary guidance/i)).toBeVisible();
     await expect(page.getByText(/A listing confirms catalog presence only/i)).toBeVisible();
     await expect(page.locator('#chain-catalog-boundary').getByRole('link', { name: /Check a route/i })).toHaveAttribute('href', '/network#check-a-route');
