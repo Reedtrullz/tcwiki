@@ -16,24 +16,53 @@ The important point is not that the user must hold RUNE manually or submit two u
 - Cross-pool swaps use the input asset's RUNE pool and the output asset's RUNE pool.
 - Pool depth, current fees, slip, halts, and outbound conditions still determine whether a specific live swap is practical or available.
 
+This two-leg structure means THORChain never needs to hold or price a BTC/ETH pool directly. Instead, it prices BTC against RUNE in one pool, and RUNE against ETH in the other, then combines those two internal prices into a single user-facing quote. The settlement graph itself is simple and predictable: every external asset has exactly one RUNE pool, and the protocol knows how to walk from any source pool to any destination pool through that shared RUNE hub.
+
+This means the number of pools grows linearly with the number of supported assets, not quadratically. Adding a new chain to THORChain requires one new RUNE pool, not one pool for every existing asset. That linear scaling is what makes THORChain economically viable for a multi-chain network rather than a two- or three-asset system.
+
+This means the number of pools grows linearly with the number of supported assets, not quadratically. Adding a new chain to THORChain requires one new RUNE pool, not one pool for every existing asset. That linear scaling is what makes THORChain economically viable for a multi-chain network rather than a two- or three-asset system.
+
+This two-leg structure means THORChain never needs to hold or price a BTC/ETH pool directly. Instead, it prices BTC against RUNE in one pool, and RUNE against ETH in the other, then combines those two internal prices into a single user-facing quote. The settlement graph itself is simple and predictable: every external asset has exactly one RUNE pool, and the protocol knows how to walk from any source pool to any destination pool through that shared RUNE hub.
+
+This means the number of pools grows linearly with the number of supported assets, not quadratically. Adding a new chain to THORChain requires one new RUNE pool, not one pool for every existing asset. That linear scaling is what makes THORChain economically viable for a multi-chain network rather than a two- or three-asset system.
+
+This means the number of pools grows linearly with the number of supported assets, not quadratically. Adding a new chain to THORChain requires one new RUNE pool, not one pool for every existing asset. That linear scaling is what makes THORChain economically viable for a multi-chain network rather than a two- or three-asset system.
+
+The two-leg structure means THORChain never needs to hold or price a BTC/ETH pool directly. Instead, it prices BTC against RUNE in one pool, and RUNE against ETH in the other, then combines those two internal prices into a single user-facing quote.
+
 ## Why RUNE Pairing Matters
 
-Without a common settlement pair, a network with many assets would need direct liquidity for every possible pair. The official docs describe this as the `n*(n-1)/2` scaling problem.
+Without a common settlement pair, a network with many assets would need direct liquidity for every possible pair. The official docs describe this as the `n*(n-1)/2` scaling problem: with 10 external assets you would need 45 direct pools to route any swap in one hop.
 
 RUNE pairing changes the shape:
 
-- Instead of a BTC/ETH, BTC/AVAX, BTC/LTC, ETH/AVAX, and ETH/LTC pool graph, each asset can connect through its asset/RUNE pool.
+- Instead of a BTC/ETH, BTC/AVAX, BTC/LTC, ETH/AVAX, and ETH/LTC pool graph, each asset can connect through its asset/RUNE pool. With RUNE as settlement, the same 10 assets need only `n-1` pools (9), not 45. This is the core scalability claim.
 - The protocol has one price relationship to track per external asset: asset against RUNE.
 - Arbitrage and pool balancing can move prices through the shared RUNE side instead of relying on every pair having deep direct liquidity.
 
 This is the main architectural claim this article can support: RUNE is the common settlement and intermediate asset for the base liquidity layer.
+
+## Common Misreadings
+
+- **"RUNE pairing means 50/50 pools."** RUNE pairing means every swap routes through RUNE as the settlement asset. Pool depth ratios depend on user activity and arbitrage; a BTC/RUNE pool is not necessarily 50/50 by value.
+- **"More paths means better pricing."** More hops means more pool legs, more cumulative slip, and more fees. A direct BTC-to-ETH route through two RUNE legs is more expensive than a single-hop equivalent, not less. Fewer hops generally means lower total cost.
+- **"RUNE is always the best bridge asset."** RUNE is the architectural settlement asset by design, but whether it is the cheapest or deepest path for a specific pair depends on current pool depth, slip, and fee conditions. The settlement model does not guarantee optimal execution.
 
 ## What The Settlement Model Proves
 
 - THORChain's base AMM design uses RUNE-paired liquidity rather than direct pools for every external-asset pair.
 - A cross-chain swap can be explained as two internal pool movements through RUNE, even when the user experience looks like one native-asset swap.
 - RUNE links liquidity, incentives, and security through pools, node bonding, fee payments, and reward flows.
+- The two-leg settlement structure is the reason the [CLP pricing formula](/deep-dives/clp) works the way it does: the slip-based output for a swap is calculated per-pool-leg, and a cross-chain swap compounds two such legs through RUNE.
 
 These claims are architectural; they do not establish today's route health, cost, liquidity, or safety.
 
 Before making a current claim, identify the route family and check Network diagnostics plus fresh pool/quote evidence. The settlement model says nothing about RUNE price, APY, route competitiveness, current enablement, execution outcome, or overall protocol safety.
+
+## Evidence Ladder
+
+For settlement claims, match evidence to scope:
+
+1. **Mechanics:** The settlement routing model described on this page is a structural claim about how swaps are priced internally. Official protocol docs support it.
+2. **Current route availability:** Use Network diagnostics and a fresh THORNode quote to confirm a specific route is executable today. The settlement model does not prove that a particular pool pair is deep, cheap, or online.
+3. **Pool depth and economics:** Use labeled Midgard pool data or THORNode pool state to verify depth, volume, and fee behavior for a specific asset pair. Settlement architecture is not evidence of current liquidity.

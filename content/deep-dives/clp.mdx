@@ -33,17 +33,9 @@ Use the narrowest evidence that matches the claim: official docs for mechanics, 
 
 ## Swap Lifecycle and Refunds
 
-A normal swap journey starts before the CLP math is executed:
+A normal swap journey starts before the CLP math is executed, but the full lifecycle — including quote, inbound, observation, execution, signing, and refund — is covered in depth in the [Streaming Swaps And Refunds](/deep-dives/streaming-swaps-refunds) article. For operational triage of refunds and failed swaps, use that article before assigning a cause.
 
-1. The user or interface asks THORNode for a quote and checks the current inbound address, router, fees, limits, and expected wait time.
-2. The user sends the native asset to the current inbound address with a memo that names the action, target asset, destination, and optional affiliate or streaming parameters.
-3. Bifrost observers report the inbound transaction to THORChain, where current Mimir controls, chain state, memo validity, pool status, and quote limits determine whether the swap can proceed.
-4. The state machine prices the swap through RUNE-paired pools, applying slip, liquidity fees, outbound fees, and current protocol rules.
-5. If execution is valid and signing is available, nodes sign the outbound transaction. If the memo, limits, pool state, dust amount, fee economics, halt state, or outbound path make the action invalid or impossible, the protocol can refund instead.
-
-Refunds are therefore not one single failure mode. They can point to user-input problems, stale quotes, minimum-output protection, paused chains, signing/trading controls, exhausted practical output after fees, or source-state changes between quote and execution. Use live network diagnostics before concluding that a refund was caused by the CLP formula itself.
-
-For operational triage, use the dedicated [Streaming Swaps And Refunds](/deep-dives/streaming-swaps-refunds) article before assigning a refund cause.
+The CLP pricing formula — slip, fee, and output — runs at step 4 of that lifecycle, after quote validation and before outbound signing. Refunds can occur at any point when the swap cannot proceed, for reasons ranging from stale quotes to halted chains.
 
 ## Comparison to Traditional AMMs
 

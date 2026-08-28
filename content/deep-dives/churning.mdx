@@ -33,7 +33,7 @@ The documented progression is **Whitelisted → Standby → Ready → Active**, 
 
 ## Slash Points and Forced Churn
 
-Nodes accumulate slash points for failures such as missing observations, block signing, keygen, or keysign participation. `MinSlashPointsForBadValidator` is one churn-out input, alongside other current criteria; slash points do not prove immediate removal or bond-principal confiscation.
+Nodes accumulate slash points for failures such as missing observations, block signing, keygen, or keysign participation. `MinSlashPointsForBadValidator` is one churn-out input, alongside other current criteria; slash points do not prove immediate removal or bond-principal confiscation. See the [Slashing](/deep-dives/slashing) deep dive for the full breakdown of slash point types, bond-principal slashing, and common misconceptions.
 
 The combination of churning and economic penalties is intended to reduce long-lived validator and vault risk, but exact behavior should be checked against current protocol constants and Mimir state.
 

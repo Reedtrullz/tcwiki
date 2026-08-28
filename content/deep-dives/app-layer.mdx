@@ -110,19 +110,6 @@ If a reader asks whether a bot, interface, or contract can use a specific asset 
 
 ## Operational Controls
 
-The App Layer shares the wiki's current-only trust boundary. Source-backed controls include secured-asset halts, smart-contract halts, oracle halts, and trade-account enablement.
+The App Layer shares the wiki's current-only trust boundary. Source-backed controls include secured-asset halts, smart-contract halts, oracle halts, and trade-account enablement. For the full breakdown of Mimir halt controls, parameter families, and how to verify current state, see the [Mimir and Halt Controls](/deep-dives/mimir-halt-controls) deep dive.
 
-Use the exact control family when describing risk:
-
-- `HaltSecuredGlobal`: deposits and withdrawals of all secured assets across base and App Layers.
-- `HaltSecuredDeposit-<CHAIN>`: deposits for secured assets scoped to a chain.
-- `HaltSecuredWithdraw-<CHAIN>`: withdrawals for secured assets scoped to a chain.
-- `TradeAccountsEnabled`: whether the trade-account feature is enabled.
-- `TradeAccountsDepositEnabled`: whether trade-account deposits are enabled globally.
-- `HaltTradeDeposit-<CHAIN>`: the activation height for halting trade-account deposits on exactly one recognized chain.
-- `HaltTradeWithdraw-<CHAIN>`: the activation height for halting trade-account withdrawals on exactly one recognized chain.
-- `HaltWasm*` controls: whether all contracts, deployer-scoped contracts, checksum-scoped contracts, or one contract instance is halted.
-
-These controls can also be malformed, stale, scheduled, or absent from a source snapshot. Absence is not the same as proof of health unless the dashboard has a fresh, pinned, source-labeled THORNode result.
-
-A listed wallet or app is not a safety review. Static documentation cannot prove current capacity, revenue terms, redemption timing, or interface correctness; use live THORNode/Mimir evidence for present-tense claims.
+The App Layer-specific controls most relevant here are `HaltWasmGlobal`, `HaltWasmDeployer-<address>`, `HaltWasmCs-<checksum>`, `HaltWasmContract-<suffix>`, and `HaltOracle`. These can be malformed, stale, scheduled, or absent from a source snapshot. Absence is not the same as proof of health unless the dashboard has a fresh, pinned, source-labeled THORNode result.

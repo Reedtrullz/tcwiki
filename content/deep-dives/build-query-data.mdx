@@ -1,5 +1,9 @@
 # Build And Query THORChain Data
 
+## What This Page Can Prove
+
+This is a builder-facing integration guide for planning queries against THORChain data sources. It covers which source answers which question, how to sequence queries safely, and what current-only evidence means for integration design. It does not cover midgard-thornode-data source attribution, protocol-state explanations, or live dashboard claims. For those, see the [Midgard and THORNode Data](/deep-dives/midgard-thornode-data) deep dive.
+
 Building on THORChain data starts with a source choice. Midgard, THORNode, Cosmos RPC, Tendermint RPC, and gRPC answer different questions, and a good integration should not treat them as interchangeable just because they are all "API data".
 
 Use this guide for query planning and source safety. Do not use it as transaction instructions.
