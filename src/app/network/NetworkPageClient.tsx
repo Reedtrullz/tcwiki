@@ -51,6 +51,23 @@ const networkRelatedChecks: RelatedCheck[] = [
   },
 ];
 
+const nodeTypes = [
+  { type: 'Whitelisted', color: 'text-blue-400', desc: 'Bonded, but required node keys have not yet been set; operator setup is incomplete.' },
+  { type: 'Standby', color: 'text-amber-400', desc: 'Bonded but not active. Current requirements are evaluated during churn; only Standby nodes outside vault migration may unbond.' },
+  { type: 'Ready', color: 'text-slate-300', desc: 'Passed current preflight requirements and is eligible for churn selection; a node cannot unbond while Ready.' },
+  { type: 'Active', color: 'text-green-400', desc: 'Participates in consensus, observation, and signing; it cannot unbond until churned to Standby and clear of vault migration.' },
+  { type: 'Disabled', color: 'text-red-300', desc: 'Completed the permanent-leave path while Standby and cannot rejoin with the same node account.' },
+];
+
+const securityFeatures = [
+  { title: 'Threshold Signatures', desc: 'Distributed signing protects vault keys, but implementation details and migration status should stay tied to dated source material.' },
+  { title: 'Solvency Checks', desc: 'Nodes monitor vault balances and can trigger halts when observed balances diverge from expected protocol state.' },
+  { title: 'Operational Mimir', desc: 'Emergency parameters can halt trading, signing, churning, chain observation, LP actions, TCY claims, and more.' },
+  { title: 'Bonded Operators', desc: 'Operators bond RUNE as economic security. Minimum bond and slash constants can be overridden by Mimir.' },
+  { title: 'Slash Points', desc: 'Nodes can accrue slash points for missed observations or signing failures, affecting churn and rewards.' },
+  { title: 'Churning', desc: 'Validator rotation and vault rotation reduce long-lived key exposure; exact intervals are live constants or Mimir overrides.' },
+];
+
 interface NetworkPageClientProps {
   children?: ReactNode;
 }
@@ -376,13 +393,7 @@ export default function NetworkPageClient({ children }: NetworkPageClientProps) 
 
       <SectionHeader id="node-types" level="primary">Node Types</SectionHeader>
       <div className="grid grid-cols-1 gap-3 mb-12 sm:grid-cols-2 lg:grid-cols-5">
-        {[
-          { type: 'Whitelisted', color: 'text-blue-400', desc: 'Bonded, but required node keys have not yet been set; operator setup is incomplete.' },
-          { type: 'Standby', color: 'text-amber-400', desc: 'Bonded but not active. Current requirements are evaluated during churn; only Standby nodes outside vault migration may unbond.' },
-          { type: 'Ready', color: 'text-slate-300', desc: 'Passed current preflight requirements and is eligible for churn selection; a node cannot unbond while Ready.' },
-          { type: 'Active', color: 'text-green-400', desc: 'Participates in consensus, observation, and signing; it cannot unbond until churned to Standby and clear of vault migration.' },
-          { type: 'Disabled', color: 'text-red-300', desc: 'Completed the permanent-leave path while Standby and cannot rejoin with the same node account.' },
-        ].map((node) => (
+        {nodeTypes.map((node) => (
           <Card key={node.type} data-node-status={node.type}>
             <h3 className={`text-sm font-semibold mb-1.5 ${node.color}`}>{node.type}</h3>
             <p className="text-xs text-slate-400 leading-relaxed">{node.desc}</p>
@@ -392,14 +403,7 @@ export default function NetworkPageClient({ children }: NetworkPageClientProps) 
 
       <SectionHeader id="security-architecture" level="primary">Security Architecture</SectionHeader>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-12">
-        {[
-          { title: 'Threshold Signatures', desc: 'Distributed signing protects vault keys, but implementation details and migration status should stay tied to dated source material.' },
-          { title: 'Solvency Checks', desc: 'Nodes monitor vault balances and can trigger halts when observed balances diverge from expected protocol state.' },
-          { title: 'Operational Mimir', desc: 'Emergency parameters can halt trading, signing, churning, chain observation, LP actions, TCY claims, and more.' },
-          { title: 'Bonded Operators', desc: 'Operators bond RUNE as economic security. Minimum bond and slash constants can be overridden by Mimir.' },
-          { title: 'Slash Points', desc: 'Nodes can accrue slash points for missed observations or signing failures, affecting churn and rewards.' },
-          { title: 'Churning', desc: 'Validator rotation and vault rotation reduce long-lived key exposure; exact intervals are live constants or Mimir overrides.' },
-        ].map((feature) => (
+        {securityFeatures.map((feature) => (
           <Card key={feature.title}>
             <h3 className="text-sm font-semibold mb-1.5">{feature.title}</h3>
             <p className="text-xs text-slate-400 leading-relaxed">{feature.desc}</p>
@@ -420,3 +424,4 @@ export default function NetworkPageClient({ children }: NetworkPageClientProps) 
     </PageContainer>
   );
 }
+

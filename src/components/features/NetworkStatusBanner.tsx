@@ -14,6 +14,7 @@ import {
 } from '@/lib/types';
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
+import { ResponsiveVisibility } from '@/components/ui/ResponsiveVisibility';
 import { LiveSourceMeta } from '@/components/ui/LiveSourceMeta';
 import { usePools, useSwapQuoteProbe } from '@/lib/hooks/useMidgard';
 import {
@@ -1802,7 +1803,7 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
               </p>
             </div>
           </div>
-          <div className="space-y-2 md:hidden" role="list" aria-label="Per-chain live operation state">
+          <ResponsiveVisibility mobile className="space-y-2" role="list" aria-label="Per-chain live operation state">
             {chainAvailability.map((chain) => (
               <div key={chain.chain} role="listitem" className={`rounded-md border p-3 ${chain.swapLimited ? 'border-amber-500/25 bg-amber-500/5' : 'border-border bg-surface/60'}`}>
                 <div className="flex items-center justify-between gap-2">
@@ -1841,8 +1842,8 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
                 </p>
               </div>
             ))}
-          </div>
-          <div className="hidden overflow-x-auto rounded-md border border-border md:block">
+          </ResponsiveVisibility>
+          <ResponsiveVisibility desktop className="overflow-x-auto rounded-md border border-border">
             <table className="min-w-[1040px] w-full text-left text-[11px]">
               <caption className="sr-only">Per-chain live operation state</caption>
               <thead className="bg-slate-950/30 text-slate-400">
@@ -1871,8 +1872,8 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
                   </tr>
                 ))}
               </tbody>
-            </table>
-          </div>
+           </table>
+          </ResponsiveVisibility>
         </section>
       )}
 

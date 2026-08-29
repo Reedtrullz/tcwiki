@@ -20,6 +20,7 @@ import { FreshnessMeta } from '@/components/ui/FreshnessMeta';
 import { LiveSourceMeta } from '@/components/ui/LiveSourceMeta';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { StatCard } from '@/components/ui/StatCard';
+import { ResponsiveVisibility } from '@/components/ui/ResponsiveVisibility';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { RelatedChecks, type RelatedCheck } from '@/components/features/RelatedChecks';
 import { PageTableOfContents, type TocItem } from '@/components/layout/PageTableOfContents';
@@ -1462,7 +1463,7 @@ function DynamicFeeRecordsExplorer({
           </div>
           {filteredRecords.length > 0 ? (
             <>
-              <div className="grid gap-3 md:hidden">
+              <ResponsiveVisibility mobile className="grid gap-3">
                 {filteredRecords.map((record) => (
                   <DynamicFeeMobileCard
                     key={recordKey(record.thorname, record.pair)}
@@ -1470,8 +1471,8 @@ function DynamicFeeRecordsExplorer({
                     current={currentEntries.get(recordKey(record.thorname, record.pair))}
                   />
                 ))}
-              </div>
-              <div className="hidden overflow-x-auto rounded-lg border border-border bg-surface-elevated md:block">
+              </ResponsiveVisibility>
+              <ResponsiveVisibility desktop className="overflow-x-auto rounded-lg border border-border bg-surface-elevated">
                 <table className="w-full min-w-[860px] text-left">
                   <caption className="sr-only">Current dynamic L1 fee records from THORNode</caption>
                   <thead className="text-[11px] uppercase tracking-wider text-slate-400">
@@ -1496,7 +1497,7 @@ function DynamicFeeRecordsExplorer({
                     ))}
                   </tbody>
                 </table>
-              </div>
+              </ResponsiveVisibility>
             </>
           ) : (
             <Card>

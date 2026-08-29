@@ -1,14 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useMemo } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, BarChart, Bar } from 'recharts';
-import { Activity, Search, TrendingUp, TrendingDown, X, Zap } from 'lucide-react';
+import { Activity, TrendingUp, TrendingDown, Zap } from 'lucide-react';
 import { useNetworkData, useEarningsHistory, useNetworkStatus, useMidgardHealth, usePools } from '@/lib/hooks/useMidgard';
 import { NetworkStatusBanner } from '@/components/features/NetworkStatusBanner';
 import { StatCard } from '@/components/ui/StatCard';
-import { LiveSourceMeta } from '@/components/ui/LiveSourceMeta';
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import { SectionHeader } from '@/components/ui/SectionHeader';
@@ -22,12 +20,12 @@ import {
   midgardSourceIssueIsVisible,
   type StatsDecisionFact,
   type StatsMetricCard,
-  type StatsPoolExplorerFilters,
-  type StatsPoolRow,
-  type StatsPoolSortKey,
 } from '@/lib/stats-dashboard';
 import { RelatedChecks, type RelatedCheck } from '@/components/features/RelatedChecks';
 import { PageTableOfContents, type TocItem } from '@/components/layout/PageTableOfContents';
+import { usePoolExplorerFilters } from '@/hooks/usePoolExplorerFilters';
+import { StatsPoolExplorer } from '@/components/features/StatsPoolExplorer';
+import { StatsEarningsTable } from '@/components/features/StatsEarningsTable';
 
 const statsRelatedChecks: RelatedCheck[] = [
   {
@@ -107,52 +105,6 @@ const statsNumberGuide = [
   },
 ];
 
-const chartTooltipContentStyle = {
-  backgroundColor: 'oklch(0.15 0.01 250)',
-  border: '1px solid oklch(0.25 0.01 250)',
-  borderRadius: 8,
-  color: 'oklch(0.85 0.01 250)',
-};
-
-const chartTooltipLabelStyle = {
-  color: 'oklch(0.78 0.01 250)',
-  fontWeight: 600,
-};
-
-const chartAxisTick = {
-  fill: 'oklch(0.65 0.01 250)',
-  fontSize: 11,
-};
-
-const poolSortOptions: Array<{ value: StatsPoolSortKey; label: string }> = [
-  { value: 'runeDepth', label: 'RUNE depth' },
-  { value: 'volume24hRune', label: '24h volume (RUNE)' },
-  { value: 'liquidityUsd', label: 'Liquidity' },
-  { value: 'apyPercent', label: 'APY' },
-  { value: 'asset', label: 'Asset' },
-];
-
-const poolSortQueryValues: Record<string, StatsPoolSortKey> = {
-  depth: 'runeDepth',
-  runeDepth: 'runeDepth',
-  volume: 'volume24hRune',
-  volume24hRune: 'volume24hRune',
-  volume24hUsd: 'volume24hRune',
-  liquidity: 'liquidityUsd',
-  liquidityUsd: 'liquidityUsd',
-  apy: 'apyPercent',
-  apyPercent: 'apyPercent',
-  asset: 'asset',
-};
-
-const poolSortParamValues: Record<StatsPoolSortKey, string> = {
-  runeDepth: 'depth',
-  volume24hRune: 'volume',
-  liquidityUsd: 'liquidity',
-  apyPercent: 'apy',
-  asset: 'asset',
-};
-
 function toneToBadgeVariant(tone: StatsDecisionFact['tone']) {
   return tone === 'success' ? 'success' : tone === 'danger' ? 'danger' : tone === 'warning' ? 'warning' : 'info';
 }
@@ -168,72 +120,6 @@ function toneToCardClass(tone: StatsDecisionFact['tone']) {
     case 'info':
       return 'border-sky-500/20';
   }
-}
-
-function formatRuneMetric(value: number | null) {
-  return value === null ? 'Unavailable' : value.toLocaleString(undefined, { maximumFractionDigits: 0 });
-}
-
-function formatRuneAmount(value: number | null) {
-  return value === null ? 'Unavailable' : `${formatRuneMetric(value)} RUNE`;
-}
-
-function poolStatusVariant(status: string) {
-  return status.toLowerCase() === 'available' ? 'success' : 'warning';
-}
-
-function formatPoolHighlight(row: StatsPoolRow | undefined, value: string | undefined) {
-  return row && value ? `${row.asset} (${value})` : 'Unavailable';
-}
-
-function formatPoolAxisTick(value: unknown) {
-  const text = String(value);
-  return text.length > 18 ? `${text.slice(0, 15)}...` : text;
-}
-
-function normalizePoolSortParam(value: string | null): StatsPoolSortKey {
-  if (!value) {
-    return 'runeDepth';
-  }
-
-  return poolSortQueryValues[value] ?? 'runeDepth';
-}
-
-function normalizePoolOptionParam(value: string | null, availableValues: string[]) {
-  if (!value || value === 'all') {
-    return 'all';
-  }
-
-  return availableValues.includes(value) ? value : 'all';
-}
-
-function poolEmptyMessage(filters: StatsPoolExplorerFilters) {
-  const query = filters.query.trim();
-  const chain = filters.chain !== 'all' ? filters.chain : '';
-  const status = filters.status !== 'all' ? filters.status : '';
-
-  if (query && chain) {
-    return `No pools match "${query}" on ${chain}.`;
-  }
-  if (query) {
-    return `No pools match "${query}".`;
-  }
-  if (chain && status) {
-    return `No ${status} pools are loaded on ${chain}.`;
-  }
-  if (chain) {
-    return `No pools are loaded on ${chain}.`;
-  }
-  if (status) {
-    return `No ${status} pools are loaded.`;
-  }
-
-  return 'No pools match the current filters.';
-}
-
-function chartNumber(value: unknown) {
-  const numeric = typeof value === 'number' ? value : Number(value);
-  return Number.isFinite(numeric) ? numeric : null;
 }
 
 function metricIcon(id: StatsMetricCard['id']) {
@@ -311,78 +197,26 @@ export default function StatsPage() {
     () => Array.from(new Set(poolSnapshot.rows.map((row) => row.status))).sort((left, right) => left.localeCompare(right)),
     [poolSnapshot.rows]
   );
-  const poolFilters = useMemo<StatsPoolExplorerFilters>(() => ({
-    query: searchParams.get('pool_q') ?? '',
-    chain: normalizePoolOptionParam(searchParams.get('pool_chain'), poolAvailableChains),
-    status: normalizePoolOptionParam(searchParams.get('pool_status'), poolAvailableStatuses),
-    sort: normalizePoolSortParam(searchParams.get('pool_sort')),
-  }), [poolAvailableChains, poolAvailableStatuses, searchParams]);
-  const latestPoolFiltersRef = useRef(poolFilters);
-  useEffect(() => {
-    latestPoolFiltersRef.current = poolFilters;
-  }, [poolFilters]);
+  const {
+    poolFilters,
+    updatePoolFilters,
+    replacePoolFiltersInUrl,
+  } = usePoolExplorerFilters({
+    router,
+    pathname,
+    searchParamString,
+    poolAvailableChains,
+    poolAvailableStatuses,
+  });
   const poolExplorer = useMemo(
     () => deriveStatsPoolExplorer(poolSnapshot.rows, poolFilters),
     [poolFilters, poolSnapshot.rows]
   );
-  const replacePoolFiltersInUrl = useCallback((nextFilters: StatsPoolExplorerFilters) => {
-    const params = new URLSearchParams(searchParamString);
-    const query = nextFilters.query.trim();
-    if (query) {
-      params.set('pool_q', query);
-    } else {
-      params.delete('pool_q');
-    }
-    if (nextFilters.chain !== 'all') {
-      params.set('pool_chain', nextFilters.chain);
-    } else {
-      params.delete('pool_chain');
-    }
-    if (nextFilters.status !== 'all') {
-      params.set('pool_status', nextFilters.status);
-    } else {
-      params.delete('pool_status');
-    }
-    if (nextFilters.sort !== 'runeDepth') {
-      params.set('pool_sort', poolSortParamValues[nextFilters.sort]);
-    } else {
-      params.delete('pool_sort');
-    }
-
-    const queryString = params.toString();
-    router.replace(`${pathname}${queryString ? `?${queryString}` : ''}#available-pools`, { scroll: false });
-  }, [pathname, router, searchParamString]);
-  const updatePoolFilters = useCallback((partialFilters: Partial<StatsPoolExplorerFilters>) => {
-    replacePoolFiltersInUrl({
-      ...latestPoolFiltersRef.current,
-      ...partialFilters,
-    });
-  }, [replacePoolFiltersInUrl]);
   const earningsChart = deriveStatsEarningsRows(earningsData);
   const earningsCoverage = deriveStatsEarningsCoverage(earningsChart, earningsLoading);
   const {
     availableIntervals,
-    unavailableIntervals,
-    totalEarnings,
-    recentSevenEarnings,
-    summary: earningsSummary,
-    recentRows,
-    recentIntervalCount,
-    recentAvailableIntervals,
-    recentUnavailableIntervals,
   } = earningsCoverage;
-  const recentWindowDetail = recentIntervalCount > 0
-    ? recentUnavailableIntervals > 0
-      ? `${recentAvailableIntervals}/${recentIntervalCount} intervals with values; ${recentUnavailableIntervals} unavailable`
-      : `${recentAvailableIntervals}/${recentIntervalCount} intervals with values`
-    : earningsLoading ? 'Loading intervals' : 'No intervals loaded';
-  const earningsCoverageIsPartial = unavailableIntervals > 0;
-  const recentWindowIsPartial = recentUnavailableIntervals > 0;
-  const loadedIntervalTotalDetail = earningsChart.length > 0
-    ? earningsCoverageIsPartial
-      ? `${availableIntervals}/${earningsChart.length} loaded intervals with totals; ${unavailableIntervals} unavailable`
-      : `${availableIntervals}/${earningsChart.length} loaded intervals with totals`
-    : earningsLoading ? 'Loading intervals' : 'No intervals loaded';
   const decisionFacts = deriveStatsDecisionFacts({
     networkLoading,
     earningsLoading,
@@ -499,366 +333,34 @@ export default function StatsPage() {
             />
           ))}
         </div>
-        <div className="mt-4">
-          <LiveSourceMeta result={networkResult} healthResult={midgardHealthResult} />
-        </div>
       </section>
 
-      <section id="available-pools" className="mb-12 scroll-mt-24">
-        <SectionHeader level="primary">Midgard Available-Pool Rows</SectionHeader>
-        <p id="available-pools-summary" className="mb-3 max-w-3xl text-sm leading-relaxed text-slate-400">
-          {poolSnapshot.summary} This is liquidity context from Midgard, not proof that a specific route will quote or settle.
-        </p>
-        <div className="mb-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-          <Card padding="sm">
-            <p className="text-[11px] uppercase tracking-wider text-slate-400">Midgard pool rows</p>
-            <p data-testid="stats-pool-row-count" className="mt-1 text-sm font-semibold text-slate-200">{poolRowsValue}</p>
-          </Card>
-          <Card padding="sm">
-            <p className="text-[11px] uppercase tracking-wider text-slate-400">Chains in rows</p>
-            <p data-testid="stats-pool-chain-count" className="mt-1 text-sm font-semibold text-slate-200">{poolChainCountValue}</p>
-          </Card>
-          <Card padding="sm">
-            <p className="text-[11px] uppercase tracking-wider text-slate-400">Deepest pool</p>
-            <p className="mt-1 break-words text-sm font-semibold text-slate-200">
-              {formatPoolHighlight(poolSnapshot.deepestPool, poolSnapshot.deepestPool?.runeDepthLabel)}
-            </p>
-          </Card>
-          <Card padding="sm">
-            <p className="text-[11px] uppercase tracking-wider text-slate-400">Highest 24h RUNE volume</p>
-            <p className="mt-1 break-words text-sm font-semibold text-slate-200">
-              {formatPoolHighlight(poolSnapshot.highestVolumePool, poolSnapshot.highestVolumePool?.volume24hRuneLabel)}
-            </p>
-          </Card>
-        </div>
-        <div className="mb-3">
-          <LiveSourceMeta result={poolsResult} healthResult={midgardHealthResult} />
-        </div>
-        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="min-w-0 max-w-3xl text-sm leading-relaxed text-slate-400">
-            Pool rows show liquidity context. A current route still needs a THORNode quote, source freshness, and network diagnostics.
-          </p>
-          <Link
-            href="/network#check-a-route"
-            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-md border border-accent/40 px-3 py-2 text-sm font-semibold text-accent transition hover:border-accent hover:bg-accent/10"
-          >
-            <Zap className="h-4 w-4" aria-hidden="true" />
-            Check a route
-          </Link>
-        </div>
-        <Card padding="lg" aria-describedby="available-pools-summary">
-          {poolsLoading && poolSnapshot.rows.length === 0 ? (
-            <div role="status" aria-live="polite" className="flex min-h-[220px] items-center justify-center text-sm text-slate-400">
-              Loading Midgard available-pool rows...
-            </div>
-          ) : poolSnapshot.rows.length > 0 ? (
-            <div className="grid gap-6">
-              <div className="rounded-lg border border-border bg-surface/60 p-3">
-                <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_10rem_10rem_10rem_auto]">
-                  <label className="grid gap-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-                    Search pools
-                    <span className="relative">
-                      <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" aria-hidden="true" />
-                      <input
-                        type="search"
-                        aria-label="Filter Midgard available-pool rows"
-                        value={poolFilters.query}
-                        onChange={(event) => updatePoolFilters({ query: event.target.value })}
-                        placeholder="BTC, ETH, USDC, available..."
-                        className="w-full rounded-md border border-border bg-surface py-2 pl-9 pr-3 text-sm font-medium text-slate-100 outline-none transition focus:border-accent"
-                      />
-                    </span>
-                  </label>
-                  <label className="grid gap-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-                    Chain
-                    <select
-                      aria-label="Pool chain"
-                      value={poolFilters.chain}
-                      onChange={(event) => updatePoolFilters({ chain: event.target.value })}
-                      className="h-10 rounded-md border border-border bg-surface px-3 text-sm font-medium text-slate-100 outline-none transition focus:border-accent"
-                    >
-                      <option value="all">All chains</option>
-                      {poolAvailableChains.map((chain) => (
-                        <option key={chain} value={chain}>{chain}</option>
-                      ))}
-                    </select>
-                  </label>
-                  <label className="grid gap-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-                    Status
-                    <select
-                      aria-label="Pool status"
-                      value={poolFilters.status}
-                      onChange={(event) => updatePoolFilters({ status: event.target.value })}
-                      className="h-10 rounded-md border border-border bg-surface px-3 text-sm font-medium text-slate-100 outline-none transition focus:border-accent"
-                    >
-                      <option value="all">All statuses</option>
-                      {poolAvailableStatuses.map((status) => (
-                        <option key={status} value={status}>{status}</option>
-                      ))}
-                    </select>
-                  </label>
-                  <label className="grid gap-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-                    Sort
-                    <select
-                      aria-label="Pool sort"
-                      value={poolFilters.sort}
-                      onChange={(event) => updatePoolFilters({ sort: event.target.value as StatsPoolSortKey })}
-                      className="h-10 rounded-md border border-border bg-surface px-3 text-sm font-medium text-slate-100 outline-none transition focus:border-accent"
-                    >
-                      {poolSortOptions.map((option) => (
-                        <option key={option.value} value={option.value}>{option.label}</option>
-                      ))}
-                    </select>
-                  </label>
-                  <div className="flex items-end">
-                    <button
-                      type="button"
-                      onClick={() => replacePoolFiltersInUrl({ query: '', chain: 'all', status: 'all', sort: 'runeDepth' })}
-                      className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md border border-border px-3 text-sm font-semibold text-slate-300 transition hover:border-accent hover:text-accent lg:w-auto"
-                    >
-                      <X className="h-4 w-4" aria-hidden="true" />
-                      Reset pool filters
-                    </button>
-                  </div>
-                </div>
-                <div className="mt-3 flex flex-wrap items-center gap-2">
-                  <p className="text-xs font-medium text-slate-400">{poolExplorer.summary}</p>
-                  {poolExplorer.activeFilterLabels.map((label) => (
-                    <Badge key={label} variant="info">{label}</Badge>
-                  ))}
-                </div>
-              </div>
-              <div className="grid gap-6 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.4fr)]">
-                <div>
-                  <h3 className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Top Pools By RUNE Depth</h3>
-                  {poolExplorer.chartRows.length > 0 ? (
-                    <div className="mt-3 h-[260px]">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={poolExplorer.chartRows} layout="vertical" margin={{ top: 8, right: 12, bottom: 8, left: 12 }}>
-                          <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-                          <XAxis type="number" hide />
-                          <YAxis
-                            dataKey="asset"
-                            type="category"
-                            width={82}
-                            tick={chartAxisTick}
-                            tickFormatter={formatPoolAxisTick}
-                            tickLine={false}
-                            axisLine={false}
-                          />
-                          <Tooltip
-                            contentStyle={chartTooltipContentStyle}
-                            labelStyle={chartTooltipLabelStyle}
-                            formatter={(value) => [formatRuneAmount(chartNumber(value)), 'RUNE depth']}
-                          />
-                          <Bar dataKey="runeDepth" fill="oklch(0.75 0.15 85)" radius={[0, 4, 4, 0]} name="RUNE depth" />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
-                  ) : (
-                    <p className="mt-3 rounded-lg border border-border bg-surface p-4 text-sm text-slate-400">
-                      Pool depth chart unavailable because the current filter set has no usable depth values.
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <h3 className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Loaded Row List</h3>
-                  {poolExplorer.rows.length === 0 ? (
-                    <p className="mt-3 rounded-lg border border-border bg-surface p-4 text-sm text-slate-400">
-                      {poolEmptyMessage(poolFilters)}
-                    </p>
-                  ) : (
-                    <>
-                      <div className="mt-3 md:hidden" role="list" aria-label="Midgard available-pool rows">
-                        {poolExplorer.rows.map((pool) => (
-                          <div key={pool.id} role="listitem" className="border-t border-border py-3 first:border-t-0">
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="min-w-0">
-                                <p className="break-all text-sm font-semibold text-slate-200">{pool.asset}</p>
-                                <p className="mt-1 text-xs text-slate-500">{pool.chain}</p>
-                              </div>
-                              <Badge variant={poolStatusVariant(pool.status)}>{pool.status}</Badge>
-                            </div>
-                            <dl className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 text-xs text-slate-400">
-                              <div>
-                                <dt>RUNE depth</dt>
-                                <dd className="text-slate-200">{pool.runeDepthLabel}</dd>
-                              </div>
-                              <div>
-                                <dt>Liquidity</dt>
-                                <dd className="text-slate-200">{pool.liquidityUsdLabel}</dd>
-                              </div>
-                              <div>
-                                <dt>24h volume (RUNE)</dt>
-                                <dd className="text-slate-200">{pool.volume24hRuneLabel}</dd>
-                              </div>
-                              <div>
-                                <dt>APY</dt>
-                                <dd className="text-slate-200">{pool.apyLabel}</dd>
-                              </div>
-                            </dl>
-                          </div>
-                        ))}
-                      </div>
-                      <div className="mt-3 hidden overflow-x-auto md:block">
-                        <table className="w-full min-w-[640px] text-left text-xs text-slate-400">
-                          <caption className="sr-only">Midgard available-pool rows snapshot</caption>
-                          <thead className="text-[11px] uppercase tracking-wider text-slate-400">
-                            <tr>
-                              <th scope="col" className="py-2 pr-4">Pool</th>
-                              <th scope="col" className="py-2 pr-4">Chain</th>
-                              <th scope="col" className="py-2 pr-4">RUNE depth</th>
-                              <th scope="col" className="py-2 pr-4">Liquidity</th>
-                              <th scope="col" className="py-2 pr-4">24h volume (RUNE)</th>
-                              <th scope="col" className="py-2 pr-4">APY</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {poolExplorer.rows.map((pool) => (
-                              <tr key={pool.id} className="border-t border-border">
-                                <td className="py-2 pr-4 font-semibold text-slate-200">
-                                  <span className="mr-2 break-all">{pool.asset}</span>
-                                  <Badge variant={poolStatusVariant(pool.status)}>{pool.status}</Badge>
-                                </td>
-                                <td className="py-2 pr-4">{pool.chain}</td>
-                                <td className="py-2 pr-4">{pool.runeDepthLabel}</td>
-                                <td className="py-2 pr-4">{pool.liquidityUsdLabel}</td>
-                                <td className="py-2 pr-4">{pool.volume24hRuneLabel}</td>
-                                <td className="py-2 pr-4">{pool.apyLabel}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
-          ) : (
-            <p className="py-16 text-center text-slate-400">Midgard available-pool rows unavailable from live sources.</p>
-          )}
-        </Card>
-      </section>
+      <StatsPoolExplorer
+        poolSnapshotSummary={poolSnapshot.summary}
+        poolSnapshotDeepestPool={poolSnapshot.deepestPool}
+        poolSnapshotHighestVolumePool={poolSnapshot.highestVolumePool}
+        poolRowsValue={poolRowsValue}
+        poolChainCountValue={poolChainCountValue}
+        explorerRows={poolExplorer.rows}
+        chartRows={poolExplorer.chartRows}
+        totalRows={poolExplorer.totalRows}
+        summary={poolExplorer.summary}
+        activeFilterLabels={poolExplorer.activeFilterLabels}
+        poolFilters={poolFilters}
+        updatePoolFilters={updatePoolFilters}
+        resetPoolFilters={replacePoolFiltersInUrl}
+        poolAvailableChains={poolAvailableChains}
+        poolAvailableStatuses={poolAvailableStatuses}
+        poolsLoading={poolsLoading}
+      />
 
-      <section id="earnings-history" className="mb-12">
-        <SectionHeader level="primary">Earnings History</SectionHeader>
-        <p id="earnings-history-summary" className="mb-3 text-sm text-slate-400">
-          {earningsSummary}
-        </p>
-        <div className="mb-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-          <Card padding="sm">
-            <p className="text-[11px] uppercase tracking-wider text-slate-400">Usable intervals</p>
-            <p className="mt-1 text-sm font-semibold text-slate-200">{availableIntervals}/{earningsChart.length}</p>
-          </Card>
-          <Card padding="sm">
-            <p className="text-[11px] uppercase tracking-wider text-slate-400">Unavailable intervals</p>
-            <p className="mt-1 text-sm font-semibold text-slate-200">{earningsLoading && earningsChart.length === 0 ? 'Loading' : unavailableIntervals}</p>
-          </Card>
-          <Card padding="sm" className={recentWindowIsPartial ? 'border-amber-500/25 bg-amber-500/5' : undefined}>
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="text-[11px] uppercase tracking-wider text-slate-400">Latest valid-window total</p>
-              {recentWindowIsPartial && <Badge variant="warning">Partial window</Badge>}
-            </div>
-            <p className="mt-1 text-sm font-semibold text-slate-200">{formatRuneAmount(recentSevenEarnings)}</p>
-            <p className="mt-1 text-[11px] text-slate-500">{recentWindowDetail}</p>
-          </Card>
-          <Card padding="sm" className={earningsCoverageIsPartial ? 'border-amber-500/25 bg-amber-500/5' : undefined}>
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="text-[11px] uppercase tracking-wider text-slate-400">Valid loaded-interval total</p>
-              {earningsCoverageIsPartial && <Badge variant="warning">Partial total</Badge>}
-            </div>
-            <p className="mt-1 text-sm font-semibold text-slate-200">{formatRuneAmount(totalEarnings)}</p>
-            <p className="mt-1 text-[11px] text-slate-500">{loadedIntervalTotalDetail}</p>
-          </Card>
-        </div>
-        <div className="mb-3">
-          <LiveSourceMeta result={earningsResult} healthResult={midgardHealthResult} />
-        </div>
-        <Card padding="lg" aria-describedby="earnings-history-summary">
-          {earningsLoading && earningsChart.length === 0 ? (
-            <div role="status" aria-live="polite" className="flex min-h-[240px] items-center justify-center text-sm text-slate-400">
-              Loading earnings history from Midgard...
-            </div>
-          ) : earningsChart.length > 0 ? (
-            <>
-              <div className="h-[300px] md:h-[400px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={earningsChart} margin={{ top: 8, right: 12, bottom: 8, left: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.20 0.01 250)" />
-                    <XAxis dataKey="name" tick={chartAxisTick} tickLine={false} axisLine={{ stroke: 'oklch(0.25 0.01 250)' }} />
-                    <YAxis
-                      tick={chartAxisTick}
-                      tickLine={false}
-                      axisLine={{ stroke: 'oklch(0.25 0.01 250)' }}
-                      tickFormatter={(value) => formatRuneMetric(chartNumber(value))}
-                    />
-                    <Tooltip
-                      contentStyle={chartTooltipContentStyle}
-                      labelStyle={chartTooltipLabelStyle}
-                      formatter={(value, name) => [formatRuneAmount(chartNumber(value)), name]}
-                    />
-                    <Legend wrapperStyle={{ color: 'oklch(0.78 0.01 250)', fontSize: 12 }} />
-                    <Line type="monotone" dataKey="earnings" stroke="oklch(0.7 0.18 190)" strokeWidth={2} dot={false} name="Total Earnings (RUNE)" />
-                    <Line type="monotone" dataKey="nodeOps" stroke="oklch(0.65 0.15 290)" strokeWidth={2} dot={false} name="Node Operator Earnings" />
-                    <Line type="monotone" dataKey="lps" stroke="oklch(0.75 0.15 160)" strokeWidth={2} dot={false} name="LP Earnings" />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="mt-6 md:hidden" aria-labelledby="recent-earnings-intervals">
-                <h3 id="recent-earnings-intervals" className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-                  Recent Daily Earnings Intervals
-                </h3>
-                <div role="list" aria-label="Recent daily earnings intervals" className="mt-2 divide-y divide-border border-y border-border">
-                  {recentRows.map((row) => (
-                    <div role="listitem" key={row.id} className="py-3">
-                      <div className="flex items-start justify-between gap-3">
-                        <p className="text-sm font-semibold text-slate-200">{row.name}</p>
-                        <p className="text-right text-sm font-semibold text-slate-100">{formatRuneAmount(row.earnings)}</p>
-                      </div>
-                      <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-slate-400">
-                        <div>
-                          <dt>Node operators</dt>
-                          <dd className="text-slate-200">{formatRuneAmount(row.nodeOps)}</dd>
-                        </div>
-                        <div>
-                          <dt>LPs</dt>
-                          <dd className="text-slate-200">{formatRuneAmount(row.lps)}</dd>
-                        </div>
-                      </dl>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="mt-6 hidden overflow-x-auto md:block">
-                <table className="w-full min-w-[520px] text-left text-xs text-slate-400">
-                  <caption className="sr-only">Loaded Midgard daily earnings intervals</caption>
-                  <thead className="text-[11px] uppercase tracking-wider text-slate-400">
-                    <tr>
-                      <th scope="col" className="py-2 pr-4">Date</th>
-                      <th scope="col" className="py-2 pr-4">Total RUNE</th>
-                      <th scope="col" className="py-2 pr-4">Node operators</th>
-                      <th scope="col" className="py-2 pr-4">LPs</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {earningsChart.map((row) => (
-                      <tr key={row.id} className="border-t border-border">
-                        <td className="py-2 pr-4">{row.name}</td>
-                        <td className="py-2 pr-4">{row.earnings?.toLocaleString() ?? 'Unavailable'}</td>
-                        <td className="py-2 pr-4">{row.nodeOps?.toLocaleString() ?? 'Unavailable'}</td>
-                        <td className="py-2 pr-4">{row.lps?.toLocaleString() ?? 'Unavailable'}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </>
-          ) : (
-            <p className="text-slate-400 text-center py-20">Earnings history unavailable from live sources.</p>
-          )}
-        </Card>
-      </section>
+      <StatsEarningsTable
+        earningsChart={earningsChart}
+        earningsLoading={earningsLoading}
+        earningsResult={earningsResult}
+        midgardHealthResult={midgardHealthResult}
+        earningsCoverage={earningsCoverage}
+      />
 
       <RelatedChecks id="stats-related-checks" checks={statsRelatedChecks} className="mb-8" />
         </div>

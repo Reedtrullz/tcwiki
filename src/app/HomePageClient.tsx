@@ -54,6 +54,13 @@ const homeProofRoutes = [
   },
 ];
 
+const homeExternalLinks = [
+  { label: 'THORChain Docs', href: 'https://docs.thorchain.org' },
+  { label: 'Developer Docs', href: 'https://dev.thorchain.org' },
+  { label: 'Midgard API', href: 'https://midgard.thorchain.network/v2/doc' },
+  { label: 'RuneScan Explorer', href: 'https://runescan.io' },
+];
+
 export default function HomePageClient({ sourcePosture }: HomePageClientProps) {
   const {
     data: networkData,
@@ -218,12 +225,7 @@ export default function HomePageClient({ sourcePosture }: HomePageClientProps) {
       {/* Quick links (footer-level external sources, kept compact) */}
       <section className="px-6 max-w-7xl mx-auto pb-20">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-          {[
-            { label: 'THORChain Docs', href: 'https://docs.thorchain.org' },
-            { label: 'Developer Docs', href: 'https://dev.thorchain.org' },
-            { label: 'Midgard API', href: 'https://midgard.thorchain.network/v2/doc' },
-            { label: 'RuneScan Explorer', href: 'https://runescan.io' },
-          ].map((l) => (
+          {homeExternalLinks.map((l) => (
             <a
               key={l.href}
               href={l.href}
@@ -239,3 +241,4 @@ export default function HomePageClient({ sourcePosture }: HomePageClientProps) {
     </div>
   );
 }
+
