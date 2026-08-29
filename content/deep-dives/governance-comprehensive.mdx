@@ -40,21 +40,21 @@ Chain is currently halted at height 27,590,009 as of Aug 27, 2026 — see `/netw
 | 007 | Increase Fund Migration & Churn Interval | Withdrawn | n/a | Withdrawn before vote | Replaced by simpler refund (PR !2869) |
 | 008 | Dynamic Outbound Fee Multiplier (DOFM) | Passed (close) | **58/85 = 68.2%** (final) | `VoteDOFM`; needed supermajority, 10-day window | Dynamic outbound fees. Crossed 50% on day 4 (50/85), crossed 67% on day 10 |
 | 009 | Reserve Income & Fee Overhaul | Partially implemented | n/a | `NativeTransactionFeeUSD`, `NativeOutboundFeeUSD`, `EnableUSDFees` | USD-fees code shipped 1.114.0 (Jun 2023) but `EnableUSDFees` never activated; Reserve Income section **removed** as "contentiously large" |
-| 010 | Streaming Swaps | Passed | Default-pass (16% dissent threshold) | `VoteStreamingSwaps` | 5 bps swap fees |
+| 010 | Streaming Swaps | Passed | Default-pass | `VoteStreamingSwaps` | 5 bps swap fees |
 | 011 | Lending | Passed | **63/86 = 73.3%** (final, 1 dissent) | `VoteLending`; 7-day vote | TORdollar debt, 500M RUNE circuit breaker. Largest feature since MCCN |
-| 012 | Scale Lending (Burn 60M RUNE, CR 200%) | Passed (close) | **~52% in favor** at one snapshot; some nodes later removed votes | `ADR012` | Burned 60M RUNE from standby reserve, lowered max CR from 500% to 200% |
+| 012 | Scale Lending (Burn 60M RUNE, CR 200%) | Passed (close) | ~52% favor; votes removed | `ADR012` | Burned 60M RUNE from standby reserve, lowered max CR from 500% to 200% |
 | 013 | Synth Backstop | Passed (clear) | "Vote looks decided" — 1 dissent per channel | `VoteSynthBackstop` | Forced ejections vs haircuts for synth pools |
 | 014 | Reduce Saver Yield Target | Passed (default) | Motion to Bypass, no dissent | `VoteScaleSaversYield` | Scaled down saver yield |
 | 015 | Refund Synth Positions After Ragnarok | Passed (default) | Motion to Bypass, no dissent | `VoteRefundSynths` | ~24,601 RUNE refunded (46 addresses >10 RUNE) |
 | 016 | Affiliate Fee Revenue Share | Passed | **72/100 = 72%** (final) | `ProtocolAffiliateFeeBasisPoints = 1200` | 12% protocol affiliate fee. Crossed 67% in 2 days |
-| 017 | Burn System Income Lever | Passed mechanism, rate gridlocked | 0.01% initial; current debate ongoing (see Active Votes) | `SystemIncomeBurnRateBP` | EIP-1559-style fee-burn lever shipped; **rate setting is contentious** |
-| 018 | Core Protocol Sustainability | Passed (controversial) | Motion to Bypass after 3-year sunset added | `VoteSustainability` | Heavy opposition from yeguls, proofofsteve, multipartite; 9R conflict-of-interest concern raised; passed only after sunset amendment |
+| 017 | Burn System Income Lever | Passed mechanism, rate gridlocked | 0.01% initial; rate debate ongoing | `SystemIncomeBurnRateBP` | EIP-1559-style fee-burn lever shipped; **rate setting is contentious** |
+| 018 | Core Protocol Sustainability | Passed (controversial) | Motion to Bypass with sunset clause | `VoteSustainability` | Heavy opposition from yeguls, proofofsteve, multipartite; 9R conflict-of-interest concern raised; passed only after sunset amendment |
 | 019 | AutoBond | Pending | Discussion ongoing since 2024 | n/a (open) | RUNEPool-style bond mechanism |
 | 020 | App Layer | Pending | Discussion ongoing | n/a (open) | AppLayer norms, non-compete |
-| 021 | Marketing Budget | Voting | Two options (1 = 5% fund, 2 = 5% fund + 5% burn) | `ADR021` | Sponsored by two long-time node ops; $250k kickstart |
-| 022 | Per Block Swap Scoring | Passed (default) | Motion to Bypass, no dissent within 7 days | `VotePerBlockSwapScoring` | Bug-fix-flavored ADR; devs in consensus |
+| 021 | Marketing Budget | Voting | 5% fund vs 5% fund + 5% burn | `ADR021` | Sponsored by two long-time node ops; $250k kickstart |
+| 022 | Per Block Swap Scoring | Passed (default) | Motion to Bypass, no dissent | `VotePerBlockSwapScoring` | Bug-fix-flavored ADR; devs in consensus |
 | 023 | Reserve Supply Restructure | Passed | 2/3 of active validator set required | `ADR23` | Burned ~64.4M RUNE. Required supermajority due to tokenomics change |
-| 024 | System Income to POL | Pending (problematic) | Vote stalled; cow stepped down before formal vote | `ADR024` | 4 possible implementation options, "rat's nest" of discussion |
+| 024 | System Income to POL | Pending (problematic) | Vote stalled; champion stepped down | `ADR024` | 4 possible implementation options, "rat's nest" of discussion |
 | 025 | Move Dev Fund Address | Passed (default) | Motion to Bypass, no objection | `ADR25` | Nine Realms dev fund → new multisig (sonofodin, aaluxx, mazze) |
 | 026 | Dynamic Fee Model | Testing | n/a | `EnableDynamicFees` | 24h fee revenue adjustment |
 | 027 | WasmArbSlipMinBps to 0 | Passed | n/a (follow-up to ADR-031) | `WasmArbSlipMinBps = 0` | Removes min slip floor for Virtualization Strategy swaps |
