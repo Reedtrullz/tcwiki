@@ -116,7 +116,15 @@ These ADRs did not go through a `make mimir` vote. Instead, a contributor called
 
 | Date | Event | Severity | Impact |
 |------|-------|----------|--------|
-| Aug 27, 2026 | Yevlec Re-halt + Chain Freeze | Critical | Chain frozen at height 27,590,009; ongoing |
+| Aug 29, 2026 | Global CosmWasm Halted by Dev | Major | Dev484 halted all CosmWasm; only Yevlec was previously halted |
+| Aug 29, 2026 | SOL Unhalt Announced | Moderate | Requires archival RPC + scanner bump; XRP/SOL disabled from virtualization strategy |
+| Aug 29, 2026 | BSC Voting to Unhalt | Moderate | itzamnamaya voted; awaiting 2-3 more votes |
+| Aug 28, 2026 | Trading Fully Resumed | Minor | All chains trading; BASE/BSC/SOL still paused |
+| Aug 28, 2026 | Block Production Restored | Minor | Chain producing blocks after v3.20.1 + snapshot restore |
+| Aug 28, 2026 | Consensus Timeout Adjustment Required | Major | Nodes needed THOR_TENDERMINT_CONSENSUS_TIMEOUT_*_DELTA=1ms |
+| Aug 27, 2026 | v3.20.1 Released (Bifrost Non-Deterministic Fix) | Major | Fixed non-deterministic path that caused halt |
+| Aug 27, 2026 | Old Distro Refunds Resurfaced | Minor | May 2026 halt refunds finally executing |
+| Aug 27, 2026 | Yevlec Re-halt + Chain Freeze | Critical | Chain frozen at height 27,590,009; resolved Aug 28 via v3.20.1 + snapshot |
 | Aug 26, 2026 | SOL Scanner Stuck Weeks Back | Moderate | 25 nodes scanners ~430.5M vs tip ~434.77M |
 | Aug 26, 2026 | Bifrost 3.20.0 Legacy Keyshare Recovery Loop | Major | Pruned thornodes stuck fetching keyshares |
 | Aug 26, 2026 | Asgard Vault Exploit (~$10.7M) | Critical | Triggered ADR-031 vote |
@@ -329,6 +337,7 @@ The most persistent unsolved issue across the fleet:
 | POLRESERVESYSTEMINCOMEBPS | VOTING | 2000: 10, 750: 4 | POL share of system income |
 | ADR029 (Rev Share) | Passed | 56/95 (58.9%) | SwapKit revenue sharing |
 | ADR031 (Rujira Alignment) | Passed | Option 1 selected | Joint venture confirmed |
+| HALTWASMGLOBAL | DEBATED | 0 (not halted) | Global wasm halt status debated; only Yevlec was halted |
 | WasmArbSlipMinBps=0 | Passed | Follow-up to ADR-031 | App-layer arb friction reduction |
 
 ---
@@ -391,6 +400,14 @@ frenchy4182 (Aug 20): "Having an open source project getting hacked multiple tim
 aaluxxmyth: "V3.20 will make Thorchain 100% open source again."
 
 Codehans: AI-powered audit tool (GLM5.3 + Qwen3.8) finding vulnerabilities. .pfc ran AI audit against 3.18 codebase.
+
+**App Layer vs Base Layer Tension (Aug 27-29):** erudite0545: "We are using a situation caused by an issue with the Base Layer to bash Rujira and our products/contracts... the contract wasn't the issue, as was also confirmed by Itzamna and Aaluxx. The Base Layer was." 5M RUNE locked in bRUNE contracts. 3-month v3.19→v3.20 gap criticized.
+
+**Halt Documentation Request (Aug 29):** sourov: "I'd like the Rujira team to document exactly what each halt does and how it affects users at the app layer." Nodes need to understand consequences of each halt type.
+
+**CosmWasm Halt Controversy (Aug 29):** devel484 halted global CosmWasm. koitsu challenged: "HALTWASMGLOBAL is 0 (not halted), and HALTWASMCONTRACT-YEVLEC is 1 (halted)." erudite0545: "The amount of pushback they would get if they decided to unhalt it after you halted it... there's now enormous weight on the decision for a Node to unpause."
+
+**Churn Priority (Aug 29):** Nodes need churn to get paid; some running out of cash after months without churn. cryptoactuary: "Priority one is to get Churns back - no churns, no party."
 
 ### Governance Mechanism Issues
 
