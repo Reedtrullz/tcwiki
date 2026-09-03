@@ -154,9 +154,9 @@ describe('app-layer, interface, and recovery content review', () => {
     const thorSwap = SEARCH_DOCUMENTS.find((doc) => doc.id === 'ecosystem:thorswap');
     const mimir = SEARCH_DOCUMENTS.find((doc) => doc.id === 'glossary:mimir-override');
 
-    expect(appLayer?.content).toContain('source terminology divergence');
-    expect(appLayer?.content).toContain('memo syntax is not availability');
-    expect(savers?.content).toContain('January 4 2025');
+    expect(appLayer?.content).toContain('source terminology drift');
+    expect(appLayer?.content).toContain('static memo examples into current user instructions');
+    expect(savers?.content).toContain('January 4, 2025');
     expect(thorSwap?.content).toContain('NEAR Intents');
     expect(thorSwap?.content).toContain('which protocol actually provides the selected route');
     expect(mimir?.content).toContain('exist without a matching constant');

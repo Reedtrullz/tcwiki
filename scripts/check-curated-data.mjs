@@ -874,7 +874,7 @@ function validateRegistryEntryShape(entry, index, allowedConfidences) {
     fail(path, 'entry must be an object');
     return;
   }
-  for (const field of ['id', 'title', 'href', 'description', 'body', 'reviewedAt', 'nextReviewDue']) {
+  for (const field of ['id', 'title', 'href', 'description', 'reviewedAt', 'nextReviewDue']) {
     if (typeof entry[field] !== 'string' || entry[field].trim() === '') {
       fail(`${path}.${field}`, 'must be a non-empty string');
     }

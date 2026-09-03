@@ -510,6 +510,13 @@ function renderControlChip(control: OperationalControlStatus) {
   );
 }
 
+const CHAIN_STATUS_COLUMNS: { label: string; pick: (chain: ChainAvailability) => AvailabilityCell }[] = [
+  { label: 'Swap in', pick: (chain) => chain.swapIn },
+  { label: 'Swap out', pick: (chain) => chain.swapOut },
+  { label: 'LP actions', pick: (chain) => chain.lpActions },
+  { label: 'Pool deposits', pick: (chain) => chain.poolDeposits },
+];
+
 function statusCellClassName(cell: AvailabilityCell) {
   switch (cell.state) {
     case 'available':
@@ -1535,6 +1542,29 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
         ? `${operationAffectedChains.length} chain status${operationAffectedChains.length === 1 ? '' : 'es'} with direct non-swap operation impacts`
         : 'Network-wide or global controls; separate from ordinary swap execution'
     : null;
+  const lookHereFirst: { label: string; value: string; detail?: string }[] = [
+    {
+      label: 'Ordinary swaps',
+      value: isLoading ? 'Checking' : isUnavailable ? 'Unavailable' : swapStatus.label,
+      detail: status ? swapStatus.detail : undefined,
+    },
+    {
+      label: 'Limited chains',
+      value: status ? (swapLimitedChains.length > 0 ? swapLimitedChains.map((chain) => chain.chain).join(', ') : 'None observed') : 'Unavailable',
+      detail: status && swapLimitedChains.length > 0
+        ? swapLimitedChains.map((chain) => `${chain.chain}: ${firstSwapReasonText(chain)}`).join(' / ')
+        : undefined,
+    },
+    {
+      label: 'Other operations',
+      value: status ? (activeActions.length > 0 ? activeActions.slice(0, 2).join(', ') : 'None observed') : 'Unavailable',
+      detail: otherOperationsDetail ?? undefined,
+    },
+    {
+      label: 'Data quality',
+      value: status ? (warningDetails.length > 0 ? formatWarningCount(warningDetails.length) : 'No source warnings') : 'Pending',
+    },
+  ];
 
   return (
     <Card
@@ -1602,41 +1632,15 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
           Look here first
         </p>
         <div className="grid gap-2 md:grid-cols-4" aria-label="Look here first">
-          <div className="rounded-md border border-border bg-surface/50 px-3 py-2">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Ordinary swaps</p>
-            <p className="mt-1 text-sm font-semibold">
-              {isLoading ? 'Checking' : isUnavailable ? 'Unavailable' : swapStatus.label}
-            </p>
-            {status && (
-              <p className="mt-1 text-[11px] leading-relaxed text-slate-500">{swapStatus.detail}</p>
-            )}
-          </div>
-          <div className="rounded-md border border-border bg-surface/50 px-3 py-2">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Limited chains</p>
-            <p className="mt-1 text-sm font-semibold">
-              {status ? swapLimitedChains.length > 0 ? swapLimitedChains.map((chain) => chain.chain).join(', ') : 'None observed' : 'Unavailable'}
-            </p>
-            {status && swapLimitedChains.length > 0 && (
-              <p className="mt-1 text-[11px] leading-relaxed text-slate-500">
-                {swapLimitedChains.map((chain) => `${chain.chain}: ${firstSwapReasonText(chain)}`).join(' / ')}
-              </p>
-            )}
-          </div>
-          <div className="rounded-md border border-border bg-surface/50 px-3 py-2">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Other operations</p>
-            <p className="mt-1 text-sm font-semibold">
-              {status ? activeActions.length > 0 ? activeActions.slice(0, 2).join(', ') : 'None observed' : 'Unavailable'}
-            </p>
-            {status && otherOperationsDetail && (
-              <p className="mt-1 text-[11px] leading-relaxed text-slate-500">
-                {otherOperationsDetail}
-              </p>
-            )}
-          </div>
-          <div className="rounded-md border border-border bg-surface/50 px-3 py-2">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Data quality</p>
-            <p className="mt-1 text-sm font-semibold">{status ? warningDetails.length > 0 ? formatWarningCount(warningDetails.length) : 'No source warnings' : 'Pending'}</p>
-          </div>
+          {lookHereFirst.map(({ label, value, detail }) => (
+            <div key={label} className="rounded-md border border-border bg-surface/50 px-3 py-2">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">{label}</p>
+              <p className="mt-1 text-sm font-semibold">{value}</p>
+              {detail && (
+                <p className="mt-1 text-[11px] leading-relaxed text-slate-500">{detail}</p>
+              )}
+            </div>
+          ))}
         </div>
       </div>
 
@@ -1811,22 +1815,12 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
                   <RadioTower aria-hidden="true" className={`h-4 w-4 ${chain.swapLimited ? 'text-amber-400' : 'text-emerald-400'}`} />
                 </div>
                 <div className="mt-3 grid grid-cols-2 gap-2">
-                  <div>
-                    <p className="text-[10px] uppercase tracking-wider text-slate-500">Swap in</p>
-                    <div className="mt-1">{renderStatusCell(chain.swapIn)}</div>
-                  </div>
-                  <div>
-                    <p className="text-[10px] uppercase tracking-wider text-slate-500">Swap out</p>
-                    <div className="mt-1">{renderStatusCell(chain.swapOut)}</div>
-                  </div>
-                  <div>
-                    <p className="text-[10px] uppercase tracking-wider text-slate-500">LP actions</p>
-                    <div className="mt-1">{renderStatusCell(chain.lpActions)}</div>
-                  </div>
-                  <div>
-                    <p className="text-[10px] uppercase tracking-wider text-slate-500">Pool deposits</p>
-                    <div className="mt-1">{renderStatusCell(chain.poolDeposits)}</div>
-                  </div>
+                  {CHAIN_STATUS_COLUMNS.map(({ label, pick }) => (
+                    <div key={label}>
+                      <p className="text-[10px] uppercase tracking-wider text-slate-500">{label}</p>
+                      <div className="mt-1">{renderStatusCell(pick(chain))}</div>
+                    </div>
+                  ))}
                   <div className="col-span-2">
                     <p className="text-[10px] uppercase tracking-wider text-slate-500">Scoped operations</p>
                     <div className="mt-1">{renderStatusCell(chain.scopedOperations)}</div>
@@ -1849,10 +1843,9 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
               <thead className="bg-slate-950/30 text-slate-400">
                 <tr>
                   <th scope="col" className="whitespace-nowrap px-3 py-2 font-semibold">Chain</th>
-                  <th scope="col" className="whitespace-nowrap px-3 py-2 font-semibold">Swap in</th>
-                  <th scope="col" className="whitespace-nowrap px-3 py-2 font-semibold">Swap out</th>
-                  <th scope="col" className="whitespace-nowrap px-3 py-2 font-semibold">LP actions</th>
-                  <th scope="col" className="whitespace-nowrap px-3 py-2 font-semibold">Pool deposits</th>
+                  {CHAIN_STATUS_COLUMNS.map(({ label }) => (
+                    <th key={label} scope="col" className="whitespace-nowrap px-3 py-2 font-semibold">{label}</th>
+                  ))}
                   <th scope="col" className="whitespace-nowrap px-3 py-2 font-semibold">Scoped operations</th>
                   <th scope="col" className="whitespace-nowrap px-3 py-2 font-semibold">Data quality</th>
                   <th scope="col" className="px-3 py-2 font-semibold">Why</th>
@@ -1862,10 +1855,9 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
                 {chainAvailability.map((chain) => (
                   <tr key={chain.chain} className={chain.swapLimited ? 'bg-amber-500/5' : undefined}>
                     <th scope="row" className="whitespace-nowrap px-3 py-2 text-sm font-semibold text-slate-200">{chain.chain}</th>
-                    <td className="whitespace-nowrap px-3 py-2">{renderStatusCell(chain.swapIn)}</td>
-                    <td className="whitespace-nowrap px-3 py-2">{renderStatusCell(chain.swapOut)}</td>
-                    <td className="whitespace-nowrap px-3 py-2">{renderStatusCell(chain.lpActions)}</td>
-                    <td className="whitespace-nowrap px-3 py-2">{renderStatusCell(chain.poolDeposits)}</td>
+                    {CHAIN_STATUS_COLUMNS.map(({ label, pick }) => (
+                      <td key={label} className="whitespace-nowrap px-3 py-2">{renderStatusCell(pick(chain))}</td>
+                    ))}
                     <td className="whitespace-nowrap px-3 py-2">{renderStatusCell(chain.scopedOperations)}</td>
                     <td className="whitespace-nowrap px-3 py-2">{renderStatusCell(chain.dataQuality)}</td>
                     <td className="px-3 py-2 text-slate-400">{firstReasonText(chain.reasons)}</td>

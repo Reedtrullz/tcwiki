@@ -236,7 +236,6 @@ function contentEntryQueryBoost(query: string, doc: SearchDoc) {
     entry.title,
     `${entry.title} guide`,
     entry.description,
-    entry.body,
     ...entry.tags,
   ].map(normalizeSearchText);
   const combined = candidateTexts.join(' ');

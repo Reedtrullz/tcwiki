@@ -64,7 +64,7 @@ test.describe('THORChain Wiki Search Smoke Tests', () => {
     await expect(page.getByText(/Ranking is a starting point, not proof/i)).toBeVisible();
     await expect(page.locator('main article').first().locator('a[href="/docs#current-protocol-state"]')).toBeVisible();
     await expect(page.getByText(/Next wiki review/i).first()).toBeVisible();
-    await expect(page.getByText(/2026-07-04 to 2026-07-05/i).first()).toBeVisible();
+    await expect(page.getByText(/Source retrieved/i).first()).toBeVisible();
     await expect(page.getByText(/\+4 sources/i).first()).toBeVisible();
     await page.locator('main article').first().getByText('+4 sources', { exact: true }).click();
     const boundaryLayout = await readLayoutSafety(page);
@@ -262,7 +262,7 @@ test.describe('THORChain Wiki Search Smoke Tests', () => {
     await expect(page.getByText(/Build or query data/i).first()).toBeVisible();
 
     await page.goto('/search?q=Midgard%20vs%20THORNode');
-    await expect(page.locator('main article').first().locator('a[href="/deep-dives/midgard-thornode-data"]')).toBeVisible();
+    await expect(page.getByTestId('search-results-list').locator('article').first().locator('a[href="/deep-dives/midgard-thornode-data"]')).toBeVisible();
     await expect(page.getByText(/Midgard And THORNode Data/i).first()).toBeVisible();
 
     await page.goto('/search?q=can%20i%20swap%20right%20now');

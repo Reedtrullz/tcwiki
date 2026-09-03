@@ -2,7 +2,6 @@ import type {
   Chain,
   DataConfidence,
   EcosystemProject,
-  FreshnessMeta,
   GovernanceProposal,
   ResearchReport,
   SecurityIncident,
@@ -65,7 +64,7 @@ import {
   tokenomicsSource,
   xchainJsSource,
 } from '@/lib/sources';
-import { unwrapRecord, withFreshness } from '@/lib/trust';
+import { withFreshness } from '@/lib/trust';
 
 export const STATIC_DATA_LAST_UPDATED = '2026-06-18';
 
@@ -252,25 +251,6 @@ interface StaticRecordFreshnessOptions {
   reviewedBy?: string;
 }
 
-const checkedFreshness = (
-  confidence: DataConfidence,
-  nextReviewDue: string,
-  checkedAt: string,
-  reviewedBy?: string
-): FreshnessMeta => {
-  const freshness: FreshnessMeta = {
-    checkedAt,
-    confidence,
-    nextReviewDue,
-  };
-
-  if (reviewedBy) {
-    freshness.reviewedBy = reviewedBy;
-  }
-
-  return freshness;
-};
-
 const record = <T>(
   data: T,
   sources: SourceMeta[],
@@ -279,12 +259,12 @@ const record = <T>(
 ): SourcedRecord<T> => withFreshness(
   data,
   sources,
-  checkedFreshness(
+  {
+    checkedAt: freshnessOptions.checkedAt,
     confidence,
-    freshnessOptions.nextReviewDue,
-    freshnessOptions.checkedAt,
-    freshnessOptions.reviewedBy
-  )
+    nextReviewDue: freshnessOptions.nextReviewDue,
+    ...(freshnessOptions.reviewedBy ? { reviewedBy: freshnessOptions.reviewedBy } : {}),
+  }
 );
 
 const sourceMapLiveInboundSource: SourceMeta = {
@@ -451,9 +431,7 @@ export const CHAIN_RECORDS: SourcedRecord<Chain>[] = [
   }, supportedChainCatalogSources, 'official', supportedChainCatalogFreshness),
 ];
 
-export const CHAINS: Chain[] = CHAIN_RECORDS.map(unwrapRecord);
-
-const chainCodes = CHAINS.map((chain) => chain.chain);
+const chainCodes = CHAIN_RECORDS.map((record) => record.data.chain);
 
 const developerIntegrationSwapSource: SourceMeta = {
   ...swapGuideSource,
@@ -728,7 +706,6 @@ export const SOURCE_MAP_SECTION_RECORDS: SourcedRecord<SourceMapSection>[] = [
   }),
 ];
 
-export const SOURCE_MAP_SECTIONS: SourceMapSection[] = SOURCE_MAP_SECTION_RECORDS.map(unwrapRecord);
 
 export const TOKENOMICS_RECORDS: SourcedRecord<TokenomicsSnapshot>[] = [
   record({
@@ -1010,7 +987,6 @@ export const ECOSYSTEM_PROJECT_RECORDS: SourcedRecord<EcosystemProject>[] = [
   }),
 ];
 
-export const ECOSYSTEM_PROJECTS: EcosystemProject[] = ECOSYSTEM_PROJECT_RECORDS.map(unwrapRecord);
 
 export const RESEARCH_REPORT_RECORDS: SourcedRecord<ResearchReport>[] = [
   record({
@@ -1057,7 +1033,6 @@ export const RESEARCH_REPORT_RECORDS: SourcedRecord<ResearchReport>[] = [
   }),
 ];
 
-export const RESEARCH_REPORTS: ResearchReport[] = RESEARCH_REPORT_RECORDS.map(unwrapRecord);
 
 export const SECURITY_INCIDENT_RECORDS: SourcedRecord<SecurityIncident>[] = [
   record({
@@ -1166,7 +1141,6 @@ export const SECURITY_INCIDENT_RECORDS: SourcedRecord<SecurityIncident>[] = [
   }),
 ];
 
-export const SECURITY_INCIDENTS: SecurityIncident[] = SECURITY_INCIDENT_RECORDS.map(unwrapRecord);
 
 export const GOVERNANCE_PROPOSAL_RECORDS: SourcedRecord<GovernanceProposal>[] = [
   record({
@@ -1275,7 +1249,6 @@ export const GOVERNANCE_PROPOSAL_RECORDS: SourcedRecord<GovernanceProposal>[] = 
   }),
 ];
 
-export const GOVERNANCE_PROPOSALS: GovernanceProposal[] = GOVERNANCE_PROPOSAL_RECORDS.map(unwrapRecord);
 
 export const PROTOCOL_MILESTONE_RECORDS = [
   record({
@@ -1327,5 +1300,3 @@ export const PROTOCOL_MILESTONE_RECORDS = [
     nextReviewDue: '2026-11-17',
   }),
 ];
-
-export const PROTOCOL_MILESTONES = PROTOCOL_MILESTONE_RECORDS.map(unwrapRecord);

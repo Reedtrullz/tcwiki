@@ -35,11 +35,9 @@
   },
   "dependencies": {
     "@mdx-js/loader": "^3.1.1",
-    "@mdx-js/react": "^3.1.1",
     "@next/mdx": "^16.3.4",
     "@tailwindcss/typography": "^0.5.20",
     "clsx": "^2.1.1",
-    "date-fns": "^4.1.0",
     "lucide-react": "^1.39.0",
     "lunr": "^2.3.9",
     "next": "^16.3.4",

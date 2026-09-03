@@ -56,7 +56,7 @@ describe('static data freshness guardrails', () => {
   });
 
   it('keeps the freshness helper free of hidden date defaults', () => {
-    const initializer = findConstInitializer('checkedFreshness');
+    const initializer = findConstInitializer('record');
 
     expect(initializer).toBeDefined();
     expect(initializer && ts.isArrowFunction(initializer)).toBe(true);
@@ -66,5 +66,6 @@ describe('static data freshness guardrails', () => {
 
     expect(initializer.parameters[1]?.initializer).toBeUndefined();
     expect(initializer.parameters[2]?.initializer).toBeUndefined();
+    expect(initializer.parameters[3]?.initializer).toBeUndefined();
   });
 });

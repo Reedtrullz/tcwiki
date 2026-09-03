@@ -168,8 +168,8 @@ describe('task-aware search ranking', () => {
   });
 
   it('keeps the Home starting-point page findable for root-page language', () => {
-    expect(rankedIds('start with the claim').slice(0, 8)).toContain('home');
-    expect(rankedIds('live operations snapshot').slice(0, 8)).toContain('home');
+    expect(rankedIds('source-backed starting point').slice(0, 8)).toContain('home');
+    expect(rankedIds('live operations').slice(0, 8)).toContain('home');
   });
 
   it('promotes explicit source-map queries to exact source-map sections', () => {

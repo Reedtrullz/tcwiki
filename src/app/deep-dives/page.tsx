@@ -98,20 +98,22 @@ const deepDiveLibraryTopics: DeepDiveLibraryTopic[] = [
 export default function DeepDivesIndex() {
   const deepDiveArticles: DeepDiveLibraryArticle[] = DEEP_DIVE_ENTRIES.map((dive) => {
     const readerPaths = DEEP_DIVE_READER_PATHS.filter((path) => path.entryIds.includes(dive.id));
+    const useCase = getDeepDiveArticleUseCase(dive.id, dive.title, dive.confidence);
+    const claimBoundary = getDeepDiveArticleClaimBoundary(dive.id, dive.confidence, readerPaths);
 
     return {
       id: dive.id,
       title: dive.title,
       href: dive.href,
       description: dive.description,
-      searchText: dive.body,
       tags: dive.tags,
       confidence: dive.confidence,
       reviewedAt: dive.reviewedAt,
       nextReviewDue: dive.nextReviewDue,
       sources: dive.sources,
-      useCase: getDeepDiveArticleUseCase(dive.id, dive.title, dive.confidence),
-      claimBoundary: getDeepDiveArticleClaimBoundary(dive.id, dive.confidence, readerPaths),
+      useCase,
+      claimBoundary,
+      searchText: [useCase, claimBoundary].join(' '),
       readerPaths: readerPaths.map((path) => ({
         title: path.title,
         href: `/deep-dives#deep-dive-path-${path.id}`,

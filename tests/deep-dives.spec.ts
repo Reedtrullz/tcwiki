@@ -114,13 +114,13 @@ test.describe('THORChain Wiki Deep Dive Smoke Tests', () => {
     }
 
     const finder = page.locator('#deep-dive-library');
-    await finder.getByRole('searchbox', { name: /Filter deep dives/i }).fill('recommended_min_amount_in');
-    await expect(page).toHaveURL(/q=recommended_min_amount_in/);
+    await finder.getByRole('searchbox', { name: /Filter deep dives/i }).fill('quote expiry');
+    await expect(page).toHaveURL(/q=quote\+expiry/);
     await expect(finder.getByText('Active filters')).toBeVisible();
-    await expect(finder.getByText('Search: recommended_min_amount_in')).toBeVisible();
+    await expect(finder.getByText('Search: quote expiry')).toBeVisible();
     await expect(finder.getByText('This filtered view is reflected in the URL.')).toBeVisible();
     await expect(finder.locator('#deep-dive-card-deep-dive-build-query-data')).toBeVisible();
-    await expect(finder.locator('#deep-dive-card-deep-dive-streaming-swaps-refunds')).toBeVisible();
+    await expect(finder.locator('#deep-dive-card-deep-dive-streaming-swaps-refunds')).toHaveCount(0);
     await expect(finder.locator('#deep-dive-card-deep-dive-rune-settlement')).toHaveCount(0);
     await finder.getByRole('button', { name: /Reset/i }).click();
     await expect(page).toHaveURL(/\/deep-dives$/);
@@ -136,11 +136,11 @@ test.describe('THORChain Wiki Deep Dive Smoke Tests', () => {
     await expect(finder.locator('#deep-dive-card-deep-dive-mimir-halt-controls')).toBeVisible();
     await expect(finder.locator('#deep-dive-card-deep-dive-tss')).toBeVisible();
     await expect(finder.locator('#deep-dive-card-deep-dive-runepool-pol')).toHaveCount(0);
-    await finder.getByRole('searchbox', { name: /Filter deep dives/i }).fill('recommended_min_amount_in');
+    await finder.getByRole('searchbox', { name: /Filter deep dives/i }).fill('quote expiry');
     await expect(page).toHaveURL(/topic=security-operations/);
-    await expect(page).toHaveURL(/q=recommended_min_amount_in/);
-    await expect(finder.getByText('Search: recommended_min_amount_in')).toBeVisible();
-    await expect(finder.getByText('No deep dives match "recommended_min_amount_in" inside Security & ops.')).toBeVisible();
+    await expect(page).toHaveURL(/q=quote\+expiry/);
+    await expect(finder.getByText('Search: quote expiry')).toBeVisible();
+    await expect(finder.getByText('No deep dives match "quote expiry" inside Security & ops.')).toBeVisible();
     await finder.getByRole('button', { name: 'Reset filters', exact: true }).click();
     await expect(page).toHaveURL(/\/deep-dives$/);
     await expect(finder.getByText('Active filters')).toHaveCount(0);

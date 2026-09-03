@@ -28,7 +28,7 @@ import {
   ThornodeInboundAddress,
   ThornodeLastBlock,
 } from '@/lib/types';
-import { CHAINS } from '@/lib/data/static';
+import { CHAIN_RECORDS } from '@/lib/data/static';
 import {
   EXACT_MONITORED_MIMIR_KEYS,
   PREFIX_MONITORED_MIMIR_KEYS,
@@ -73,7 +73,7 @@ export function resetThornodeEndpointForTests() {
 
 const MIMIR_INTEGER_PATTERN = /^[+-]?\d+$/;
 const NON_CHAIN_SCOPED_MIMIR_CODES = new Set(['TCY']);
-const CURATED_CHAIN_CODES = new Set([...CHAINS.map((chain) => chain.chain.toUpperCase()), 'THOR']);
+const CURATED_CHAIN_CODES = new Set([...CHAIN_RECORDS.map((record) => record.data.chain.toUpperCase()), 'THOR']);
 const TRADE_ACCOUNT_CHAIN_SCOPED_MIMIR_PREFIXES = ['HaltTradeDeposit-', 'HaltTradeWithdraw-'] as const;
 const KNOWN_NON_OPERATIONAL_PAUSE_KEYS = new Set(['PAUSEONSLASHTHRESHOLD', 'HALTWASMCONTRACT']);
 const DYNAMIC_L1_FEE_WHITELIST_PREFIX = 'DYNAMICFEE-WHITELIST-';

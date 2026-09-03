@@ -416,7 +416,7 @@ function StartingPoints({
           {results.length} starting point{results.length === 1 ? '' : 's'}
         </span>
       </div>
-      <div className="space-y-2">
+      <div data-testid="search-start-here-list" className="space-y-2">
         {results.map((result) => (
           <SearchResultCard key={result.id} result={result} query={query} />
         ))}
@@ -612,7 +612,7 @@ function SearchResultsInner() {
           <SearchGuideLinks />
         </>
       )}
-      <div className="space-y-2">
+      <div data-testid="search-results-list" className="space-y-2">
         {displayedResults.map((result) => (
           <SearchResultCard key={result.id} result={result} query={query} />
         ))}

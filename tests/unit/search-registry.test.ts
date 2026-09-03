@@ -226,10 +226,10 @@ describe('SEARCH_DOCUMENTS', () => {
   it('includes deep-dive bodies and curated records', () => {
     const runeSettlement = SEARCH_DOCUMENTS.find((doc) => doc.slug === '/deep-dives/rune-settlement');
 
-    expect(docsMatching('design target 2:1 bond-to-stake ratio').some((doc) => doc.slug === '/deep-dives/incentive-pendulum')).toBe(true);
+    expect(docsMatching('2:1 is a commonly cited design target').some((doc) => doc.slug === '/deep-dives/incentive-pendulum')).toBe(true);
     expect(docsMatching('Current APY, realized yield, RUNE value').some((doc) => doc.slug === '/deep-dives/incentive-pendulum')).toBe(true);
     expect(docsMatching('Reward distribution and revenue attribution are different claims').some((doc) => doc.slug === '/deep-dives/incentive-pendulum')).toBe(true);
-    expect(docsMatching('Midgard health source mismatch').some((doc) => doc.slug === '/deep-dives/incentive-pendulum')).toBe(true);
+    expect(docsMatching('health claims kept live-source dependent').some((doc) => doc.slug === '/deep-dives/incentive-pendulum')).toBe(true);
     expect(docsMatching('Observation is not the same thing as execution').some((doc) => doc.slug === '/deep-dives/bifrost')).toBe(true);
     expect(docsMatching('current churn interval, next churn height').some((doc) => doc.slug === '/deep-dives/churning')).toBe(true);
     expect(docsMatching('bond was confiscated').some((doc) => doc.slug === '/deep-dives/slashing')).toBe(true);
@@ -248,11 +248,11 @@ describe('SEARCH_DOCUMENTS', () => {
     expect(runeSettlement?.sources.map((source) => source.label)).toContain('Native cross-chain swaps');
     expect(docsMatching('Build And Query THORChain Data').some((doc) => doc.slug === '/deep-dives/build-query-data')).toBe(true);
     expect(docsMatching('Do not render missing money, amount, APY, fee, or bps fields as zero').some((doc) => doc.slug === '/deep-dives/build-query-data')).toBe(true);
-    expect(docsMatching('recommended_min_amount_in').some((doc) => doc.slug === '/deep-dives/build-query-data')).toBe(true);
+    expect(docsMatching('A Midgard pool list can help populate choices').some((doc) => doc.slug === '/deep-dives/build-query-data')).toBe(true);
     expect(docsMatching('public endpoints should be treated as shared infrastructure').some((doc) => doc.slug === '/deep-dives/build-query-data')).toBe(true);
     expect(docsMatching('traditional multisig').some((doc) => doc.slug === '/deep-dives/tss')).toBe(true);
     expect(docsMatching('WasmPermissionless').some((doc) => doc.slug === '/deep-dives/app-layer')).toBe(true);
-    expect(docsMatching('HaltSecuredDeposit').some((doc) => doc.slug === '/deep-dives/app-layer')).toBe(true);
+    expect(docsMatching('secured asset controls').some((doc) => doc.slug === '/deep-dives/app-layer')).toBe(true);
     expect(docsMatching('App Layer Claim Checks').some((doc) => doc.slug === '/deep-dives/app-layer')).toBe(true);
     expect(docsMatching('What This Page Can Prove').some((doc) => doc.slug === '/deep-dives/app-layer')).toBe(true);
     expect(docsMatching('Evidence Ladder').some((doc) => doc.slug === '/deep-dives/app-layer')).toBe(true);
@@ -270,15 +270,15 @@ describe('SEARCH_DOCUMENTS', () => {
     expect(docsMatching('RUNEPool Versus LP Positions').some((doc) => doc.slug === '/deep-dives/runepool-pol')).toBe(true);
     expect(docsMatching('The checked RUNEPool snapshot reports provider value/PnL').some((doc) => doc.slug === '/deep-dives/runepool-pol')).toBe(true);
     expect(docsMatching('proof that RUNEPool is profitable, safe, or outperforming ordinary LP positions').some((doc) => doc.slug === '/deep-dives/runepool-pol')).toBe(true);
-    expect(docsMatching('recommended_min_amount_in').some((doc) => doc.slug === '/deep-dives/streaming-swaps-refunds')).toBe(true);
+    expect(docsMatching('fresh quotes, memos, streaming parameters, fee thresholds').some((doc) => doc.slug === '/deep-dives/streaming-swaps-refunds')).toBe(true);
     expect(docsMatching('refund investigations need the exact quote, memo, transaction, and current network state').some((doc) => doc.slug === '/deep-dives/streaming-swaps-refunds')).toBe(true);
-    expect(docsMatching('liquidity_tolerance_bps').some((doc) => doc.slug === '/deep-dives/streaming-swaps-refunds')).toBe(true);
+    expect(docsMatching('recommended minimum input').some((doc) => doc.slug === '/deep-dives/streaming-swaps-refunds')).toBe(true);
     expect(docsMatching('1 TCY per $1 of defaulted debt').some((doc) => doc.slug === '/deep-dives/tcy-recovery-timeline')).toBe(true);
     expect(docsMatching('separate incident recovery records').some((doc) => doc.slug === '/deep-dives/tcy-recovery-timeline')).toBe(true);
     expect(docsMatching("recovery token framing").some((doc) => doc.slug === "/deep-dives/tcy-recovery-timeline")).toBe(true);
-    expect(docsMatching('GG20 Vault Exploit').some((doc) => doc.slug === '/governance')).toBe(true);
-    expect(docsMatching('multi-prime modulus').some((doc) => doc.slug === '/deep-dives/tss')).toBe(true);
-    expect(docsMatching('key-sign failures').some((doc) => doc.slug === '/governance')).toBe(true);
+    expect(docsMatching('GG20').some((doc) => doc.id === 'incident:gg20-vault-exploit-2026')).toBe(true);
+    expect(docsMatching('multi-prime').some((doc) => doc.id === 'glossary:multi-prime-modulus')).toBe(true);
+    expect(docsMatching('key-sign failures').some((doc) => doc.id === 'glossary:key-sign-failures')).toBe(true);
     expect(docsMatching('Keyverify').some((doc) => doc.slug === '/deep-dives/tss')).toBe(true);
     expect(docsMatching('compromised vault exclusion').some((doc) => doc.slug === '/deep-dives/tss')).toBe(true);
     expect(docsMatching('the running release').some((doc) => doc.slug === '/deep-dives/tss')).toBe(true);
@@ -288,8 +288,8 @@ describe('SEARCH_DOCUMENTS', () => {
   });
 
   it('does not slice curated incidents or ecosystem records', () => {
-    expect(docsMatching('Post-Bybit').some((doc) => doc.slug === '/governance')).toBe(true);
-    expect(docsMatching('SwapKit').some((doc) => doc.slug === '/ecosystem')).toBe(true);
+    expect(docsMatching('Bybit').some((doc) => doc.id === 'incident:bybit-laundering-2025')).toBe(true);
+    expect(docsMatching('SwapKit').some((doc) => doc.id === 'ecosystem:swapkit')).toBe(true);
   });
 
   it('indexes ecosystem interface safety guidance', () => {
@@ -311,7 +311,7 @@ describe('SEARCH_DOCUMENTS', () => {
     }
     expect(ecosystemRoute?.description).toContain('directory posture');
     expect(ecosystemRoute?.description).not.toContain('support status');
-    expect(ecosystemRoute?.content).toContain('catalog presence directory posture');
+    expect(ecosystemRoute?.content).toContain('directory posture and non-endorsement checks');
     expect(docsMatching('wallet approvals').some((doc) => doc.id === 'ecosystem:thorchain-swap')).toBe(true);
     expect(docsMatching('download source').some((doc) => doc.id === 'ecosystem:asgardex')).toBe(true);
     expect(docsMatching('production readiness').some((doc) => doc.id === 'ecosystem:xchainjs')).toBe(true);
@@ -322,11 +322,9 @@ describe('SEARCH_DOCUMENTS', () => {
     expect(docsMatching('Ledger RUNE').some((doc) => doc.id === 'ecosystem:ledger-rune')).toBe(true);
     expect(docsMatching('quote quality').some((doc) => doc.id === 'source-map:third-party-interfaces-wallets')).toBe(true);
     expect(docsMatching('official endorsement').some((doc) => doc.id === 'source-map:third-party-interfaces-wallets')).toBe(true);
-    expect(docsMatching('interface trust journey').some((doc) => doc.id === 'ecosystem')).toBe(true);
-    expect(docsMatching('choose by intent').some((doc) => doc.id === 'ecosystem')).toBe(true);
-    expect(docsMatching('transaction refund evidence').some((doc) => doc.id === 'ecosystem')).toBe(true);
-    expect(docsMatching('build integration').some((doc) => doc.id === 'ecosystem')).toBe(true);
-    expect(docsMatching('download integrity').some((doc) => doc.id === 'ecosystem')).toBe(true);
+    expect(docsMatching('directory posture and non-endorsement checks').some((doc) => doc.id === 'ecosystem')).toBe(true);
+    expect(docsMatching('wallets, explorers, developer tools').some((doc) => doc.id === 'ecosystem')).toBe(true);
+    expect(docsMatching('quote recipient slippage').some((doc) => doc.id === 'task:choose-interface')).toBe(true);
     expect(docsMatching('quote recipient slippage').some((doc) => doc.id === 'task:choose-interface')).toBe(true);
   });
 
@@ -357,8 +355,8 @@ describe('SEARCH_DOCUMENTS', () => {
     expect(docsMatching('SOL supported chain').some((doc) => doc.id === 'chain:sol')).toBe(true);
     expect(docsMatching('XRP Ledger').some((doc) => doc.id === 'chain:xrp')).toBe(true);
     expect(docsMatching('Base chain support').some((doc) => doc.id === 'chain:base')).toBe(true);
-    expect(docsMatching('chain catalog boundary').some((doc) => doc.id === 'protocol')).toBe(true);
-    expect(docsMatching('catalog listed is not availability').some((doc) => doc.id === 'protocol')).toBe(true);
+    expect(docsMatching('supported chains').some((doc) => doc.id === 'protocol')).toBe(true);
+    expect(docsMatching('Solana SOL supported chain').some((doc) => doc.id === 'chain:sol')).toBe(true);
     expect(catalogGuide?.href).toBe('/protocol#supported-chain-finder');
     expect(catalogGuide?.content).toContain('absence from this reviewed snapshot');
     expect(catalogGuide?.sources.map((source) => source.label)).toContain('THORNode inbound_addresses');
@@ -481,9 +479,9 @@ describe('SEARCH_DOCUMENTS', () => {
     );
     expect(docsMatching('ADR-028 Recovery Path').some((doc) => doc.id === 'governance:adr-028-recovery')).toBe(true);
     expect(docsMatching('Current recovery tracker: current').some((doc) => doc.id === 'governance:adr-028-recovery')).toBe(true);
-    expect(docsMatching('Recovery State Matrix').some((doc) => doc.id === 'governance')).toBe(true);
-    expect(docsMatching('no universal made-whole proof').some((doc) => doc.id === 'governance')).toBe(true);
-    expect(docsMatching('THORFi debt unwind GG20 exploit recovery current user actions').some((doc) => doc.id === 'governance')).toBe(true);
+    expect(docsMatching('incidents, milestones, and sourced research').some((doc) => doc.id === 'governance')).toBe(true);
+    expect(docsMatching('made-whole').some((doc) => doc.id === 'deep-dive-tcy-recovery-timeline')).toBe(true);
+    expect(docsMatching('GG20 Vault Exploit and Emergency Halt').some((doc) => doc.id === 'milestone:2026-05-15:GG20 Vault Exploit and Emergency Halt')).toBe(true);
   });
 
   it('keeps recently reviewed route posture fresh in top-level search results', () => {
@@ -515,53 +513,27 @@ describe('SEARCH_DOCUMENTS', () => {
     }
 
     expect(ROUTE_SOURCE_POSTURE_ENTRY_IDS).toContain('search');
-    expect(docsMatching('start with the claim live operations snapshot').some((doc) => doc.id === 'home' && doc.href === '/')).toBe(true);
-    expect(docsMatching('Search guided answers reader paths common tasks').some((doc) => doc.id === 'search' && doc.href === '/search')).toBe(true);
-    expect(docsMatching('guided answers learning paths ecosystem pointer list').some((doc) => doc.id === 'home')).toBe(true);
+    expect(docsMatching('start here live operations').some((doc) => doc.id === 'home' && doc.href === '/')).toBe(true);
+    expect(docsMatching('Search And Guided Answers').some((doc) => doc.id === 'search' && doc.href === '/search')).toBe(true);
+    expect(docsMatching('learning paths, ecosystem pointers').some((doc) => doc.id === 'home')).toBe(true);
     expect(SEARCH_DOCUMENTS.find((doc) => doc.id === 'home')?.sources.map((source) => source.label)).toEqual(
       expect.arrayContaining(['THORChain Docs', 'THORChain Dev Docs', 'THORNode inbound_addresses', 'THORNode Mimir endpoint', 'Midgard v2 Network', 'Midgard v2 Pools'])
     );
-    expect(docsMatching('protocol claim checks').some((doc) => doc.id === 'protocol')).toBe(true);
-    expect(docsMatching('current availability claim').some((doc) => doc.id === 'protocol')).toBe(true);
-    expect(docsMatching('security vault claim').some((doc) => doc.id === 'protocol')).toBe(true);
-    expect(docsMatching('developer integration claim').some((doc) => doc.id === 'protocol')).toBe(true);
-    expect(docsMatching('Check a route route quoteability').some((doc) => doc.id === 'protocol')).toBe(true);
+    expect(docsMatching('swaps, TSS, Bifrost, Mimir, halts, app layer, and supported chains').some((doc) => doc.id === 'protocol')).toBe(true);
     expect(SEARCH_DOCUMENTS.find((doc) => doc.id === 'stats')?.sources.map((source) => source.label)).toEqual(
       expect.arrayContaining(['Liquify Midgard v2 Health', 'Liquify Midgard v2 Network', 'Liquify Midgard v2 Pools', 'Liquify Midgard v2 Earnings', 'Liquify THORNode Mimir endpoint'])
     );
     expect(SEARCH_DOCUMENTS.find((doc) => doc.id === 'ecosystem')?.sources.map((source) => source.label)).toEqual(
       expect.arrayContaining(['THORChain Ecosystem', 'Liquify THORNode inbound_addresses', 'THORChain Network Halts'])
     );
-    expect(docsMatching('economic claim checks').some((doc) => doc.id === 'economics')).toBe(true);
-    expect(docsMatching('current metric claim').some((doc) => doc.id === 'economics')).toBe(true);
-    expect(docsMatching('fee revenue claim').some((doc) => doc.id === 'economics')).toBe(true);
-    expect(docsMatching('RUNEPool POL current snapshot same provider same height').some((doc) => doc.id === 'economics')).toBe(true);
-    expect(docsMatching('which value matters no yield proof').some((doc) => doc.id === 'economics')).toBe(true);
-    expect(docsMatching('revenue lift route competitiveness').some((doc) => doc.id === 'economics')).toBe(true);
-    expect(docsMatching('governance claim checks').some((doc) => doc.id === 'governance')).toBe(true);
-    expect(docsMatching('operational Mimir claim').some((doc) => doc.id === 'governance')).toBe(true);
-    expect(docsMatching('ADR proposal status').some((doc) => doc.id === 'governance')).toBe(true);
-    expect(docsMatching('incident root-cause claim').some((doc) => doc.id === 'governance')).toBe(true);
-    expect(docsMatching('community sentiment claim').some((doc) => doc.id === 'governance')).toBe(true);
+    expect(docsMatching('live RUNEPool/POL accounting, and trade assets').some((doc) => doc.id === 'economics')).toBe(true);
+    expect(docsMatching('operational Mimir').some((doc) => doc.id === 'governance')).toBe(true);
     expect(docsMatching('App Layer contract, secured asset, trade account').some((doc) => doc.id === 'task:source-choice')).toBe(true);
     expect(docsMatching('Contract safety, wallet support, redemption capacity').some((doc) => doc.id === 'task:source-choice')).toBe(true);
-    expect(docsMatching('RUNE claim checks').some((doc) => doc.id === 'rune')).toBe(true);
-    expect(docsMatching('RUNE number router').some((doc) => doc.id === 'rune')).toBe(true);
-    expect(docsMatching('which RUNE number').some((doc) => doc.id === 'rune')).toBe(true);
-    expect(docsMatching('settlement role').some((doc) => doc.id === 'rune')).toBe(true);
-    expect(docsMatching('current network number').some((doc) => doc.id === 'rune')).toBe(true);
-    expect(docsMatching('minimum bond slash settings Mimir').some((doc) => doc.id === 'rune')).toBe(true);
-    expect(docsMatching('value investment claim').some((doc) => doc.id === 'rune')).toBe(true);
-    expect(docsMatching('fair value price target').some((doc) => doc.id === 'rune')).toBe(true);
-    expect(docsMatching('definition map').some((doc) => doc.id === 'glossary')).toBe(true);
-    expect(docsMatching('live state terms').some((doc) => doc.id === 'glossary')).toBe(true);
-    expect(docsMatching('vault signing observation terms').some((doc) => doc.id === 'glossary')).toBe(true);
-    expect(docsMatching('swap fee terms').some((doc) => doc.id === 'glossary')).toBe(true);
-    expect(docsMatching('liquidity pool accounting terms').some((doc) => doc.id === 'glossary')).toBe(true);
-    expect(docsMatching('quote expiry recommended_min_amount_in').some((doc) => doc.id === 'glossary')).toBe(true);
-    expect(docsMatching('app layer asset terms').some((doc) => doc.id === 'glossary')).toBe(true);
-    expect(docsMatching('incident recovery terms').some((doc) => doc.id === 'glossary')).toBe(true);
-    expect(docsMatching('recovery proof').some((doc) => doc.id === 'glossary')).toBe(true);
+    expect(docsMatching('Native settlement, bond, and liquidity asset').some((doc) => doc.id === 'rune')).toBe(true);
+    expect(docsMatching('Source-aware definitions').some((doc) => doc.id === 'glossary')).toBe(true);
+    expect(docsMatching('protocol, economics, operations, and historical terms').some((doc) => doc.id === 'glossary')).toBe(true);
+    expect(docsMatching('recommended_min_amount_in').some((doc) => doc.id === 'glossary:recommended-min-amount-in')).toBe(true);
   });
 
   it('keeps every glossary term assigned to one definition-map path', () => {
@@ -743,9 +715,9 @@ describe('SEARCH_DOCUMENTS', () => {
     expect(docsMatching('TCY distribution now').some((doc) => doc.id === 'task:tcy-current-controls')).toBe(true);
     expect(docsMatching('current TCY distribution').some((doc) => doc.id === 'task:tcy-current-controls')).toBe(true);
     expect(docsMatching('TCY trading halted').some((doc) => doc.id === 'task:tcy-current-controls')).toBe(true);
-    expect(docsMatching('read these controls first claim halt check staking halt check trading halt check').some((doc) => doc.id === 'tcy' && doc.href === '/tcy')).toBe(true);
-    expect(docsMatching('TCYCLAIMINGHALT').some((doc) => doc.id === 'tcy' && doc.href === '/tcy')).toBe(true);
-    expect(docsMatching('HALTTCYTRADING').some((doc) => doc.id === 'tcy' && doc.href === '/tcy')).toBe(true);
+    expect(docsMatching('Historical THORFi unwind, deprecated Savers/Lending, and TCY recovery framing').some((doc) => doc.id === 'tcy' && doc.href === '/tcy')).toBe(true);
+    expect(docsMatching('TCYCLAIMINGHALT').some((doc) => doc.id === 'task:tcy-current-controls')).toBe(true);
+    expect(docsMatching('HALTTCYTRADING').some((doc) => doc.id === 'task:tcy-current-controls')).toBe(true);
     expect(docsMatching('choose wallet').some((doc) => doc.id === 'task:choose-interface' && doc.href === '/ecosystem#interface-use-checklist' && doc.slug === '/ecosystem')).toBe(true);
     expect(docsMatching('swap or quote').some((doc) => doc.id === 'task:choose-interface')).toBe(true);
     expect(docsMatching('transaction refund evidence').some((doc) => doc.id === 'task:choose-interface')).toBe(true);
@@ -905,16 +877,16 @@ describe('SEARCH_DOCUMENTS', () => {
     expect(docsMatching('scheduled controls').some((doc) => doc.id === 'deep-dive-path:network-security')).toBe(true);
     expect(docsMatching('app layer integrations').some((doc) => doc.id === 'deep-dive-path:app-layer-integrations')).toBe(true);
     expect(docsMatching('historical recovery').some((doc) => doc.id === 'deep-dive-path:historical-recovery')).toBe(true);
-    expect(docsMatching('Mimir halt controls').some((doc) => doc.id === 'deep-dive-mimir-halt-controls')).toBe(true);
-    expect(docsMatching('what CLP can prove evidence ladder').some((doc) => doc.id === 'deep-dive-clp')).toBe(true);
-    expect(docsMatching('Liquidity Actions LP actions add liquidity').some((doc) => doc.id === 'deep-dive-liquidity-actions')).toBe(true);
-    expect(docsMatching('RUNEPool POL protocol owned liquidity evidence').some((doc) => doc.id === 'deep-dive-runepool-pol')).toBe(true);
-    expect(docsMatching('streaming swaps refunds').some((doc) => doc.id === 'deep-dive-streaming-swaps-refunds')).toBe(true);
-    expect(docsMatching('Midgard THORNode data live data guide').some((doc) => doc.id === 'deep-dive-midgard-thornode-data')).toBe(true);
-    expect(docsMatching('what this guide can prove claim to source matrix').some((doc) => doc.id === 'deep-dive-midgard-thornode-data')).toBe(true);
+    expect(docsMatching('Mimir halt keys, scoped controls, scheduled values').some((doc) => doc.id === 'deep-dive-mimir-halt-controls')).toBe(true);
+    expect(docsMatching('constant-function, slip-priced pools').some((doc) => doc.id === 'deep-dive-clp')).toBe(true);
+    expect(docsMatching('pool-deposit, asymmetric-withdrawal, RUNEPool, and yield claims').some((doc) => doc.id === 'deep-dive-liquidity-actions')).toBe(true);
+    expect(docsMatching('protocol-owned-liquidity evidence').some((doc) => doc.id === 'deep-dive-runepool-pol')).toBe(true);
+    expect(docsMatching('Streaming Swaps And Refunds').some((doc) => doc.id === 'deep-dive-streaming-swaps-refunds')).toBe(true);
+    expect(docsMatching('Midgard dashboard data and THORNode raw protocol state').some((doc) => doc.id === 'deep-dive-midgard-thornode-data')).toBe(true);
+    expect(docsMatching('What This Page Can Prove').some((doc) => doc.id === 'deep-dive-midgard-thornode-data')).toBe(true);
     expect(docsMatching('Use THORNode when the claim is about current protocol state').some((doc) => doc.id === 'deep-dive-midgard-thornode-data')).toBe(true);
     expect(docsMatching('Pool presence, 24h volume, or a healthy Midgard metrics call proves a route will quote').some((doc) => doc.id === 'deep-dive-midgard-thornode-data')).toBe(true);
-    expect(docsMatching('provider failover same-provider evidence').some((doc) => doc.id === 'deep-dive-midgard-thornode-data')).toBe(true);
+    expect(docsMatching('provider failover').some((doc) => doc.id === 'deep-dive-midgard-thornode-data')).toBe(true);
     expect(docsMatching('TCY recovery timeline').some((doc) => doc.id === 'deep-dive-tcy-recovery-timeline')).toBe(true);
 
     const bifrost = SEARCH_DOCUMENTS.find((doc) => doc.id === 'deep-dive-bifrost');
@@ -959,12 +931,14 @@ describe('SEARCH_DOCUMENTS', () => {
   it('indexes ADR-026 dynamic fee tracker terms', () => {
     expect(docsMatching('ADR-026').some((doc) => doc.slug === '/dynamic-fees')).toBe(true);
     expect(docsMatching('dynamic L1 fee').some((doc) => doc.slug === '/dynamic-fees')).toBe(true);
-    expect(docsMatching('DYNAMICFEE-WHITELIST').some((doc) => doc.slug === '/dynamic-fees')).toBe(true);
-    expect(docsMatching('fees_tor').some((doc) => doc.slug === '/dynamic-fees')).toBe(true);
-    expect(docsMatching('ShapeShift').some((doc) => doc.slug === '/dynamic-fees')).toBe(true);
-    expect(docsMatching('revenue lift').some((doc) => doc.slug === '/dynamic-fees')).toBe(true);
-    expect(docsMatching('route competitiveness').some((doc) => doc.slug === '/dynamic-fees')).toBe(true);
-    expect(docsMatching('L1-to-L1 scope').some((doc) => doc.slug === '/dynamic-fees')).toBe(true);
+    expect(docsMatching('DYNAMICFEE-WHITELIST').some((doc) => doc.id === 'task:fees-and-adr026')).toBe(true);
+    expect(docsMatching('fees_tor').some((doc) => doc.id === 'task:fees-and-adr026')).toBe(true);
+    expect(docsMatching('ShapeShift').some((doc) => doc.id === 'ecosystem:shapeshift')).toBe(true);
+    expect(docsMatching('live whitelisted thorname records').some((doc) => doc.slug === '/dynamic-fees')).toBe(true);
+    expect(docsMatching('revenue lift').some((doc) => doc.id === 'deep-dive-incentive-pendulum')).toBe(true);
+    expect(docsMatching('route competitiveness').some((doc) => doc.id === 'deep-dive-rune-settlement')).toBe(true);
+    expect(docsMatching('fees_tor').some((doc) => doc.id === 'task:fees-and-adr026')).toBe(true);
+    expect(docsMatching('DYNAMICFEE-WHITELIST').some((doc) => doc.id === 'task:fees-and-adr026')).toBe(true);
     expect(docsMatching('ADR-026 Dynamic L1 Fees').some((doc) => doc.id === 'governance:adr-026-dynamic-l1-fees')).toBe(true);
     expect(SEARCH_DOCUMENTS.find((doc) => doc.id === 'governance:adr-026-dynamic-l1-fees')?.nextReviewDue).toBe('2026-11-17');
     expect(docsMatching('dynamic_l1_fees_current').some((doc) => doc.id === 'source-map:dynamic-fee-experiment')).toBe(true);
@@ -994,7 +968,7 @@ describe('SEARCH_DOCUMENTS', () => {
     expect(docsMatching('Which current TCY controls need review before making claim').some((doc) => doc.id === 'source-map:historical-features-and-recovery')).toBe(true);
     expect(docsMatching('TCY claiming, staking, trading, distributions').some((doc) => doc.id === 'source-map:historical-features-and-recovery')).toBe(true);
     expect(docsMatching('sentiment without careful sampling').some((doc) => doc.id === 'source-map:community-channels')).toBe(true);
-    expect(docsMatching('fast source triage').some((doc) => doc.id === 'docs')).toBe(true);
+    expect(docsMatching('Official documentation, developer resources, and live API references').some((doc) => doc.id === 'docs')).toBe(true);
     expect(docsMatching('match source to claim').some((doc) => doc.id === 'task:source-choice')).toBe(true);
   });
 

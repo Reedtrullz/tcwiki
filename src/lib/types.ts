@@ -62,8 +62,6 @@ export interface ThorNodeReadiness {
 }
 
 /** @deprecated Use ThorNodeReadiness. */
-export type ThornodeReadiness = ThorNodeReadiness;
-
 export interface RuntimeMetadataDiagnostics {
   version: string;
   commit: string;

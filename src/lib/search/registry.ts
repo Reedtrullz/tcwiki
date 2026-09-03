@@ -164,7 +164,6 @@ export const SEARCH_DOCUMENTS: SearchDoc[] = [
     description: entry.description,
     content: [
       entry.description,
-      entry.body,
       mdxBySlug.get(entry.href)?.content ?? '',
       entry.tags.join(' '),
       entry.sources.map((source) => source.label).join(' '),
