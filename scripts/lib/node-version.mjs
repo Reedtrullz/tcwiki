@@ -3,7 +3,7 @@ export const REQUIRED_NODE_MIN_MINOR = 12;
 
 function parseNodeVersionParts(version) {
   const normalized = typeof version === 'string' ? version.trim() : '';
-  const match = /^v?(\d+)(?:\.(\d+))?(?:\.|$)/.exec(normalized);
+  const match = /^v?(\d+)\.(\d+)\.(\d+)$/.exec(normalized);
   if (!match) {
     throw new Error(`Could not parse Node.js version ${JSON.stringify(version)}.`);
   }
