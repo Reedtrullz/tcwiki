@@ -817,7 +817,7 @@ describe('deriveNetworkStatus', () => {
     expect(nearMiss.state).toBe('degraded');
     expect(nearMiss.activePauseKeys).toEqual([]);
     expect(nearMiss.sourceWarnings).toEqual([
-      'Unknown chain-scoped Mimir key ignored: HALTTRRONTRADING.',
+      'Unknown chain-scoped Mimir key ignored by THORNode: HALTTRRONTRADING (canonical key: HALTTRONTRADING).',
       'Unknown operation-like Mimir keys need review: HaltTradeDeposit-, HaltTradeDeposit-BASE-extra, HaltTradeWithdraw-FOO.',
     ]);
     expect((nearMiss.sourceWarningDetails ?? []).flatMap((warning) => warning.keys ?? [])).toEqual([
@@ -825,6 +825,39 @@ describe('deriveNetworkStatus', () => {
       'HaltTradeDeposit-',
       'HaltTradeDeposit-BASE-extra',
       'HaltTradeWithdraw-FOO',
+    ]);
+  });
+
+  it('explains the known THORNode TRON key spelling mismatch without inferring a halt', () => {
+    const status = deriveNetworkStatus(
+      {
+        HALTTRONTRADING: 0,
+        HALTTRRONTRADING: 1,
+      },
+      [completeInbound('TRON')],
+      '3.20.0',
+      100
+    );
+
+    expect(status.tradingPaused).toBe(false);
+    expect(status.activeChainKeys).toEqual([]);
+    expect(status.chainStatuses[0]).toMatchObject({
+      chain: 'TRON',
+      tradingPaused: false,
+      activeMimirKeys: [],
+    });
+    expect(status.sourceWarnings).toEqual([
+      'Unknown chain-scoped Mimir key ignored by THORNode: HALTTRRONTRADING (canonical key: HALTTRONTRADING).',
+    ]);
+    expect(status.sourceWarningDetails).toEqual([
+      {
+        severity: 'review',
+        category: 'unknown-chain',
+        message: 'Unknown chain-scoped Mimir key ignored by THORNode: HALTTRRONTRADING (canonical key: HALTTRONTRADING).',
+        action: 'THORNode uses HALTTRONTRADING for TRON; verify or remove the misspelled key before treating it as a TRON halt.',
+        keys: ['HALTTRRONTRADING'],
+        scopes: ['TRON'],
+      },
     ]);
   });
 

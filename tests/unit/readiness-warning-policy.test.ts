@@ -49,7 +49,7 @@ describe('readiness warning policy', () => {
   });
 
   it('treats unknown-chain review warnings as non-blocking because unrecognized chains are not routable', () => {
-    const typoKeyMessage = 'Unknown chain-scoped Mimir key ignored: HALTTRRONTRADING.';
+    const typoKeyMessage = 'Unknown chain-scoped Mimir key ignored by THORNode: HALTTRRONTRADING (canonical key: HALTTRONTRADING).';
 
     expect(isNonBlockingReadinessWarning(detail(typoKeyMessage, { category: 'unknown-chain' }))).toBe(true);
     expect(partitionReadinessWarnings(
