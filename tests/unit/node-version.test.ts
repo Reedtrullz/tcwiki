@@ -8,9 +8,11 @@ import {
 } from '../../scripts/lib/node-version.mjs';
 
 describe('Node version guard', () => {
-  it('accepts only Node 22 major versions', () => {
+  it('accepts Node 22.12 and newer within the supported major', () => {
+    expect(isSupportedNodeVersion('22.12.0')).toBe(true);
     expect(isSupportedNodeVersion('22.22.3')).toBe(true);
-    expect(isSupportedNodeVersion('v22.0.0')).toBe(true);
+    expect(isSupportedNodeVersion('22.11.9')).toBe(false);
+    expect(isSupportedNodeVersion('v22.0.0')).toBe(false);
     expect(isSupportedNodeVersion('20.19.5')).toBe(false);
     expect(isSupportedNodeVersion('23.0.0')).toBe(false);
   });
@@ -24,7 +26,8 @@ describe('Node version guard', () => {
 
   it('fails closed on malformed or unsupported versions with a useful local fix', () => {
     expect(() => parseNodeMajor('banana')).toThrow(/Could not parse Node\.js version/);
-    expect(() => assertSupportedNodeVersion('20.19.5')).toThrow(/requires Node\.js 22\.x/);
+    expect(() => isSupportedNodeVersion('banana')).toThrow(/Could not parse Node\.js version/);
+    expect(() => assertSupportedNodeVersion('22.11.9')).toThrow(/requires Node\.js >=22\.12\.0 <23/);
     expect(unsupportedNodeVersionMessage('20.19.5')).toContain('Run `nvm use`');
   });
 });

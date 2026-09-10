@@ -1,13 +1,21 @@
 export const REQUIRED_NODE_MAJOR = 22;
+export const REQUIRED_NODE_MIN_MINOR = 12;
 
-export function parseNodeMajor(version) {
+function parseNodeVersionParts(version) {
   const normalized = typeof version === 'string' ? version.trim() : '';
-  const match = /^v?(\d+)(?:\.|$)/.exec(normalized);
+  const match = /^v?(\d+)(?:\.(\d+))?(?:\.|$)/.exec(normalized);
   if (!match) {
     throw new Error(`Could not parse Node.js version ${JSON.stringify(version)}.`);
   }
 
-  return Number.parseInt(match[1], 10);
+  return {
+    major: Number.parseInt(match[1], 10),
+    minor: match[2] ? Number.parseInt(match[2], 10) : 0,
+  };
+}
+
+export function parseNodeMajor(version) {
+  return parseNodeVersionParts(version).major;
 }
 
 export function formatNodeVersion(version) {
@@ -20,12 +28,13 @@ export function formatNodeVersion(version) {
 }
 
 export function isSupportedNodeVersion(version = process.versions.node) {
-  return parseNodeMajor(version) === REQUIRED_NODE_MAJOR;
+  const { major, minor } = parseNodeVersionParts(version);
+  return major === REQUIRED_NODE_MAJOR && minor >= REQUIRED_NODE_MIN_MINOR;
 }
 
 export function unsupportedNodeVersionMessage(version = process.versions.node) {
   return [
-    `THORChain Wiki requires Node.js ${REQUIRED_NODE_MAJOR}.x; current runtime is ${formatNodeVersion(version)}.`,
+    `THORChain Wiki requires Node.js >=${REQUIRED_NODE_MAJOR}.${REQUIRED_NODE_MIN_MINOR}.0 <${REQUIRED_NODE_MAJOR + 1}; current runtime is ${formatNodeVersion(version)}.`,
     'Run `nvm use` from the repository root before local proof, release smoke, or development scripts.',
   ].join(' ');
 }
