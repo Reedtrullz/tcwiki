@@ -76,6 +76,9 @@ const NON_CHAIN_SCOPED_MIMIR_CODES = new Set(['TCY']);
 const CURATED_CHAIN_CODES = new Set([...CHAIN_RECORDS.map((record) => record.data.chain.toUpperCase()), 'THOR']);
 const TRADE_ACCOUNT_CHAIN_SCOPED_MIMIR_PREFIXES = ['HaltTradeDeposit-', 'HaltTradeWithdraw-'] as const;
 const KNOWN_NON_OPERATIONAL_PAUSE_KEYS = new Set(['PAUSEONSLASHTHRESHOLD', 'HALTWASMCONTRACT']);
+const KNOWN_MIMIR_SPELLING_MISMATCHES = new Map([
+  ['HALTTRRONTRADING', { canonicalKey: 'HALTTRONTRADING', scope: 'TRON' }],
+]);
 const DYNAMIC_L1_FEE_WHITELIST_PREFIX = 'DYNAMICFEE-WHITELIST-';
 const TOR_BASE_UNIT_MAX_DIGITS = 80;
 const TOR_BASE_UNIT_PATTERN = /^\d+$/;
@@ -1854,6 +1857,31 @@ function getInvalidMimirKeysByPrefix(mimir: Record<string, unknown>, prefix: str
     .sort();
 }
 
+function getKnownMimirSpellingMismatch(key: string) {
+  return KNOWN_MIMIR_SPELLING_MISMATCHES.get(key.toUpperCase());
+}
+
+function unknownChainScopedMimirWarning(keys: string[]) {
+  const mismatch = keys.length === 1 ? getKnownMimirSpellingMismatch(keys[0]) : undefined;
+  if (mismatch) {
+    return `Unknown chain-scoped Mimir key ignored by THORNode: ${keys[0]} (canonical key: ${mismatch.canonicalKey}).`;
+  }
+
+  return `Unknown chain-scoped Mimir key${keys.length === 1 ? '' : 's'} ignored: ${keys.join(', ')}.`;
+}
+
+function unknownChainScopedMimirWarningAction(keys: string[]) {
+  const mismatch = keys.length === 1 ? getKnownMimirSpellingMismatch(keys[0]) : undefined;
+  return mismatch
+    ? `THORNode uses ${mismatch.canonicalKey} for ${mismatch.scope}; verify or remove the misspelled key before treating it as a ${mismatch.scope} halt.`
+    : 'Classify the chain-scoped key family before treating it as non-pausing.';
+}
+
+function unknownChainScopedMimirWarningScopes(keys: string[]) {
+  const mismatch = keys.length === 1 ? getKnownMimirSpellingMismatch(keys[0]) : undefined;
+  return mismatch ? [mismatch.scope] : undefined;
+}
+
 function getChainCodeFromScopedMimirKey(key: string): string | null {
   const upperKey = key.toUpperCase();
   const haltMatch = upperKey.match(/^HALT([A-Z0-9]+)(TRADING|CHAIN)$/);
@@ -2726,7 +2754,7 @@ export function deriveNetworkStatus(
     ? `${invalidMimirKeys.length} monitored Mimir key${invalidMimirKeys.length === 1 ? '' : 's'} could not be parsed.`
     : null;
   const unknownChainWarning = unknownChainScopedMimirKeys.length > 0
-    ? `Unknown chain-scoped Mimir key${unknownChainScopedMimirKeys.length === 1 ? '' : 's'} ignored: ${unknownChainScopedMimirKeys.join(', ')}.`
+    ? unknownChainScopedMimirWarning(unknownChainScopedMimirKeys)
     : null;
   const unknownOperationWarning = unknownOperationMimirKeys.length > 0
     ? `Unknown operation-like Mimir key${unknownOperationMimirKeys.length === 1 ? '' : 's'} need review: ${unknownOperationMimirKeys.join(', ')}.`
@@ -2762,8 +2790,9 @@ export function deriveNetworkStatus(
             severity: 'review',
             category: 'unknown-chain',
             message: unknownChainWarning,
-            action: 'Classify the chain-scoped key family before treating it as non-pausing.',
+            action: unknownChainScopedMimirWarningAction(unknownChainScopedMimirKeys),
             keys: unknownChainScopedMimirKeys,
+            scopes: unknownChainScopedMimirWarningScopes(unknownChainScopedMimirKeys),
           }),
         ]
       : []),
