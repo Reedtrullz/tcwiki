@@ -37,6 +37,8 @@ describe('trust helpers', () => {
     expect(formatRuneFromBaseUnits('900719925474099212345678')).toBe('9,007,199,254,740,992');
     expect(formatRuneFromBaseUnits('149999999')).toBe('1');
     expect(formatRuneFromBaseUnits('150000000')).toBe('2');
+    expect(formatRuneFromBaseUnits('-90617123456789')).toBe('-906,171');
+    expect(formatRuneFromBaseUnits('-149999999')).toBe('-1');
   });
 
   it('normalizes decimal and percentage shaped APY values', () => {
