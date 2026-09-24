@@ -90,6 +90,26 @@ export async function mockSwapperFirstNetwork(page: Page, options: SwapperFirstN
       },
     });
   });
+  await page.route(/\/history\/earnings\?.*$/, async (route) => {
+    await fulfillJson(route, {
+      meta: { pagination: {} },
+      type: 'history',
+      intervals: [
+        {
+          startTime: '1751769600',
+          endTime: '1751856000',
+          liquidityFees: '0',
+          blockRewards: '0',
+          earnings: '0',
+          bondingEarnings: '0',
+          liquidityEarnings: '0',
+          avgNodeCount: '99.00',
+          runePriceUSD: '0.62',
+          pools: [],
+        },
+      ],
+    });
+  });
   await page.route(/\/v2\/pools\?status=available$/, async (route) => {
     await fulfillJson(route, pools);
   });
