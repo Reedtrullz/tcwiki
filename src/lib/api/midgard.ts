@@ -653,6 +653,34 @@ export class MidgardAPI {
       }
     );
   }
+
+  static async getPoolVolumeHistory(pool: string, interval = 'day', count = 8): Promise<LiveDataResult<Record<string, unknown>[]>> {
+    return requestNormalized<{ intervals?: Record<string, unknown>[] }, Record<string, unknown>[]>(
+      `/history/swaps?pool=${encodeURIComponent(pool)}&interval=${encodeURIComponent(interval)}&count=${count}`,
+      (result) => {
+        if (result.status !== 'ok') {
+          return liveDegraded<Record<string, unknown>[]>(
+            result.error ?? 'Midgard pool volume history did not load',
+            result.sources ?? result.source,
+            result.checkedAt
+          );
+        }
+
+        if (!Array.isArray(result.data?.intervals)) {
+          return liveDegraded<Record<string, unknown>[]>(
+            'Midgard pool volume history response did not include intervals',
+            result.sources ?? result.source,
+            result.checkedAt
+          );
+        }
+
+        return {
+          ...result,
+          data: result.data.intervals,
+        };
+      }
+    );
+  }
 }
 
 export default MidgardAPI;

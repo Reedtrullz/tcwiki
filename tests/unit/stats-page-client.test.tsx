@@ -38,6 +38,13 @@ vi.mock('@/lib/hooks/useMidgard', () => ({
   useNetworkStatus: () => hookState.status(),
   usePools: () => hookState.pools(),
   useSwapQuoteProbe: () => hookState.quote(),
+  useDailyVolume: () => ({
+    data: undefined,
+    result: undefined,
+    error: undefined,
+    isLoading: false,
+    isDegraded: false,
+  }),
 }));
 
 vi.mock('next/navigation', () => ({

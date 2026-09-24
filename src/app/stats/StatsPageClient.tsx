@@ -26,6 +26,7 @@ import { PageTableOfContents, type TocItem } from '@/components/layout/PageTable
 import { usePoolExplorerFilters } from '@/hooks/usePoolExplorerFilters';
 import { StatsPoolExplorer } from '@/components/features/StatsPoolExplorer';
 import { StatsEarningsTable } from '@/components/features/StatsEarningsTable';
+import { DailyVolumeLeaderboard } from '@/components/features/DailyVolumeLeaderboard';
 
 const statsRelatedChecks: RelatedCheck[] = [
   {
@@ -309,6 +310,8 @@ export default function StatsPage() {
           ))}
         </div>
       </section>
+
+      <DailyVolumeLeaderboard />
 
       <section id="stats-live-metrics" aria-labelledby="stats-live-metrics-heading" className="mb-12">
         <SectionHeader id="stats-live-metrics-heading" level="primary">Live Metrics</SectionHeader>
