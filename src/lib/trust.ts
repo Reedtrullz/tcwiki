@@ -11,7 +11,7 @@ import {
 const RUNE_BASE_UNITS = BigInt(100000000);
 const ZERO_BIGINT = BigInt(0);
 const MAX_SAFE_INTEGER_BIGINT = BigInt(Number.MAX_SAFE_INTEGER);
-const BASE_UNIT_DECIMAL_PATTERN = /^\d+$/;
+const BASE_UNIT_DECIMAL_PATTERN = /^-?\d+$/;
 const DECIMAL_NUMBER_PATTERN = /^[+-]?(?:\d+(?:\.\d+)?|\.\d+)$/;
 
 export function withFreshness<T>(
@@ -52,14 +52,10 @@ function runeBaseUnitsToBigInt(baseUnits: string | number | bigint | undefined):
   }
 
   if (typeof baseUnits === 'number') {
-    if (!Number.isSafeInteger(baseUnits) || baseUnits < 0) {
+    if (!Number.isSafeInteger(baseUnits)) {
       return null;
     }
     return BigInt(baseUnits);
-  }
-
-  if (baseUnits < ZERO_BIGINT) {
-    return null;
   }
 
   return baseUnits;
@@ -86,8 +82,10 @@ export function formatRuneFromBaseUnits(baseUnits: string | number | bigint | un
     return 'Unavailable';
   }
 
-  const roundedRune = (units + (RUNE_BASE_UNITS / BigInt(2))) / RUNE_BASE_UNITS;
-  return roundedRune.toLocaleString();
+  const sign = units < ZERO_BIGINT ? '-' : '';
+  const absolute = units < ZERO_BIGINT ? -units : units;
+  const roundedRune = (absolute + (RUNE_BASE_UNITS / BigInt(2))) / RUNE_BASE_UNITS;
+  return `${sign}${roundedRune.toLocaleString()}`;
 }
 
 type ApyInputScale = 'decimal' | 'percent';

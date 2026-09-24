@@ -29,7 +29,7 @@ test.describe('THORChain Wiki Economics Smoke Tests', () => {
     await expect(panel.getByText('POL current value')).toBeVisible();
     await expect(panel.getByText(/3,740,894 RUNE/).first()).toBeVisible();
     await expect(panel.getByText(/protocol-owned-liquidity bucket current value/i)).toBeVisible();
-    await expect(panel.getByText('POL PnL')).toBeVisible();
+    await expect(panel.getByText('POL PnL').first()).toBeVisible();
     await expect(panel.getByText(/-1,854,203 RUNE/).first()).toBeVisible();
     await expect(panel.getByText(/not APY or future yield/i)).toBeVisible();
     await expect(panel.getByText('RUNEPoolDepositMaturityBlocks')).toBeVisible();

@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { RunepoolPolView } from '@/app/economics/RunepoolPolPanel';
-import type { LiveDataResult, NetworkStatus, RunePoolPolStatus } from '@/lib/types';
+import type { HistoryItem, LiveDataResult, NetworkStatus, RunePoolPolStatus } from '@/lib/types';
 
 const status: RunePoolPolStatus = {
   pol: {
@@ -95,12 +95,28 @@ const networkResult: LiveDataResult<NetworkStatus> = {
   source: { label: 'Liquify THORNode', url: 'https://gateway.liquify.com/chain/thorchain_api/thorchain' },
 };
 
+const earningsHistory: HistoryItem[] = [
+  {
+    startTime: '1751769600',
+    endTime: '1751856000',
+    liquidityFees: '0',
+    blockRewards: '0',
+    earnings: '0',
+    bondingEarnings: '0',
+    liquidityEarnings: '0',
+    avgNodeCount: '99.00',
+    runePriceUSD: '0.62',
+    pools: [],
+  },
+];
+
 describe('RunepoolPolView', () => {
   it('renders current accounting, availability, source labels, and non-claims', () => {
     const html = renderToStaticMarkup(
       <RunepoolPolView
         result={result}
         status={status}
+        earningsHistory={earningsHistory}
         networkResult={networkResult}
         networkStatus={networkStatus}
       />
@@ -160,6 +176,17 @@ describe('RunepoolPolView', () => {
     expect(html).toContain('Show source warnings');
     expect(html).toContain('require separate evidence');
     expect(html).not.toContain('$0.00');
+    expect(html).toContain('POL Tracker');
+    expect(html).toContain('Lifetime deposited');
+    expect(html).toContain('12,503,131 RUNE');
+    expect(html).toContain('Lifetime withdrawn');
+    expect(html).toContain('6,908,035 RUNE');
+    expect(html).toContain('USD basis');
+    expect(html).toContain('$0.62</span>');
+    expect(html).toContain('$2.3M');
+    expect(html).toContain('-$1.1M');
+    expect(html).toContain('Negative');
+    expect(html).toContain('Latest Midgard daily RUNE/USD interval (Jul 6)');
   });
 
   it('shows unavailable values and warning posture for malformed accounting', () => {

@@ -5,10 +5,11 @@ import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import { LiveSourceMeta } from '@/components/ui/LiveSourceMeta';
 import { SectionHeader } from '@/components/ui/SectionHeader';
-import { useNetworkStatus, useRunePoolPolStatus } from '@/lib/hooks/useMidgard';
+import { useEarningsHistory, useNetworkStatus, useRunePoolPolStatus } from '@/lib/hooks/useMidgard';
 import { liveResultIsDegraded } from '@/lib/live-result';
 import { summarizeSourceWarning } from '@/lib/source-warnings';
-import type { LiveDataResult, NetworkStatus, RunePoolPolStatus } from '@/lib/types';
+import { formatRuneFromBaseUnits } from '@/lib/trust';
+import type { HistoryItem, LiveDataResult, NetworkStatus, RunePoolPolStatus } from '@/lib/types';
 
 const RUNE_BASE_UNITS = BigInt(100000000);
 
@@ -18,9 +19,24 @@ interface RunePoolPolViewProps {
   result?: LiveDataResult<RunePoolPolStatus>;
   status?: RunePoolPolStatus;
   isLoading?: boolean;
+  earningsHistory?: HistoryItem[];
+  earningsLoading?: boolean;
   networkResult?: LiveDataResult<NetworkStatus>;
   networkStatus?: NetworkStatus;
   networkLoading?: boolean;
+}
+
+interface PolTrackerSummary {
+  polRune: string;
+  polUsd: string;
+  pnlRune: string;
+  pnlUsd: string;
+  pnlTone: FactTone;
+  lifetimeDeposited: string;
+  lifetimeWithdrawn: string;
+  usdPrice: string;
+  usdPriceNote: string;
+  usdTone: FactTone;
 }
 
 function badgeVariant(tone: FactTone) {
@@ -87,6 +103,90 @@ function formatUnitValue(value: string | null | undefined) {
   } catch {
     return 'Unavailable';
   }
+}
+
+function parseFiniteDecimal(value: string | undefined) {
+  if (value === undefined || value === '') {
+    return null;
+  }
+
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : null;
+}
+
+function formatUsdCompact(value: number | null) {
+  if (value === null || !Number.isFinite(value)) {
+    return 'Unavailable';
+  }
+
+  return `${value < 0 ? '-' : ''}$${Math.abs(value).toLocaleString(undefined, {
+    notation: Math.abs(value) >= 100_000 ? 'compact' : 'standard',
+    maximumFractionDigits: Math.abs(value) >= 1_000 ? 1 : 2,
+  })}`;
+}
+
+function runeNumberFromBaseUnits(value: string | null | undefined) {
+  const raw = parseRuneBaseUnits(value);
+  return raw === null ? null : Number(raw) / Number(RUNE_BASE_UNITS);
+}
+
+function formatUsdPrice(value: number | null) {
+  if (value === null) {
+    return 'Unavailable';
+  }
+
+  return `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}`;
+}
+
+function formatHistoryDate(seconds: string | undefined) {
+  if (!seconds) {
+    return null;
+  }
+
+  const parsed = Number(seconds);
+  if (!Number.isFinite(parsed)) {
+    return null;
+  }
+
+  return new Date(parsed * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+}
+
+function derivePolTrackerSummary(
+  status: RunePoolPolStatus | undefined,
+  earningsHistory: HistoryItem[] | undefined,
+  earningsLoading: boolean | undefined
+): PolTrackerSummary | undefined {
+  if (!status) {
+    return undefined;
+  }
+
+  const formatRuneOrUnavailable = (value: string | null) => (value === null ? 'Unavailable' : formatRuneFromBaseUnits(value));
+  const polRune = runeNumberFromBaseUnits(status.pol.valueRuneBaseUnits);
+  const pnlRune = runeNumberFromBaseUnits(status.pol.pnlRuneBaseUnits);
+  const runePriceUsd = earningsHistory
+    ?.map((item) => parseFiniteDecimal(item.runePriceUSD))
+    .filter((price): price is number => price !== null && price > 0)
+    .at(-1);
+  const latestEarningsItem = earningsHistory?.at(-1);
+  const usdPriceNote = earningsLoading && runePriceUsd === undefined
+    ? 'Midgard daily RUNE/USD price is loading.'
+    : runePriceUsd === undefined
+      ? 'Midgard daily RUNE/USD price was not available in the loaded history.'
+      : `Latest Midgard daily RUNE/USD interval (${formatHistoryDate(latestEarningsItem?.startTime) ?? 'date unavailable'})`;
+  const usdTone: FactTone = runePriceUsd === undefined ? 'info' : 'success';
+
+  return {
+    polRune: formatRuneOrUnavailable(status.pol.valueRuneBaseUnits),
+    polUsd: formatUsdCompact(polRune === null || runePriceUsd === undefined ? null : polRune * runePriceUsd),
+    pnlRune: formatRuneOrUnavailable(status.pol.pnlRuneBaseUnits),
+    pnlUsd: formatUsdCompact(pnlRune === null || runePriceUsd === undefined ? null : pnlRune * runePriceUsd),
+    pnlTone: pnlRune === null ? 'info' : pnlRune >= 0 ? 'success' : 'danger',
+    lifetimeDeposited: formatRuneOrUnavailable(status.pol.runeDepositedBaseUnits),
+    lifetimeWithdrawn: formatRuneOrUnavailable(status.pol.runeWithdrawnBaseUnits),
+    usdPrice: formatUsdPrice(runePriceUsd ?? null),
+    usdPriceNote,
+    usdTone,
+  };
 }
 
 function availabilityValue(value: boolean | null | undefined, isLoading: boolean | undefined) {
@@ -374,6 +474,8 @@ export function RunepoolPolView({
   result,
   status,
   isLoading,
+  earningsHistory,
+  earningsLoading,
   networkResult,
   networkStatus,
   networkLoading,
@@ -405,6 +507,7 @@ export function RunepoolPolView({
   const warningHeadline = sourceWarningHeadline(status);
   const relationship = bucketRelationship(status);
   const snapshotCards = decisionCards;
+  const tracker = derivePolTrackerSummary(status, earningsHistory, earningsLoading);
 
   return (
     <section id="runepool-pol-live" className="mb-12 scroll-mt-24">
@@ -414,6 +517,50 @@ export function RunepoolPolView({
           This panel pairs current THORNode RUNEPool accounting with network diagnostics. Use it to locate the checked value, PnL, enablement flag, and POL scope. Yield, safety, and wallet-flow questions need their own checks.
         </p>
       </div>
+
+      <Card className="mb-4">
+        <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h3 className="text-base font-semibold text-slate-100">POL Tracker</h3>
+            <p className="mt-1 text-xs leading-relaxed text-slate-400">
+              Current protocol-owned-liquidity position from the height-pinned THORNode RUNEPool snapshot.
+            </p>
+          </div>
+          <Badge variant="info">Current-only</Badge>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="rounded-md border border-border bg-surface p-3">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">POL value</p>
+            <p className="mt-2 break-words text-lg font-semibold text-slate-100">{tracker?.polRune ?? 'Unavailable'}</p>
+            <p className="mt-1 break-words text-sm font-semibold text-accent">{tracker?.polUsd ?? 'Unavailable'}</p>
+            <p className="mt-1 text-[11px] text-slate-500">`pol.value` from the checked snapshot.</p>
+          </div>
+          <div className={`rounded-md border bg-surface p-3 ${factCardClass(tracker?.pnlTone ?? 'info')}`}>
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">POL PnL</p>
+            <p className="mt-2 break-words text-lg font-semibold text-slate-100">{tracker?.pnlRune ?? 'Unavailable'}</p>
+            <p className="mt-1 break-words text-sm font-semibold text-accent">{tracker?.pnlUsd ?? 'Unavailable'}</p>
+            <p className="mt-1 text-[11px] text-slate-500">`pol.pnl` is unrealized and can be negative.</p>
+            <div className="mt-2"><Badge variant={badgeVariant(tracker?.pnlTone ?? 'info')}>{tracker?.pnlTone === 'success' ? 'Positive' : tracker?.pnlTone === 'danger' ? 'Negative' : 'Unavailable'}</Badge></div>
+          </div>
+          <div className="rounded-md border border-border bg-surface p-3">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Lifetime deposited</p>
+            <p className="mt-2 break-words text-lg font-semibold text-slate-100">{tracker?.lifetimeDeposited ?? 'Unavailable'}</p>
+            <p className="mt-1 text-[11px] text-slate-500">`pol.rune_deposited` since POL module genesis.</p>
+          </div>
+          <div className="rounded-md border border-border bg-surface p-3">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Lifetime withdrawn</p>
+            <p className="mt-2 break-words text-lg font-semibold text-slate-100">{tracker?.lifetimeWithdrawn ?? 'Unavailable'}</p>
+            <p className="mt-1 text-[11px] text-slate-500">`pol.rune_withdrawn` since POL module genesis.</p>
+          </div>
+        </div>
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-md border border-border bg-surface px-3 py-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">USD basis</span>
+            <Badge variant={badgeVariant(tracker?.usdTone ?? 'info')}>{tracker?.usdPrice ?? 'Unavailable'}</Badge>
+          </div>
+          <p className="text-[11px] leading-relaxed text-slate-500">{tracker?.usdPriceNote ?? 'Midgard daily RUNE/USD price was not loaded.'}</p>
+        </div>
+      </Card>
 
       <div className="mb-4">
         <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">Read this snapshot first</p>
@@ -627,6 +774,7 @@ export function RunepoolPolPanel() {
     data,
     isLoading,
   } = useRunePoolPolStatus();
+  const { data: earningsHistory, isLoading: earningsLoading } = useEarningsHistory('day', 30);
   const {
     result: networkResult,
     data: networkStatus,
@@ -638,6 +786,8 @@ export function RunepoolPolPanel() {
       result={result}
       status={data}
       isLoading={isLoading}
+      earningsHistory={earningsHistory}
+      earningsLoading={earningsLoading}
       networkResult={networkResult}
       networkStatus={networkStatus}
       networkLoading={networkLoading}
