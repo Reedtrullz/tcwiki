@@ -17,6 +17,7 @@ import {
 } from '@/lib/types';
 import { liveDegraded } from '@/lib/trust';
 import { liveResultIsDegraded } from '@/lib/live-result';
+import { DAILY_VOLUME_POOLS } from '@/lib/daily-volume';
 
 const SWR_OPTIONS = {
   refreshInterval: 60000,
@@ -73,6 +74,24 @@ export function useEarningsHistory(interval = 'day', count = 30) {
     SWR_OPTIONS
   );
   return unwrapLiveResult(data, error, isLoading);
+}
+
+export function useDailyVolume() {
+  const { data, error, isLoading } = useSWR<LiveDataResult<Record<string, unknown>[]>[]>(
+    'midgard:daily-volume',
+    () => Promise.all(
+      DAILY_VOLUME_POOLS.map((pool) => MidgardAPI.getPoolVolumeHistory(pool, 'day', 8))
+    ),
+    SWR_OPTIONS
+  );
+
+  const result = data && !error ? {
+    status: data.every((entry) => entry.status === 'ok') ? 'ok' as const : 'degraded' as const,
+    data,
+    checkedAt: data[0]?.checkedAt,
+  } : undefined;
+
+  return { data: result?.data, result, error, isLoading, isDegraded: result?.status === 'degraded' };
 }
 
 export function useNetworkStatus() {
