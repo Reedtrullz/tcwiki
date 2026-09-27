@@ -56,6 +56,8 @@ We welcome improvements! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for:
 - **Health, readiness, and version checks**: The site exposes `/api/health`, `/api/ready`, and `/api/version`. `/api/health` is liveness-only; `/api/ready` carries upstream source confidence, RUNEPool/POL status, RUNEPool/POL source posture at `sources.thornode.runePoolPol`, and strict runtime identity diagnostics when `RUNTIME_METADATA_REQUIRED=1`. Ansible keeps the Docker health check on liveness and verifies health, version, image digest, commit metadata, and runtime diagnostics. Rollback uses the previous `/api/version` readback with Docker env fallback, verifies restored metadata, then fails closed after rollback attempts.
 - **Runtime headers**: Production deploys are configured to emit nonce-based `Content-Security-Policy` by default. Set `CSP_ENFORCE=0` only as an explicit rollback/diagnostic escape hatch, and keep enforced CSP smoke coverage green before shipping.
 
+An isolated Cloudflare Worker preview uses `npm run build:vinext` and `npm run start:vinext` locally, or `npm run deploy:vinext` after Wrangler login. Its worker name is `thorchain-wiki-preview`; the existing Docker deployment and production domain are unchanged. The Vite config compiles MDX with the same GFM plugin as Next. Live readiness, source freshness, security headers, and Free-tier CPU usage need review before a domain cutover.
+
 Recommended local release-shaped gate:
 
 ```bash
