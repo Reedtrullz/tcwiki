@@ -405,7 +405,11 @@ function validateSwapQuoteRequest(request: SwapQuoteRequest) {
 }
 
 function getConservativeSnapshotHeight(latestHeight: number) {
-  return Math.max(0, latestHeight - 1);
+  // Cloudflare can reach a geo-routed Liquify reader several blocks behind its latest-block endpoint.
+  const configuredLag = Number(process.env.THORNODE_SNAPSHOT_LAG_BLOCKS ?? '1');
+  const lag = Number.isInteger(configuredLag) && configuredLag >= 1 && configuredLag <= 20
+    ? configuredLag : 1;
+  return Math.max(0, latestHeight - lag);
 }
 
 async function requestFromEndpoint<T>(endpoint: SourceMeta, path: string, height?: number): Promise<T> {

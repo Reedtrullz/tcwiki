@@ -1343,6 +1343,25 @@ describe('deriveNetworkStatus', () => {
     expect(requestedUrls).toContain('https://gateway.liquify.com/chain/thorchain_api/thorchain/lastblock?height=99');
   });
 
+  it('uses a larger Cloudflare pinning lag without mixing snapshot heights', async () => {
+    const previous = process.env.THORNODE_SNAPSHOT_LAG_BLOCKS;
+    process.env.THORNODE_SNAPSHOT_LAG_BLOCKS = '10';
+    try {
+      const fixture = snapshotFixture({
+        latestBlock: { block: { header: { height: '110', time: new Date().toISOString() } } },
+      });
+      stubNetworkStatusSnapshots(fixture, fixture);
+      const result = await ThornodeAPI.getNetworkStatus();
+      expect(result.status).toBe('ok');
+      expect(result.data?.thorchainHeight).toBe(100);
+      expect(result.sources?.filter((source) => source.url.includes('?height='))
+        .every((source) => source.url.endsWith('?height=100'))).toBe(true);
+    } finally {
+      if (previous === undefined) delete process.env.THORNODE_SNAPSHOT_LAG_BLOCKS;
+      else process.env.THORNODE_SNAPSHOT_LAG_BLOCKS = previous;
+    }
+  });
+
   it('does not mix THORNode snapshot parts across providers', async () => {
     stubNetworkStatusSnapshots(
       snapshotFixture({
