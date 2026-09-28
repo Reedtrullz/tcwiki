@@ -56,6 +56,8 @@ We welcome improvements! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for:
 - **Health, readiness, and version checks**: The site exposes `/api/health`, `/api/ready`, and `/api/version`. `/api/health` is liveness-only; `/api/ready` carries upstream source confidence, RUNEPool/POL status, RUNEPool/POL source posture at `sources.thornode.runePoolPol`, and strict runtime identity diagnostics when `RUNTIME_METADATA_REQUIRED=1`. Ansible keeps the Docker health check on liveness and verifies health, version, image digest, commit metadata, and runtime diagnostics. Rollback uses the previous `/api/version` readback with Docker env fallback, verifies restored metadata, then fails closed after rollback attempts.
 - **Runtime headers**: Production deploys are configured to emit nonce-based `Content-Security-Policy` by default. Set `CSP_ENFORCE=0` only as an explicit rollback/diagnostic escape hatch, and keep enforced CSP smoke coverage green before shipping.
 
+The initial direct Worker preview is `thorchain-wiki-preview`; its SSR routes exceed Workers Free's 10 ms CPU limit. `npm run build:cloudflare` prepares a candidate whose small Worker forwards application requests to a SQLite Durable Object (`wrangler.do.jsonc`). Static assets bypass application code. The existing Docker deployment and production domain remain unchanged until the candidate passes live checks and cutover. Use `npm run deploy:cloudflare` for an isolated preview after Wrangler login; CI deploys the production Worker only when `TCWIKI_CLOUDFLARE_DEPLOY_ENABLED=1`. The Vite config compiles MDX with the same GFM plugin as Next.
+
 Recommended local release-shaped gate:
 
 ```bash

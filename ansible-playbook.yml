@@ -12,6 +12,18 @@
     ghcr_token: "{{ lookup('env', 'GHCR_TOKEN') | default('', true) }}"
 
   pre_tasks:
+    - name: Check whether Cloudflare is the Wiki production origin
+      become: true
+      ansible.builtin.stat:
+        path: /etc/tcwiki/cloudflare-primary
+      register: cloudflare_primary_marker
+
+    - name: Require explicit VPS rollback after Cloudflare cutover
+      ansible.builtin.assert:
+        that:
+          - not cloudflare_primary_marker.stat.exists or lookup('env', 'TCWIKI_VPS_ROLLBACK') == '1'
+        fail_msg: "Cloudflare is primary. Set TCWIKI_VPS_ROLLBACK=1 for an intentional VPS rollback."
+
     - name: Require immutable image ref
       assert:
         that:

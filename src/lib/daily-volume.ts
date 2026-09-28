@@ -149,7 +149,6 @@ export function deriveDailyVolumeSummary(
 
   pools.sort((left, right) => right.usdVolume - left.usdVolume);
   const totalUsd = pools.reduce((sum, pool) => sum + pool.usdVolume, 0);
-  const totalRune = pools.reduce((sum, pool) => sum + pool.runeVolume, 0);
 
   for (const pool of pools) {
     const share = totalUsd > 0 ? (pool.usdVolume / totalUsd) * 100 : null;

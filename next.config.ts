@@ -6,7 +6,7 @@ import type { NextConfig } from "next";
 const rootDir = dirname(fileURLToPath(import.meta.url));
 
 const nextConfig: NextConfig = {
-  output: "standalone",
+  output: process.env.VINEXT_BUILD === "1" ? undefined : "standalone",
   poweredByHeader: false,
   pageExtensions: ['js', 'jsx', 'md', 'mdx', 'ts', 'tsx'],
   experimental: {
