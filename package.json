@@ -35,7 +35,9 @@
     "dev:vinext": "VINEXT_BUILD=1 vite dev --port 3001",
     "build:vinext": "VINEXT_BUILD=1 vite build && next typegen",
     "start:vinext": "wrangler dev --config dist/server/wrangler.json",
-    "deploy:vinext": "vinext-cloudflare deploy --config dist/server/wrangler.json"
+    "deploy:vinext": "vinext-cloudflare deploy --config dist/server/wrangler.json",
+    "build:cloudflare": "npm run build:vinext && cp cloudflare/do-entry.mjs dist/server/do-entry.mjs",
+    "deploy:cloudflare": "wrangler deploy --config wrangler.do.jsonc"
   },
   "dependencies": {
     "@mdx-js/loader": "^3.1.1",

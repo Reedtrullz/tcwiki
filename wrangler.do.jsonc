@@ -1,0 +1,14 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "thorchain-wiki-do-preview",
+  "compatibility_date": "2026-09-28",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "dist/server/do-entry.mjs",
+  "no_bundle": true,
+  "rules": [{"type": "ESModule", "globs": ["**/*.js", "**/*.mjs"]}],
+  "assets": {"directory": "dist/client", "not_found_handling": "none", "binding": "ASSETS"},
+  "durable_objects": {"bindings": [{"name": "WIKI", "class_name": "WikiDO"}]},
+  "migrations": [{"tag": "v1", "new_sqlite_classes": ["WikiDO"]}],
+  "vars": {"CSP_ENFORCE": "1"},
+  "observability": {"enabled": true}
+}

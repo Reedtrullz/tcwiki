@@ -31,6 +31,12 @@
 - App and release-proof npm scripts fail fast through `scripts/require-node22.mjs`; run `nvm use` before interpreting local smoke, build, lint, typecheck, audit, content, unit, or Playwright output.
 - PR CI builds, scans, and runs the Docker image before deploy code can publish; the `main` publish job scans the locally built image before pushing it to GHCR, then a separate `Smoke published image` job pulls and smokes the immutable digest before deploy can start.
 
+## Cloudflare Free candidate
+
+The direct vinext Worker is too CPU-heavy for Workers Free. `npm run build:cloudflare` builds vinext and copies the thin Durable Object entry into `dist/server`; `npx wrangler deploy --config wrangler.do.jsonc --dry-run` validates the upload bundle. The front Worker delegates HTML and API requests to a single SQLite Durable Object, while static assets use the Workers asset binding. The Durable Object keeps the existing nonce CSP, live panels, and strict readiness handler. Cloudflare's Free plan has separate daily Worker and Durable Object request/duration caps; check account usage before cutover and during monitoring. A degraded readiness result is not a contract failure, but its reasons must be reviewed.
+
+The `deploy-cloudflare` CI job requires `TCWIKI_CLOUDFLARE_DEPLOY_ENABLED=1` and a scoped `CLOUDFLARE_API_TOKEN` secret in the `production` environment. Set `TCWIKI_VPS_DEPLOY_ENABLED=0` only at the production switch; the Docker image publish and smoke lanes continue to produce an immutable rollback image. The Worker URL must pass `check:runtime-url` with the exact commit and Worker entry digest before routing `wiki.thorchain.no`. After DNS changes, verify the public domain and the actual Worker version and CPU events before retiring the exact VPS production container, Caddy route, and readiness timer. Preserve the rollback image/config and unrelated staging/backups.
+
 ## VPS Readiness Timer
 
 Run the service through systemd so a manual check uses the production account, sandbox, timeout, and writable-directory boundaries:

@@ -49,6 +49,10 @@ jobs:
       - run: npm run smoke:standalone
         env:
           CSP_ENFORCE: '1'
+      - name: Build Cloudflare Durable Object candidate
+        run: npm run build:cloudflare
+      - name: Validate Cloudflare upload bundle
+        run: npx wrangler deploy --config wrangler.do.jsonc --dry-run
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
         env:
@@ -234,7 +238,7 @@ jobs:
   deploy:
     name: Deploy to VPS
     needs: [publish, release-image-smoke]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.TCWIKI_VPS_DEPLOY_ENABLED != '0'
     runs-on: ubuntu-24.04
     environment:
       name: production
@@ -271,6 +275,44 @@ jobs:
           EXPECTED_VERSION: ${{ needs.publish.outputs.app_version }}
           EXPECTED_COMMIT_SHA: ${{ needs.publish.outputs.app_version }}
           EXPECTED_IMAGE_REF: ${{ needs.publish.outputs.image_ref }}
+          REQUIRE_RUNTIME_METADATA: '1'
+          CSP_ENFORCE: '1'
+        run: npm run check:runtime-url
+
+  deploy-cloudflare:
+    name: Deploy to Cloudflare
+    needs: [build-check, publish, release-image-smoke]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.TCWIKI_CLOUDFLARE_DEPLOY_ENABLED == '1'
+    runs-on: ubuntu-24.04
+    environment:
+      name: production
+      url: https://wiki.thorchain.no
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      - run: npm ci --include=optional
+      - run: npm run build:cloudflare
+      - name: Compute immutable Worker entry digest
+        id: artifact
+        run: echo "image_ref=cloudflare-worker@sha256:$(sha256sum dist/server/index.js | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+      - name: Deploy verified commit
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          WORKER_REF: ${{ steps.artifact.outputs.image_ref }}
+        run: >-
+          npx wrangler deploy --config wrangler.do.jsonc --name thorchain-wiki
+          --var CSP_ENFORCE:1 --var RUNTIME_METADATA_REQUIRED:1
+          --var APP_VERSION:${{ github.sha }} --var COMMIT_SHA:${{ github.sha }}
+          --var IMAGE_REF:$WORKER_REF
+      - name: Verify Worker URL before domain routing
+        env:
+          CHECK_BASE_URL: https://thorchain-wiki.reidjoss.workers.dev
+          EXPECTED_VERSION: ${{ github.sha }}
+          EXPECTED_COMMIT_SHA: ${{ github.sha }}
+          EXPECTED_IMAGE_REF: ${{ steps.artifact.outputs.image_ref }}
           REQUIRE_RUNTIME_METADATA: '1'
           CSP_ENFORCE: '1'
         run: npm run check:runtime-url
