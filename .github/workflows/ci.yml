@@ -312,6 +312,7 @@ jobs:
         run: >-
           npx wrangler deploy --config wrangler.do.jsonc --name thorchain-wiki
           --var CSP_ENFORCE:1 --var RUNTIME_METADATA_REQUIRED:1
+          --var THORNODE_SNAPSHOT_LAG_BLOCKS:10
           --var APP_VERSION:${{ github.sha }} --var COMMIT_SHA:${{ github.sha }}
           --var IMAGE_REF:$WORKER_REF
       - name: Verify Worker URL before domain routing
