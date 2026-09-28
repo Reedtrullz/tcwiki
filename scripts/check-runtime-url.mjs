@@ -31,7 +31,7 @@ async function fetchUntil(path, isExpectedStatus, init = undefined) {
   for (let attempt = 0; attempt < 60; attempt += 1) {
     try {
       const response = await fetch(`${baseUrl}${path}`, { cache: 'no-store', ...init });
-      if (isExpectedStatus(response)) {
+      if (await isExpectedStatus(response)) {
         return response;
       }
       lastError = new Error(`${path} returned ${response.status}`);
@@ -95,7 +95,13 @@ function expectRuntimeMetadata(json) {
   });
 }
 
-const health = await fetchUntil('/api/health', (response) => response.ok);
+async function hasExpectedRuntime(response) {
+  if (!response.ok) return false;
+  expectRuntimeMetadata(await response.clone().json());
+  return true;
+}
+
+const health = await fetchUntil('/api/health', hasExpectedRuntime);
 const healthJson = await health.json();
 if (healthJson.status !== 'healthy' || !healthJson.commit || !healthJson.image) {
   throw new Error(`Unexpected health response: ${JSON.stringify(healthJson)}`);
@@ -103,7 +109,7 @@ if (healthJson.status !== 'healthy' || !healthJson.commit || !healthJson.image) 
 expectRuntimeMetadata(healthJson);
 expectHeader(health.headers, 'cache-control', 'no-store');
 
-const version = await fetchUntil('/api/version', (response) => response.ok);
+const version = await fetchUntil('/api/version', hasExpectedRuntime);
 const versionJson = await version.json();
 if (!versionJson.version || !versionJson.commit || !versionJson.image) {
   throw new Error(`Unexpected version response: ${JSON.stringify(versionJson)}`);
@@ -113,7 +119,11 @@ expectHeader(version.headers, 'cache-control', 'no-store');
 
 const ready = await fetchUntil(
   '/api/ready',
-  (response) => requireReady ? response.status === 200 : response.status === 200 || response.status === 503
+  async (response) => {
+    if (response.status !== 200 && (requireReady || response.status !== 503)) return false;
+    expectRuntimeMetadata(await response.clone().json());
+    return true;
+  }
 );
 const readyJson = await ready.json();
 assertReadinessContract(readyJson);
