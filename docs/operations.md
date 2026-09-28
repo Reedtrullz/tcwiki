@@ -60,7 +60,7 @@ Expected:
 
 The monitor fails only when the full sampling window has no ready observation. A failure opens one deduplicated `Production readiness monitor degraded` issue; a later successful window closes it with recovery evidence. A sample with only fully disclosed review-only `mimir-support` caveats is ready and keeps those caveats in the artifact's warning categories; this is source usability, not a claim that every protocol operation is available. This alert does not authorize changing `REQUIRE_READY`, suppressing warnings, or treating a degraded 503 as an application outage. Investigate the run artifact, provider path, and VPS network first.
 
-THORNode latest-block discovery appends a unique `tcwiki_cache_bust` query value to each request. This bypasses stale intermediary cache entries observed on a geo-routed Liquify backend while keeping displayed provenance URLs canonical; the resulting state reads remain pinned to the conservative `latest - 1` height. Do not replace this with a fixed query value, a provider-IP pin, or weaker freshness thresholds.
+THORNode latest-block discovery appends a unique `tcwiki_cache_bust` query value to each request. This bypasses stale intermediary cache entries observed on a geo-routed Liquify backend while keeping displayed provenance URLs canonical. VPS reads remain pinned to `latest - 1`; the Cloudflare Durable Object uses `THORNODE_SNAPSHOT_LAG_BLOCKS=10` because its geo-routed reader was observed returning HTTP 500 for newer pinned heights. Keep the lag bounded and review it against live provider height before changing it. Do not replace the cache key with a fixed value or weaken freshness thresholds.
 
 For a local one-sample diagnostic without waiting:
 
@@ -94,6 +94,12 @@ It also reads the previous `/api/version` response and falls back to Docker envi
 that endpoint is unavailable. If health or version readback fails, it attempts to restart the previous
 image, restores that runtime metadata, verifies rollback health, version, image, and container
 environment including `VERSION`, and still exits nonzero so CI does not report a successful deploy.
+After a verified Cloudflare cutover, create `/etc/tcwiki/cloudflare-primary` on the VPS. The playbook then refuses an ordinary VPS deployment; an intentional rollback must set `TCWIKI_VPS_ROLLBACK=1`, use an immutable image digest, and restore the previous Caddy/DNS route before validating live readback. Keep the marker and the previous image/config as rollback evidence.
+
+```bash
+sudo install -d -m 0755 /etc/tcwiki
+printf '%s\n' 'Cloudflare primary; restore VPS only with TCWIKI_VPS_ROLLBACK=1' | sudo tee /etc/tcwiki/cloudflare-primary >/dev/null
+```
 
 ## Logs
 
