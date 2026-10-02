@@ -15,7 +15,7 @@ function fixture(installed: string | null) {
   writeFileSync(join(root, '.gitignore'), 'node_modules/\n');
   spawnSync('git', ['init', '-q', '-b', 'main', root]);
   spawnSync('git', ['-C', root, 'add', '.']);
-  spawnSync('git', ['-C', root, '-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '-q', '-m', 'baseline']);
+  spawnSync('git', ['-C', root, '-c', 'commit.gpgsign=false', '-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '-q', '-m', 'baseline']);
   spawnSync('git', ['-C', root, 'remote', 'add', 'origin', 'https://example.invalid/fixture.git']);
   spawnSync('git', ['-C', root, 'update-ref', 'refs/remotes/origin/main', 'HEAD']);
   spawnSync('git', ['-C', root, 'config', 'branch.main.remote', 'origin']);
@@ -52,7 +52,7 @@ it('reports unavailable Git as unknown and fails the preflight', () => {
 it('reports cached upstream divergence without fetching or switching branches', () => {
   const root = fixture('5.0.0'); writeFileSync(join(root, 'change.txt'), 'changed');
   spawnSync('git', ['-C', root, 'add', 'change.txt']);
-  spawnSync('git', ['-C', root, '-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '-q', '-m', 'ahead']);
+  spawnSync('git', ['-C', root, '-c', 'commit.gpgsign=false', '-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '-q', '-m', 'ahead']);
   const result = run(root);
   expect(JSON.parse(result.stdout).git.upstreamDivergence).toEqual({ ahead: 1, behind: 0 });
   expect(JSON.parse(result.stdout).git.dirty).toBe(false);
