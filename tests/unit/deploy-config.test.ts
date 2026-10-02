@@ -441,7 +441,6 @@ describe('release and browser test wiring', () => {
     expect(existsSync('scripts/start-playwright-server.mjs')).toBe(true);
     expect(existsSync('scripts/lib/standalone-freshness.mjs')).toBe(true);
     expect(playwrightConfig).toContain("command: process.env.PLAYWRIGHT_WEB_SERVER_COMMAND || 'node scripts/start-playwright-server.mjs'");
-    expect(readme).toContain('fails closed when source files are newer than `.next/standalone/server.js`');
     expect(contributing).toContain("PLAYWRIGHT_WEB_SERVER_COMMAND='npm run dev'");
   });
 

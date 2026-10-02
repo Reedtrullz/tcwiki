@@ -25,7 +25,24 @@ function compareReviewItems(left, right) {
     left.label.localeCompare(right.label);
 }
 
-export function buildContentReviewSchedule({ items, today, horizonDays = 30 }) {
+export function buildReviewExceptionMap({ exceptions = [], today }) {
+  dateAtUtcMidnight(today, 'today');
+  if (!Array.isArray(exceptions)) throw new Error('Content review exceptions must be an array.');
+  const map = new Map();
+  for (const entry of exceptions) {
+    for (const field of ['collection', 'id', 'owner', 'reason', 'followUp', 'expiresOn']) {
+      if (typeof entry?.[field] !== 'string' || !entry[field].trim()) throw new Error(`Review exception needs ${field}.`);
+    }
+    dateAtUtcMidnight(entry.expiresOn, 'exception.expiresOn');
+    if (new URL(entry.followUp).protocol !== 'https:') throw new Error('Review exception follow-up must use https.');
+    const key = `${entry.collection}:${entry.id}`;
+    if (map.has(key)) throw new Error(`Duplicate review exception ${key}.`);
+    map.set(key, { ...entry, active: entry.expiresOn >= today });
+  }
+  return map;
+}
+
+export function buildContentReviewSchedule({ items, today, horizonDays = 30, exceptions = [] }) {
   if (!Array.isArray(items)) {
     throw new Error('items must be an array.');
   }
@@ -37,6 +54,7 @@ export function buildContentReviewSchedule({ items, today, horizonDays = 30 }) {
   const horizonDate = addUtcDays(todayDate, horizonDays);
   const horizon = horizonDate.toISOString().slice(0, 10);
   const seen = new Set();
+  const exceptionMap = buildReviewExceptionMap({ exceptions, today });
   const normalizedItems = items.map((item, index) => {
     if (!item || typeof item !== 'object') {
       throw new Error(`items[${index}] must be an object.`);
@@ -75,6 +93,7 @@ export function buildContentReviewSchedule({ items, today, horizonDays = 30 }) {
       reviewedAt: item.reviewedAt,
       nextReviewDue: item.nextReviewDue,
       status,
+      ...(exceptionMap.has(key) ? { reviewException: exceptionMap.get(key) } : {}),
     };
   }).sort(compareReviewItems);
 
@@ -84,6 +103,8 @@ export function buildContentReviewSchedule({ items, today, horizonDays = 30 }) {
     dueToday: normalizedItems.filter((item) => item.status === 'due-today').length,
     dueSoon: normalizedItems.filter((item) => item.status === 'due-soon').length,
     later: normalizedItems.filter((item) => item.status === 'later').length,
+    blockingOverdue: normalizedItems.filter((item) => item.status === 'overdue' && !item.reviewException?.active).length,
+    exempted: normalizedItems.filter((item) => item.status === 'overdue' && item.reviewException?.active).length,
   };
 
   return {
@@ -93,7 +114,7 @@ export function buildContentReviewSchedule({ items, today, horizonDays = 30 }) {
     today,
     horizonDays,
     horizon,
-    status: summary.overdue > 0 ? 'overdue' : 'current',
+    status: summary.blockingOverdue > 0 ? 'overdue' : summary.exempted > 0 ? 'excepted' : 'current',
     summary,
     attentionItems: normalizedItems.filter((item) => item.status !== 'later'),
     items: normalizedItems,
@@ -114,9 +135,15 @@ export function formatContentReviewSchedule(schedule) {
   }
 
   lines.push('', '| Due | Status | Collection | Item | Source path |', '| --- | --- | --- | --- | --- |');
+  const exceptionLines = [];
   for (const item of schedule.attentionItems) {
     lines.push(`| ${item.nextReviewDue} | ${item.status} | ${item.collection} | ${item.label.replace(/\|/g, '\\|')} | \`${item.path}\` |`);
+    if (item.reviewException) {
+      const exception = item.reviewException;
+      exceptionLines.push(`Exception ${exception.active ? 'active' : 'expired'} for ${item.collection}:${item.id}: owner ${exception.owner}; expires ${exception.expiresOn}; ${exception.reason}; follow-up ${exception.followUp}`);
+    }
   }
+  if (exceptionLines.length) lines.push('', '## Review exceptions', '', ...exceptionLines);
   return lines.join('\n');
 }
 

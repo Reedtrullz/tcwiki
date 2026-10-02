@@ -4,7 +4,6 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
   workflow_dispatch:
   schedule:
     - cron: '17 6 * * 1'
@@ -37,8 +36,6 @@ jobs:
       - name: Audit full dependency tree
         run: npm run audit:all
       - run: npm run check:content
-        env:
-          ALLOW_OVERDUE_CONTENT: '1'
       - run: npm run lint
       - run: npm run typecheck
       - run: npm run test:unit

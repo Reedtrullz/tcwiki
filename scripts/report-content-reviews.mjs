@@ -1,5 +1,5 @@
 import './require-node22.mjs';
-import { appendFile } from 'node:fs/promises';
+import { appendFile, readFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createJiti } from 'jiti';
@@ -92,7 +92,9 @@ const args = process.argv.slice(2);
 const today = optionValue(args, '--today', process.env.CONTENT_CHECK_TODAY ?? new Date().toISOString().slice(0, 10));
 const horizonDays = Number(optionValue(args, '--horizon-days', process.env.CONTENT_REVIEW_HORIZON_DAYS ?? '30'));
 const artifactPath = optionValue(args, '--artifact', process.env.CONTENT_REVIEW_ARTIFACT ?? '.artifacts/content-reviews/content-review-schedule.json');
-const allowOverdue = args.includes('--allow-overdue') || process.env.ALLOW_OVERDUE_CONTENT === '1';
+const evidenceOnly = args.includes('--allow-overdue');
+const exceptions = JSON.parse(await readFile(process.env.CONTENT_REVIEW_EXCEPTIONS_FILE ?? join(root, 'docs/content-review-exceptions.json'), 'utf8'));
+if (evidenceOnly) console.warn('Evidence-only report: --allow-overdue does not approve a release or refresh content.');
 
 const staticData = await jiti.import(join(root, 'src/lib/data/static.ts'));
 const contentRegistry = await jiti.import(join(root, 'src/lib/content/registry.ts'));
@@ -114,6 +116,7 @@ const schedule = buildContentReviewSchedule({
   items: dedupeItems(items),
   today,
   horizonDays,
+  exceptions,
 });
 const markdown = formatContentReviewSchedule(schedule);
 await writeContentReviewSchedule(schedule, artifactPath);
@@ -124,7 +127,7 @@ if (process.env.GITHUB_STEP_SUMMARY) {
   await appendFile(process.env.GITHUB_STEP_SUMMARY, `${markdown}\n`, 'utf8');
 }
 
-if (!allowOverdue && schedule.summary.overdue > 0) {
+if (!evidenceOnly && schedule.summary.blockingOverdue > 0) {
   console.error(`Content review schedule has ${schedule.summary.overdue} overdue item(s).`);
   process.exit(1);
 }

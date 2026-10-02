@@ -7,7 +7,7 @@
   },
   "scripts": {
     "dev": "node scripts/require-node22.mjs && next dev",
-    "build": "node scripts/require-node22.mjs && next build",
+    "build": "node scripts/require-node22.mjs && node scripts/build-standalone.mjs",
     "start": "node scripts/require-node22.mjs && node scripts/start-standalone.mjs",
     "start:next": "node scripts/require-node22.mjs && next start",
     "start:standalone": "node scripts/require-node22.mjs && node scripts/start-standalone.mjs",

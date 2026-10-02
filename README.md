@@ -35,7 +35,8 @@ This project requires Node 22. The npm install path enforces the `package.json` 
 - `src/lib/api/midgard.ts` and `src/lib/api/thornode.ts` — Live data clients with source/degraded-state results.
 - `src/lib/content/registry.ts` — Central navigation, search, and content metadata registry.
 - `src/components/` — Header, Footer, shared UI primitives, and live status surfaces.
-- `Dockerfile` + `ansible-playbook.yml` — Production self-hosted deployment (see below).
+- `cloudflare/do-entry.mjs` + `wrangler.do.jsonc` — Cloudflare forwarding Worker and SQLite WikiDO serving path.
+- `Dockerfile` + `ansible-playbook.yml` — Supported standalone verification and guarded VPS rollback path.
 
 For release-shaped local runtime checks after `npm run build`, use `npm run start:standalone` or `npm run smoke:standalone` rather than `next start`.
 
@@ -50,19 +51,30 @@ We welcome improvements! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for:
 
 ## Deployment
 
-- **Production**: Self-hosted via Docker (standalone Next.js output) + Ansible on a VPS.
+- **Production**: Cloudflare forwarding Worker + SQLite WikiDO running the vinext build. The Next standalone/Docker lane remains supported for verification and guarded rollback.
+- **Deploy target**: repository variables select Cloudflare (`TCWIKI_CLOUDFLARE_DEPLOY_ENABLED=1`) and disable VPS mutation (`TCWIKI_VPS_DEPLOY_ENABLED=0`), read back on 2 October 2026. Recheck them before a release; preserve the Cloudflare-primary marker and retirement/rollback evidence.
 - **CI**: GitHub Actions audits production dependencies, lints, type-checks, runs unit tests, builds, and runs Playwright smoke tests.
 - **Images**: GHCR images are deployed by immutable digest, not mutable `latest`.
 - **Health, readiness, and version checks**: The site exposes `/api/health`, `/api/ready`, and `/api/version`. `/api/health` is liveness-only; `/api/ready` carries upstream source confidence, RUNEPool/POL status, RUNEPool/POL source posture at `sources.thornode.runePoolPol`, and strict runtime identity diagnostics when `RUNTIME_METADATA_REQUIRED=1`. Ansible keeps the Docker health check on liveness and verifies health, version, image digest, commit metadata, and runtime diagnostics. Rollback uses the previous `/api/version` readback with Docker env fallback, verifies restored metadata, then fails closed after rollback attempts.
 - **Runtime headers**: Production deploys are configured to emit nonce-based `Content-Security-Policy` by default. Set `CSP_ENFORCE=0` only as an explicit rollback/diagnostic escape hatch, and keep enforced CSP smoke coverage green before shipping.
 
-The initial direct Worker preview is `thorchain-wiki-preview`; its SSR routes exceed Workers Free's 10 ms CPU limit. `npm run build:cloudflare` prepares a candidate whose small Worker forwards application requests to a SQLite Durable Object (`wrangler.do.jsonc`). Static assets bypass application code. The existing Docker deployment and production domain remain unchanged until the candidate passes live checks and cutover. Use `npm run deploy:cloudflare` for an isolated preview after Wrangler login; CI deploys the production Worker only when `TCWIKI_CLOUDFLARE_DEPLOY_ENABLED=1`. The Vite config compiles MDX with the same GFM plugin as Next.
+The direct Worker preview was too CPU-heavy for Workers Free. `npm run build:cloudflare` prepares the serving candidate: a thin Worker forwards application requests to SQLite WikiDO; static assets use the asset binding. The Vite config compiles MDX with the same GFM plugin as Next. `wrangler.do.jsonc` defaults to an isolated preview name; creating a preview or deploying is a separate explicit action.
+
+| Check | What it proves |
+|---|---|
+| `node scripts/check-workspace.mjs` | Read-only Node and installed-versus-locked package drift, checkout identity and dirty state. Use `--root /absolute/checkout` to inspect another checkout. It never installs, cleans or probes providers. |
+| `npm run build` / `npm run smoke:standalone` | Next standalone compilation, fingerprinted input/artifact freshness and local runtime/header behavior. |
+| `npm run build:cloudflare` / `npx wrangler deploy --config wrangler.do.jsonc --dry-run` | vinext/DO compilation and upload/config validation. Dry-run does not exercise browser hydration or a deployed Worker. |
+| `npx wrangler dev --config wrangler.do.jsonc` | Local serving of the built WikiDO candidate. Point Playwright explicitly at this server; the ordinary browser command defaults to standalone. |
+| `npm run check:runtime-url` with exact expected identity | Runtime/header readback at the specified URL. Liveness and self-reported identity do not prove every feature, settlement or independent artifact attestation. |
+
+Current CI builds both target families but the default browser lane uses standalone; track the production-shaped browser/artifact-promotion work in the [execution plan](docs/superpowers/plans/2026-10-02-entire-workplan.md). Live source probes are separate from deterministic offline tests and from reviewed content claims.
 
 Recommended local release-shaped gate:
 
 ```bash
 nvm use
-df -h /System/Volumes/Data # stop if free space is below 50 GiB
+df -h /System/Volumes/Data # inspect capacity before long builds
 npm run check:release-tracked # fails if release proof commands point at local-only proof files
 npm run check:content
 npm run check:live-snapshot # pinned same-provider THORNode supported-chain drift check
@@ -90,7 +102,7 @@ IMAGE_REF=ghcr.io/example/tcwiki@sha256:1111111111111111111111111111111111111111
 
 PR CI builds and scans the candidate Docker image, then runs the same `npm run smoke:docker` helper in prebuilt-image mode against the scanned tag exposed at `http://127.0.0.1:3011`. On pushes to `main`, CI publishes the scanned digest, pulls that immutable digest in a fresh `Smoke published image` job, and runs the same runtime/header/browser smoke before Ansible can deploy it. That lane is intentionally narrow: health/version/ready metadata, the shared readiness contract, security headers, the Home first-screen smoke, and one mocked loaded-state smoke each for Network, Dynamic Fees, Economics RUNEPool/POL, and Stats, not the full Playwright suite. The visual lane lives in `tests/visual-safety.spec.ts` plus the deep-dive visual checks. The rendered link lane crawls public sitemap routes in `tests/link-integrity.spec.ts`, verifies same-origin links and anchors, and fails on hydration/framework console problems. Page-specific journeys live in page-named specs so failures point at the feature area.
 
-`npm run test:e2e` starts a fresh standalone server by default and fails closed when source files are newer than `.next/standalone/server.js`. Run `npm run build` first for standalone proof, or use `PLAYWRIGHT_WEB_SERVER_COMMAND='npm run dev' npm run test:e2e -- <spec>` for source-mode browser checks while iterating. To test an already running standalone server or a remote deployment instead, set `PLAYWRIGHT_BASE_URL`, for example:
+`npm run test:e2e` starts a fresh standalone server by default and fails closed when relevant input content or the server artifact differs from its build receipt; preserved mtimes cannot hide changes. Proposal/test document edits do not stale the artifact. Run `npm run build` first for standalone proof, or use `PLAYWRIGHT_WEB_SERVER_COMMAND='npm run dev' npm run test:e2e -- <spec>` for source-mode browser checks while iterating. To test an already running standalone server or a remote deployment instead, set `PLAYWRIGHT_BASE_URL`, for example:
 
 ```bash
 PLAYWRIGHT_BASE_URL=https://wiki.thorchain.no npm run test:e2e
@@ -105,7 +117,7 @@ The deployment setup preflights a candidate container on localhost before replac
 - TypeScript (strict)
 - Recharts for live statistics
 - Lunr for registry-backed client-side search
-- Self-hosted Docker + Ansible (no Vercel dependency in production)
+- Cloudflare Workers + SQLite Durable Object / vinext; supported Next standalone/Docker + Ansible rollback lane
 - Vitest unit tests + Playwright smoke tests
 
 ## Status & Direction

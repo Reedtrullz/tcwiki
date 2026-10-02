@@ -1,4 +1,5 @@
 import './require-node22.mjs';
+import { buildReviewExceptionMap } from './lib/content-review-schedule.mjs';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -56,7 +57,11 @@ const liveInboundUrls = new Set([
   'https://thornode.thorchain.network/thorchain/inbound_addresses',
 ]);
 const contentCheckToday = process.env.CONTENT_CHECK_TODAY ?? new Date().toISOString().slice(0, 10);
-const allowOverdueContent = process.env.ALLOW_OVERDUE_CONTENT === '1';
+const reviewExceptions = buildReviewExceptionMap({
+  exceptions: JSON.parse(readFileSync(process.env.CONTENT_REVIEW_EXCEPTIONS_FILE ?? join(root, 'docs/content-review-exceptions.json'), 'utf8')),
+  today: contentCheckToday,
+});
+if (process.env.ALLOW_OVERDUE_CONTENT === '1') console.warn('ALLOW_OVERDUE_CONTENT is ignored; use an owned, scoped, expiring review exception.');
 const routeSourcePostureEntryIds = new Set(actualRouteSourcePostureEntryIds);
 
 function fail(path, message) {
@@ -129,8 +134,14 @@ function validateSharedSourceReuse(sourceFile, filePath) {
 }
 
 function validateReviewDueDate(value, path) {
-  if (!allowOverdueContent && isIsoDate(value) && value < contentCheckToday) {
-    fail(path, `is overdue as of ${contentCheckToday}; refresh the content or set ALLOW_OVERDUE_CONTENT=1 with release evidence`);
+  if (isIsoDate(value) && value < contentCheckToday) {
+    const scope = path.match(/^([^[]+)\[([^\]]+)\]/);
+    const exception = scope ? reviewExceptions.get(`${scope[1]}:${scope[2]}`) : undefined;
+    if (exception?.active) {
+      console.warn(`${path}: overdue exception; owner ${exception.owner}; expires ${exception.expiresOn}; ${exception.reason}; follow-up ${exception.followUp}`);
+    } else {
+      fail(path, `is overdue as of ${contentCheckToday}; source review or an owned scoped exception is required${exception ? ` (exception expired ${exception.expiresOn})` : ''}`);
+    }
   }
 }
 

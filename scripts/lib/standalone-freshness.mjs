@@ -1,79 +1,57 @@
-import { existsSync, readdirSync, statSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { existsSync, lstatSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 
 const sourceRoots = [
-  'content',
-  'docs',
-  'public',
-  'scripts',
-  'src',
-  'tests',
-  'Dockerfile',
-  'next.config.ts',
-  'package-lock.json',
-  'package.json',
-  'playwright.config.ts',
-  'postcss.config.mjs',
-  'tsconfig.json',
+  'content', 'public', 'src', 'next.config.ts', 'package-lock.json', 'package.json',
+  'postcss.config.mjs', 'tsconfig.json', 'scripts/build-standalone.mjs',
+  'scripts/lib/standalone-freshness.mjs', 'scripts/prepare-standalone-assets.mjs',
+  'scripts/start-standalone.mjs', 'scripts/require-node22.mjs', 'scripts/lib/node-version.mjs',
 ];
+const sha256 = (bytes) => createHash('sha256').update(bytes).digest('hex');
+const serverPath = (root) => join(root, '.next/standalone/server.js');
+const receiptPath = (root) => join(root, '.next/standalone/.tcwiki-inputs.json');
 
-const ignoredDirectories = new Set([
-  '.git',
-  '.next',
-  'node_modules',
-  'test-results',
-  'playwright-report',
-]);
-
-function newestFileMtime(path, root, newest) {
-  if (!existsSync(path)) {
-    return newest;
+export function captureStandaloneInputs(root) {
+  const files = {};
+  function visit(path) {
+    const local = relative(root, path).split('\\').join('/');
+    if (!existsSync(path)) { files[local] = null; return; }
+    const stat = lstatSync(path);
+    if (stat.isSymbolicLink()) throw new Error(`Cannot fingerprint symlink build input: ${local}`);
+    if (stat.isDirectory()) {
+      for (const name of readdirSync(path).sort()) {
+        if (local !== 'public' && !local.startsWith('public/') && ['.DS_Store', 'AGENTS.md', 'README.md'].includes(name)) continue;
+        visit(join(path, name));
+      }
+    } else if (stat.isFile()) files[local] = sha256(readFileSync(path));
   }
+  for (const path of sourceRoots) visit(join(root, path));
+  return Object.fromEntries(Object.entries(files).sort(([a], [b]) => a.localeCompare(b)));
+}
 
-  const stat = statSync(path);
-  if (stat.isDirectory()) {
-    const name = path.split('/').at(-1);
-    if (name && ignoredDirectories.has(name)) {
-      return newest;
-    }
+function changedInputs(before, after) {
+  return [...new Set([...Object.keys(before), ...Object.keys(after)])]
+    .filter((path) => before[path] !== after[path]).sort();
+}
 
-    let current = newest;
-    for (const entry of readdirSync(path, { withFileTypes: true })) {
-      current = newestFileMtime(join(path, entry.name), root, current);
-    }
-    return current;
-  }
-
-  if (!stat.isFile()) {
-    return newest;
-  }
-
-  if (!newest || stat.mtimeMs > newest.mtimeMs) {
-    return {
-      path: relative(root, path),
-      mtimeMs: stat.mtimeMs,
-    };
-  }
-
-  return newest;
+export function recordStandaloneInputs(root, before = captureStandaloneInputs(root)) {
+  const changed = changedInputs(before, captureStandaloneInputs(root));
+  if (changed.length) throw new Error(`Build inputs changed during compilation: ${changed.join(', ')}`);
+  const receipt = { schemaVersion: 1, files: before, serverSha256: sha256(readFileSync(serverPath(root))) };
+  writeFileSync(receiptPath(root), `${JSON.stringify(receipt, null, 2)}\n`);
 }
 
 export function checkStandaloneFreshness(root) {
-  const serverPath = join(root, '.next/standalone/server.js');
-  if (!existsSync(serverPath)) {
-    throw new Error("Standalone build is missing. Run `npm run build` before local standalone Playwright, or set `PLAYWRIGHT_WEB_SERVER_COMMAND='npm run dev'` for source-mode browser checks.");
+  if (!existsSync(serverPath(root))) throw new Error('Standalone build is missing. Run `npm run build`.');
+  if (!existsSync(receiptPath(root))) throw new Error('Standalone input receipt is missing. Run `npm run build`.');
+  const receipt = JSON.parse(readFileSync(receiptPath(root), 'utf8'));
+  if (receipt?.schemaVersion !== 1 || !receipt.files || typeof receipt.files !== 'object' || Array.isArray(receipt.files)) {
+    throw new Error('Standalone input receipt is invalid. Run `npm run build`.');
   }
-
-  const serverStat = statSync(serverPath);
-  let newestSource = null;
-  for (const sourceRoot of sourceRoots) {
-    newestSource = newestFileMtime(join(root, sourceRoot), root, newestSource);
+  if (receipt.serverSha256 !== sha256(readFileSync(serverPath(root)))) {
+    throw new Error('Standalone server artifact differs from its build receipt. Run `npm run build`.');
   }
-
-  if (newestSource && newestSource.mtimeMs > serverStat.mtimeMs) {
-    throw new Error(
-      `Standalone build is stale: ${newestSource.path} is newer than .next/standalone/server.js. ` +
-      "Run `npm run build` before local standalone Playwright, or set `PLAYWRIGHT_WEB_SERVER_COMMAND='npm run dev'` for source-mode browser checks."
-    );
-  }
+  const changed = changedInputs(receipt.files, captureStandaloneInputs(root));
+  if (changed.length) throw new Error(`Standalone build is stale; changed/missing inputs: ${changed.join(', ')}. Run \`npm run build\`.`);
 }
