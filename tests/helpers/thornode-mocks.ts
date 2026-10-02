@@ -2,6 +2,7 @@ import type { Page, Route } from '@playwright/test';
 
 interface SwapperFirstNetworkMockOptions {
   mimir?: Record<string, unknown>;
+  quoteExpiry?: number | null;
 }
 
 export async function fulfillJson(route: Route, value: unknown) {
@@ -148,7 +149,7 @@ export async function mockSwapperFirstNetwork(page: Page, options: SwapperFirstN
       inbound_confirmation_seconds: 600,
       outbound_delay_seconds: 12,
       total_swap_seconds: 612,
-      expiry: 1790000000,
+      expiry: options.quoteExpiry === null ? undefined : options.quoteExpiry ?? Math.floor(Date.now() / 1000) + 120,
       fees: {
         asset: 'ETH.ETH',
         total: '30000',

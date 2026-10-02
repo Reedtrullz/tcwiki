@@ -24,6 +24,7 @@ import {
   deriveNodeOperatorActionControls,
   deriveNetworkWideControls,
   deriveRouteAvailability,
+  quoteProofValidity,
   NATIVE_RUNE_ASSET,
 } from '@/lib/network-diagnostics';
 
@@ -843,14 +844,14 @@ function getRefundTriageIntro(
   }
   if (quoteData?.quote) {
     return {
-      title: 'Current route is open',
-      summary: 'A current quote confirms this route is open for this pair and amount now. Check an explorer for refund causes.',
+      title: 'Quote returned for this route',
+      summary: 'The provider returned an unexpired quote for this pair and amount. Execution and any refund still require transaction evidence.',
     };
   }
   if (quoteData?.failure) {
     return {
-      title: 'Current quote failed or was limited',
-      summary: 'The quote error is useful current route evidence. It only explains a past refund when the route, amount, quote flow, memo, and transaction evidence line up.',
+      title: 'Quote check failed or was limited',
+      summary: 'The recorded quote error is route-check evidence. It only explains a past refund when the route, amount, quote flow, memo, and transaction evidence line up.',
     };
   }
   if (quoteError) {
@@ -878,24 +879,24 @@ function buildRefundTriageRows(
 ): RefundTriageRow[] {
   const quoteRow: RefundTriageRow = quoteData?.quote
     ? {
-        label: 'Current quote result',
+        label: 'Recorded quote result',
         state: 'present',
         detail: 'THORNode returned a quote for the selected route and amount. Treat it as current-only route evidence.',
       }
     : quoteData?.failure
       ? {
-          label: 'Current quote result',
+          label: 'Recorded quote result',
           state: 'present',
           detail: quoteData.failure.message,
         }
       : quoteError
         ? {
-            label: 'Current quote result',
+            label: 'Recorded quote result',
             state: 'review',
-            detail: 'A quote was attempted, but the response could not be used as route proof.',
+            detail: quoteError,
           }
         : {
-            label: 'Current quote result',
+            label: 'Recorded quote result',
             state: 'missing',
             detail: 'No quote has been checked for this selected route and amount.',
           };
@@ -1008,6 +1009,7 @@ function RouteQuoteChecker({ status, statusLoading }: { status: NetworkStatus | 
   const [quoteRequestVersion, setQuoteRequestVersion] = useState(0);
   const [inputError, setInputError] = useState<string | null>(null);
   const [quoteInvalidated, setQuoteInvalidated] = useState(false);
+  const [, refreshQuoteClock] = useState(0);
   const routeQueryHydratedRef = useRef(false);
   const routeQueryActiveRef = useRef(false);
   const routeSectionRef = useRef<HTMLElement | null>(null);
@@ -1044,6 +1046,30 @@ function RouteQuoteChecker({ status, statusLoading }: { status: NetworkStatus | 
     routePools,
     activeQuoteData
   );
+  const quoteValidity = quoteProofValidity(activeQuoteData?.quote);
+  const usableQuoteData = activeQuoteData?.quote && quoteValidity !== 'valid' ? undefined : activeQuoteData;
+  const staleQuoteError = activeQuoteData?.quote && quoteValidity !== 'valid'
+    ? (quoteValidity === 'expired' ? 'The recorded quote has expired.' : 'The recorded quote has no usable expiry.')
+    : undefined;
+  const quoteExpiry = activeQuoteData?.quote?.expiry;
+  useEffect(() => {
+    if (quoteExpiry === undefined || !Number.isFinite(quoteExpiry)) return;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    function schedule() {
+      const remaining = quoteExpiry! * 1000 - Date.now();
+      if (remaining > 0) timer = setTimeout(update, Math.min(remaining, 2_147_483_647));
+    }
+    function update() {
+      clearTimeout(timer);
+      refreshQuoteClock(value => value + 1);
+      schedule();
+    }
+    function onResume() { if (document.visibilityState === 'visible') update(); }
+    schedule();
+    document.addEventListener('visibilitychange', onResume);
+    window.addEventListener('focus', update);
+    return () => { clearTimeout(timer); document.removeEventListener('visibilitychange', onResume); window.removeEventListener('focus', update); };
+  }, [quoteExpiry]);
   const canSubmit = Boolean(selectedFromAsset && selectedToAsset && !sameAssetSelected && amountBaseUnits && !activeQuoteIsLoading);
 
   const replaceRouteQueryInUrl = useCallback((nextState: {
@@ -1344,6 +1370,7 @@ function RouteQuoteChecker({ status, statusLoading }: { status: NetworkStatus | 
             ['Recommended min input', formatBaseUnitAmount(activeQuoteData.quote.recommendedMinAmountIn, selectedFromAsset)],
             ['Estimated time', formatQuoteDuration(activeQuoteData.quote.totalSwapSeconds)],
             ['Quote expiry', formatQuoteExpiry(activeQuoteData.quote.expiry)],
+            ['Quote checked at', formatQuoteExpiry(activeQuoteResult?.checkedAt ? Date.parse(activeQuoteResult.checkedAt) / 1000 : undefined)],
           ].map(([label, value]) => (
             <div key={label} className="rounded-md border border-border bg-slate-950/30 px-3 py-2">
               <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">{label}</p>
@@ -1367,8 +1394,8 @@ function RouteQuoteChecker({ status, statusLoading }: { status: NetworkStatus | 
       )}
 
       <RefundTriagePanel
-        activeQuoteData={activeQuoteData}
-        activeQuoteError={activeQuoteError}
+        activeQuoteData={usableQuoteData}
+        activeQuoteError={staleQuoteError ?? activeQuoteError}
         isCheckingQuote={activeQuoteIsLoading}
         routeStatus={routeStatus}
       />

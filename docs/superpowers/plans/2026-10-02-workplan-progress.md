@@ -29,17 +29,17 @@ Execute all accepted work and create/push GitHub PRs; do not merge to main. User
 | PR-59 | verified candidate | official CLP removal and amended ADR005 reviewed2026-10-02; claim-specific date, overall dates preserved; search regenerated; 506 unit/types/build +8 standalone browser checks |
 | PR-08 | PR open; local verified | e2e61d4; https://github.com/Reedtrullz/tcwiki/pull/208; 479 unit tests/types; fractional bounds reviewed and corrected; CI37030208807 passed |
 | PR-03 | PR open; local verified |6398da9+e082581; https://github.com/Reedtrullz/tcwiki/pull/213; parent review fixed acceptance timing/address/shape/slash tests; 486units/types/lint; single source disclosed |
-| PR-12 | queued | issue #177 |
-| PR-39 | verified candidate | canonical alias collision rejection preserves spellings; identical duplicates rejected too; RED5/GREEN125focused/full513/types/lint; bad provider fallback/all-bad degrade |
+| PR-12 | in progress | isolated native Luna sidecar |
+| PR-39 | PR215 open; CI passed | a9b3ab5; CI37035192897; canonical alias RED5/full513/types/lint |
 | PR-13 | queued | issue #178 |
-| PR-06 | queued | issue #171 |
+| PR-06 | verified candidate | supplied-clock expiry states, timer/resume invalidation without probes; RED7/full520/typecheck/lint/build/8Next network browser checks |
 | PR-18 | verified candidate | stalled read timeout/cancellation, bounded batch/depth/fields and suppressed-item response count; RED2 then GREEN11; full508/types/lint pass |
 | PR-14 | verified candidate |23 actual WikiDO browser checks passed after reproducing/fixing missing MDX provider; CSP enforced; manifest-bound local candidate |
 | PR-53 | verified candidate | explicit Next/Docker + CF source/config/copy roots; tracked/untracked/missing RED to GREEN |
 | PR-54 | verified candidate | shared eight-case app/script identity parity matrix; metadata verified is validation not attestation |
 | PR-15 | implemented candidate; operational gate | complete module/asset/config manifest, tested-artifact promotion and exclusive targets; real production rollback/readbacks await authorized release window |
-| PR-17 | verified candidate | compatible NextMDX/eslint16.3.8, lucide1.48.0, Vitest5.0.3, pinned Docker22.23.3; five old failures audit:prod; clean install/audits0/508units/types/both builds/8Next+23WikiDO browser checks |
-| PR-56 | verified candidate | consumer-checked removal of two unused math packages and five starter SVGs; representative MDX passes both targets |
+| PR-17 | PR214 open; CI passed | f4786a7; CI37034658367; audits0/full508/both targets 8Next+23CF browser |
+| PR-56 | PR214 open; CI passed | f4786a7; removed unused dependencies and starter SVGs after consumer review |
 | PR-10 | queued | issue #175 |
 | PR-11 | queued | issue #176 |
 | PR-43 | queued | issue #142 |

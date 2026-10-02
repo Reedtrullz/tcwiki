@@ -319,6 +319,7 @@ describe('network diagnostics view models', () => {
       summary: 'THORNode returned a current swap quote for this route.',
       quote: {
         expectedAmountOut: '99000000',
+        expiry: Math.floor(Date.now() / 1000) + 60,
         fees: {
           totalBps: 20,
           slippageBps: 5,
@@ -331,7 +332,7 @@ describe('network diagnostics view models', () => {
 
     expect(deriveRouteAvailability('BTC.BTC', 'ETH.ETH', undefined, [], quoteResult)).toEqual({
       status: 'available',
-      label: 'Current quote returned',
+      label: 'Quote returned',
       reasons: ['THORNode returned a current swap quote for this route.'],
     });
   });
@@ -447,5 +448,24 @@ describe('network diagnostics view models', () => {
       label: 'Quote needs review',
       reasons: ['THORNode quote endpoint rate limit reached.'],
     });
+  });
+});
+
+
+describe('quote proof validity', () => {
+  const quote: SwapQuoteProbeResult = {
+    request: { fromAsset: 'BTC.BTC', toAsset: 'ETH.ETH', amountBaseUnits: '100000000' },
+    status: 'available', summary: 'Quote returned',
+    quote: { expectedAmountOut: '99000000', fees: {}, raw: {}, expiry: 1790000000 },
+  };
+  it.each([1790000000000, 1790000000001])('withdraws positive evidence at/after expiry %d', nowMs => {
+    expect(deriveRouteAvailability('BTC.BTC', 'ETH.ETH', undefined, [], quote, nowMs)).toMatchObject({ status: 'needs-review', label: 'Quote expired' });
+  });
+  it('keeps an unexpired quote available at the supplied clock', () => {
+    expect(deriveRouteAvailability('BTC.BTC', 'ETH.ETH', undefined, [], quote, 1789999999999).status).toBe('available');
+  });
+  it.each([undefined, NaN, Infinity, -1])('treats expiry %s as unknown', expiry => {
+    const unknown = { ...quote, quote: { ...quote.quote!, expiry } };
+    expect(deriveRouteAvailability('BTC.BTC', 'ETH.ETH', undefined, [], unknown, 1789999999999)).toMatchObject({ status: 'needs-review', label: 'Quote expiry unknown' });
   });
 });
