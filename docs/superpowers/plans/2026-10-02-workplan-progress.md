@@ -28,7 +28,7 @@ Execute all accepted work and create/push GitHub PRs; do not merge to main. User
 | PR-55 | PR open; local verified |155dc79; https://github.com/Reedtrullz/tcwiki/pull/209; mtime/deletion/server replacement RED→GREEN; real standalone build receipt generated; 495 unit tests/types/lint; real build and standalone smoke passed (live age warnings retained) |
 | PR-59 | verified candidate | official CLP removal and amended ADR005 reviewed2026-10-02; claim-specific date, overall dates preserved; search regenerated; 506 unit/types/build +8 standalone browser checks |
 | PR-08 | PR open; local verified | e2e61d4; https://github.com/Reedtrullz/tcwiki/pull/208; 479 unit tests/types; fractional bounds reviewed and corrected; CI37030208807 passed |
-| PR-03 | queued | issue #168 |
+| PR-03 | PR open; local verified |6398da9+e082581; https://github.com/Reedtrullz/tcwiki/pull/213; parent review fixed acceptance timing/address/shape/slash tests; 486units/types/lint; single source disclosed |
 | PR-12 | queued | issue #177 |
 | PR-39 | queued | issue #138 |
 | PR-13 | queued | issue #178 |
@@ -38,8 +38,8 @@ Execute all accepted work and create/push GitHub PRs; do not merge to main. User
 | PR-53 | verified candidate | explicit Next/Docker + CF source/config/copy roots; tracked/untracked/missing RED to GREEN |
 | PR-54 | verified candidate | shared eight-case app/script identity parity matrix; metadata verified is validation not attestation |
 | PR-15 | implemented candidate; operational gate | complete module/asset/config manifest, tested-artifact promotion and exclusive targets; real production rollback/readbacks await authorized release window |
-| PR-17 | queued | issue #182 |
-| PR-56 | queued | issue #155 |
+| PR-17 | verified candidate | compatible NextMDX/eslint16.3.8, lucide1.48.0, Vitest5.0.3, pinned Docker22.23.3; five old failures audit:prod; clean install/audits0/508units/types/both builds/8Next+23WikiDO browser checks |
+| PR-56 | verified candidate | consumer-checked removal of two unused math packages and five starter SVGs; representative MDX passes both targets |
 | PR-10 | queued | issue #175 |
 | PR-11 | queued | issue #176 |
 | PR-43 | queued | issue #142 |
@@ -102,3 +102,5 @@ Ruling: run PR CI against feature bases as well as main so stacked PRs receive t
 Cloudflare candidate40999e0: 506 unit tests/types/lint/audit0, both builds and standalone smoke/dry-run passed. Whole-artifact-bound final WikiDO browser run23/23 passed serially after aggregate all-routes test received its appropriate longer timeout; prior failing run was test-wide timeout, not a CSP violation. Live network connection-lost logs are not source availability certification. Commit unsigned after two configured1Password signing failures; global settings preserved. PR pending. Production rollback/readback remains gated by the user request not to merge/deploy.
 
 PR208 CI37030208807 and PR209 CI37030407354 passed all build-check gates. PR210 open https://github.com/Reedtrullz/tcwiki/pull/210 (a39e37e), CI pending. Diagnostic Git fixtures now use per-command unsigned fixture commits: global signing caused a local test hang once1Password locked; no credential/signing requests belong in offline fixtures.
+
+PR212 CSP bounds open https://github.com/Reedtrullz/tcwiki/pull/212 (496ce6c), CI pending. PR210 CI37032161140 passed including the actual Cloudflare browser lane. Dependency install initially hit npm Arborist edgesOut; regenerated the lock from desired manifest with --package-lock-only and verified a clean npmci rather than deleting the lock or changing the primary install.
