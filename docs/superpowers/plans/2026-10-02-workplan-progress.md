@@ -29,7 +29,7 @@ Execute all accepted work and create/push GitHub PRs; do not merge to main. User
 | PR-59 | verified candidate | official CLP removal and amended ADR005 reviewed2026-10-02; claim-specific date, overall dates preserved; search regenerated; 506 unit/types/build +8 standalone browser checks |
 | PR-08 | PR open; local verified | e2e61d4; https://github.com/Reedtrullz/tcwiki/pull/208; 479 unit tests/types; fractional bounds reviewed and corrected; CI37030208807 passed |
 | PR-03 | PR open; local verified |6398da9+e082581; https://github.com/Reedtrullz/tcwiki/pull/213; parent review fixed acceptance timing/address/shape/slash tests; 486units/types/lint; single source disclosed |
-| PR-12 | in progress | isolated native Luna sidecar |
+| PR-12 | PR221 open; local verified | 139f3e4; https://github.com/Reedtrullz/tcwiki/pull/221; origin-typed warnings, shared cycle-safe collector; wording/malformed/provenance regressions; full520/types/lint; integration with220 full549/types; CI pending |
 | PR-39 | PR215 open; CI passed | a9b3ab5; CI37035192897; canonical alias RED5/full513/types/lint |
 | PR-13 | queued | issue #178 |
 | PR-06 | PR216 open; CI passed | 2938a70; CI37036720991; supplied-clock states/full520/8Next network checks; deadline/resume never auto-probe |
@@ -51,10 +51,10 @@ Execute all accepted work and create/push GitHub PRs; do not merge to main. User
 | PR-16 | queued | issue #181 |
 | PR-45 | queued | issue #144 |
 | PR-52 | queued | issue #151 |
-| PR-04 | verified candidate | b58b536; completed zero, open positive, malformed/missing/duplicate/gap/UTC rollover RED4→GREEN; supplied-clock period and actual comparison days |
-| PR-38 | verified candidate | chronology/duplicates/overlaps/gaps/UTC rollover RED5→GREEN44 focused; full542/types/lint/build; 11 desktop/mobile Next checks passed, one desktop-only mobile-card check skipped; 11 CF desktop/mobile stats checks passed (one desktop-only mobile-card check skipped); stats added to continuing CF CI lane |
-| PR-05 | verified candidate | separate documented network aggregate and selected subtotal/shares; seven reads capped (14 with fallback); full537/types/lint/Next build; provider and failure coverage; CF search failure tracked separately |
-| PR-09 | queued | issue #174 |
+| PR-04 | PR218 open; CI passed | 6b130055; CI37039713892; completed UTC day/zero/duplicate/gap/rollover; separate aggregate and actual comparison days |
+| PR-38 | PR220 open; CI passed | 0982935; https://github.com/Reedtrullz/tcwiki/pull/220; CI37040858697; full542/types/lint/both builds; UTC chronology/gaps/overlap; 11 checks each Next/CF stats; full32 CF checks, one desktop-only skip |
+| PR-05 | PR218 open; CI passed | 6b130055; CI37039713892; seven bounded histories (14 fallback), provider/failed coverage; scoped visible pool-row regression |
+| PR-09 | in progress | POL price source/actual period/interval age; focused25/types/lint; bounded economics browser review underway |
 | PR-40 | queued | issue #139 |
 | PR-41 | queued | issue #140 |
 | PR-46 | queued | issue #145 |
@@ -108,3 +108,8 @@ PR212 CSP bounds open https://github.com/Reedtrullz/tcwiki/pull/212 (496ce6c), C
 PR217 integrates reviewed PR208 and213 into the cumulative branch after216 (c9d09ec); full530/types/lint and CI37036891783 passed. No main merge. PR04/05 CF lane passed25 checks but search submission intermittently navigated to empty /search?; do not treat that run as all-green. Pull forward the native form-value correction, then repeat the final candidate runtime lane.
 
 PR218 UTC volume periods/universe open (ecb66d0+b58b536). PR219 native search FormData open (ced5c71); deterministic stale-form regression and2Next+27CF browser checks passed. PR218 CI37038389570 failed on a broad BTC selector targeting a hidden coverage entry; corrected on both branches via exact pool-row assertions (218:6b130055,219:d05848c5), CI reruns pending. Follow-up commits preserve code scope.
+
+## 03 October continuation
+
+- PR219 search FormData CI37039715393 passed after the scoped pool-row correction. Partial contribution to PR20/49; broader recovery tasks remain queued.
+- PR221 parent review reproduced and fixed malformed-warning disappearance and compatibility-string reclassification; action/key/scope identity retained. Warning integration with220 is conflict-free and passes549units/types. No main merge/deploy.
