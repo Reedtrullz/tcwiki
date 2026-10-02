@@ -33,6 +33,10 @@ describe('trust helpers', () => {
 
   it('formats large RUNE base units without unsafe Number coercion', () => {
     expect(runeBaseUnitsToNumber('900719925474099100000000')).toBe(Number.MAX_SAFE_INTEGER);
+    expect(runeBaseUnitsToNumber('-900719925474099100000000')).toBe(-Number.MAX_SAFE_INTEGER);
+    expect(runeBaseUnitsToNumber('900719925474099200000000')).toBeNull();
+    expect(runeBaseUnitsToNumber('-900719925474099200000000')).toBeNull();
+    expect(runeBaseUnitsToNumber('-125000000')).toBe(-1.25);
     expect(runeBaseUnitsToNumber('900719925474099200000000000000000')).toBeNull();
     expect(formatRuneFromBaseUnits('900719925474099212345678')).toBe('9,007,199,254,740,992');
     expect(formatRuneFromBaseUnits('149999999')).toBe('1');
@@ -48,6 +52,7 @@ describe('trust helpers', () => {
     expect(normalizeApyToPercent(12, 'percent')).toBe(12);
     expect(normalizeApyToPercent('150', 'percent')).toBe(150);
     expect(normalizeApyToPercent('bad')).toBeNull();
+    expect(normalizeApyToPercent('9'.repeat(307), 'decimal')).toBeNull();
   });
 
   it('rejects APY source strings that JavaScript would otherwise coerce', () => {

@@ -8,7 +8,7 @@ import { SectionHeader } from '@/components/ui/SectionHeader';
 import { useEarningsHistory, useNetworkStatus, useRunePoolPolStatus } from '@/lib/hooks/useMidgard';
 import { liveResultIsDegraded } from '@/lib/live-result';
 import { summarizeSourceWarning } from '@/lib/source-warnings';
-import { formatRuneFromBaseUnits } from '@/lib/trust';
+import { formatRuneFromBaseUnits, parseFiniteDecimal, runeBaseUnitsToNumber } from '@/lib/trust';
 import type { HistoryItem, LiveDataResult, NetworkStatus, RunePoolPolStatus } from '@/lib/types';
 
 const RUNE_BASE_UNITS = BigInt(100000000);
@@ -65,24 +65,8 @@ function factCardClass(tone: FactTone) {
   }
 }
 
-function formatRune(value: string | null | undefined) {
-  if (value === undefined || value === null) {
-    return 'Unavailable';
-  }
-
-  try {
-    const raw = BigInt(value);
-    const sign = raw < BigInt(0) ? '-' : '';
-    const absolute = raw < BigInt(0) ? -raw : raw;
-    const rounded = (absolute + RUNE_BASE_UNITS / BigInt(2)) / RUNE_BASE_UNITS;
-    return `${sign}${rounded.toLocaleString('en-US')} RUNE`;
-  } catch {
-    return 'Unavailable';
-  }
-}
-
 function parseRuneBaseUnits(value: string | null | undefined) {
-  if (value === undefined || value === null) {
+  if (value === undefined || value === null || !/^-?\d+$/.test(value)) {
     return null;
   }
 
@@ -93,25 +77,21 @@ function parseRuneBaseUnits(value: string | null | undefined) {
   }
 }
 
-function formatUnitValue(value: string | null | undefined) {
-  if (value === undefined || value === null) {
+function formatRune(value: string | null | undefined) {
+  const raw = parseRuneBaseUnits(value);
+  if (raw === null) {
     return 'Unavailable';
   }
 
-  try {
-    return BigInt(value).toLocaleString('en-US');
-  } catch {
-    return 'Unavailable';
-  }
+  const sign = raw < BigInt(0) ? '-' : '';
+  const absolute = raw < BigInt(0) ? -raw : raw;
+  const rounded = (absolute + RUNE_BASE_UNITS / BigInt(2)) / RUNE_BASE_UNITS;
+  return `${sign}${rounded.toLocaleString('en-US')} RUNE`;
 }
 
-function parseFiniteDecimal(value: string | undefined) {
-  if (value === undefined || value === '') {
-    return null;
-  }
-
-  const numeric = Number(value);
-  return Number.isFinite(numeric) ? numeric : null;
+function formatUnitValue(value: string | null | undefined) {
+  const units = parseRuneBaseUnits(value);
+  return units === null ? 'Unavailable' : units.toLocaleString('en-US');
 }
 
 function formatUsdCompact(value: number | null) {
@@ -126,8 +106,7 @@ function formatUsdCompact(value: number | null) {
 }
 
 function runeNumberFromBaseUnits(value: string | null | undefined) {
-  const raw = parseRuneBaseUnits(value);
-  return raw === null ? null : Number(raw) / Number(RUNE_BASE_UNITS);
+  return runeBaseUnitsToNumber(value);
 }
 
 function formatUsdPrice(value: number | null) {
@@ -139,16 +118,17 @@ function formatUsdPrice(value: number | null) {
 }
 
 function formatHistoryDate(seconds: string | undefined) {
-  if (!seconds) {
+  const parsed = parseFiniteDecimal(seconds);
+  if (parsed === null) {
     return null;
   }
 
-  const parsed = Number(seconds);
-  if (!Number.isFinite(parsed)) {
+  const date = new Date(parsed * 1000);
+  if (!Number.isFinite(date.getTime())) {
     return null;
   }
 
-  return new Date(parsed * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
 }
 
 function derivePolTrackerSummary(
@@ -162,6 +142,7 @@ function derivePolTrackerSummary(
 
   const formatRuneOrUnavailable = (value: string | null) => (value === null ? 'Unavailable' : formatRuneFromBaseUnits(value));
   const polRune = runeNumberFromBaseUnits(status.pol.valueRuneBaseUnits);
+  const pnlBaseUnits = parseRuneBaseUnits(status.pol.pnlRuneBaseUnits);
   const pnlRune = runeNumberFromBaseUnits(status.pol.pnlRuneBaseUnits);
   const runePriceUsd = earningsHistory
     ?.map((item) => parseFiniteDecimal(item.runePriceUSD))
@@ -180,7 +161,7 @@ function derivePolTrackerSummary(
     polUsd: formatUsdCompact(polRune === null || runePriceUsd === undefined ? null : polRune * runePriceUsd),
     pnlRune: formatRuneOrUnavailable(status.pol.pnlRuneBaseUnits),
     pnlUsd: formatUsdCompact(pnlRune === null || runePriceUsd === undefined ? null : pnlRune * runePriceUsd),
-    pnlTone: pnlRune === null ? 'info' : pnlRune >= 0 ? 'success' : 'danger',
+    pnlTone: pnlBaseUnits === null ? 'info' : pnlBaseUnits >= BigInt(0) ? 'success' : 'danger',
     lifetimeDeposited: formatRuneOrUnavailable(status.pol.runeDepositedBaseUnits),
     lifetimeWithdrawn: formatRuneOrUnavailable(status.pol.runeWithdrawnBaseUnits),
     usdPrice: formatUsdPrice(runePriceUsd ?? null),

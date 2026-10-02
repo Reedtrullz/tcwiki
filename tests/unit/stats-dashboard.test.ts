@@ -353,6 +353,18 @@ describe('stats dashboard decision facts', () => {
     expect(snapshot.highestVolumePool?.asset).toBe('AVAX.AVAX');
   });
 
+  it('rejects malformed USD and overflowing APY at the presentation boundary', () => {
+    const [row] = deriveStatsPoolSnapshot([pool('BTC.BTC', {
+      liquidityInUSD: '0x10',
+      poolAPY: '9'.repeat(307),
+    })], false).rows;
+
+    expect(row.liquidityUsd).toBeNull();
+    expect(row.liquidityUsdLabel).toBe('Unavailable');
+    expect(row.apyPercent).toBeNull();
+    expect(row.apyLabel).toBe('Unavailable');
+  });
+
   it('filters and sorts Midgard pool rows while keeping missing values last', () => {
     const snapshot = deriveStatsPoolSnapshot([
       pool('BTC.BTC', {
