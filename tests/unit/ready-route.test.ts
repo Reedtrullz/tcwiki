@@ -340,7 +340,12 @@ describe('/api/ready', () => {
   it('refreshes a cached snapshot before its block crosses the freshness limit', async () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date('2026-07-02T00:00:10.000Z'));
-    await GET();
+    const pendingHealth = deferred<LiveDataResult<MidgardHealth>>();
+    vi.mocked(MidgardAPI.getHealth).mockReturnValueOnce(pendingHealth.promise);
+    const firstResponse = GET();
+    vi.setSystemTime(new Date('2026-07-02T00:00:12.250Z'));
+    pendingHealth.resolve(midgardHealth('ok'));
+    expect((await firstResponse).status).toBe(200);
     vi.setSystemTime(new Date('2026-07-02T00:00:13.000Z'));
     const freshTime = new Date().toISOString();
     const dynamicFees = dynamicFeeStatus();

@@ -1,5 +1,5 @@
 import MidgardAPI from '@/lib/api/midgard';
-import ThornodeAPI, { THORNODE_BLOCK_STALE_WARNING_SECONDS } from '@/lib/api/thornode';
+import ThornodeAPI, { getThornodeBlockAgeSeconds, getThornodeBlockAgeWarnings, THORNODE_BLOCK_STALE_WARNING_SECONDS } from '@/lib/api/thornode';
 import type {
   DynamicL1FeeStatus,
   HistoryItem,
@@ -95,7 +95,9 @@ export function getReadinessUpstreamSnapshot(): Promise<ReadinessUpstreamSnapsho
           ].flatMap((time) => {
             const freshUntil = Date.parse(time ?? '') + THORNODE_BLOCK_STALE_WARNING_SECONDS * 1000;
             // Already-degraded evidence keeps the bounded failure cache; fresh evidence expires before it ages out.
-            return freshUntil > Date.now() ? [freshUntil] : [];
+            return Number.isFinite(freshUntil) &&
+              getThornodeBlockAgeWarnings(getThornodeBlockAgeSeconds(time), 'live operation state').length === 0
+              ? [freshUntil] : [];
           })
         ),
       };
