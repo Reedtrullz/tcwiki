@@ -1,3 +1,4 @@
+import { getThornodeBlockAgeSeconds, getThornodeBlockAgeWarnings } from '@/lib/api/thornode';
 import { getReadinessUpstreamSnapshot } from '@/lib/readiness-snapshot';
 import { getRuntimeMetadata } from '@/lib/runtime-metadata';
 import { assertReadinessContract } from '../../../../scripts/lib/readiness-contract.mjs';
@@ -353,8 +354,16 @@ export async function GET(request?: Request) {
     dynamicFees,
     runePoolPol,
   } = await getReadinessUpstreamSnapshot();
+  const assessedAt = Date.now();
+  const blockAge = (time: string | undefined, fallback: number | undefined) => (
+    getThornodeBlockAgeSeconds(time, assessedAt) ?? fallback
+  );
+  const thornodeBlockAge = blockAge(thornode.data?.thorchainBlockTime, thornode.data?.thorchainBlockAgeSeconds);
+  const dynamicFeeBlockAge = blockAge(dynamicFees.data?.sourceFreshness.thorchainBlockTime, dynamicFees.data?.sourceFreshness.thorchainBlockAgeSeconds);
+  const runePoolBlockAge = blockAge(runePoolPol.data?.sourceFreshness.thorchainBlockTime, runePoolPol.data?.sourceFreshness.thorchainBlockAgeSeconds);
   const reasons: string[] = [];
-  const computedThornodeWarnings: string[] = [];
+  const computedThornodeWarnings = getThornodeBlockAgeWarnings(thornodeBlockAge, 'live operation state')
+    .filter((warning) => !thornode.data?.sourceWarnings.includes(warning));
   const poolsError = dataReady(midgardPools) && !nonEmptyDataReady(midgardPools)
     ? 'Midgard pools data did not include any available pools.'
     : undefined;
@@ -398,16 +407,18 @@ export async function GET(request?: Request) {
   if (thornode.status === 'ok' && thornode.data !== undefined && !hasExactThornodeNetworkSources(thornode.sources)) {
     computedThornodeWarnings.push('THORNode network status sources do not include exact pinned endpoint evidence.');
   }
-  const dynamicFeeExactSourceWarnings = dynamicFees.status === 'ok' &&
+  const computedDynamicFeeWarnings = dynamicFees.status === 'ok' &&
     dynamicFees.data !== undefined &&
     !hasExactDynamicFeeSources(dynamicFees.sources)
     ? ['THORNode dynamic fee sources do not include exact pinned endpoint evidence.']
     : [];
-  const runePoolPolExactSourceWarnings = runePoolPol.status === 'ok' &&
+  const computedRunePoolPolWarnings = runePoolPol.status === 'ok' &&
     runePoolPol.data !== undefined &&
     !hasExactRunePoolPolSources(runePoolPol.sources)
     ? ['THORNode RUNEPool/POL sources do not include exact pinned endpoint evidence.']
     : [];
+  computedDynamicFeeWarnings.push(...getThornodeBlockAgeWarnings(dynamicFeeBlockAge, 'dynamic fee state'));
+  computedRunePoolPolWarnings.push(...getThornodeBlockAgeWarnings(runePoolBlockAge, 'RUNEPool state'));
   const midgardSourceWarnings = [
     ...(midgardHeightLagBlocks !== undefined && midgardHeightLagBlocks > 20
       ? [`Midgard latest height is ${midgardHeightLagBlocks} blocks behind THORNode lastblock.`]
@@ -441,24 +452,24 @@ export async function GET(request?: Request) {
     : getDynamicFeeWarningDetails(dynamicFees.data?.sourceWarnings ?? []);
   const dynamicFeeSourceWarningDetails = uniqueSourceWarningDetails([
     ...dynamicFeeClientWarningDetails,
-    ...getDynamicFeeWarningDetails(dynamicFeeExactSourceWarnings),
+    ...getDynamicFeeWarningDetails(computedDynamicFeeWarnings),
   ]);
   const dynamicFeeSourceWarnings = uniqueStrings([
     ...(dynamicFees.data?.sourceWarnings ?? []),
     ...dynamicFeeSourceWarningDetails.map((detail) => detail.message),
-    ...dynamicFeeExactSourceWarnings,
+    ...computedDynamicFeeWarnings,
   ]);
   const runePoolPolClientWarningDetails = runePoolPol.data?.sourceWarningDetails?.length
     ? runePoolPol.data.sourceWarningDetails
     : getRunePoolPolWarningDetails(runePoolPol.data?.sourceWarnings ?? []);
   const runePoolPolSourceWarningDetails = uniqueSourceWarningDetails([
     ...runePoolPolClientWarningDetails,
-    ...getRunePoolPolWarningDetails(runePoolPolExactSourceWarnings),
+    ...getRunePoolPolWarningDetails(computedRunePoolPolWarnings),
   ]);
   const runePoolPolSourceWarnings = uniqueStrings([
     ...(runePoolPol.data?.sourceWarnings ?? []),
     ...runePoolPolSourceWarningDetails.map((detail) => detail.message),
-    ...runePoolPolExactSourceWarnings,
+    ...computedRunePoolPolWarnings,
   ]);
   const midgardSourceWarningDetails = getMidgardSourceWarningDetails(midgardSourceWarnings);
   const midgardHealthWarnings = getMidgardHealthWarnings(midgard);
@@ -567,7 +578,7 @@ export async function GET(request?: Request) {
         thorchainLastblockMaxHeight: thornode.data?.thorchainLastblockMaxHeight,
         thorchainLastblockSpread: thornode.data?.thorchainLastblockSpread,
         thorchainBlockTime: thornode.data?.thorchainBlockTime,
-        thorchainBlockAgeSeconds: thornode.data?.thorchainBlockAgeSeconds,
+        thorchainBlockAgeSeconds: thornodeBlockAge,
         heightLagBlocks: thornodeHeightLagBlocks,
         activeControlKeys: thornode.data?.activeControlKeys ?? [],
         activeChainKeys: thornode.data?.activeChainKeys ?? [],
@@ -595,7 +606,7 @@ export async function GET(request?: Request) {
           thorchainHeight: dynamicFees.data?.sourceFreshness.thorchainHeight,
           snapshotPinned: dynamicFees.data?.sourceFreshness.snapshotPinned,
           thorchainBlockTime: dynamicFees.data?.sourceFreshness.thorchainBlockTime,
-          thorchainBlockAgeSeconds: dynamicFees.data?.sourceFreshness.thorchainBlockAgeSeconds,
+          thorchainBlockAgeSeconds: dynamicFeeBlockAge,
           sourceWarnings: dynamicFeeSourceWarnings,
           sourceWarningDetails: dynamicFeeSourceWarningDetails,
         },
@@ -615,7 +626,7 @@ export async function GET(request?: Request) {
           thorchainHeight: runePoolPol.data?.sourceFreshness.thorchainHeight,
           snapshotPinned: runePoolPol.data?.sourceFreshness.snapshotPinned,
           thorchainBlockTime: runePoolPol.data?.sourceFreshness.thorchainBlockTime,
-          thorchainBlockAgeSeconds: runePoolPol.data?.sourceFreshness.thorchainBlockAgeSeconds,
+          thorchainBlockAgeSeconds: runePoolBlockAge,
           sourceWarnings: runePoolPolSourceWarnings,
           sourceWarningDetails: runePoolPolSourceWarningDetails,
         },

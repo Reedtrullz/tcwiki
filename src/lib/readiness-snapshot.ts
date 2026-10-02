@@ -1,5 +1,5 @@
 import MidgardAPI from '@/lib/api/midgard';
-import ThornodeAPI from '@/lib/api/thornode';
+import ThornodeAPI, { THORNODE_BLOCK_STALE_WARNING_SECONDS } from '@/lib/api/thornode';
 import type {
   DynamicL1FeeStatus,
   HistoryItem,
@@ -86,7 +86,18 @@ export function getReadinessUpstreamSnapshot(): Promise<ReadinessUpstreamSnapsho
     .then((snapshot) => {
       cachedSnapshot = {
         snapshot,
-        expiresAt: Date.now() + READINESS_SNAPSHOT_TTL_MS,
+        expiresAt: Math.min(
+          Date.parse(snapshot.checkedAt) + READINESS_SNAPSHOT_TTL_MS,
+          ...[
+            snapshot.thornode.data?.thorchainBlockTime,
+            snapshot.dynamicFees.data?.sourceFreshness.thorchainBlockTime,
+            snapshot.runePoolPol.data?.sourceFreshness.thorchainBlockTime,
+          ].flatMap((time) => {
+            const freshUntil = Date.parse(time ?? '') + THORNODE_BLOCK_STALE_WARNING_SECONDS * 1000;
+            // Already-degraded evidence keeps the bounded failure cache; fresh evidence expires before it ages out.
+            return freshUntil > Date.now() ? [freshUntil] : [];
+          })
+        ),
       };
       return snapshot;
     })

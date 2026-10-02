@@ -56,7 +56,7 @@ const THORNODE_ENDPOINTS: ThornodeEndpoint[] = [
   },
 ];
 
-const THORNODE_BLOCK_STALE_WARNING_SECONDS = 12;
+export const THORNODE_BLOCK_STALE_WARNING_SECONDS = 12;
 const THORNODE_BLOCK_STALE_DEGRADED_SECONDS = 30;
 const THORNODE_BLOCK_FUTURE_WARNING_SECONDS = 12;
 const THORNODE_BLOCK_FUTURE_DEGRADED_SECONDS = 30;
@@ -831,22 +831,30 @@ function getDynamicFeeSourceWarningDetails(warnings: string[]) {
   return uniqueSourceWarningDetails(warnings.map(classifyDynamicFeeSourceWarning));
 }
 
-function getDynamicFeeBlockAgeWarnings(blockAgeSeconds: number | undefined) {
+export function getThornodeBlockAgeSeconds(time: string | undefined, nowMs = Date.now()) {
+  const blockMs = Date.parse(time ?? '');
+  return Number.isFinite(blockMs) ? Math.round((nowMs - blockMs) / 1000) : undefined;
+}
+
+export function getThornodeBlockAgeWarnings(
+  blockAgeSeconds: number | undefined,
+  state: string
+) {
   if (blockAgeSeconds === undefined) {
     return [];
   }
 
   if (blockAgeSeconds < -THORNODE_BLOCK_FUTURE_DEGRADED_SECONDS) {
-    return [`THORNode latest block timestamp is ${formatAgeSeconds(blockAgeSeconds)} in the future; dynamic fee state is stale.`];
+    return [`THORNode latest block timestamp is ${formatAgeSeconds(blockAgeSeconds)} in the future; ${state} is stale.`];
   }
   if (blockAgeSeconds < -THORNODE_BLOCK_FUTURE_WARNING_SECONDS) {
-    return [`THORNode latest block timestamp is ${formatAgeSeconds(blockAgeSeconds)} in the future; dynamic fee state may be stale.`];
+    return [`THORNode latest block timestamp is ${formatAgeSeconds(blockAgeSeconds)} in the future; ${state} may be stale.`];
   }
   if (blockAgeSeconds > THORNODE_BLOCK_STALE_DEGRADED_SECONDS) {
-    return [`THORNode latest block timestamp is ${formatAgeSeconds(blockAgeSeconds)} old; dynamic fee state is stale.`];
+    return [`THORNode latest block timestamp is ${formatAgeSeconds(blockAgeSeconds)} old; ${state} is stale.`];
   }
   if (blockAgeSeconds > THORNODE_BLOCK_STALE_WARNING_SECONDS) {
-    return [`THORNode latest block timestamp is ${formatAgeSeconds(blockAgeSeconds)} old; dynamic fee state may be stale.`];
+    return [`THORNode latest block timestamp is ${formatAgeSeconds(blockAgeSeconds)} old; ${state} may be stale.`];
   }
 
   return [];
@@ -906,27 +914,6 @@ function classifyRunePoolSourceWarning(message: string): NetworkStatusSourceWarn
 
 function getRunePoolSourceWarningDetails(warnings: string[]) {
   return uniqueSourceWarningDetails(warnings.map(classifyRunePoolSourceWarning));
-}
-
-function getRunePoolBlockAgeWarnings(blockAgeSeconds: number | undefined) {
-  if (blockAgeSeconds === undefined) {
-    return [];
-  }
-
-  if (blockAgeSeconds < -THORNODE_BLOCK_FUTURE_DEGRADED_SECONDS) {
-    return [`THORNode latest block timestamp is ${formatAgeSeconds(blockAgeSeconds)} in the future; RUNEPool state is stale.`];
-  }
-  if (blockAgeSeconds < -THORNODE_BLOCK_FUTURE_WARNING_SECONDS) {
-    return [`THORNode latest block timestamp is ${formatAgeSeconds(blockAgeSeconds)} in the future; RUNEPool state may be stale.`];
-  }
-  if (blockAgeSeconds > THORNODE_BLOCK_STALE_DEGRADED_SECONDS) {
-    return [`THORNode latest block timestamp is ${formatAgeSeconds(blockAgeSeconds)} old; RUNEPool state is stale.`];
-  }
-  if (blockAgeSeconds > THORNODE_BLOCK_STALE_WARNING_SECONDS) {
-    return [`THORNode latest block timestamp is ${formatAgeSeconds(blockAgeSeconds)} old; RUNEPool state may be stale.`];
-  }
-
-  return [];
 }
 
 function getRunePoolWarningSnapshotScore(status: RunePoolPolStatus) {
@@ -1544,7 +1531,6 @@ type DynamicL1FeeProviderSnapshot = {
   dynamicFees: unknown;
   currentDynamicFees: unknown;
   sourceFreshness: DynamicL1FeeSourceFreshness;
-  blockAgeWarnings: string[];
   status: DynamicL1FeeStatus;
   sources: SourceMeta[];
 };
@@ -1570,17 +1556,21 @@ async function finalizeDynamicL1FeeProviderSnapshot(
     snapshot.sourceFreshness.thorchainHeight,
     snapshot.status
   );
+  const sourceFreshness = {
+    ...snapshot.sourceFreshness,
+    thorchainBlockAgeSeconds: getThornodeBlockAgeSeconds(snapshot.sourceFreshness.thorchainBlockTime),
+  };
   const status = deriveDynamicL1FeeStatus(
     snapshot.mimir,
     snapshot.dynamicFees,
     snapshot.currentDynamicFees,
-    snapshot.sourceFreshness,
+    sourceFreshness,
     historyResult.histories,
     historyResult.sourceWarnings
   );
   const sourceWarnings = [
     ...status.sourceWarnings,
-    ...snapshot.blockAgeWarnings,
+    ...getThornodeBlockAgeWarnings(sourceFreshness.thorchainBlockAgeSeconds, 'dynamic fee state'),
   ];
   const uniqueWarnings = [...new Set(sourceWarnings)].sort((left, right) => left.localeCompare(right));
   const sources = uniqueSourcesByUrl([
@@ -1688,7 +1678,6 @@ function deriveValidatedNetworkStatusSnapshot(
   version: unknown,
   lastBlock: unknown,
   latestBlock: unknown,
-  checkedAt: string,
   options: {
     snapshotPinned?: boolean;
     snapshotHeight?: number;
@@ -1737,11 +1726,7 @@ function deriveValidatedNetworkStatusSnapshot(
     throw new Error(`THORNode lastblock response included last_signed_out above thorchain height: ${futureSignedRows.join(', ')}.`);
   }
 
-  const checkedAtMs = Date.parse(checkedAt);
-  const blockTimeMs = Date.parse(latestBlockInfo.time);
-  const blockAgeSeconds = Number.isNaN(checkedAtMs) || Number.isNaN(blockTimeMs)
-    ? undefined
-    : Math.round((checkedAtMs - blockTimeMs) / 1000);
+  const blockAgeSeconds = getThornodeBlockAgeSeconds(latestBlockInfo.time);
   const heightDivergence = Math.abs(snapshotHeight - thorchainHeightEvidence.height);
   const sourceWarnings = [
     ...(options.snapshotPinned
@@ -1750,16 +1735,7 @@ function deriveValidatedNetworkStatusSnapshot(
     ...(thorchainHeightEvidence.spread > THORNODE_LASTBLOCK_SPREAD_WARNING_BLOCKS
       ? [`THORNode lastblock THORChain heights diverge by ${thorchainHeightEvidence.spread} blocks across chains.`]
       : []),
-    ...(blockAgeSeconds !== undefined && blockAgeSeconds < -THORNODE_BLOCK_FUTURE_DEGRADED_SECONDS
-      ? [`THORNode latest block timestamp is ${formatAgeSeconds(blockAgeSeconds)} in the future; live operation state is stale.`]
-      : blockAgeSeconds !== undefined && blockAgeSeconds < -THORNODE_BLOCK_FUTURE_WARNING_SECONDS
-        ? [`THORNode latest block timestamp is ${formatAgeSeconds(blockAgeSeconds)} in the future; live operation state may be stale.`]
-        : []),
-    ...(blockAgeSeconds !== undefined && blockAgeSeconds > THORNODE_BLOCK_STALE_DEGRADED_SECONDS
-      ? [`THORNode latest block timestamp is ${formatAgeSeconds(blockAgeSeconds)} old; live operation state is stale.`]
-      : blockAgeSeconds !== undefined && blockAgeSeconds > THORNODE_BLOCK_STALE_WARNING_SECONDS
-        ? [`THORNode latest block timestamp is ${formatAgeSeconds(blockAgeSeconds)} old; live operation state may be stale.`]
-        : []),
+    ...getThornodeBlockAgeWarnings(blockAgeSeconds, 'live operation state'),
     ...(!options.snapshotPinned && heightDivergence > 0
       ? [`THORNode latest block height differs from lastblock height by ${heightDivergence} blocks.`]
       : []),
@@ -2978,7 +2954,6 @@ export class ThornodeAPI {
           version,
           lastBlock,
           latestBlock,
-          checkedAt,
           { snapshotPinned: true, snapshotHeight }
         );
         if (status.sourceWarnings.length === 0) {
@@ -3096,15 +3071,11 @@ export class ThornodeAPI {
 
         const snapshotHeight = getConservativeSnapshotHeight(latestBlockInfo.height);
         const sources = runePoolPolStatusSources(endpoint, snapshotHeight);
-        const checkedAtMs = Date.parse(checkedAt);
-        const blockTimeMs = Date.parse(latestBlockInfo.time);
-        const blockAgeSeconds = Number.isNaN(checkedAtMs) || Number.isNaN(blockTimeMs)
-          ? undefined
-          : Math.round((checkedAtMs - blockTimeMs) / 1000);
         const [mimir, runepool] = await Promise.all([
           requestFromEndpoint<unknown>(endpoint, '/mimir', snapshotHeight),
           requestFromEndpoint<unknown>(endpoint, '/runepool', snapshotHeight),
         ]);
+        const blockAgeSeconds = getThornodeBlockAgeSeconds(latestBlockInfo.time);
         const sourceFreshness: RunePoolSourceFreshness = {
           thorchainHeight: snapshotHeight,
           thorchainBlockTime: latestBlockInfo.time,
@@ -3114,7 +3085,7 @@ export class ThornodeAPI {
         const baseStatus = deriveRunePoolPolStatus(mimir, runepool, sourceFreshness);
         const sourceWarnings = [
           ...baseStatus.sourceWarnings,
-          ...getRunePoolBlockAgeWarnings(blockAgeSeconds),
+          ...getThornodeBlockAgeWarnings(blockAgeSeconds, 'RUNEPool state'),
         ];
         const uniqueWarnings = [...new Set(sourceWarnings)].sort((left, right) => left.localeCompare(right));
         const status = {
@@ -3171,11 +3142,6 @@ export class ThornodeAPI {
 
         const snapshotHeight = getConservativeSnapshotHeight(latestBlockInfo.height);
         const baseSources = dynamicL1FeeStatusSources(endpoint, snapshotHeight);
-        const checkedAtMs = Date.parse(checkedAt);
-        const blockTimeMs = Date.parse(latestBlockInfo.time);
-        const blockAgeSeconds = Number.isNaN(checkedAtMs) || Number.isNaN(blockTimeMs)
-          ? undefined
-          : Math.round((checkedAtMs - blockTimeMs) / 1000);
         const [mimir, dynamicFees, currentDynamicFees] = await Promise.all([
           requestFromEndpoint<unknown>(endpoint, '/mimir', snapshotHeight),
           requestFromEndpoint<unknown>(endpoint, '/dynamic_l1_fees', snapshotHeight),
@@ -3184,6 +3150,7 @@ export class ThornodeAPI {
         if (!isPlainRecord(mimir)) {
           throw new Error('THORNode Mimir response was not a plain object.');
         }
+        const blockAgeSeconds = getThornodeBlockAgeSeconds(latestBlockInfo.time);
         const sourceFreshness: DynamicL1FeeSourceFreshness = {
           thorchainHeight: snapshotHeight,
           thorchainBlockTime: latestBlockInfo.time,
@@ -3198,7 +3165,7 @@ export class ThornodeAPI {
         );
         const sourceWarnings = [
           ...baseStatus.sourceWarnings,
-          ...getDynamicFeeBlockAgeWarnings(blockAgeSeconds),
+          ...getThornodeBlockAgeWarnings(blockAgeSeconds, 'dynamic fee state'),
         ];
         const uniqueWarnings = [...new Set(sourceWarnings)].sort((left, right) => left.localeCompare(right));
         const snapshot = {
@@ -3208,7 +3175,6 @@ export class ThornodeAPI {
           dynamicFees,
           currentDynamicFees,
           sourceFreshness,
-          blockAgeWarnings: getDynamicFeeBlockAgeWarnings(blockAgeSeconds),
           status: {
             ...baseStatus,
             sourceWarnings: uniqueWarnings,
