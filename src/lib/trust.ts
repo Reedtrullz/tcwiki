@@ -71,11 +71,12 @@ export function runeBaseUnitsToNumber(baseUnits: string | number | bigint | null
     return null;
   }
 
-  const whole = units / RUNE_BASE_UNITS;
-  if (whole > MAX_SAFE_INTEGER_BIGINT || whole < -MAX_SAFE_INTEGER_BIGINT) {
+  const maxUnits = MAX_SAFE_INTEGER_BIGINT * RUNE_BASE_UNITS;
+  if (units > maxUnits || units < -maxUnits) {
     return null;
   }
 
+  const whole = units / RUNE_BASE_UNITS;
   const fractional = units % RUNE_BASE_UNITS;
   return Number(whole) + Number(fractional) / Number(RUNE_BASE_UNITS);
 }
