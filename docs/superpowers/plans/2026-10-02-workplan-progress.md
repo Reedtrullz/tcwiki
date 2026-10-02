@@ -26,8 +26,8 @@ Execute all accepted work and create/push GitHub PRs; do not merge to main. User
 | PR-37 | PR open; local verified | 172f288; https://github.com/Reedtrullz/tcwiki/pull/207; 482 unit tests/types; lint 0 errors; CI37025577308SUCCESS; broad review pending |
 | PR-02 | PR open; local verified |155dc79; https://github.com/Reedtrullz/tcwiki/pull/209; scoped exceptions RED→GREEN; strict default rejects overdue; candidate two exemptions through2026-10-09 proposed at owner merge; no review-date changes |
 | PR-55 | PR open; local verified |155dc79; https://github.com/Reedtrullz/tcwiki/pull/209; mtime/deletion/server replacement RED→GREEN; real standalone build receipt generated; 495 unit tests/types/lint; real build and standalone smoke passed (live age warnings retained) |
-| PR-59 | queued | issue #158 |
-| PR-08 | PR open; local verified | e2e61d4; https://github.com/Reedtrullz/tcwiki/pull/208; 479 unit tests/types; fractional bounds reviewed and corrected; CI pending |
+| PR-59 | verified candidate | official CLP removal and amended ADR005 reviewed2026-10-02; claim-specific date, overall dates preserved; search regenerated; 506 unit/types/build +8 standalone browser checks |
+| PR-08 | PR open; local verified | e2e61d4; https://github.com/Reedtrullz/tcwiki/pull/208; 479 unit tests/types; fractional bounds reviewed and corrected; CI37030208807 passed |
 | PR-03 | queued | issue #168 |
 | PR-12 | queued | issue #177 |
 | PR-39 | queued | issue #138 |
@@ -100,3 +100,5 @@ Ruling PR02: propose two exact incident/search-projection exceptions through2026
 Ruling: run PR CI against feature bases as well as main so stacked PRs receive the existing full runtime gates. No production push trigger expanded. PR03 Maya sidecar in isolated data checkout; parent implements target-runtime proof.
 
 Cloudflare candidate40999e0: 506 unit tests/types/lint/audit0, both builds and standalone smoke/dry-run passed. Whole-artifact-bound final WikiDO browser run23/23 passed serially after aggregate all-routes test received its appropriate longer timeout; prior failing run was test-wide timeout, not a CSP violation. Live network connection-lost logs are not source availability certification. Commit unsigned after two configured1Password signing failures; global settings preserved. PR pending. Production rollback/readback remains gated by the user request not to merge/deploy.
+
+PR208 CI37030208807 and PR209 CI37030407354 passed all build-check gates. PR210 open https://github.com/Reedtrullz/tcwiki/pull/210 (a39e37e), CI pending. Diagnostic Git fixtures now use per-command unsigned fixture commits: global signing caused a local test hang once1Password locked; no credential/signing requests belong in offline fixtures.
