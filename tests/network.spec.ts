@@ -116,8 +116,8 @@ test.describe('THORChain Wiki Network Smoke Tests', () => {
     await quotePanel.getByLabel(/To asset/i).selectOption('ETH.ETH');
     await quotePanel.getByLabel(/Amount/i).fill('0.01');
     await checkRoute(quotePanel);
-    await expect(quotePanel.getByText(/Current quote returned/i)).toBeVisible({ timeout: 15_000 });
-    await expect(quotePanel.getByText(/Current route is open/i)).toBeVisible();
+    await expect(quotePanel.getByText('Quote returned', { exact: true })).toBeVisible({ timeout: 15_000 });
+    await expect(quotePanel.getByText(/Quote returned for this route/i)).toBeVisible();
     await expect(quotePanel.getByText(/Expected output/i)).toBeVisible();
     await expect(quotePanel.getByText(/Fee bps|Total fee bps/i)).toBeVisible();
     await expect(quotePanel.getByText(/same fresh quote flow/i)).toBeVisible();
@@ -127,7 +127,7 @@ test.describe('THORChain Wiki Network Smoke Tests', () => {
     await quotePanel.getByLabel(/To asset/i).selectOption('ETH.ETH');
     await checkRoute(quotePanel);
     await expect(quotePanel.getByText(/Quote limited/i)).toBeVisible({ timeout: 15_000 });
-    await expect(quotePanel.getByText(/Current quote failed or was limited/i)).toBeVisible();
+    await expect(quotePanel.getByText(/Quote check failed or was limited/i)).toBeVisible();
     await expect(quotePanel.getByText(/trading is halted on BSC/i).first()).toBeVisible();
 
     await page.waitForTimeout(1100);
@@ -171,7 +171,7 @@ test.describe('THORChain Wiki Network Smoke Tests', () => {
     const quotePanelBox = await quotePanel.boundingBox();
     expect(quotePanelBox, 'shareable route checker link should land on the route checker').not.toBeNull();
     expect(quotePanelBox?.y ?? -1, 'route checker should clear the fixed header').toBeGreaterThanOrEqual(52);
-    await expect(quotePanel.getByText(/Current quote returned/i)).toHaveCount(0);
+    await expect(quotePanel.getByText('Quote returned', { exact: true })).toHaveCount(0);
     expect(quoteRequests).toBe(0);
 
     await quotePanel.getByLabel(/From asset/i).selectOption('BTC.BTC');
@@ -184,7 +184,7 @@ test.describe('THORChain Wiki Network Smoke Tests', () => {
     expect(quoteRequests).toBe(0);
 
     await checkRoute(quotePanel);
-    await expect(quotePanel.getByText(/Current quote returned/i)).toBeVisible({ timeout: 15_000 });
+    await expect(quotePanel.getByText('Quote returned', { exact: true })).toBeVisible({ timeout: 15_000 });
     expect(quoteRequests).toBe(1);
   });
 
@@ -208,7 +208,7 @@ test.describe('THORChain Wiki Network Smoke Tests', () => {
     expect(quoteRequests).toBe(0);
 
     await checkRoute(quotePanel);
-    await expect(quotePanel.getByText(/Current quote returned/i)).toBeVisible({ timeout: 15_000 });
+    await expect(quotePanel.getByText('Quote returned', { exact: true })).toBeVisible({ timeout: 15_000 });
     expect(quoteRequests).toBe(1);
   });
 
@@ -230,20 +230,20 @@ test.describe('THORChain Wiki Network Smoke Tests', () => {
     await quotePanel.getByLabel(/Amount/i).fill('0.01');
 
     await checkRoute(quotePanel);
-    await expect(quotePanel.getByText(/Current quote returned/i)).toBeVisible({ timeout: 15_000 });
+    await expect(quotePanel.getByText('Quote returned', { exact: true })).toBeVisible({ timeout: 15_000 });
     expect(quoteRequests).toBe(1);
 
     await quotePanel.getByLabel(/Amount/i).fill('0.010000001');
     await expect(quotePanel.getByText(/Previous quote result was cleared/i)).toBeVisible();
     await expect(quotePanel.getByText(/Enter a positive amount with up to 8 decimals/i)).toBeVisible();
-    await expect(quotePanel.getByText(/Current quote returned/i)).toHaveCount(0);
+    await expect(quotePanel.getByText('Quote returned', { exact: true })).toHaveCount(0);
     await expect(quotePanel.getByRole('button', { name: /Check route/i })).toBeDisabled();
     expect(quoteRequests).toBe(1);
 
     await quotePanel.getByLabel(/Amount/i).fill('0.01');
     await quotePanel.getByLabel(/To asset/i).selectOption('BTC.BTC');
     await expect(quotePanel.getByText(/Choose two different assets/i)).toBeVisible();
-    await expect(quotePanel.getByText(/Current quote returned/i)).toHaveCount(0);
+    await expect(quotePanel.getByText('Quote returned', { exact: true })).toHaveCount(0);
     await expect(quotePanel.getByRole('button', { name: /Check route/i })).toBeDisabled();
     expect(quoteRequests).toBe(1);
 
@@ -255,7 +255,43 @@ test.describe('THORChain Wiki Network Smoke Tests', () => {
     const checkButton = quotePanel.getByRole('button', { name: /Check route/i });
     await expect(checkButton).toBeEnabled();
     await checkButton.dblclick();
-    await expect(quotePanel.getByText(/Current quote returned/i)).toBeVisible({ timeout: 15_000 });
+    await expect(quotePanel.getByText('Quote returned', { exact: true })).toBeVisible({ timeout: 15_000 });
     expect(quoteRequests).toBe(2);
   });
+  for (const resume of [false, true]) {
+    test(`quote expires without an automatic probe (${resume ? 'tab resume' : 'deadline'})`, async ({ page }) => {
+      const now = Date.now(); const expiry = Math.floor(now / 1000) + 30;
+      await page.clock.install({ time: now });
+      await mockSwapperFirstNetwork(page, { quoteExpiry: expiry });
+      let probes = 0;
+      page.on('request', request => { if (request.url().includes('/quote/swap')) probes += 1; });
+      await page.goto('/network');
+      const panel = page.locator('section[aria-labelledby="route-check-heading"]');
+      await expect(panel.getByLabel(/From asset/i)).toBeEnabled({ timeout: 15_000 });
+      await panel.getByLabel(/From asset/i).selectOption('BTC.BTC');
+      await panel.getByLabel(/To asset/i).selectOption('ETH.ETH');
+      await checkRoute(panel);
+      await expect(panel.getByText('Quote returned', { exact: true })).toBeVisible();
+      if (resume) {
+        await page.clock.setSystemTime((expiry + 1) * 1000);
+        await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')));
+      } else await page.clock.fastForward(31_000);
+      await expect(panel.getByText('Quote expired', { exact: true })).toBeVisible();
+      await expect(panel.getByText('Quote returned for this route', { exact: true })).toHaveCount(0);
+      await expect(panel.getByText(/recorded quote has expired/)).toBeVisible();
+      expect(probes).toBe(1);
+    });
+  }
+  test('missing quote expiry stays review-only', async ({ page }) => {
+    await mockSwapperFirstNetwork(page, { quoteExpiry: null });
+    await page.goto('/network');
+    const panel = page.locator('section[aria-labelledby="route-check-heading"]');
+    await expect(panel.getByLabel(/From asset/i)).toBeEnabled({ timeout: 15_000 });
+    await panel.getByLabel(/From asset/i).selectOption('BTC.BTC');
+    await panel.getByLabel(/To asset/i).selectOption('ETH.ETH');
+    await checkRoute(panel);
+    await expect(panel.getByText('Quote expiry unknown', { exact: true })).toBeVisible();
+    await expect(panel.getByText('Quote returned for this route', { exact: true })).toHaveCount(0);
+  });
+
 });

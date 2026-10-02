@@ -179,7 +179,7 @@ test.describe('THORChain Wiki Stats Smoke Tests', () => {
     await expect(page.getByLabel(/Pool sort/i)).toBeVisible();
     await expect(page.getByText('Top Pools By RUNE Depth')).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Loaded Row List' })).toBeVisible();
-    await expect(page.getByText('BTC.BTC').first()).toBeVisible();
+    await expect(page.locator('#available-pools').getByRole(isMobile ? 'listitem' : 'row').filter({ hasText: 'BTC.BTC' })).toBeVisible();
     await expect(page.getByText('Unavailable').first()).toBeVisible();
     await expect(page.getByText(/BSC and SOL are swap-limited/i).first()).toBeVisible();
     await expect(page.getByRole('heading', { name: /Related Checks/i })).toBeVisible();
@@ -266,5 +266,31 @@ test.describe('THORChain Wiki Stats Smoke Tests', () => {
       layout.pageWidth,
       `mobile stats loaded state overflow ${JSON.stringify({ viewportWidth: layout.viewportWidth, overflowing: layout.overflowing })}`
     ).toBeLessThanOrEqual(layout.viewportWidth + 2);
+  });
+});
+
+test.describe('Earnings UTC period evidence', () => {
+  test.use({ timezoneId: 'Pacific/Honolulu' });
+  test('earnings preserve UTC chronology, deduplicate totals and disclose calendar gaps', async ({ page, isMobile }) => {
+    await mockSwapperFirstNetwork(page);
+    await mockStatsMidgard(page);
+    const historyRoute = /(?:gateway\.liquify\.com\/chain\/thorchain_midgard|midgard\.thorchain\.network)\/v2\/history\/earnings.*/;
+    await page.route(historyRoute, route => fulfillJson(route, { intervals: [...Array.from({ length: 8 }, (_, i) => earningsInterval(i)).reverse(), earningsInterval(4)] }));
+    await page.goto('/stats');
+    const earnings = page.locator('#earnings-history');
+    await expect(earnings.getByText('36 RUNE', { exact: true })).toBeVisible();
+    if (isMobile) await expect(earnings.getByRole('list', { name: 'Recent daily earnings intervals' }).getByRole('listitem').first().getByText('2024-01-08 UTC', { exact: true })).toBeVisible();
+    else await expect(earnings.getByRole('row').nth(1).getByRole('cell').first()).toHaveText('2024-01-08 UTC');
+    const axisTicks = earnings.getByRole('application').getByText(/^\d{4}-\d{2}-\d{2} UTC$/);
+    await expect(axisTicks.first()).toBeVisible();
+    const ticks = await axisTicks.allTextContents();
+    expect(ticks.length).toBeGreaterThan(1);
+    expect(ticks).toEqual([...ticks].sort());
+    expect(ticks.at(-1)).toBe('2024-01-08 UTC');
+    await page.route(historyRoute, route => fulfillJson(route, { intervals: [earningsInterval(0), earningsInterval(8)] }));
+    await page.reload();
+    await expect(earnings.getByText(/7 missing daily periods in the loaded range/)).toBeVisible();
+    await expect(earnings.getByText('9 RUNE', { exact: true }).first()).toBeVisible();
+    await expect(earnings.getByText('Partial window', { exact: true })).toBeVisible();
   });
 });

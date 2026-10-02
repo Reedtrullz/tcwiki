@@ -296,12 +296,19 @@ export function poolHasAsset(pools: Pool[] | undefined, asset: string) {
   return Boolean((pools ?? []).some((pool) => pool.asset === asset));
 }
 
+export function quoteProofValidity(quote: SwapQuoteProbeResult['quote'], nowMs = Date.now()): 'valid' | 'expired' | 'expiry-unknown' {
+  const expiry = quote?.expiry;
+  if (expiry === undefined || !Number.isSafeInteger(expiry) || expiry <= 0 || !Number.isFinite(new Date(expiry * 1000).getTime()) || !Number.isFinite(nowMs)) return 'expiry-unknown';
+  return nowMs >= expiry * 1000 ? 'expired' : 'valid';
+}
+
 export function deriveRouteAvailability(
   fromAsset: string,
   toAsset: string,
   status: NetworkStatus | undefined,
   pools: Pool[] | undefined,
-  quoteResult: SwapQuoteProbeResult | undefined
+  quoteResult: SwapQuoteProbeResult | undefined,
+  nowMs = Date.now()
 ): RouteAvailability {
   if (quoteResult) {
     if (quoteResult.request.fromAsset !== fromAsset || quoteResult.request.toAsset !== toAsset) {
@@ -313,8 +320,13 @@ export function deriveRouteAvailability(
         ],
       };
     }
+    if (quoteResult.quote) {
+      const validity = quoteProofValidity(quoteResult.quote, nowMs);
+      if (validity !== 'valid') return { status: 'needs-review', label: validity === 'expired' ? 'Quote expired' : 'Quote expiry unknown', reasons: ['Run an explicit new quote check before using this evidence for current route availability.'] };
+    }
     if (quoteResult.status === 'available') {
-      return { status: 'available', label: 'Current quote returned', reasons: [quoteResult.summary] };
+      if (!quoteResult.quote) return { status: 'needs-review', label: 'Quote expiry unknown', reasons: ['Usable quote evidence is missing. Check the route again.'] };
+      return { status: 'available', label: 'Quote returned', reasons: [quoteResult.summary] };
     }
     return {
       status: quoteResult.status === 'limited' || quoteResult.failure?.kind === 'halt' ? 'limited' : 'needs-review',

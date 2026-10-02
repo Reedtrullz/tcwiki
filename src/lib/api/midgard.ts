@@ -11,6 +11,7 @@ import {
   Swap,
 } from '@/lib/types';
 import { liveDegraded, liveOk, normalizeApyToPercent } from '@/lib/trust';
+import { DAILY_VOLUME_POOLS } from '@/lib/daily-volume';
 
 const MIDGARD_ENDPOINTS = [
   {
@@ -525,12 +526,34 @@ function normalizeHistory(result: LiveDataResult<RawHistoryResponse>): LiveDataR
   try {
     return {
       ...result,
-      data: result.data.intervals.map((interval, index) => normalizeHistoryItem(interval, index)),
+      data: normalizeHistoryIntervals(result.data.intervals),
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Midgard earnings history response could not be normalized';
     return liveDegraded<HistoryItem[]>(message, result.sources ?? result.source, result.checkedAt);
   }
+}
+
+function normalizeHistoryIntervals(intervals: unknown[]): HistoryItem[] {
+  const unique = new Map<string, HistoryItem>();
+  for (const [index, value] of intervals.entries()) {
+    const interval = normalizeHistoryItem(value, index);
+    const start = Number(interval.startTime); const end = interval.endTime ? Number(interval.endTime) : undefined;
+    if (!Number.isFinite(new Date(start * 1000).getTime()) || (end !== undefined && (!Number.isFinite(new Date(end * 1000).getTime()) || end <= start))) {
+      throw new Error(`Midgard earnings interval ${index} has invalid time boundaries`);
+    }
+    const id = `${interval.startTime}-${interval.endTime}`;
+    const existing = unique.get(id);
+    if (existing && JSON.stringify(existing) !== JSON.stringify(interval)) throw new Error(`Midgard earnings interval ${id} has conflicting duplicates`);
+    unique.set(id, interval);
+  }
+  const rows = [...unique.values()].sort((a, b) => Number(a.startTime) - Number(b.startTime));
+  for (let index = 1; index < rows.length; index += 1) {
+    if (rows[index - 1].endTime && Number(rows[index].startTime) < Number(rows[index - 1].endTime)) {
+      throw new Error(`Midgard earnings intervals overlap at ${rows[index].startTime}`);
+    }
+  }
+  return rows;
 }
 
 function optionalHistoryString(value: unknown): string {
@@ -654,9 +677,14 @@ export class MidgardAPI {
     );
   }
 
-  static async getPoolVolumeHistory(pool: string, interval = 'day', count = 8): Promise<LiveDataResult<Record<string, unknown>[]>> {
+  static async getDailyVolumeHistories() {
+    // Six curated pool reads and one documented all-network aggregate, not all-pool fan-out.
+    return Promise.all([...DAILY_VOLUME_POOLS, undefined].map(pool => this.getPoolVolumeHistory(pool, 'day', 8)));
+  }
+
+  static async getPoolVolumeHistory(pool: string | undefined, interval = 'day', count = 8): Promise<LiveDataResult<Record<string, unknown>[]>> {
     return requestNormalized<{ intervals?: Record<string, unknown>[] }, Record<string, unknown>[]>(
-      `/history/swaps?pool=${encodeURIComponent(pool)}&interval=${encodeURIComponent(interval)}&count=${count}`,
+      `/history/swaps?${pool === undefined ? '' : `pool=${encodeURIComponent(pool)}&`}interval=${encodeURIComponent(interval)}&count=${count}`,
       (result) => {
         if (result.status !== 'ok') {
           return liveDegraded<Record<string, unknown>[]>(

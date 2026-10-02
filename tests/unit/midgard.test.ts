@@ -460,4 +460,30 @@ describe('MidgardAPI', () => {
     expect(result.error).toContain('network.activeNodeCount');
     expect(result.data).toBeUndefined();
   });
+  it('caps daily leaderboard history reads at six selected pools plus one network aggregate', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(makeResponse(true, { intervals: [] }));
+    vi.stubGlobal('fetch', fetchMock);
+    const results = await MidgardAPI.getDailyVolumeHistories();
+    expect(results).toHaveLength(7);
+    expect(fetchMock).toHaveBeenCalledTimes(7);
+    const urls = fetchMock.mock.calls.map(([url]) => String(url));
+    expect(urls.filter(url => new URL(url).searchParams.has('pool'))).toHaveLength(6);
+    expect(urls.every(url => new URL(url).searchParams.get('count') === '8')).toBe(true);
+    fetchMock.mockClear().mockRejectedValue(new Error('Offline'));
+    const unavailable = await MidgardAPI.getDailyVolumeHistories();
+    expect(unavailable.every(result => result.status === 'degraded')).toBe(true);
+    expect(fetchMock).toHaveBeenCalledTimes(14);
+  });
+  it('falls back before accepting an inverted or overlapping earnings interval', async () => {
+    const interval = { startTime: '1704067200', endTime: '1704153600', earnings: '100000000', bondingEarnings: '60000000', liquidityEarnings: '40000000' };
+    for (const intervals of [[{ ...interval, endTime: interval.startTime }], [interval, { ...interval, startTime: '1704100000', endTime: '1704186400' }]]) {
+      resetMidgardEndpointForTests();
+      const fetchMock = vi.fn().mockResolvedValueOnce(makeResponse(true, { intervals })).mockResolvedValueOnce(makeResponse(true, { intervals: [interval] }));
+      vi.stubGlobal('fetch', fetchMock);
+      const result = await MidgardAPI.getHistory();
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+      expect(result.source?.label).toBe('THORChain Midgard');
+      expect(result.data).toHaveLength(1);
+    }
+  });
 });

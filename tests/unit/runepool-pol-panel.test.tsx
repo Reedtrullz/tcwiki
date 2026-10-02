@@ -239,6 +239,32 @@ describe('RunepoolPolView', () => {
     expect(html).not.toContain('0 RUNE</p><p class="mt-1 text-xs leading-relaxed text-slate-400">`pol.value`');
   });
 
+  it.each([
+    ['-900719925474099150000000', '-9,007,199,254,740,992 RUNE', 'Negative'],
+    ['900719925474099150000000', '9,007,199,254,740,992 RUNE', 'Positive'],
+  ])('keeps signed oversized PnL %s exact while withholding approximate USD', (amount, rune, tone) => {
+    const oversizedStatus: RunePoolPolStatus = {
+      ...status,
+      pol: {
+        ...status.pol,
+        pnlRuneBaseUnits: amount,
+      },
+    };
+    const html = renderToStaticMarkup(
+      <RunepoolPolView
+        result={{ ...result, data: oversizedStatus }}
+        status={oversizedStatus}
+        earningsHistory={earningsHistory}
+        networkResult={networkResult}
+        networkStatus={networkStatus}
+      />
+    );
+
+    expect(html).toContain(rune);
+    expect(html).toMatch(/POL PnL[\s\S]{0,400}Unavailable/);
+    expect(html).toContain(tone);
+  });
+
   it('marks bucket splits review-only when provider and reserve values do not balance to POL', () => {
     const mismatchStatus: RunePoolPolStatus = {
       ...status,

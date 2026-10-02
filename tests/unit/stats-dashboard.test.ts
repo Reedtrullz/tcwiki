@@ -353,6 +353,18 @@ describe('stats dashboard decision facts', () => {
     expect(snapshot.highestVolumePool?.asset).toBe('AVAX.AVAX');
   });
 
+  it('rejects malformed USD and overflowing APY at the presentation boundary', () => {
+    const [row] = deriveStatsPoolSnapshot([pool('BTC.BTC', {
+      liquidityInUSD: '0x10',
+      poolAPY: '9'.repeat(307),
+    })], false).rows;
+
+    expect(row.liquidityUsd).toBeNull();
+    expect(row.liquidityUsdLabel).toBe('Unavailable');
+    expect(row.apyPercent).toBeNull();
+    expect(row.apyLabel).toBe('Unavailable');
+  });
+
   it('filters and sorts Midgard pool rows while keeping missing values last', () => {
     const snapshot = deriveStatsPoolSnapshot([
       pool('BTC.BTC', {
@@ -505,5 +517,49 @@ describe('stats dashboard decision facts', () => {
     expect(coverage.recentAvailableIntervals).toBe(6);
     expect(coverage.recentUnavailableIntervals).toBe(1);
     expect(coverage.recentSevenEarnings).toBe(27);
+  });
+});
+
+describe('earnings interval chronology', () => {
+  const first = 1_704_067_200;
+  const day = 86_400;
+  const now = (first + 10 * day) * 1000;
+  it('is permutation-invariant and counts identical interval repeats only once', () => {
+    const input = Array.from({ length: 8 }, (_, i) => historyInterval(String(first + i * day), String((i + 1) * 1e8)));
+    const a = deriveStatsEarningsRows(input, now);
+    const b = deriveStatsEarningsRows([input[4], ...input.toReversed(), input[4]], now);
+    expect(b.map(row => row.id)).toEqual(a.map(row => row.id));
+    expect(deriveStatsEarningsCoverage(b, false).totalEarnings).toBe(36);
+    expect(deriveStatsEarningsCoverage(b, false).recentSevenEarnings).toBe(35);
+    expect(b[0].name).toBe('2024-01-08 UTC');
+    expect(b[0].periodLabel).toContain('2024-01-09T00:00:00.000Z');
+  });
+  it('withholds conflicting duplicates and overlapping intervals rather than inflating totals', () => {
+    const conflicting = deriveStatsEarningsRows([historyInterval(String(first), '100000000'), historyInterval(String(first), '200000000')], now);
+    expect(conflicting).toHaveLength(1);
+    expect(deriveStatsEarningsCoverage(conflicting, false).totalEarnings).toBeNull();
+    expect(conflicting[0].periodIssue).toMatch(/Conflicting/);
+    const overlapping = deriveStatsEarningsRows([{ ...historyInterval(String(first), '100000000'), endTime: String(first + 2 * day) }, historyInterval(String(first + day), '200000000')], now);
+    expect(overlapping.every(row => row.earnings === null)).toBe(true);
+    expect(overlapping.every(row => row.periodIssue?.includes('Overlapping'))).toBe(true);
+  });
+  it('reports gaps and completed coverage with a seven-calendar-day comparison window', () => {
+    const rows = deriveStatsEarningsRows([historyInterval(String(first), '100000000'), historyInterval(String(first + 8 * day), '200000000'), historyInterval(String(first + 10 * day), '900000000')], now);
+    const coverage = deriveStatsEarningsCoverage(rows, false);
+    expect(coverage.completedIntervals).toBe(2);
+    expect(coverage.missingPeriods).toBe(7);
+    expect(coverage.recentIntervalCount).toBe(1);
+    expect(coverage.recentSevenEarnings).toBe(2);
+    expect(coverage.totalEarnings).toBe(3);
+  });
+  it('rejects unknown or invalid timestamps and changes completion only at the UTC boundary', () => {
+    const interval = historyInterval(String(first), '100000000');
+    expect(deriveStatsEarningsRows([interval], (first + day) * 1000 - 1)[0].earnings).toBeNull();
+    expect(deriveStatsEarningsRows([interval], (first + day) * 1000)[0].earnings).toBe(1);
+    for (const startTime of ['1704067200junk', 'Infinity', '9007199254740991']) {
+      const rows = deriveStatsEarningsRows([{ ...interval, startTime }], now);
+      expect(rows[0].earnings).toBeNull();
+      expect(rows[0].name).toBe('Period unavailable');
+    }
   });
 });

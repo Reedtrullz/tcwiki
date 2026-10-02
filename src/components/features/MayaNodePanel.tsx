@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/Card';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { LiveSourceMeta } from '@/components/ui/LiveSourceMeta';
 import { useMayaNetwork, useMayaNodes } from '@/lib/hooks/useMaya';
+import { formatPercent, normalizeApyToPercent, runeBaseUnitsToNumber } from '@/lib/trust';
 import type { MayaNode } from '@/lib/types';
 
 function statusColor(status: string | undefined): string {
@@ -30,10 +31,10 @@ function statusBadgeVariant(status: string | undefined): 'success' | 'warning' |
 
 function formatBond(bond: string | undefined): string {
   if (!bond) return '—';
-  const num = Number(bond);
-  if (!Number.isFinite(num)) return '—';
+  const cacao = runeBaseUnitsToNumber(bond);
+  if (cacao === null) return '—';
   // CACAO uses 1e8 base units like RUNE
-  return (num / 1e8).toLocaleString(undefined, { maximumFractionDigits: 0 });
+  return cacao.toLocaleString(undefined, { maximumFractionDigits: 0 });
 }
 
 function NodeRow({ node }: { node: MayaNode }) {
@@ -69,13 +70,13 @@ export function MayaNodePanel() {
       <SectionHeader id="maya-nodes-heading">Maya Protocol Nodes</SectionHeader>
       <p className="mb-4 max-w-3xl text-sm leading-relaxed text-slate-400">
         Maya Protocol is a THORChain fork with its own validator set, CACAO native asset,
-        and independent chain support. Node data below comes from Maya&apos;s Midgard API.
+        and independent chain support. Maya Midgard is the only configured live data source.
       </p>
 
       {hasError && !isLoading && (
         <Card padding="sm" className="mb-4 border-warning/30">
           <p className="text-xs text-amber-400">
-            Maya Midgard did not respond. The endpoints may be temporarily unavailable from this network.
+            Maya Midgard did not provide usable data and is currently unavailable.
           </p>
         </Card>
       )}
@@ -98,13 +99,13 @@ export function MayaNodePanel() {
               <div className="flex justify-between">
                 <span className="text-xs text-slate-400">Bonding APY</span>
                 <span className="text-xs font-semibold text-slate-200 tabular-nums">
-                  {(Number(network.bondingAPY) * 100).toFixed(2)}%
+                  {formatPercent(normalizeApyToPercent(network.bondingAPY, 'decimal'))}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-xs text-slate-400">Liquidity APY</span>
                 <span className="text-xs font-semibold text-slate-200 tabular-nums">
-                  {(Number(network.liquidityAPY) * 100).toFixed(2)}%
+                  {formatPercent(normalizeApyToPercent(network.liquidityAPY, 'decimal'))}
                 </span>
               </div>
               <div className="flex justify-between">
