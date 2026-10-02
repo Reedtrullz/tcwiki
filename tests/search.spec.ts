@@ -470,3 +470,17 @@ test.describe('THORChain Wiki Search Smoke Tests', () => {
     await expect(page).toHaveURL(/\/rune#tokenomics-rune-supply-framing$/);
   });
 });
+
+test('search submits the visible form value when browser input differs from React state', async ({ page }) => {
+  await page.goto('/search');
+  const form = page.getByRole('search', { name: 'Search wiki content' });
+  const input = form.getByLabel('Search the wiki', { exact: true });
+  await input.fill('universal settlement asset');
+  await form.getByRole('button', { name: 'Submit search page query' }).click();
+  await expect(page).toHaveURL(/q=universal/);
+  // Browser autofill can change a form value without a React onChange update.
+  await input.evaluate((element: HTMLInputElement) => { element.value = 'quote expiry'; });
+  await expect(input).toHaveValue('quote expiry');
+  await form.getByRole('button', { name: 'Submit search page query' }).click();
+  await expect(page).toHaveURL(/q=quote(\+|%20)expiry/);
+});

@@ -501,11 +501,12 @@ function SearchResultsInner() {
     setLocalQuery(query);
   }, [query]);
 
-  const handleSearchSubmit = (e: React.FormEvent) => {
+  const handleSearchSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const params = new URLSearchParams(window.location.search);
-    if (localQuery.trim()) {
-      params.set('q', localQuery);
+    const submittedQuery = String(new FormData(e.currentTarget).get('q') ?? '');
+    if (submittedQuery.trim()) {
+      params.set('q', submittedQuery);
     } else {
       params.delete('q');
     }
@@ -570,10 +571,11 @@ function SearchResultsInner() {
 
   return (
     <div>
-      <form id="search-form" role="search" aria-label="Search wiki content" onSubmit={handleSearchSubmit} className="mb-8">
+      <form id="search-form" action="/search" method="get" role="search" aria-label="Search wiki content" onSubmit={handleSearchSubmit} className="mb-8">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
           <input
+            name="q"
             aria-label="Search the wiki"
             type="text"
             enterKeyHint="search"
