@@ -66,7 +66,7 @@ export function DailyVolumeLeaderboard() {
     <section id="daily-volume-leaderboard" aria-labelledby="daily-volume-leaderboard-heading" className="mb-12">
       <SectionHeader id="daily-volume-leaderboard-heading" level="primary">Daily Volume Leaderboard</SectionHeader>
       <p className="mb-3 max-w-3xl text-sm leading-relaxed text-slate-400">
-        Swap volume per pool for the most recent completed day, with the total compared to the prior seven-day average. Ranked by USD volume from Midgard daily swap history.
+        Swap volume per pool for the most recent completed day, with a comparison using available days in the preceding seven-day window. Ranked by USD volume from Midgard daily swap history.
       </p>
       <Card padding="none" className="overflow-hidden">
         <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border px-5 py-5">
@@ -79,10 +79,10 @@ export function DailyVolumeLeaderboard() {
           <div className="flex flex-col items-end gap-2">
             {!isLoading && summary.deltaLabel && (
               <span className={`text-sm font-bold ${deltaTone(summary.deltaPct)}`}>
-                {summary.deltaLabel} vs 7d avg
+                {summary.deltaLabel} vs {summary.comparisonDays}d avg
               </span>
             )}
-            <span className="text-xs text-slate-500">7d avg {summary.usdAvgLabel}</span>
+            <span className="text-xs text-slate-500">{summary.comparisonDays}/7 comparison days · avg {summary.usdAvgLabel}</span>
             <LiveSourceMeta result={result} />
           </div>
           {isDegraded && !isLoading && (
@@ -95,7 +95,7 @@ export function DailyVolumeLeaderboard() {
           )}
         </div>
         <div className="flex items-center justify-between px-5 py-2 text-[11px] uppercase tracking-wider text-slate-500">
-          <span>Past day &middot; top pools</span>
+          <span>{summary.periodLabel} &middot; top pools</span>
           <span>Share of day</span>
         </div>
         <ol>

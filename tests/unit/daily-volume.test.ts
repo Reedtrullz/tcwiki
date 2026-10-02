@@ -2,57 +2,42 @@ import { describe, expect, it } from 'vitest';
 import { deriveDailyVolumeSummary } from '@/lib/daily-volume';
 import { liveOk } from '@/lib/trust';
 
-function ok(rows: Record<string, unknown>[]) {
-  return liveOk(rows, { label: 'Test Midgard', url: 'https://test/v2' }, '2026-09-24T00:00:00Z');
-}
+const day = 86_400;
+const start = Date.parse('2026-10-01T00:00:00Z') / 1000;
+const observedAt = Date.parse('2026-10-02T12:00:00Z');
+const row = (time: number, cents: unknown = '10000', rune: unknown = '100000000') => ({ startTime: String(time), endTime: String(time + day), totalVolume: rune, totalVolumeUSD: cents });
+const entry = (rows: Record<string, unknown>[], asset = 'BTC.BTC') => ({ asset, result: liveOk(rows, { label: 'Test Midgard', url: 'https://test/v2' }, '2026-10-02T12:00:00Z') });
 
 describe('deriveDailyVolumeSummary', () => {
-  it('sums pool volumes for the latest nonzero day and computes 7d-average delta', () => {
-    // Day 8 is a zeroed current-day row; days 1-7 are the trailing week.
-    const rows = (daily: number[]) => ok(
-      daily.map((usdCents, index) => ({
-        startTime: String(1_700_000_000 + index * 86_400),
-        totalVolume: String(usdCents * 100),
-        totalVolumeUSD: String(usdCents),
-      }))
-    );
-
-    const summary = deriveDailyVolumeSummary([
-      { asset: 'ETH.ETH', result: rows([1_000_000, 2_000_000, 3_000_000, 4_000_000, 5_000_000, 6_000_000, 7_000_000, 0]) },
-      { asset: 'BTC.BTC', result: rows([2_000_000, 4_000_000, 6_000_000, 8_000_000, 10_000_000, 12_000_000, 14_000_000, 0]) },
-    ]);
-
-    // Latest nonzero day is day 7: ETH 7M + BTC 14M cents = $210K.
-    expect(summary.usdVolumeLabel).toBe('$210.0K');
-    expect(summary.usdAvgLabel).toBe('$105.0K');
-    expect(summary.deltaPct).toBeCloseTo(100, 1);
-    expect(summary.deltaLabel).toBe('+100.0%');
-    expect(summary.pools.map((pool) => pool.asset)).toEqual(['BTC.BTC', 'ETH.ETH']);
-    expect(summary.topPools[0].shareLabel).toBe('66.7%');
+  it('selects the completed zero UTC day rather than a positive open day or older nonzero day', () => {
+    const summary = deriveDailyVolumeSummary([entry([row(start + day, '900000'), row(start, '0', '0'), row(start - day)])], observedAt);
+    expect(summary.usdVolume).toBe(0);
+    expect(summary.runeVolume).toBe(0);
+    expect(summary.pools).toHaveLength(1);
+    expect(summary.deltaPct).toBe(-100);
+    expect(summary.periodLabel).toBe('2026-10-01 UTC');
+    expect(summary.comparisonDays).toBe(1);
   });
-
-  it('drops pools that had no volume on the aggregated day and tolerates failures', () => {
-    const summary = deriveDailyVolumeSummary([
-      {
-        asset: 'ETH.ETH',
-        result: {
-          status: 'degraded' as const,
-          error: 'Midgard source did not respond',
-          checkedAt: '2026-09-24T00:00:00Z',
-        },
-      },
-      {
-        asset: 'BTC.BTC',
-        result: ok([
-          { startTime: '1_700_000_000'.replace(/_/g, ''), totalVolume: '100000000', totalVolumeUSD: '1000000' },
-          { startTime: '1700086400', totalVolume: '0', totalVolumeUSD: '0' },
-        ]),
-      },
-    ]);
-
-    expect(summary.pools.map((pool) => pool.asset)).toEqual(['BTC.BTC']);
-    expect(summary.usdVolumeLabel).toBe('$10.0K');
-    expect(summary.usdAvgLabel).toBe('Unavailable');
-    expect(summary.deltaLabel).toBe('');
+  it('uses fixed trailing UTC days and removes identical duplicates independent of response order', () => {
+    const rows = [row(start), row(start - day), row(start - 2 * day), row(start - 8 * day, '900000')];
+    const summary = deriveDailyVolumeSummary([entry([...rows.reverse(), row(start)])], observedAt);
+    expect(summary.usdVolume).toBe(100);
+    expect(summary.usdAvg7d).toBe(100);
+    expect(summary.comparisonDays).toBe(2);
+    expect(summary.pools).toHaveLength(1);
+  });
+  it('withholds missing, negative, malformed, incomplete and conflicting day values', () => {
+    for (const rows of [[], [{ ...row(start), totalVolumeUSD: undefined }], [row(start, '-1')], [row(start, '0x10')], [{ ...row(start), endTime: String(start + 100) }], [row(start), row(start, '20000')]]) {
+      // Remove the field explicitly: the row helper has a default.
+      if (rows[0] && rows[0].totalVolumeUSD === undefined) delete rows[0].totalVolumeUSD;
+      const summary = deriveDailyVolumeSummary([entry(rows)], observedAt);
+      expect(summary.usdVolume).toBeNull();
+      expect(summary.usdVolumeLabel).toBe('Unavailable');
+    }
+  });
+  it('changes the selected day exactly at UTC rollover, never backfilling missing today with yesterday', () => {
+    const histories = [entry([row(start)])];
+    expect(deriveDailyVolumeSummary(histories, (start + day) * 1000).usdVolume).toBe(100);
+    expect(deriveDailyVolumeSummary(histories, (start + 2 * day) * 1000).usdVolume).toBeNull();
   });
 });
