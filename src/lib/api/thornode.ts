@@ -136,6 +136,7 @@ async function request<T>(path: string): Promise<LiveDataResult<T>> {
       }
 
       const data = await response.json();
+      if (path === '/mimir' && isPlainRecord(data)) assertUnambiguousMimirAliases(data);
       activeEndpoint = endpointIndex;
       return liveOk(data, endpoint);
     } catch (error) {
@@ -1037,6 +1038,7 @@ export function deriveRunePoolPolStatus(
 ): RunePoolPolStatus {
   const sourceWarnings: string[] = [];
   const mimirRecord = isPlainRecord(mimir) ? mimir : {};
+  assertUnambiguousMimirAliases(mimirRecord);
   if (!isPlainRecord(mimir)) {
     sourceWarnings.push('THORNode Mimir did not include a usable object for RUNEPool POL scope.');
   }
@@ -1597,6 +1599,7 @@ export function deriveDynamicL1FeeStatus(
   histories: DynamicL1FeeThornameHistory[] = [],
   historyWarnings: string[] = []
 ): DynamicL1FeeStatus {
+  assertUnambiguousMimirAliases(mimir);
   const sourceWarnings: string[] = [...historyWarnings];
   const records = parseDynamicL1FeeRecords(recordsResponse);
   const { currentEpoch, currentEntries } = parseDynamicL1FeeCurrent(currentResponse);
@@ -1757,6 +1760,20 @@ function deriveValidatedNetworkStatusSnapshot(
       thorchainBlockAgeSeconds: blockAgeSeconds,
     }
   );
+}
+
+function assertUnambiguousMimirAliases(mimir: Record<string, unknown>) {
+  const spellings = new Map<string, string[]>();
+  for (const key of Object.keys(mimir).sort()) {
+    const canonical = key.toUpperCase();
+    spellings.set(canonical, [...(spellings.get(canonical) ?? []), key]);
+  }
+  for (const [canonical, keys] of [...spellings.entries()].sort(([a], [b]) => a.localeCompare(b))) {
+    if (keys.length > 1) {
+      // Equal aliases are also rejected: one spelling avoids future order-dependent decisions.
+      throw new Error(`THORNode Mimir has ambiguous aliases for ${canonical}: ${keys.join(', ')}. Return one spelling even when values agree.`);
+    }
+  }
 }
 
 function getCanonicalMimirKey(mimir: Record<string, unknown>, key: string): string | undefined {
@@ -2347,6 +2364,7 @@ export function deriveNetworkStatus(
     thorchainBlockAgeSeconds?: number;
   } = {}
 ): NetworkStatus {
+  assertUnambiguousMimirAliases(mimir);
   const inboundByChain = new Map(inboundAddresses.map((chain) => [chain.chain.trim().toUpperCase(), chain]));
   const inboundChainCodes = inboundAddresses.map((chain) => chain.chain.trim().toUpperCase());
   const recognizedChainCodes = new Set([...CURATED_CHAIN_CODES, ...inboundChainCodes]);

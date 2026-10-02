@@ -30,7 +30,7 @@ Execute all accepted work and create/push GitHub PRs; do not merge to main. User
 | PR-08 | PR open; local verified | e2e61d4; https://github.com/Reedtrullz/tcwiki/pull/208; 479 unit tests/types; fractional bounds reviewed and corrected; CI37030208807 passed |
 | PR-03 | PR open; local verified |6398da9+e082581; https://github.com/Reedtrullz/tcwiki/pull/213; parent review fixed acceptance timing/address/shape/slash tests; 486units/types/lint; single source disclosed |
 | PR-12 | queued | issue #177 |
-| PR-39 | queued | issue #138 |
+| PR-39 | verified candidate | canonical alias collision rejection preserves spellings; identical duplicates rejected too; RED5/GREEN125focused/full513/types/lint; bad provider fallback/all-bad degrade |
 | PR-13 | queued | issue #178 |
 | PR-06 | queued | issue #171 |
 | PR-18 | verified candidate | stalled read timeout/cancellation, bounded batch/depth/fields and suppressed-item response count; RED2 then GREEN11; full508/types/lint pass |

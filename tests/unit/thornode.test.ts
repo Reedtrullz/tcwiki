@@ -2692,3 +2692,29 @@ describe('deriveNetworkStatus', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });
+
+describe('Mimir canonical alias boundary', () => {
+  afterEach(() => { vi.unstubAllGlobals(); resetThornodeEndpointForTests(); });
+  it.each([
+    { HALTTRADING: 0, HaltTrading: 1 },
+    { HaltTrading: 1, HALTTRADING: 0 },
+    { HALTTRADING: 0, HaltTrading: 0 },
+  ])('rejects duplicate canonical spellings irrespective of order or values: %j', mimir => {
+    expect(() => deriveNetworkStatus(mimir, [completeInbound('BTC')], '3.19.2', 100)).toThrow(/Mimir.*aliases.*HALTTRADING.*HaltTrading/);
+    expect(() => deriveDynamicL1FeeStatus(mimir, dynamicFeeFixture().dynamicFees, dynamicFeeFixture().currentDynamicFees, dynamicFreshness)).toThrow(/aliases/);
+    expect(() => deriveRunePoolPolStatus(mimir, runePoolFixture().runepool, runePoolFreshness)).toThrow(/aliases/);
+  });
+  it('falls back from a conflicting provider instead of accepting a clean decision', async () => {
+    stubNetworkStatusSnapshots(snapshotFixture({ mimir: { HALTTRADING: 0, HaltTrading: 1 } }), snapshotFixture());
+    const result = await ThornodeAPI.getNetworkStatus();
+    expect(result.status).toBe('ok');
+    expect(result.source?.url).toContain('thornode.thorchain.network');
+  });
+  it('retains actionable provenance when every provider has conflicting aliases', async () => {
+    const fixture = snapshotFixture({ mimir: { HALTTRADING: 0, HaltTrading: 1 } });
+    stubNetworkStatusSnapshots(fixture, fixture);
+    const result = await ThornodeAPI.getNetworkStatus();
+    expect(result.status).toBe('degraded'); expect(result.data).toBeUndefined();
+    expect(result.error).toMatch(/Mimir.*aliases.*HALTTRADING.*HaltTrading/);
+  });
+});
