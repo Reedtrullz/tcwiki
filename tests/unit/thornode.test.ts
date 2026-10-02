@@ -1523,6 +1523,30 @@ describe('deriveNetworkStatus', () => {
     expect(result.data?.thorchainBlockAgeSeconds).toBe(5);
   });
 
+  it.each(['network', 'dynamic fees', 'RUNEPool'] as const)(
+    'measures %s freshness after delayed retrieval rather than before it',
+    async (kind) => {
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date('2026-07-03T12:00:00.000Z'));
+      const latestBlock = { block: { header: { height: '101', time: '2026-07-03T12:00:15.000Z' } } };
+      if (kind === 'network') stubNetworkStatusSnapshots(snapshotFixture({ latestBlock }), snapshotFixture({ latestBlock }));
+      else if (kind === 'dynamic fees') stubDynamicFeeSnapshots(dynamicFeeFixture({ latestBlock }), dynamicFeeFixture({ latestBlock }));
+      else stubRunePoolSnapshots(runePoolFixture({ latestBlock }), runePoolFixture({ latestBlock }));
+      const retrieve = vi.mocked(fetch).getMockImplementation()!;
+      vi.mocked(fetch).mockImplementation(async (...args) => {
+        vi.setSystemTime(new Date('2026-07-03T12:00:20.000Z'));
+        return retrieve(...args);
+      });
+      const result = kind === 'network' ? await ThornodeAPI.getNetworkStatus()
+        : kind === 'dynamic fees' ? await ThornodeAPI.getDynamicL1FeeStatus()
+          : await ThornodeAPI.getRunePoolPolStatus();
+      expect(result.status).toBe('ok');
+      expect(result.data?.sourceWarnings).toEqual([]);
+      const data = result.data!;
+      expect('sourceFreshness' in data ? data.sourceFreshness.thorchainBlockAgeSeconds : data.thorchainBlockAgeSeconds).toBe(5);
+    }
+  );
+
   it('surfaces stale THORNode block timestamps as source warnings when every provider is stale', async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-07-03T12:00:00.000Z'));
