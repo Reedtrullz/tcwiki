@@ -4,6 +4,7 @@ import { GET, HEAD, POST } from '@/app/api/csp-report/route';
 describe('CSP report endpoint', () => {
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.useRealTimers();
   });
 
   it('accepts small CSP reports without caching the response', async () => {
@@ -254,4 +255,39 @@ describe('CSP report endpoint', () => {
 
     expect(warn).toHaveBeenCalledTimes(20);
   });
+  it('cancels a stalled body at a fixed total deadline', async () => {
+    vi.useFakeTimers();
+    const cancel = vi.fn();
+    const body = new ReadableStream<Uint8Array>({ cancel });
+    const pending = POST(new Request('https://wiki.thorchain.no/api/csp-report', {
+      method: 'POST', headers: { 'content-type': 'application/json' }, body, duplex: 'half',
+    } as RequestInit & { duplex: 'half' }));
+    await vi.advanceTimersByTimeAsync(1001);
+    const response = await pending;
+    expect(response.status).toBe(408); expect(cancel).toHaveBeenCalled();
+  });
+
+  it('bounds nested/batch work and fields while counting suppression without payloads', async () => {
+    vi.resetModules();
+    const { POST: isolatedPost } = await import('@/app/api/csp-report/route');
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const reports = Array.from({ length: 40 }, (_, i) => ({ body: {
+      effectiveDirective: 'x'.repeat(i === 0 ? 1000 : 10), blockedURL: `https://cdn.example/${i}?secret=private`,
+    } }));
+    const response = await isolatedPost(new Request('https://wiki.thorchain.no/api/csp-report', {
+      method: 'POST', headers: { 'content-type': 'application/reports+json' }, body: JSON.stringify(reports),
+    }));
+    expect(response.status).toBe(204);
+    expect(Number(response.headers.get('x-csp-reports-suppressed'))).toBeGreaterThan(0);
+    const events = warn.mock.calls.map(([line]) => JSON.parse(String(line)) as Record<string, string>);
+    expect(events.length).toBeLessThanOrEqual(20);
+    expect(events.every(event => Object.values(event).every(value => value.length <= 256))).toBe(true);
+    expect(JSON.stringify(events)).not.toContain('secret');
+    const nested = await isolatedPost(new Request('https://wiki.thorchain.no/api/csp-report', {
+      method: 'POST', headers: { 'content-type': 'application/json' }, body: '['.repeat(300) + '{}' + ']'.repeat(300),
+    }));
+    expect(nested.status).toBe(204);
+    expect(Number(nested.headers.get('x-csp-reports-suppressed'))).toBeGreaterThan(0);
+  });
+
 });

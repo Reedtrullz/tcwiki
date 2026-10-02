@@ -33,7 +33,7 @@ Execute all accepted work and create/push GitHub PRs; do not merge to main. User
 | PR-39 | queued | issue #138 |
 | PR-13 | queued | issue #178 |
 | PR-06 | queued | issue #171 |
-| PR-18 | queued | issue #183 |
+| PR-18 | verified candidate | stalled read timeout/cancellation, bounded batch/depth/fields and suppressed-item response count; RED2 then GREEN11; full508/types/lint pass |
 | PR-14 | verified candidate |23 actual WikiDO browser checks passed after reproducing/fixing missing MDX provider; CSP enforced; manifest-bound local candidate |
 | PR-53 | verified candidate | explicit Next/Docker + CF source/config/copy roots; tracked/untracked/missing RED to GREEN |
 | PR-54 | verified candidate | shared eight-case app/script identity parity matrix; metadata verified is validation not attestation |
