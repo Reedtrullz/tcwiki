@@ -117,3 +117,7 @@ CHECK_BASE_URL=https://wiki.thorchain.no REQUIRE_RUNTIME_METADATA=1 CSP_ENFORCE=
 npm run check:production-readiness -- --samples 1 --interval-ms 0 --artifact .artifacts/readiness-monitor/local.json # sampled public readiness plus direct-provider evidence
 IMAGE_REF=ghcr.io/example/tcwiki@sha256:1111111111111111111111111111111111111111111111111111111111111111 APP_VERSION=1111111111111111111111111111111111111111 ansible-playbook -i inventory/hosts.yml ansible-playbook.yml --syntax-check
 ```
+
+## Inspecting local platform artifacts
+
+Unit tests never remove local files. Run `node scripts/clean-platform-artifacts.mjs` to report candidates without changing them. After reviewing an exact candidate, `node scripts/clean-platform-artifacts.mjs --remove "content/guide (1).mdx"` removes only that selected untracked file when its original has identical bytes. Tracked files, changed copies, symlinks, missing originals and paths outside the checkout are protected. The command validates every selection before any removal; a failed Git lookup fails closed. No real workspace cleanup is part of ordinary verification.

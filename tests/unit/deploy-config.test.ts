@@ -98,7 +98,7 @@ describe('release and browser test wiring', () => {
     ];
 
     for (const scriptName of guardedScripts) {
-      expect(scriptValue(scriptName), `${scriptName} should start with the Node 22 guard`).toMatch(/^node scripts\/require-node22\.mjs && /);
+      expect(scriptValue(scriptName), `${scriptName} should start with the Node 22 guard`).toMatch(/^node scripts\/require-node22\.mjs(?: && |$)/);
     }
 
     for (const script of [
@@ -420,17 +420,6 @@ describe('release and browser test wiring', () => {
     expect(docs).toContain('npm run check:release-tracked');
     expect(docs).toContain('local-only proof files');
     expect(docs).toContain('CI runs the same trackedness audit');
-  });
-
-  it('cleans local platform metadata before unit tests without scanning generated folders', () => {
-    expect(scriptValue('pretest:unit')).toBe('node scripts/require-node22.mjs && node scripts/clean-platform-artifacts.mjs');
-    expect(platformArtifactCleaner).toContain("const cleanupRoots = ['content', 'docs', 'scripts', 'src', 'tests']");
-    expect(platformArtifactCleaner).toContain("name === '.DS_Store'");
-    expect(platformArtifactCleaner).toContain('finderDuplicateFilePattern');
-    expect(platformArtifactCleaner).toContain('isPlatformArtifactFile');
-    expect(platformArtifactCleaner).toContain("'node_modules'");
-    expect(platformArtifactCleaner).toContain("'.git'");
-    expect(platformArtifactCleaner).toContain("'.next'");
   });
 
   it('does not require remote Google font fetches during production builds', () => {

@@ -13,7 +13,7 @@
     "start:standalone": "node scripts/require-node22.mjs && node scripts/start-standalone.mjs",
     "lint": "node scripts/require-node22.mjs && eslint",
     "typecheck": "node scripts/require-node22.mjs && tsc --noEmit",
-    "pretest:unit": "node scripts/require-node22.mjs && node scripts/clean-platform-artifacts.mjs",
+    "pretest:unit": "node scripts/require-node22.mjs",
     "test:unit": "node scripts/require-node22.mjs && vitest run",
     "test:unit:watch": "node scripts/require-node22.mjs && vitest",
     "test:e2e": "node scripts/require-node22.mjs && playwright test",
