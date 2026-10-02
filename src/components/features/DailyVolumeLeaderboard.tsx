@@ -46,16 +46,18 @@ function PoolRow({ pool, rank, maxUsd }: { pool: DailyVolumePool; rank: number; 
 }
 
 export function DailyVolumeLeaderboard() {
-  const { data, result, error, isLoading, isDegraded } = useDailyVolume();
+  const { data, networkResult, result, error, isLoading, isDegraded } = useDailyVolume();
 
   const summary = useMemo(
     () => deriveDailyVolumeSummary(
       (data ?? []).map((entry, index) => ({
         asset: DAILY_VOLUME_POOLS[index] ?? '',
         result: entry,
-      }))
+      })),
+      undefined,
+      networkResult
     ),
-    [data]
+    [data, networkResult]
   );
 
   const topPools = summary.topPools;
@@ -66,20 +68,22 @@ export function DailyVolumeLeaderboard() {
     <section id="daily-volume-leaderboard" aria-labelledby="daily-volume-leaderboard-heading" className="mb-12">
       <SectionHeader id="daily-volume-leaderboard-heading" level="primary">Daily Volume Leaderboard</SectionHeader>
       <p className="mb-3 max-w-3xl text-sm leading-relaxed text-slate-400">
-        Swap volume per pool for the most recent completed day, with a comparison using available days in the preceding seven-day window. Ranked by USD volume from Midgard daily swap history.
+        Network volume uses Midgard’s all-pool aggregate for the last completed UTC day. The ranking covers six selected pools; shares and comparisons use only the included selected pools.
       </p>
       <Card padding="none" className="overflow-hidden">
         <div className="flex flex-wrap items-start justify-between gap-3 border-b border-border px-5 py-5">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Total daily volume</p>
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Network daily volume</p>
             <p className="mt-1 text-4xl font-black tracking-tight text-emerald-400 sm:text-5xl">
-              {isLoading ? 'Loading' : summary.usdVolumeLabel}
+              {isLoading ? 'Loading' : summary.networkUsdVolumeLabel}
             </p>
+            <p className="mt-2 text-xs text-slate-400">Selected-pool subtotal: {summary.usdVolumeLabel}</p>
+            <LiveSourceMeta result={networkResult} />
           </div>
           <div className="flex flex-col items-end gap-2">
             {!isLoading && summary.deltaLabel && (
               <span className={`text-sm font-bold ${deltaTone(summary.deltaPct)}`}>
-                {summary.deltaLabel} vs {summary.comparisonDays}d avg
+                {summary.deltaLabel} selected pools vs {summary.comparisonDays}d avg
               </span>
             )}
             <span className="text-xs text-slate-500">{summary.comparisonDays}/7 comparison days · avg {summary.usdAvgLabel}</span>
@@ -87,7 +91,7 @@ export function DailyVolumeLeaderboard() {
           </div>
           {isDegraded && !isLoading && (
             <p className="w-full text-xs text-amber-300">
-              Some pool histories did not load; totals and rankings cover the pools that responded.
+              Some histories did not load; included pools and their providers are listed below.
             </p>
           )}
           {error && !isLoading && (
@@ -96,8 +100,17 @@ export function DailyVolumeLeaderboard() {
         </div>
         <div className="flex items-center justify-between px-5 py-2 text-[11px] uppercase tracking-wider text-slate-500">
           <span>{summary.periodLabel} &middot; top pools</span>
-          <span>Share of day</span>
+          <span>Share of selected subtotal</span>
         </div>
+        <details className="border-b border-border px-5 py-3 text-xs text-slate-400">
+          <summary className="cursor-pointer">Selected-pool coverage: {summary.pools.length}/{DAILY_VOLUME_POOLS.length} included · {summary.periodLabel}</summary>
+          <ul className="mt-3 space-y-3">
+            {summary.coverage.map(entry => <li key={entry.asset}>
+              <p>{entry.asset}: {entry.reason}</p>
+              <LiveSourceMeta result={entry.result} />
+            </li>)}
+          </ul>
+        </details>
         <ol>
           {unavailable ? (
             <li className="px-5 py-6 text-sm text-slate-400">Volume rankings are unavailable right now.</li>

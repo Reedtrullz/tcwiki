@@ -11,6 +11,7 @@ import {
   Swap,
 } from '@/lib/types';
 import { liveDegraded, liveOk, normalizeApyToPercent } from '@/lib/trust';
+import { DAILY_VOLUME_POOLS } from '@/lib/daily-volume';
 
 const MIDGARD_ENDPOINTS = [
   {
@@ -654,9 +655,14 @@ export class MidgardAPI {
     );
   }
 
-  static async getPoolVolumeHistory(pool: string, interval = 'day', count = 8): Promise<LiveDataResult<Record<string, unknown>[]>> {
+  static async getDailyVolumeHistories() {
+    // Six curated pool reads and one documented all-network aggregate, not all-pool fan-out.
+    return Promise.all([...DAILY_VOLUME_POOLS, undefined].map(pool => this.getPoolVolumeHistory(pool, 'day', 8)));
+  }
+
+  static async getPoolVolumeHistory(pool: string | undefined, interval = 'day', count = 8): Promise<LiveDataResult<Record<string, unknown>[]>> {
     return requestNormalized<{ intervals?: Record<string, unknown>[] }, Record<string, unknown>[]>(
-      `/history/swaps?pool=${encodeURIComponent(pool)}&interval=${encodeURIComponent(interval)}&count=${count}`,
+      `/history/swaps?${pool === undefined ? '' : `pool=${encodeURIComponent(pool)}&`}interval=${encodeURIComponent(interval)}&count=${count}`,
       (result) => {
         if (result.status !== 'ok') {
           return liveDegraded<Record<string, unknown>[]>(

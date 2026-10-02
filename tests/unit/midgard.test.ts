@@ -460,4 +460,18 @@ describe('MidgardAPI', () => {
     expect(result.error).toContain('network.activeNodeCount');
     expect(result.data).toBeUndefined();
   });
+  it('caps daily leaderboard history reads at six selected pools plus one network aggregate', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(makeResponse(true, { intervals: [] }));
+    vi.stubGlobal('fetch', fetchMock);
+    const results = await MidgardAPI.getDailyVolumeHistories();
+    expect(results).toHaveLength(7);
+    expect(fetchMock).toHaveBeenCalledTimes(7);
+    const urls = fetchMock.mock.calls.map(([url]) => String(url));
+    expect(urls.filter(url => new URL(url).searchParams.has('pool'))).toHaveLength(6);
+    expect(urls.every(url => new URL(url).searchParams.get('count') === '8')).toBe(true);
+    fetchMock.mockClear().mockRejectedValue(new Error('Offline'));
+    const unavailable = await MidgardAPI.getDailyVolumeHistories();
+    expect(unavailable.every(result => result.status === 'degraded')).toBe(true);
+    expect(fetchMock).toHaveBeenCalledTimes(14);
+  });
 });

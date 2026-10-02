@@ -32,7 +32,7 @@ Execute all accepted work and create/push GitHub PRs; do not merge to main. User
 | PR-12 | in progress | isolated native Luna sidecar |
 | PR-39 | PR215 open; CI passed | a9b3ab5; CI37035192897; canonical alias RED5/full513/types/lint |
 | PR-13 | queued | issue #178 |
-| PR-06 | verified candidate | supplied-clock expiry states, timer/resume invalidation without probes; RED7/full520/typecheck/lint/build/8Next network browser checks |
+| PR-06 | PR216 open; CI passed | 2938a70; CI37036720991; supplied-clock states/full520/8Next network checks; deadline/resume never auto-probe |
 | PR-18 | verified candidate | stalled read timeout/cancellation, bounded batch/depth/fields and suppressed-item response count; RED2 then GREEN11; full508/types/lint pass |
 | PR-14 | verified candidate |23 actual WikiDO browser checks passed after reproducing/fixing missing MDX provider; CSP enforced; manifest-bound local candidate |
 | PR-53 | verified candidate | explicit Next/Docker + CF source/config/copy roots; tracked/untracked/missing RED to GREEN |
@@ -51,9 +51,9 @@ Execute all accepted work and create/push GitHub PRs; do not merge to main. User
 | PR-16 | queued | issue #181 |
 | PR-45 | queued | issue #144 |
 | PR-52 | queued | issue #151 |
-| PR-04 | queued | issue #169 |
+| PR-04 | verified candidate | b58b536; completed zero, open positive, malformed/missing/duplicate/gap/UTC rollover RED4→GREEN; supplied-clock period and actual comparison days |
 | PR-38 | queued | issue #137 |
-| PR-05 | queued | issue #170 |
+| PR-05 | verified candidate | separate documented network aggregate and selected subtotal/shares; seven reads capped (14 with fallback); full537/types/lint/Next build; provider and failure coverage; CF search failure tracked separately |
 | PR-09 | queued | issue #174 |
 | PR-40 | queued | issue #139 |
 | PR-41 | queued | issue #140 |
@@ -104,3 +104,5 @@ Cloudflare candidate40999e0: 506 unit tests/types/lint/audit0, both builds and s
 PR208 CI37030208807 and PR209 CI37030407354 passed all build-check gates. PR210 open https://github.com/Reedtrullz/tcwiki/pull/210 (a39e37e), CI pending. Diagnostic Git fixtures now use per-command unsigned fixture commits: global signing caused a local test hang once1Password locked; no credential/signing requests belong in offline fixtures.
 
 PR212 CSP bounds open https://github.com/Reedtrullz/tcwiki/pull/212 (496ce6c), CI pending. PR210 CI37032161140 passed including the actual Cloudflare browser lane. Dependency install initially hit npm Arborist edgesOut; regenerated the lock from desired manifest with --package-lock-only and verified a clean npmci rather than deleting the lock or changing the primary install.
+
+PR217 integrates reviewed PR208 and213 into the cumulative branch after216 (c9d09ec); full530/types/lint and CI37036891783 passed. No main merge. PR04/05 CF lane passed25 checks but search submission intermittently navigated to empty /search?; do not treat that run as all-green. Pull forward the native form-value correction, then repeat the final candidate runtime lane.

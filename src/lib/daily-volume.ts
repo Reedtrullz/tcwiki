@@ -19,6 +19,7 @@ export interface DailyVolumePool {
   shortId: string;
   runeVolume: number;
   usdVolume: number;
+  sourceResult: LiveDataResult<Record<string, unknown>[]>;
   share: number | null;
   usdVolumeLabel: string;
   shareLabel: string;
@@ -32,13 +33,16 @@ export interface DailyVolumeSummary {
   deltaLabel: string;
   usdAvgLabel: string;
   usdVolumeLabel: string;
+  networkUsdVolume: number | null;
+  networkUsdVolumeLabel: string;
+  coverage: { asset: string; included: boolean; reason: string; result: LiveDataResult<Record<string, unknown>[]> }[];
   periodLabel: string;
   comparisonDays: number;
   pools: DailyVolumePool[];
   topPools: DailyVolumePool[];
 }
 
-type PoolInterval = { startTime: number; runeVolume: number | null; usdVolume: number | null };
+type PoolInterval = { startTime: number; runeVolume: number | null; usdVolume: number | null; reason?: string };
 
 function nonNegativeInteger(value: unknown): number | null {
   if (typeof value !== 'number' && (typeof value !== 'string' || !/^\d+$/.test(value))) return null;
@@ -52,15 +56,19 @@ function normalizeIntervals(rows: Record<string, unknown>[]): Map<number, PoolIn
     if (!row || typeof row !== 'object') continue;
     const startTime = nonNegativeInteger(row.startTime);
     const endTime = nonNegativeInteger(row.endTime);
-    if (startTime === null || endTime !== startTime + DAY_SECONDS || startTime % DAY_SECONDS !== 0) continue;
+    if (startTime === null || startTime % DAY_SECONDS !== 0) continue;
     const rune = typeof row.totalVolume === 'string' || typeof row.totalVolume === 'number'
       ? runeBaseUnitsToNumber(row.totalVolume) : null;
     const cents = nonNegativeInteger(row.totalVolumeUSD);
-    const interval = { startTime, runeVolume: rune !== null && rune >= 0 ? rune : null, usdVolume: cents === null ? null : cents / USD_CENTS };
+    const missingField = [row.totalVolume, row.totalVolumeUSD].some(value => value === undefined || value === null || value === '');
+    const reason = endTime !== startTime + DAY_SECONDS
+      ? endTime !== null && endTime > startTime && endTime < startTime + DAY_SECONDS ? 'Incomplete daily interval' : 'Invalid interval boundary'
+      : missingField ? 'Missing volume fields' : rune === null || rune < 0 || cents === null ? 'Invalid volume fields' : undefined;
+    const interval: PoolInterval = { startTime, runeVolume: reason ? null : rune, usdVolume: reason ? null : cents! / USD_CENTS, reason };
     const existing = intervals.get(startTime);
     // A conflicting duplicate is unusable; no response order can choose a winner.
     if (existing && (existing.runeVolume !== interval.runeVolume || existing.usdVolume !== interval.usdVolume)) {
-      interval.runeVolume = null; interval.usdVolume = null;
+      interval.runeVolume = null; interval.usdVolume = null; interval.reason = 'Conflicting duplicate interval';
     }
     intervals.set(startTime, interval);
   }
@@ -105,7 +113,8 @@ function formatDelta(value: number | null): string {
 
 export function deriveDailyVolumeSummary(
   poolHistories: { asset: string; result: LiveDataResult<Record<string, unknown>[]> }[],
-  observedAtMs = Date.now()
+  observedAtMs = Date.now(),
+  networkHistory?: LiveDataResult<Record<string, unknown>[]>
 ): DailyVolumeSummary {
   const latestDay = Number.isFinite(observedAtMs) && Number.isFinite(new Date(observedAtMs).getTime())
     ? Math.floor(observedAtMs / (DAY_SECONDS * 1000)) * DAY_SECONDS - DAY_SECONDS : null;
@@ -118,7 +127,7 @@ export function deriveDailyVolumeSummary(
     for (const [asset, intervals] of intervalsByAsset) {
       const interval = intervals.get(latestDay);
       if (!interval || interval.runeVolume === null || interval.usdVolume === null) continue;
-      pools.push({ asset, label: poolDisplayName(asset), shortId: poolShortId(asset), runeVolume: interval.runeVolume,
+      pools.push({ asset, sourceResult: poolHistories.find(entry => entry.asset === asset)!.result, label: poolDisplayName(asset), shortId: poolShortId(asset), runeVolume: interval.runeVolume,
         usdVolume: interval.usdVolume, share: null, usdVolumeLabel: formatCompactUsd(interval.usdVolume), shareLabel: 'Unavailable' });
     }
   }
@@ -139,7 +148,17 @@ export function deriveDailyVolumeSummary(
   }
   const usdAvg7d = comparison.length ? comparison.reduce((sum, value) => sum + value, 0) / comparison.length : null;
   const deltaPct = usdAvg7d !== null && usdAvg7d > 0 && totalUsd !== null ? (totalUsd - usdAvg7d) / usdAvg7d * 100 : null;
+  const networkInterval = latestDay !== null && networkHistory?.status === 'ok' && Array.isArray(networkHistory.data)
+    ? normalizeIntervals(networkHistory.data).get(latestDay) : undefined;
+  const networkUsdVolume = networkInterval?.runeVolume !== null ? networkInterval?.usdVolume ?? null : null;
   return {
+    networkUsdVolume, networkUsdVolumeLabel: formatCompactUsd(networkUsdVolume),
+    coverage: poolHistories.map(entry => {
+      const included = pools.some(pool => pool.asset === entry.asset);
+      const reason = included ? 'Included' : entry.result.status === 'degraded' ? 'History failed'
+        : (latestDay === null ? 'Period unavailable' : intervalsByAsset.get(entry.asset)?.get(latestDay)?.reason ?? 'Selected completed day absent');
+      return { ...entry, included, reason };
+    }),
     usdVolume: totalUsd, runeVolume: pools.length ? pools.reduce((sum, pool) => sum + pool.runeVolume, 0) : null,
     usdAvg7d, deltaPct, deltaLabel: formatDelta(deltaPct), usdAvgLabel: formatCompactUsd(usdAvg7d), usdVolumeLabel: formatCompactUsd(totalUsd),
     periodLabel: latestDay === null ? 'Period unavailable' : `${new Date(latestDay * 1000).toISOString().slice(0, 10)} UTC`,
