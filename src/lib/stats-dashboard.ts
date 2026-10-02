@@ -1,6 +1,6 @@
 import type { HistoryItem, LiveDataResult, MidgardHealth, NetworkStats, NetworkStatus, Pool } from '@/lib/types';
 import { liveResultIsDegraded } from '@/lib/live-result';
-import { formatPercent, formatRuneFromBaseUnits, normalizeApyToPercent, runeBaseUnitsToNumber } from '@/lib/trust';
+import { formatPercent, formatRuneFromBaseUnits, normalizeApyToPercent, parseFiniteDecimal, runeBaseUnitsToNumber } from '@/lib/trust';
 
 export interface StatsDecisionInput {
   networkLoading: boolean;
@@ -478,15 +478,6 @@ export function deriveStatsMetricCards(networkData: NetworkStats | undefined, fa
       description: 'Protocol reserve/backstop context; not a solvency guarantee by itself.',
     },
   ];
-}
-
-function parseFiniteDecimal(value: string | undefined): number | null {
-  if (value === undefined || value === '') {
-    return null;
-  }
-
-  const numeric = Number(value);
-  return Number.isFinite(numeric) ? numeric : null;
 }
 
 function formatCompactNumber(value: number | null, options?: Intl.NumberFormatOptions) {
