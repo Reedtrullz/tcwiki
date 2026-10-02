@@ -685,6 +685,7 @@ export interface ChainOperationalStatus {
   lastSignedOut?: number;
   lastThorchainHeight?: number;
   sourceWarnings?: string[];
+  sourceWarningDetails?: NetworkStatusSourceWarning[];
   securedAssetDepositPaused?: boolean;
   securedAssetWithdrawPaused?: boolean;
   tradeAccountDepositPaused?: boolean;

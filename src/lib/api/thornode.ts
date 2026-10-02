@@ -38,6 +38,7 @@ import {
   getOperationalControlCatalogEntry,
 } from '@/lib/operational-controls';
 import { liveDegraded, liveOk } from '@/lib/trust';
+import { uniqueSourceWarningDetails } from '@/lib/source-warnings';
 
 type ThornodeEndpoint = SourceMeta & {
   cosmosUrl: string;
@@ -693,25 +694,6 @@ function warningDetail({
   };
 }
 
-function uniqueSourceWarningDetails(details: NetworkStatusSourceWarning[]) {
-  const seen = new Set<string>();
-  return details.filter((detail) => {
-    const signature = [
-      detail.severity,
-      detail.category,
-      detail.message,
-      detail.action,
-      detail.keys?.join(',') ?? '',
-      detail.scopes?.join(',') ?? '',
-    ].join('|');
-    if (seen.has(signature)) {
-      return false;
-    }
-    seen.add(signature);
-    return true;
-  });
-}
-
 function getWarningDetailSnapshotScore(detail: NetworkStatusSourceWarning) {
   switch (detail.category) {
     case 'freshness':
@@ -832,6 +814,10 @@ function getDynamicFeeSourceWarningDetails(warnings: string[]) {
   return uniqueSourceWarningDetails(warnings.map(classifyDynamicFeeSourceWarning));
 }
 
+function addSourceWarning(details: NetworkStatusSourceWarning[], warning: NetworkStatusSourceWarning) {
+  details.push(warningDetail(warning));
+}
+
 export function getThornodeBlockAgeSeconds(time: string | undefined, nowMs = Date.now()) {
   const blockMs = Date.parse(time ?? '');
   return Number.isFinite(blockMs) ? Math.round((nowMs - blockMs) / 1000) : undefined;
@@ -841,24 +827,40 @@ export function getThornodeBlockAgeWarnings(
   blockAgeSeconds: number | undefined,
   state: string
 ) {
+  return getThornodeBlockAgeWarningDetails(blockAgeSeconds, state, '').map((detail) => detail.message);
+}
+
+function getThornodeBlockAgeWarningDetails(
+  blockAgeSeconds: number | undefined,
+  state: string,
+  action: string
+) {
   if (blockAgeSeconds === undefined) {
     return [];
   }
 
+  let message: string | undefined;
+  let severity: NetworkStatusSourceWarning['severity'] = 'warning';
   if (blockAgeSeconds < -THORNODE_BLOCK_FUTURE_DEGRADED_SECONDS) {
-    return [`THORNode latest block timestamp is ${formatAgeSeconds(blockAgeSeconds)} in the future; ${state} is stale.`];
-  }
-  if (blockAgeSeconds < -THORNODE_BLOCK_FUTURE_WARNING_SECONDS) {
-    return [`THORNode latest block timestamp is ${formatAgeSeconds(blockAgeSeconds)} in the future; ${state} may be stale.`];
-  }
-  if (blockAgeSeconds > THORNODE_BLOCK_STALE_DEGRADED_SECONDS) {
-    return [`THORNode latest block timestamp is ${formatAgeSeconds(blockAgeSeconds)} old; ${state} is stale.`];
-  }
-  if (blockAgeSeconds > THORNODE_BLOCK_STALE_WARNING_SECONDS) {
-    return [`THORNode latest block timestamp is ${formatAgeSeconds(blockAgeSeconds)} old; ${state} may be stale.`];
+    message = `THORNode latest block timestamp is ${formatAgeSeconds(blockAgeSeconds)} in the future; ${state} is stale.`;
+    severity = 'critical';
+  } else if (blockAgeSeconds < -THORNODE_BLOCK_FUTURE_WARNING_SECONDS) {
+    message = `THORNode latest block timestamp is ${formatAgeSeconds(blockAgeSeconds)} in the future; ${state} may be stale.`;
+  } else if (blockAgeSeconds > THORNODE_BLOCK_STALE_DEGRADED_SECONDS) {
+    message = `THORNode latest block timestamp is ${formatAgeSeconds(blockAgeSeconds)} old; ${state} is stale.`;
+    severity = 'critical';
+  } else if (blockAgeSeconds > THORNODE_BLOCK_STALE_WARNING_SECONDS) {
+    message = `THORNode latest block timestamp is ${formatAgeSeconds(blockAgeSeconds)} old; ${state} may be stale.`;
   }
 
-  return [];
+  return message
+    ? [warningDetail({
+        severity,
+        category: 'freshness',
+        message,
+        action,
+      })]
+    : [];
 }
 
 function runePoolWarningKeys(message: string) {
@@ -925,9 +927,9 @@ function getRunePoolWarningSnapshotScore(status: RunePoolPolStatus) {
   return details.reduce((score, detail) => score + getWarningDetailSnapshotScore(detail), 0);
 }
 
-function runePoolRecord(value: unknown, field: string, sourceWarnings: string[]) {
+function runePoolRecord(value: unknown, field: string, sourceWarningDetails: NetworkStatusSourceWarning[]) {
   if (!isPlainRecord(value)) {
-    sourceWarnings.push(`THORNode runepool.${field} did not include a usable object.`);
+    addSourceWarning(sourceWarningDetails, { severity: 'warning', category: 'source-shape', message: `THORNode runepool.${field} did not include a usable object.`, action: 'Treat the affected RUNEPool accounting field as unavailable until THORNode returns a clean base-unit value.', keys: [`runepool.${field}`] });
     return {};
   }
   return value;
@@ -936,40 +938,40 @@ function runePoolRecord(value: unknown, field: string, sourceWarnings: string[])
 function runePoolBaseUnits(
   value: unknown,
   field: string,
-  sourceWarnings: string[],
+  sourceWarningDetails: NetworkStatusSourceWarning[],
   options: { allowNegative?: boolean } = {}
 ) {
   if (typeof value !== 'string' || value.length === 0) {
-    sourceWarnings.push(`THORNode runepool.${field} did not include a usable RUNE base-unit string.`);
+    addSourceWarning(sourceWarningDetails, { severity: 'warning', category: 'source-shape', message: `THORNode runepool.${field} did not include a usable RUNE base-unit string.`, action: 'Treat the affected RUNEPool accounting field as unavailable until THORNode returns a clean base-unit value.', keys: [`runepool.${field}`] });
     return null;
   }
 
   if (value.length > RUNEPOOL_BASE_UNIT_MAX_DIGITS) {
-    sourceWarnings.push(`THORNode runepool.${field} is too large to display safely.`);
+    addSourceWarning(sourceWarningDetails, { severity: 'warning', category: 'source-shape', message: `THORNode runepool.${field} is too large to display safely.`, action: 'Treat the affected RUNEPool accounting field as unavailable until THORNode returns a clean base-unit value.', keys: [`runepool.${field}`] });
     return null;
   }
 
   const pattern = options.allowNegative ? RUNEPOOL_SIGNED_BASE_UNIT_PATTERN : RUNEPOOL_UNSIGNED_BASE_UNIT_PATTERN;
   if (!pattern.test(value)) {
-    sourceWarnings.push(`THORNode runepool.${field} included an invalid RUNE base-unit value.`);
+    addSourceWarning(sourceWarningDetails, { severity: 'warning', category: 'source-shape', message: `THORNode runepool.${field} included an invalid RUNE base-unit value.`, action: 'Treat the affected RUNEPool accounting field as unavailable until THORNode returns a clean base-unit value.', keys: [`runepool.${field}`] });
     return null;
   }
 
   try {
     return BigInt(value).toString();
   } catch {
-    sourceWarnings.push(`THORNode runepool.${field} included an unusable RUNE base-unit value.`);
+    addSourceWarning(sourceWarningDetails, { severity: 'warning', category: 'source-shape', message: `THORNode runepool.${field} included an unusable RUNE base-unit value.`, action: 'Treat the affected RUNEPool accounting field as unavailable until THORNode returns a clean base-unit value.', keys: [`runepool.${field}`] });
     return null;
   }
 }
 
-function runePoolUnits(value: unknown, field: string, sourceWarnings: string[]) {
+function runePoolUnits(value: unknown, field: string, sourceWarningDetails: NetworkStatusSourceWarning[]) {
   if (typeof value !== 'string' || value.length === 0) {
-    sourceWarnings.push(`THORNode runepool.${field} did not include a usable unit string.`);
+    addSourceWarning(sourceWarningDetails, { severity: 'warning', category: 'source-shape', message: `THORNode runepool.${field} did not include a usable unit string.`, action: 'Treat the affected RUNEPool accounting field as unavailable until THORNode returns a clean base-unit value.', keys: [`runepool.${field}`] });
     return null;
   }
   if (value.length > RUNEPOOL_BASE_UNIT_MAX_DIGITS || !RUNEPOOL_UNSIGNED_BASE_UNIT_PATTERN.test(value)) {
-    sourceWarnings.push(`THORNode runepool.${field} included an invalid unit value.`);
+    addSourceWarning(sourceWarningDetails, { severity: 'warning', category: 'source-shape', message: `THORNode runepool.${field} included an invalid unit value.`, action: 'Treat the affected RUNEPool accounting field as unavailable until THORNode returns a clean base-unit value.', keys: [`runepool.${field}`] });
     return null;
   }
   return BigInt(value).toString();
@@ -978,23 +980,23 @@ function runePoolUnits(value: unknown, field: string, sourceWarnings: string[]) 
 function runePoolBucket(
   record: Record<string, unknown>,
   prefix: string,
-  sourceWarnings: string[]
+  sourceWarningDetails: NetworkStatusSourceWarning[]
 ) {
   return {
-    valueRuneBaseUnits: runePoolBaseUnits(record.value, `${prefix}.value`, sourceWarnings),
-    pnlRuneBaseUnits: runePoolBaseUnits(record.pnl, `${prefix}.pnl`, sourceWarnings, { allowNegative: true }),
-    currentDepositRuneBaseUnits: runePoolBaseUnits(record.current_deposit, `${prefix}.current_deposit`, sourceWarnings),
+    valueRuneBaseUnits: runePoolBaseUnits(record.value, `${prefix}.value`, sourceWarningDetails),
+    pnlRuneBaseUnits: runePoolBaseUnits(record.pnl, `${prefix}.pnl`, sourceWarningDetails, { allowNegative: true }),
+    currentDepositRuneBaseUnits: runePoolBaseUnits(record.current_deposit, `${prefix}.current_deposit`, sourceWarningDetails),
   };
 }
 
-function runePoolPolPools(mimir: Record<string, unknown>, sourceWarnings: string[]): RunePoolPolMimirPool[] {
+function runePoolPolPools(mimir: Record<string, unknown>, sourceWarningDetails: NetworkStatusSourceWarning[]): RunePoolPolMimirPool[] {
   return Object.entries(mimir)
     .filter(([key]) => key.toUpperCase().startsWith(RUNEPOOL_POL_MIMIR_PREFIX))
     .map(([key, raw]) => {
       const value = toMimirNumber(raw);
       const asset = key.slice(RUNEPOOL_POL_MIMIR_PREFIX.length).toUpperCase();
       if (value === null) {
-        sourceWarnings.push(`THORNode Mimir ${key} was unparseable for RUNEPool POL scope.`);
+        addSourceWarning(sourceWarningDetails, { severity: 'review', category: 'mimir-parse', message: `THORNode Mimir ${key} was unparseable for RUNEPool POL scope.`, action: 'Review the exact POL Mimir key before treating the POL-enabled pool set as clean.', keys: [key] });
         return {
           key,
           asset,
@@ -1018,14 +1020,14 @@ function runePoolPolPools(mimir: Record<string, unknown>, sourceWarnings: string
 function runePoolMimirConfigFlag(
   mimir: Record<string, unknown>,
   key: string,
-  sourceWarnings: string[]
+  sourceWarningDetails: NetworkStatusSourceWarning[]
 ): RunePoolMimirConfigFlag {
   const value = getMimirNumericState(mimir, key);
   if (value.state === 'valid') {
     return { key: value.key, value: value.value, state: 'present' };
   }
   if (value.state === 'unparseable') {
-    sourceWarnings.push(`THORNode Mimir ${value.key} was unparseable for RUNEPool availability caveats.`);
+    addSourceWarning(sourceWarningDetails, { severity: 'warning', category: 'other', message: `THORNode Mimir ${value.key} was unparseable for RUNEPool availability caveats.`, action: 'Review this RUNEPool source warning before treating the live panel as clean.' });
     return { key: value.key, value: null, state: 'unparseable' };
   }
   return { key, value: null, state: 'absent' };
@@ -1036,43 +1038,44 @@ export function deriveRunePoolPolStatus(
   runepool: unknown,
   sourceFreshness: RunePoolSourceFreshness
 ): RunePoolPolStatus {
-  const sourceWarnings: string[] = [];
+  const sourceWarningDetails: NetworkStatusSourceWarning[] = [];
   const mimirRecord = isPlainRecord(mimir) ? mimir : {};
   assertUnambiguousMimirAliases(mimirRecord);
   if (!isPlainRecord(mimir)) {
-    sourceWarnings.push('THORNode Mimir did not include a usable object for RUNEPool POL scope.');
+    addSourceWarning(sourceWarningDetails, { severity: 'warning', category: 'source-shape', message: 'THORNode Mimir did not include a usable object for RUNEPool POL scope.', action: 'Treat RUNEPool/POL source fields as partial until THORNode returns a complete Mimir object.' });
   }
   if (!isPlainRecord(runepool)) {
-    sourceWarnings.push('THORNode runepool response did not include a usable object.');
+    addSourceWarning(sourceWarningDetails, { severity: 'warning', category: 'source-shape', message: 'THORNode runepool response did not include a usable object.', action: 'Treat RUNEPool accounting as unavailable until THORNode returns a complete object.' });
   }
 
   const root = isPlainRecord(runepool) ? runepool : {};
-  const pol = runePoolRecord(root.pol, 'pol', sourceWarnings);
-  const providers = runePoolRecord(root.providers, 'providers', sourceWarnings);
-  const reserve = runePoolRecord(root.reserve, 'reserve', sourceWarnings);
-  const polPools = runePoolPolPools(mimirRecord, sourceWarnings);
-  const polBucket = runePoolBucket(pol, 'pol', sourceWarnings);
-  const providerBucket = runePoolBucket(providers, 'providers', sourceWarnings);
-  const reserveBucket = runePoolBucket(reserve, 'reserve', sourceWarnings);
+  const pol = runePoolRecord(root.pol, 'pol', sourceWarningDetails);
+  const providers = runePoolRecord(root.providers, 'providers', sourceWarningDetails);
+  const reserve = runePoolRecord(root.reserve, 'reserve', sourceWarningDetails);
+  const polPools = runePoolPolPools(mimirRecord, sourceWarningDetails);
+  const polBucket = runePoolBucket(pol, 'pol', sourceWarningDetails);
+  const providerBucket = runePoolBucket(providers, 'providers', sourceWarningDetails);
+  const reserveBucket = runePoolBucket(reserve, 'reserve', sourceWarningDetails);
   const polTotals = {
     ...polBucket,
-    runeDepositedBaseUnits: runePoolBaseUnits(pol.rune_deposited, 'pol.rune_deposited', sourceWarnings),
-    runeWithdrawnBaseUnits: runePoolBaseUnits(pol.rune_withdrawn, 'pol.rune_withdrawn', sourceWarnings),
+    runeDepositedBaseUnits: runePoolBaseUnits(pol.rune_deposited, 'pol.rune_deposited', sourceWarningDetails),
+    runeWithdrawnBaseUnits: runePoolBaseUnits(pol.rune_withdrawn, 'pol.rune_withdrawn', sourceWarningDetails),
   };
   const providerTotals = {
     ...providerBucket,
-    units: runePoolUnits(providers.units, 'providers.units', sourceWarnings),
-    pendingUnits: runePoolUnits(providers.pending_units, 'providers.pending_units', sourceWarnings),
-    pendingRuneBaseUnits: runePoolBaseUnits(providers.pending_rune, 'providers.pending_rune', sourceWarnings),
+    units: runePoolUnits(providers.units, 'providers.units', sourceWarningDetails),
+    pendingUnits: runePoolUnits(providers.pending_units, 'providers.pending_units', sourceWarningDetails),
+    pendingRuneBaseUnits: runePoolBaseUnits(providers.pending_rune, 'providers.pending_rune', sourceWarningDetails),
   };
   const reserveTotals = {
     ...reserveBucket,
-    units: runePoolUnits(reserve.units, 'reserve.units', sourceWarnings),
+    units: runePoolUnits(reserve.units, 'reserve.units', sourceWarningDetails),
   };
-  const depositMaturityBlocks = runePoolMimirConfigFlag(mimirRecord, 'RUNEPoolDepositMaturityBlocks', sourceWarnings);
-  const maxReserveBackstop = runePoolMimirConfigFlag(mimirRecord, 'RUNEPoolMaxReserveBackstop', sourceWarnings);
-  const minRunePoolDepth = runePoolMimirConfigFlag(mimirRecord, 'MINRUNEPOOLDEPTH', sourceWarnings);
-  const uniqueWarnings = [...new Set(sourceWarnings)].sort((left, right) => left.localeCompare(right));
+  const depositMaturityBlocks = runePoolMimirConfigFlag(mimirRecord, 'RUNEPoolDepositMaturityBlocks', sourceWarningDetails);
+  const maxReserveBackstop = runePoolMimirConfigFlag(mimirRecord, 'RUNEPoolMaxReserveBackstop', sourceWarningDetails);
+  const minRunePoolDepth = runePoolMimirConfigFlag(mimirRecord, 'MINRUNEPOOLDEPTH', sourceWarningDetails);
+  const uniqueDetails = uniqueSourceWarningDetails(sourceWarningDetails)
+    .sort((left, right) => left.message.localeCompare(right.message));
 
   return {
     pol: polTotals,
@@ -1084,8 +1087,8 @@ export function deriveRunePoolPolStatus(
     maxReserveBackstop,
     minRunePoolDepth,
     sourceFreshness,
-    sourceWarnings: uniqueWarnings,
-    sourceWarningDetails: getRunePoolSourceWarningDetails(uniqueWarnings),
+    sourceWarnings: uniqueDetails.map((detail) => detail.message),
+    sourceWarningDetails: uniqueDetails,
     caveats: ['current-only', 'not-yield-proof', 'availability-separate'],
   };
 }
@@ -1125,7 +1128,7 @@ function dynamicMimirFlag(mimir: Record<string, unknown>, key: string): DynamicL
 
 function dynamicEnabledFlag(
   mimir: Record<string, unknown>,
-  sourceWarnings: string[],
+  sourceWarningDetails: NetworkStatusSourceWarning[],
   invalidKeys: string[]
 ): DynamicL1FeeMimirFlag {
   const key = 'L1DynamicFeeEnabled';
@@ -1135,12 +1138,12 @@ function dynamicEnabledFlag(
   }
   if (state.state === 'unparseable') {
     invalidKeys.push(state.key);
-    sourceWarnings.push(`${state.key} is unparseable; dynamic fee enablement is unknown.`);
+    addSourceWarning(sourceWarningDetails, { severity: 'warning', category: 'mimir-parse', message: `${state.key} is unparseable; dynamic fee enablement is unknown.`, action: 'Review the exact dynamic-fee Mimir values before treating controller state or configured bounds as clean.', keys: [state.key] });
     return { key: state.key, value: null, defaultValue: 0, effectiveValue: null, state: 'unparseable' };
   }
   if (state.value !== 0 && state.value !== 1) {
     invalidKeys.push(state.key);
-    sourceWarnings.push(`${state.key} has unsupported dynamic fee enablement value ${state.value}; expected 0 or 1.`);
+    addSourceWarning(sourceWarningDetails, { severity: 'warning', category: 'mimir-parse', message: `${state.key} has unsupported dynamic fee enablement value ${state.value}; expected 0 or 1.`, action: 'Review the exact dynamic-fee Mimir values before treating controller state or configured bounds as clean.', keys: [state.key] });
     return { key: state.key, value: state.value, defaultValue: 0, effectiveValue: null, state: 'unparseable' };
   }
 
@@ -1157,7 +1160,7 @@ function dynamicConfigFlag(
   mimir: Record<string, unknown>,
   key: string,
   defaultValue: number,
-  sourceWarnings: string[],
+  sourceWarningDetails: NetworkStatusSourceWarning[],
   invalidKeys: string[],
   options: { min?: number; max?: number } = {}
 ): DynamicL1FeeMimirFlag {
@@ -1168,7 +1171,7 @@ function dynamicConfigFlag(
   if (state.state === 'unparseable' || state.value < 0) {
     const invalidKey = state.state === 'unparseable' ? state.key : key;
     invalidKeys.push(invalidKey);
-    sourceWarnings.push(`${invalidKey} is unparseable or negative; using no trusted dynamic fee config value.`);
+    addSourceWarning(sourceWarningDetails, { severity: 'warning', category: 'mimir-parse', message: `${invalidKey} is unparseable or negative; using no trusted dynamic fee config value.`, action: 'Review the exact dynamic-fee Mimir values before treating controller state or configured bounds as clean.', keys: [invalidKey] });
     return { key: invalidKey, value: null, defaultValue, effectiveValue: null, state: 'unparseable' };
   }
 
@@ -1179,7 +1182,7 @@ function dynamicConfigFlag(
     Math.max(min ?? state.value, state.value)
   );
   if (effectiveValue !== state.value) {
-    sourceWarnings.push(`${state.key} value ${state.value} is outside ADR-026 clamp bounds; displaying effective value ${effectiveValue}.`);
+    addSourceWarning(sourceWarningDetails, { severity: 'warning', category: 'mimir-parse', message: `${state.key} value ${state.value} is outside ADR-026 clamp bounds; displaying effective value ${effectiveValue}.`, action: 'Review the exact dynamic-fee Mimir values before treating controller state or configured bounds as clean.', keys: [state.key] });
   }
 
   return {
@@ -1216,20 +1219,20 @@ function dynamicWhitelisted(value: number | null): boolean | null {
       : null;
 }
 
-function getDynamicL1FeeMimirStatus(mimir: Record<string, unknown>, sourceWarnings: string[]): DynamicL1FeeMimirStatus {
+function getDynamicL1FeeMimirStatus(mimir: Record<string, unknown>, sourceWarningDetails: NetworkStatusSourceWarning[]): DynamicL1FeeMimirStatus {
   const invalidKeys: string[] = [];
-  const enabled = dynamicEnabledFlag(mimir, sourceWarnings, invalidKeys);
+  const enabled = dynamicEnabledFlag(mimir, sourceWarningDetails, invalidKeys);
   const slipMinBps = dynamicMimirFlag(mimir, 'L1SlipMinBPS');
-  const epochBlocks = dynamicConfigFlag(mimir, 'L1DynamicFeeEpochBlocks', 14400, sourceWarnings, invalidKeys);
-  const floorBps = dynamicConfigFlag(mimir, 'L1DynamicFeeFloorBPS', 1, sourceWarnings, invalidKeys);
-  const ceilingBps = dynamicConfigFlag(mimir, 'L1DynamicFeeCeilingBPS', 20, sourceWarnings, invalidKeys);
-  const stepBps = dynamicConfigFlag(mimir, 'L1DynamicFeeStepBPS', 1, sourceWarnings, invalidKeys);
-  const deadbandBps = dynamicConfigFlag(mimir, 'L1DynamicFeeDeadbandBPS', 1000, sourceWarnings, invalidKeys);
-  const windowEpochs = dynamicConfigFlag(mimir, 'L1DynamicFeeWindowEpochs', 3, sourceWarnings, invalidKeys, { min: 1, max: 30 });
+  const epochBlocks = dynamicConfigFlag(mimir, 'L1DynamicFeeEpochBlocks', 14400, sourceWarningDetails, invalidKeys);
+  const floorBps = dynamicConfigFlag(mimir, 'L1DynamicFeeFloorBPS', 1, sourceWarningDetails, invalidKeys);
+  const ceilingBps = dynamicConfigFlag(mimir, 'L1DynamicFeeCeilingBPS', 20, sourceWarningDetails, invalidKeys);
+  const stepBps = dynamicConfigFlag(mimir, 'L1DynamicFeeStepBPS', 1, sourceWarningDetails, invalidKeys);
+  const deadbandBps = dynamicConfigFlag(mimir, 'L1DynamicFeeDeadbandBPS', 1000, sourceWarningDetails, invalidKeys);
+  const windowEpochs = dynamicConfigFlag(mimir, 'L1DynamicFeeWindowEpochs', 3, sourceWarningDetails, invalidKeys, { min: 1, max: 30 });
 
   if (slipMinBps.state === 'unparseable') {
     invalidKeys.push(slipMinBps.key);
-    sourceWarnings.push(`${slipMinBps.key} is unparseable; base L1 minimum bps is unknown.`);
+    addSourceWarning(sourceWarningDetails, { severity: 'warning', category: 'mimir-parse', message: `${slipMinBps.key} is unparseable; base L1 minimum bps is unknown.`, action: 'Review the exact dynamic-fee Mimir values before treating controller state or configured bounds as clean.', keys: [slipMinBps.key] });
   }
 
   const whitelistedPartners: DynamicL1FeeWhitelistedPartner[] = Object.entries(mimir)
@@ -1240,7 +1243,7 @@ function getDynamicL1FeeMimirStatus(mimir: Record<string, unknown>, sourceWarnin
       const thorname = key.slice(DYNAMIC_L1_FEE_WHITELIST_PREFIX.length).toLowerCase();
       if (state === 'unparseable') {
         invalidKeys.push(key);
-        sourceWarnings.push(`${key} has an unsupported or unparseable dynamic fee whitelist state.`);
+        addSourceWarning(sourceWarningDetails, { severity: 'warning', category: 'mimir-parse', message: `${key} has an unsupported or unparseable dynamic fee whitelist state.`, action: 'Review the exact dynamic-fee Mimir values before treating controller state or configured bounds as clean.', keys: [key] });
       }
       return {
         key,
@@ -1360,19 +1363,24 @@ function parseDynamicL1FeeCurrent(value: unknown): {
 function parseDynamicL1FeeThornameHistory(
   value: unknown,
   expectedThorname: string
-): { history: DynamicL1FeeThornameHistory; sourceWarnings: string[] } {
+): { history: DynamicL1FeeThornameHistory; sourceWarningDetails: NetworkStatusSourceWarning[] } {
   if (!isPlainRecord(value) || !Array.isArray(value.pairs)) {
     throw new Error(`THORNode dynamic_l1_fees/${expectedThorname} response did not include a pairs array.`);
   }
 
-  const sourceWarnings: string[] = [];
+  const sourceWarningDetails: NetworkStatusSourceWarning[] = [];
   const thorname = typeof value.thorname === 'string' ? value.thorname.trim().toLowerCase() : '';
   const expected = expectedThorname.trim().toLowerCase();
   if (!thorname) {
     throw new Error(`THORNode dynamic_l1_fees/${expectedThorname} response did not include a usable thorname.`);
   }
   if (thorname !== expected) {
-    sourceWarnings.push(`Dynamic fee history request for ${expected} returned thorname ${thorname}.`);
+    addSourceWarning(sourceWarningDetails, {
+      severity: 'warning',
+      category: 'source-shape',
+      message: `Dynamic fee history request for ${expected} returned thorname ${thorname}.`,
+      action: 'Treat dynamic-fee history as partial until THORNode returns the requested thorname.',
+    });
   }
 
   const whitelistValue = toNonNegativeInteger(
@@ -1466,7 +1474,7 @@ function parseDynamicL1FeeThornameHistory(
       whitelistState,
       pairs,
     },
-    sourceWarnings,
+    sourceWarningDetails,
   };
 }
 
@@ -1474,7 +1482,7 @@ async function requestDynamicL1FeeHistories(
   endpoint: ThornodeEndpoint,
   snapshotHeight: number,
   status: DynamicL1FeeStatus
-): Promise<{ histories: DynamicL1FeeThornameHistory[]; sourceWarnings: string[]; sources: SourceMeta[] }> {
+): Promise<{ histories: DynamicL1FeeThornameHistory[]; sourceWarningDetails: NetworkStatusSourceWarning[]; sources: SourceMeta[] }> {
   const recordThornames = [...new Set(status.records.map((record) => record.thorname))]
     .sort((left, right) => left.localeCompare(right));
   const recordThornameSet = new Set(recordThornames);
@@ -1490,11 +1498,14 @@ async function requestDynamicL1FeeHistories(
   const omittedThornameCount = allThornames.length - thornames.length;
 
   const histories: DynamicL1FeeThornameHistory[] = [];
-  const sourceWarnings: string[] = [];
+  const sourceWarningDetails: NetworkStatusSourceWarning[] = [];
   if (omittedThornameCount > 0) {
-    sourceWarnings.push(
-      `Dynamic fee history fetch capped at ${DYNAMIC_L1_FEE_HISTORY_THORNAME_LIMIT} thornames; ${omittedThornameCount} additional thorname histories were not requested.`
-    );
+    addSourceWarning(sourceWarningDetails, {
+      severity: 'warning',
+      category: 'source-shape',
+      message: `Dynamic fee history fetch capped at ${DYNAMIC_L1_FEE_HISTORY_THORNAME_LIMIT} thornames; ${omittedThornameCount} additional thorname histories were not requested.`,
+      action: 'Treat dynamic-fee history as partial until the omitted thorname histories can be fetched.',
+    });
   }
   const sources = thornames.map((thorname) => sourceForThornodePath(
     endpoint,
@@ -1512,16 +1523,21 @@ async function requestDynamicL1FeeHistories(
       );
       const parsed = parseDynamicL1FeeThornameHistory(response, thorname);
       histories.push(parsed.history);
-      sourceWarnings.push(...parsed.sourceWarnings);
+      sourceWarningDetails.push(...parsed.sourceWarningDetails);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown dynamic fee history error';
-      sourceWarnings.push(`Dynamic fee history for ${thorname} was unavailable: ${message}`);
+      addSourceWarning(sourceWarningDetails, {
+        severity: 'warning',
+        category: 'source-shape',
+        message: `Dynamic fee history for ${thorname} was unavailable: ${message}`,
+        action: 'Treat the affected dynamic-fee history as unavailable until THORNode returns a valid response.',
+      });
     }
   });
 
   return {
     histories: histories.sort((left, right) => left.thorname.localeCompare(right.thorname)),
-    sourceWarnings,
+    sourceWarningDetails,
     sources,
   };
 }
@@ -1568,13 +1584,16 @@ async function finalizeDynamicL1FeeProviderSnapshot(
     snapshot.currentDynamicFees,
     sourceFreshness,
     historyResult.histories,
-    historyResult.sourceWarnings
+    historyResult.sourceWarningDetails
   );
-  const sourceWarnings = [
-    ...status.sourceWarnings,
-    ...getThornodeBlockAgeWarnings(sourceFreshness.thorchainBlockAgeSeconds, 'dynamic fee state'),
-  ];
-  const uniqueWarnings = [...new Set(sourceWarnings)].sort((left, right) => left.localeCompare(right));
+  const sourceWarningDetails = uniqueSourceWarningDetails([
+    ...status.sourceWarningDetails,
+    ...getThornodeBlockAgeWarningDetails(
+      sourceFreshness.thorchainBlockAgeSeconds,
+      'dynamic fee state',
+      'Treat dynamic-fee values as stale until THORNode returns a fresh latest-block timestamp.'
+    ),
+  ]).sort((left, right) => left.message.localeCompare(right.message));
   const sources = uniqueSourcesByUrl([
     ...snapshot.sources,
     ...historyResult.sources,
@@ -1584,8 +1603,8 @@ async function finalizeDynamicL1FeeProviderSnapshot(
     endpointIndex: snapshot.endpointIndex,
     status: {
       ...status,
-      sourceWarnings: uniqueWarnings,
-      sourceWarningDetails: getDynamicFeeSourceWarningDetails(uniqueWarnings),
+      sourceWarnings: sourceWarningDetails.map((detail) => detail.message),
+      sourceWarningDetails,
     },
     sources,
   };
@@ -1597,14 +1616,16 @@ export function deriveDynamicL1FeeStatus(
   currentResponse: unknown,
   sourceFreshness: DynamicL1FeeSourceFreshness,
   histories: DynamicL1FeeThornameHistory[] = [],
-  historyWarnings: string[] = []
+  historyWarnings: Array<string | NetworkStatusSourceWarning> = []
 ): DynamicL1FeeStatus {
   assertUnambiguousMimirAliases(mimir);
-  const sourceWarnings: string[] = [...historyWarnings];
+  const sourceWarningDetails = historyWarnings.map((warning) => (
+    typeof warning === 'string' ? classifyDynamicFeeSourceWarning(warning) : warningDetail(warning)
+  ));
   const records = parseDynamicL1FeeRecords(recordsResponse);
   const { currentEpoch, currentEntries } = parseDynamicL1FeeCurrent(currentResponse);
   const recordKeys = new Set(records.map((record) => recordKey(record.thorname, record.pair)));
-  const mimirStatus = getDynamicL1FeeMimirStatus(mimir, sourceWarnings);
+  const mimirStatus = getDynamicL1FeeMimirStatus(mimir, sourceWarningDetails);
   const whitelistedByThorname = new Map(mimirStatus.whitelistedPartners.map((partner) => [partner.thorname, partner]));
   const recordsByKey = new Map(records.map((record) => [recordKey(record.thorname, record.pair), record]));
   const floorBps = mimirStatus.floorBps.effectiveValue;
@@ -1613,18 +1634,18 @@ export function deriveDynamicL1FeeStatus(
   for (const record of records) {
     const partner = whitelistedByThorname.get(record.thorname);
     if (!partner) {
-      sourceWarnings.push(`Sealed dynamic fee record ${record.thorname} ${record.pair} has no matching DYNAMICFEE-WHITELIST Mimir key.`);
+      addSourceWarning(sourceWarningDetails, { severity: 'warning', category: 'source-shape', message: `Sealed dynamic fee record ${record.thorname} ${record.pair} has no matching DYNAMICFEE-WHITELIST Mimir key.`, action: 'Treat the affected dynamic-fee record, history, or current accumulator as partial until THORNode returns consistent fields.' });
     } else if (partner.state !== 'unparseable' && partner.state !== record.whitelistState) {
-      sourceWarnings.push(`Sealed dynamic fee record ${record.thorname} ${record.pair} whitelist_state ${record.whitelistValue} disagrees with ${partner.key}=${partner.value}.`);
+      addSourceWarning(sourceWarningDetails, { severity: 'warning', category: 'source-shape', message: `Sealed dynamic fee record ${record.thorname} ${record.pair} whitelist_state ${record.whitelistValue} disagrees with ${partner.key}=${partner.value}.`, action: 'Treat the affected dynamic-fee record, history, or current accumulator as partial until THORNode returns consistent fields.', keys: [partner.key] });
     }
     if (record.whitelistState === 'inactive') {
-      sourceWarnings.push(`Sealed dynamic fee record ${record.thorname} ${record.pair} is inactive even though ADR-026 records should be pruned when whitelist state is 0 or absent.`);
+      addSourceWarning(sourceWarningDetails, { severity: 'warning', category: 'source-shape', message: `Sealed dynamic fee record ${record.thorname} ${record.pair} is inactive even though ADR-026 records should be pruned when whitelist state is 0 or absent.`, action: 'Treat the affected dynamic-fee record, history, or current accumulator as partial until THORNode returns consistent fields.' });
     }
     if (typeof floorBps === 'number' && record.dynamicBps < floorBps) {
-      sourceWarnings.push(`Sealed dynamic fee record ${record.thorname} ${record.pair} dynamic_bps ${record.dynamicBps} is below effective floor ${floorBps}.`);
+      addSourceWarning(sourceWarningDetails, { severity: 'warning', category: 'source-shape', message: `Sealed dynamic fee record ${record.thorname} ${record.pair} dynamic_bps ${record.dynamicBps} is below effective floor ${floorBps}.`, action: 'Treat the affected dynamic-fee record, history, or current accumulator as partial until THORNode returns consistent fields.' });
     }
     if (typeof ceilingBps === 'number' && record.dynamicBps > ceilingBps) {
-      sourceWarnings.push(`Sealed dynamic fee record ${record.thorname} ${record.pair} dynamic_bps ${record.dynamicBps} is above effective ceiling ${ceilingBps}.`);
+      addSourceWarning(sourceWarningDetails, { severity: 'warning', category: 'source-shape', message: `Sealed dynamic fee record ${record.thorname} ${record.pair} dynamic_bps ${record.dynamicBps} is above effective ceiling ${ceilingBps}.`, action: 'Treat the affected dynamic-fee record, history, or current accumulator as partial until THORNode returns consistent fields.' });
     }
   }
 
@@ -1632,35 +1653,36 @@ export function deriveDynamicL1FeeStatus(
   for (const thornameHistory of histories) {
     const partner = whitelistedByThorname.get(thornameHistory.thorname);
     if (partner && partner.state !== 'unparseable' && partner.state !== thornameHistory.whitelistState) {
-      sourceWarnings.push(`Dynamic fee history ${thornameHistory.thorname} whitelist_state ${thornameHistory.whitelistValue} disagrees with ${partner.key}=${partner.value}.`);
+      addSourceWarning(sourceWarningDetails, { severity: 'warning', category: 'source-shape', message: `Dynamic fee history ${thornameHistory.thorname} whitelist_state ${thornameHistory.whitelistValue} disagrees with ${partner.key}=${partner.value}.`, action: 'Treat the affected dynamic-fee record, history, or current accumulator as partial until THORNode returns consistent fields.', keys: [partner.key] });
     }
 
     for (const pairHistory of thornameHistory.pairs) {
       const key = recordKey(pairHistory.thorname, pairHistory.pair);
       if (seenHistoryKeys.has(key)) {
-        sourceWarnings.push(`Dynamic fee history included a duplicate pair for ${pairHistory.thorname} ${pairHistory.pair}.`);
+        addSourceWarning(sourceWarningDetails, { severity: 'warning', category: 'source-shape', message: `Dynamic fee history included a duplicate pair for ${pairHistory.thorname} ${pairHistory.pair}.`, action: 'Treat the affected dynamic-fee record, history, or current accumulator as partial until THORNode returns consistent fields.' });
       }
       seenHistoryKeys.add(key);
 
       const record = recordsByKey.get(key);
       if (!record) {
-        sourceWarnings.push(`Dynamic fee history pair ${pairHistory.thorname} ${pairHistory.pair} exists without a sealed dynamic_l1_fees record.`);
+        addSourceWarning(sourceWarningDetails, { severity: 'warning', category: 'source-shape', message: `Dynamic fee history pair ${pairHistory.thorname} ${pairHistory.pair} exists without a sealed dynamic_l1_fees record.`, action: 'Treat the affected dynamic-fee record, history, or current accumulator as partial until THORNode returns consistent fields.' });
       } else if (record.dynamicBps !== pairHistory.dynamicBps) {
-        sourceWarnings.push(`Dynamic fee history pair ${pairHistory.thorname} ${pairHistory.pair} dynamic_bps ${pairHistory.dynamicBps} disagrees with sealed record ${record.dynamicBps}.`);
+        addSourceWarning(sourceWarningDetails, { severity: 'warning', category: 'source-shape', message: `Dynamic fee history pair ${pairHistory.thorname} ${pairHistory.pair} dynamic_bps ${pairHistory.dynamicBps} disagrees with sealed record ${record.dynamicBps}.`, action: 'Treat the affected dynamic-fee record, history, or current accumulator as partial until THORNode returns consistent fields.' });
       }
     }
   }
 
   for (const entry of currentEntries) {
     if (entry.epoch !== currentEpoch) {
-      sourceWarnings.push(`Current dynamic fee entry ${entry.thorname} ${entry.pair} epoch mismatch: ${entry.epoch} vs current epoch ${currentEpoch}.`);
+      addSourceWarning(sourceWarningDetails, { severity: 'warning', category: 'source-shape', message: `Current dynamic fee entry ${entry.thorname} ${entry.pair} epoch mismatch: ${entry.epoch} vs current epoch ${currentEpoch}.`, action: 'Treat the affected dynamic-fee record, history, or current accumulator as partial until THORNode returns consistent fields.' });
     }
     if (!recordKeys.has(recordKey(entry.thorname, entry.pair))) {
-      sourceWarnings.push(`Current dynamic fee entry ${entry.thorname} ${entry.pair} exists without a sealed dynamic_l1_fees record.`);
+      addSourceWarning(sourceWarningDetails, { severity: 'warning', category: 'source-shape', message: `Current dynamic fee entry ${entry.thorname} ${entry.pair} exists without a sealed dynamic_l1_fees record.`, action: 'Treat the affected dynamic-fee record, history, or current accumulator as partial until THORNode returns consistent fields.' });
     }
   }
 
-  const uniqueWarnings = [...new Set(sourceWarnings)].sort((left, right) => left.localeCompare(right));
+  const uniqueDetails = uniqueSourceWarningDetails(sourceWarningDetails)
+    .sort((left, right) => left.message.localeCompare(right.message));
 
   return {
     mimir: mimirStatus,
@@ -1669,8 +1691,8 @@ export function deriveDynamicL1FeeStatus(
     currentEntries,
     histories,
     sourceFreshness,
-    sourceWarnings: uniqueWarnings,
-    sourceWarningDetails: getDynamicFeeSourceWarningDetails(uniqueWarnings),
+    sourceWarnings: uniqueDetails.map((detail) => detail.message),
+    sourceWarningDetails: uniqueDetails,
     caveats: ['current-only', 'adr-experiment', 'not-historical-fee-proof'],
   };
 }
@@ -1731,16 +1753,35 @@ function deriveValidatedNetworkStatusSnapshot(
 
   const blockAgeSeconds = getThornodeBlockAgeSeconds(latestBlockInfo.time);
   const heightDivergence = Math.abs(snapshotHeight - thorchainHeightEvidence.height);
-  const sourceWarnings = [
+  const sourceWarningDetails = [
     ...(options.snapshotPinned
       ? []
-      : ['THORNode network status snapshot was not pinned to a single block height.']),
+      : [warningDetail({
+          severity: 'warning',
+          category: 'pinning',
+          message: 'THORNode network status snapshot was not pinned to a single block height.',
+          action: 'Prefer a same-height THORNode snapshot before treating missing halt flags as complete.',
+        })]),
     ...(thorchainHeightEvidence.spread > THORNODE_LASTBLOCK_SPREAD_WARNING_BLOCKS
-      ? [`THORNode lastblock THORChain heights diverge by ${thorchainHeightEvidence.spread} blocks across chains.`]
+      ? [warningDetail({
+          severity: 'warning',
+          category: 'height-divergence',
+          message: `THORNode lastblock THORChain heights diverge by ${thorchainHeightEvidence.spread} blocks across chains.`,
+          action: 'Review provider block-height consistency before using this as a clean operational snapshot.',
+        })]
       : []),
-    ...getThornodeBlockAgeWarnings(blockAgeSeconds, 'live operation state'),
+    ...getThornodeBlockAgeWarningDetails(
+      blockAgeSeconds,
+      'live operation state',
+      'Treat this status as degraded until THORNode returns a fresh latest-block timestamp.'
+    ),
     ...(!options.snapshotPinned && heightDivergence > 0
-      ? [`THORNode latest block height differs from lastblock height by ${heightDivergence} blocks.`]
+      ? [warningDetail({
+          severity: 'warning',
+          category: 'height-divergence',
+          message: `THORNode latest block height differs from lastblock height by ${heightDivergence} blocks.`,
+          action: 'Review provider block-height consistency before using this as a clean operational snapshot.',
+        })]
       : []),
   ];
 
@@ -1750,7 +1791,7 @@ function deriveValidatedNetworkStatusSnapshot(
     thorNodeVersion,
     snapshotHeight,
     {
-      sourceWarnings,
+      sourceWarningDetails,
       lastBlockByChain: thorchainHeightEvidence.byChain,
       thorchainSnapshotPinned: options.snapshotPinned ?? false,
       thorchainLastblockMinHeight: thorchainHeightEvidence.minHeight,
@@ -2355,6 +2396,7 @@ export function deriveNetworkStatus(
   thorchainHeight?: number,
   options: {
     sourceWarnings?: string[];
+    sourceWarningDetails?: NetworkStatusSourceWarning[];
     lastBlockByChain?: Map<string, LastBlockChainEvidence>;
     thorchainSnapshotPinned?: boolean;
     thorchainLastblockMinHeight?: number;
@@ -2570,14 +2612,27 @@ export function deriveNetworkStatus(
       invalidAsymWithdrawalPauseKeys
     );
     const missingInboundFields = missingInboundOperationFields(chain);
-    const chainSourceWarnings = [
+    const chainSourceWarningDetails = [
       ...(missingInboundFields.length > 0
-        ? [`${chain?.chain ?? chainCode} inbound_addresses omitted ${missingInboundFields.join(', ')}; live chain operation state is partial.`]
+        ? [warningDetail({
+            severity: 'warning',
+            category: 'source-shape',
+            message: `${chain?.chain ?? chainCode} inbound_addresses omitted ${missingInboundFields.join(', ')}; live chain operation state is partial.`,
+            action: 'Treat the affected chain operation fields as partial until inbound_addresses returns them.',
+            scopes: [chain?.chain ?? chainCode],
+          })]
         : []),
       ...(chain && options.lastBlockByChain && !lastBlockEvidence
-        ? [`${chain.chain} lastblock evidence omitted this chain; live observation/signing state is partial.`]
+        ? [warningDetail({
+            severity: 'warning',
+            category: 'source-shape',
+            message: `${chain.chain} lastblock evidence omitted this chain; live observation/signing state is partial.`,
+            action: 'Treat this chain observation and signing state as partial until lastblock includes the chain.',
+            scopes: [chain.chain],
+          })]
         : []),
     ];
+    const chainSourceWarnings = chainSourceWarningDetails.map((detail) => detail.message);
     const activeMimirKeys = [
       chainHaltKey,
       chainSolvencyHaltKey,
@@ -2606,6 +2661,7 @@ export function deriveNetworkStatus(
           }
         : {}),
       ...(chainSourceWarnings.length > 0 ? { sourceWarnings: chainSourceWarnings } : {}),
+      ...(chainSourceWarningDetails.length > 0 ? { sourceWarningDetails: chainSourceWarningDetails } : {}),
       ...(securedAssetDepositChainKeys.length > 0
         ? { securedAssetDepositPaused: true, securedAssetDepositPauseKeys: securedAssetDepositChainKeys }
         : {}),
@@ -2744,9 +2800,10 @@ export function deriveNetworkStatus(
     .filter((control) => control.active)
     .map((control) => control.key);
   const invalidMimirKeys = collectInvalidMimirKeys(mimir, recognizedChainCodes);
-  const chainSourceWarnings = uniqueKeys(chainStatuses.flatMap((chain) => chain.sourceWarnings ?? []));
   const chainSourceWarningDetails = chainStatuses.flatMap((chain) => (
-    (chain.sourceWarnings ?? []).map((warning) => classifyNetworkSourceWarning(warning, [chain.chain]))
+    chain.sourceWarningDetails?.length
+      ? chain.sourceWarningDetails
+      : (chain.sourceWarnings ?? []).map((warning) => classifyNetworkSourceWarning(warning, [chain.chain]))
   ));
   const invalidMimirWarning = invalidMimirKeys.length > 0
     ? `${invalidMimirKeys.length} monitored Mimir key${invalidMimirKeys.length === 1 ? '' : 's'} could not be parsed.`
@@ -2760,16 +2817,11 @@ export function deriveNetworkStatus(
   const reviewedOperationalSupportWarning = reviewedOperationalSupportMimirKeys.length > 0
     ? `Known operational-support Mimir key${reviewedOperationalSupportMimirKeys.length === 1 ? '' : 's'} present: ${reviewedOperationalSupportMimirKeys.join(', ')}.`
     : null;
-  const sourceWarnings = [
-    ...(options.sourceWarnings ?? []),
-    ...chainSourceWarnings,
-    ...(invalidMimirWarning ? [invalidMimirWarning] : []),
-    ...(unknownChainWarning ? [unknownChainWarning] : []),
-    ...(reviewedOperationalSupportWarning ? [reviewedOperationalSupportWarning] : []),
-    ...(unknownOperationWarning ? [unknownOperationWarning] : []),
-  ];
   const sourceWarningDetails = uniqueSourceWarningDetails([
-    ...(options.sourceWarnings ?? []).map((warning) => classifyNetworkSourceWarning(warning)),
+    ...(options.sourceWarningDetails ?? []),
+    ...(options.sourceWarnings ?? [])
+      .filter((message) => !options.sourceWarningDetails?.some((detail) => detail.message === message))
+      .map((warning) => classifyNetworkSourceWarning(warning)),
     ...chainSourceWarningDetails,
     ...(invalidMimirWarning
       ? [
@@ -2817,6 +2869,7 @@ export function deriveNetworkStatus(
         ]
       : []),
   ]);
+  const sourceWarnings = uniqueKeys(sourceWarningDetails.map((detail) => detail.message));
   const activeChainKeys = uniqueKeys(chainStatuses.flatMap((chain) => chain.activeMimirKeys));
   const allScheduledMimirKeys = uniqueKeys(
     scheduledMimirKeys,
@@ -3101,15 +3154,18 @@ export class ThornodeAPI {
           snapshotPinned: true,
         };
         const baseStatus = deriveRunePoolPolStatus(mimir, runepool, sourceFreshness);
-        const sourceWarnings = [
-          ...baseStatus.sourceWarnings,
-          ...getThornodeBlockAgeWarnings(blockAgeSeconds, 'RUNEPool state'),
-        ];
-        const uniqueWarnings = [...new Set(sourceWarnings)].sort((left, right) => left.localeCompare(right));
+        const sourceWarningDetails = uniqueSourceWarningDetails([
+          ...baseStatus.sourceWarningDetails,
+          ...getThornodeBlockAgeWarningDetails(
+            blockAgeSeconds,
+            'RUNEPool state',
+            'Treat RUNEPool accounting as stale until THORNode returns a fresh latest-block timestamp.'
+          ),
+        ]).sort((left, right) => left.message.localeCompare(right.message));
         const status = {
           ...baseStatus,
-          sourceWarnings: uniqueWarnings,
-          sourceWarningDetails: getRunePoolSourceWarningDetails(uniqueWarnings),
+          sourceWarnings: sourceWarningDetails.map((detail) => detail.message),
+          sourceWarningDetails,
         };
 
         if (status.sourceWarnings.length === 0) {
@@ -3181,11 +3237,14 @@ export class ThornodeAPI {
           currentDynamicFees,
           sourceFreshness
         );
-        const sourceWarnings = [
-          ...baseStatus.sourceWarnings,
-          ...getThornodeBlockAgeWarnings(blockAgeSeconds, 'dynamic fee state'),
-        ];
-        const uniqueWarnings = [...new Set(sourceWarnings)].sort((left, right) => left.localeCompare(right));
+        const sourceWarningDetails = uniqueSourceWarningDetails([
+          ...baseStatus.sourceWarningDetails,
+          ...getThornodeBlockAgeWarningDetails(
+            blockAgeSeconds,
+            'dynamic fee state',
+            'Treat dynamic-fee values as stale until THORNode returns a fresh latest-block timestamp.'
+          ),
+        ]).sort((left, right) => left.message.localeCompare(right.message));
         const snapshot = {
           endpointIndex,
           endpoint,
@@ -3195,8 +3254,8 @@ export class ThornodeAPI {
           sourceFreshness,
           status: {
             ...baseStatus,
-            sourceWarnings: uniqueWarnings,
-            sourceWarningDetails: getDynamicFeeSourceWarningDetails(uniqueWarnings),
+            sourceWarnings: sourceWarningDetails.map((detail) => detail.message),
+            sourceWarningDetails,
           },
           sources: baseSources,
         };

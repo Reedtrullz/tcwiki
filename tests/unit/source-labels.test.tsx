@@ -856,6 +856,41 @@ describe('source and freshness labels', () => {
     expect(html).not.toContain('VERY-LONG-KEY');
   });
 
+  it('finds structured warnings inside versioned network and selected-pool composite data', () => {
+    const html = renderToStaticMarkup(
+      <LiveSourceMeta
+        result={{
+          status: 'ok',
+          checkedAt: '2026-06-18T00:00:00.000Z',
+          source: { label: 'THORNode', url: 'https://thornode.thorchain.network/thorchain' },
+          data: {
+            schemaVersion: 1,
+            network: [{ nested: { sourceWarningDetails: [
+              {
+                severity: 'review',
+                category: 'unknown-chain',
+                message: 'Unknown chain warning.',
+                action: 'Review this chain warning.',
+                scopes: ['XYZ'],
+              },
+            ] } }],
+            selectedPool: {
+              warnings: [],
+              sourceWarningDetails: [],
+              sourceWarnings: ['Legacy selected-pool warning.'],
+            },
+          },
+        }}
+      />
+    );
+
+    expect(html).toContain('2 source warnings');
+    expect(html).toContain('review / unknown-chain');
+    expect(html).toContain('Unknown chain warning.');
+    expect(html).toContain('warning / other');
+    expect(html).toContain('Legacy selected-pool warning.');
+  });
+
   it('renders Midgard source health alongside live source metadata', () => {
     const html = renderToStaticMarkup(
       <LiveSourceMeta
@@ -964,4 +999,11 @@ describe('source and freshness labels', () => {
     expect(html).not.toContain('Current-only');
     expect(html).not.toContain('Different provider lag.');
   });
+});
+
+
+it('discloses malformed warning details instead of rendering a clean source badge', () => {
+  const html = renderToStaticMarkup(<LiveSourceMeta result={{ status: 'ok', data: { sourceWarningDetails: [{ severity: 'warning', message: 'Incomplete warning detail' }] }, checkedAt: '2026-10-03T00:00:00Z' }} />);
+  expect(html).toContain('Source warning');
+  expect(html).toContain('Unrecognized source warning');
 });

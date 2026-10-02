@@ -1,3 +1,4 @@
+import { partitionReadinessWarnings } from '../../scripts/lib/readiness-warning-policy.mjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import ThornodeAPI, { deriveDynamicL1FeeStatus, deriveNetworkStatus, deriveRunePoolPolStatus, resetThornodeEndpointForTests } from '@/lib/api/thornode';
 import type { DynamicL1FeeSourceFreshness, RunePoolSourceFreshness, ThornodeInboundAddress } from '@/lib/types';
@@ -1041,6 +1042,16 @@ describe('deriveNetworkStatus', () => {
     expect(status.activeEvidenceKeys).toEqual([]);
     expect(status.invalidMimirKeys).toEqual([]);
     expect(status.sourceWarnings).toEqual([warning]);
+    expect(status.chainStatuses[0]?.sourceWarningDetails).toEqual([
+      {
+        severity: 'warning',
+        category: 'source-shape',
+        message: warning,
+        action: 'Treat the affected chain operation fields as partial until inbound_addresses returns them.',
+        scopes: ['BTC'],
+      },
+    ]);
+    expect(status.sourceWarnings).toEqual(status.sourceWarningDetails?.map((detail) => detail.message));
     expect(status.summary).toBe('Current-only live sources do not show active halt flags, but source warnings need review.');
     expect(status.chainStatuses[0]).toEqual({
       chain: 'BTC',
@@ -1052,6 +1063,15 @@ describe('deriveNetworkStatus', () => {
       activeMimirKeys: [],
       lpDepositPauseKeys: [],
       sourceWarnings: [warning],
+      sourceWarningDetails: [
+        {
+          severity: 'warning',
+          category: 'source-shape',
+          message: warning,
+          action: 'Treat the affected chain operation fields as partial until inbound_addresses returns them.',
+          scopes: ['BTC'],
+        },
+      ],
     });
   });
 
@@ -1189,6 +1209,7 @@ describe('deriveNetworkStatus', () => {
         keys: ['NewFeatureEnabled', 'OtherFeatureDisabled'],
       },
     ]);
+    expect(status.sourceWarnings).toEqual(status.sourceWarningDetails?.map((detail) => detail.message));
   });
 
   it('splits reviewed operational-support Mimir families from unknown high-impact keys', () => {
@@ -2383,6 +2404,13 @@ describe('deriveNetworkStatus', () => {
     ]));
     expect(status.sourceWarningDetails.some((detail) => detail.category === 'source-shape')).toBe(true);
     expect(status.sourceWarningDetails.some((detail) => detail.category === 'mimir-parse')).toBe(true);
+    expect(status.sourceWarnings).toEqual(status.sourceWarningDetails.map((detail) => detail.message));
+    expect(status.sourceWarningDetails.find((detail) => detail.keys?.includes('POL-BTC'))).toMatchObject({
+      severity: 'review',
+      category: 'mimir-parse',
+      keys: ['POL-BTC'],
+      action: 'Review the exact POL Mimir key before treating the POL-enabled pool set as clean.',
+    });
   });
 
   it('fetches RUNEPool accounting and Mimir from the same pinned provider', async () => {
@@ -2717,4 +2745,13 @@ describe('Mimir canonical alias boundary', () => {
     expect(result.status).toBe('degraded'); expect(result.data).toBeUndefined();
     expect(result.error).toMatch(/Mimir.*aliases.*HALTTRADING.*HaltTrading/);
   });
+});
+
+it('keeps explicit warning policy stable when compatibility wording changes', () => {
+  for (const message of ['An operational-support detail was renamed.', 'Unknown words still carry the explicit policy.']) {
+    const detail = { severity: 'review' as const, category: 'mimir-support' as const, message, action: 'Review the documented operational-support key.', keys: ['MaximumPriceAge'] };
+    const status = deriveNetworkStatus({}, [], undefined, undefined, { sourceWarnings: [message], sourceWarningDetails: [detail] });
+    expect(status.sourceWarningDetails).toEqual([detail]);
+    expect(partitionReadinessWarnings(status.sourceWarnings, status.sourceWarningDetails ?? []).blocking).toEqual([]);
+  }
 });

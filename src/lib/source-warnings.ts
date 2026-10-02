@@ -1,5 +1,76 @@
 import type { NetworkStatusSourceWarning } from '@/lib/types';
 
+export interface SourceWarningSignals {
+  messages: string[];
+  details: NetworkStatusSourceWarning[];
+}
+
+function isWarningDetail(value: unknown): value is NetworkStatusSourceWarning {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return false;
+  }
+
+  const detail = value as Record<string, unknown>;
+  return ['critical', 'warning', 'review'].includes(String(detail.severity)) &&
+    ['freshness', 'pinning', 'height-divergence', 'source-shape', 'mimir-parse', 'mimir-support', 'unknown-chain', 'unknown-operation', 'other'].includes(String(detail.category)) &&
+    typeof detail.message === 'string' && detail.message.trim().length > 0 &&
+    typeof detail.action === 'string' &&
+    [detail.keys, detail.scopes].every((items) => items === undefined || (Array.isArray(items) && items.every((item) => typeof item === 'string')));
+}
+
+function unique<T>(values: T[]) {
+  return [...new Set(values)];
+}
+
+export function uniqueSourceWarningDetails(details: NetworkStatusSourceWarning[]) {
+  const seen = new Set<string>();
+  return details.filter((detail) => {
+    const key = JSON.stringify([detail.severity, detail.category, detail.message, detail.action, detail.keys ?? [], detail.scopes ?? []]);
+    if (seen.has(key)) {
+      return false;
+    }
+    seen.add(key);
+    return true;
+  });
+}
+
+export function collectSourceWarningSignals(value: unknown, seen = new Set<object>()): SourceWarningSignals {
+  if (!value || typeof value !== 'object' || seen.has(value)) {
+    return { messages: [], details: [] };
+  }
+  seen.add(value);
+
+  const entries = Array.isArray(value)
+    ? value.map((nested): [string, unknown] => ['', nested])
+    : Object.entries(value);
+  const messages: string[] = [];
+  const details: NetworkStatusSourceWarning[] = [];
+
+  for (const [key, nested] of entries) {
+    if (key === 'sourceWarnings' || key === 'sourceWarningDetails') {
+      if (!Array.isArray(nested)) {
+        messages.push('Unrecognized source warning; warning contract needs review.');
+        continue;
+      }
+      for (const warning of nested) {
+        if (key === 'sourceWarnings' && typeof warning === 'string' && warning.trim()) {
+          messages.push(warning);
+        } else if (key === 'sourceWarningDetails' && isWarningDetail(warning)) {
+          details.push(warning);
+        } else {
+          messages.push('Unrecognized source warning; warning contract needs review.');
+        }
+      }
+    } else {
+      const child = collectSourceWarningSignals(nested, seen);
+      messages.push(...child.messages);
+      details.push(...child.details);
+    }
+  }
+
+  return { messages: unique(messages), details: uniqueSourceWarningDetails(details) };
+}
+
 function warningKeyCount(detail: NetworkStatusSourceWarning | undefined, message: string) {
   if (detail?.keys?.length) {
     return detail.keys.length;

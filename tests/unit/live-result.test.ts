@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { collectSourceWarningSignals } from '@/lib/source-warnings';
 import { liveResultHasSourceWarnings, liveResultIsDegraded } from '@/lib/live-result';
 import type { LiveDataResult, NetworkStatus } from '@/lib/types';
 
@@ -54,6 +55,27 @@ describe('live result trust helpers', () => {
     expect(liveResultIsDegraded(result)).toBe(true);
   });
 
+  it('detects source warnings inside nested object and array wrappers', () => {
+    const result = liveOk({
+      schemaVersion: 1,
+      network: { snapshot: [{ nested: { sourceWarnings: ['Nested source warning.'] } }] },
+      selectedPool: { warnings: [], sourceWarningDetails: [] },
+    });
+
+    expect(liveResultHasSourceWarnings(result)).toBe(true);
+    expect(liveResultIsDegraded(result)).toBe(true);
+  });
+
+  it('handles cyclic object graphs while finding nested warnings', () => {
+    const wrapper: Record<string, unknown> = {};
+    wrapper.self = wrapper;
+    wrapper.nested = [{ sourceWarnings: ['Warning behind a cycle.'] }];
+    const result = liveOk(wrapper);
+
+    expect(liveResultHasSourceWarnings(result)).toBe(true);
+    expect(liveResultIsDegraded(result)).toBe(true);
+  });
+
   it('keeps transport-degraded results degraded even without data warnings', () => {
     const result: LiveDataResult<{ value: string }> = {
       status: 'degraded',
@@ -64,4 +86,22 @@ describe('live result trust helpers', () => {
     expect(liveResultHasSourceWarnings(result)).toBe(false);
     expect(liveResultIsDegraded(result)).toBe(true);
   });
+});
+
+it('keeps malformed warning contracts fail closed instead of silently labeling them clean', () => {
+  for (const data of [
+    { sourceWarnings: [{ unexpected: true }] },
+    { sourceWarningDetails: [{ severity: 'warning', message: 'Incomplete detail' }] },
+    { sourceWarningDetails: [{ severity: 'warning', category: 'source-shape', message: 'Invalid keys', action: 'Review', keys: 'BTC' }] },
+  ]) {
+    expect(liveResultHasSourceWarnings(liveOk(data))).toBe(true);
+    expect(liveResultIsDegraded(liveOk(data))).toBe(true);
+  }
+});
+
+it('preserves distinct action and key provenance when compact warning messages match', () => {
+  const first = { severity: 'warning' as const, category: 'source-shape' as const, message: 'Partial source', action: 'Review BTC', keys: ['BTC'], scopes: ['BTC'] };
+  const second = { ...first, action: 'Review ETH', keys: ['ETH'], scopes: ['ETH'] };
+  const signals = collectSourceWarningSignals({ nested: [{ sourceWarningDetails: [first, second, first] }] });
+  expect(signals.details).toEqual([first, second]);
 });

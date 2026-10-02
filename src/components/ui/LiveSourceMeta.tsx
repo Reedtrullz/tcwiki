@@ -1,6 +1,7 @@
 import { LiveDataResult, MidgardHealth, NetworkStatusSourceWarning, SourceHealthSeverity } from '@/lib/types';
 import { Badge } from '@/components/ui/Badge';
 import { liveResultHasSourceWarnings } from '@/lib/live-result';
+import { collectSourceWarningSignals } from '@/lib/source-warnings';
 import { AdditionalSourceDisclosure, SourceMetaLink } from '@/components/ui/SourceMetaDisclosure';
 
 interface LiveSourceMetaProps {
@@ -65,79 +66,6 @@ function sameSourceGroup(sourceUrl: string, candidateUrl: string) {
   }
 }
 
-interface WarningSignals {
-  messages: string[];
-  details: NetworkStatusSourceWarning[];
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return Boolean(value && typeof value === 'object' && !Array.isArray(value));
-}
-
-function isWarningDetail(value: unknown): value is NetworkStatusSourceWarning {
-  if (!isRecord(value)) {
-    return false;
-  }
-
-  return typeof value.severity === 'string' &&
-    typeof value.category === 'string' &&
-    typeof value.message === 'string' &&
-    typeof value.action === 'string';
-}
-
-function uniqueStrings(values: string[]) {
-  return Array.from(new Set(values));
-}
-
-function uniqueWarningDetails(details: NetworkStatusSourceWarning[]) {
-  const seen = new Set<string>();
-  return details.filter((detail) => {
-    const key = `${detail.severity}:${detail.category}:${detail.message}`;
-    if (seen.has(key)) {
-      return false;
-    }
-    seen.add(key);
-    return true;
-  });
-}
-
-function collectWarningSignals(value: unknown): WarningSignals {
-  if (Array.isArray(value)) {
-    return value.reduce<WarningSignals>((signals, item) => {
-      const itemSignals = collectWarningSignals(item);
-      return {
-        messages: uniqueStrings([...signals.messages, ...itemSignals.messages]),
-        details: uniqueWarningDetails([...signals.details, ...itemSignals.details]),
-      };
-    }, { messages: [], details: [] });
-  }
-
-  if (!isRecord(value)) {
-    return { messages: [], details: [] };
-  }
-
-  const sourceWarnings = Array.isArray(value.sourceWarnings)
-    ? value.sourceWarnings.filter((warning): warning is string => typeof warning === 'string')
-    : [];
-  const sourceWarningDetails = Array.isArray(value.sourceWarningDetails)
-    ? value.sourceWarningDetails.filter(isWarningDetail)
-    : [];
-  const nestedSignals = Object.entries(value)
-    .filter(([key]) => key !== 'sourceWarnings' && key !== 'sourceWarningDetails')
-    .reduce<WarningSignals>((signals, [, nestedValue]) => {
-      const nested = collectWarningSignals(nestedValue);
-      return {
-        messages: uniqueStrings([...signals.messages, ...nested.messages]),
-        details: uniqueWarningDetails([...signals.details, ...nested.details]),
-      };
-    }, { messages: [], details: [] });
-
-  return {
-    messages: uniqueStrings([...sourceWarnings, ...nestedSignals.messages]),
-    details: uniqueWarningDetails([...sourceWarningDetails, ...nestedSignals.details]),
-  };
-}
-
 function sanitizeWarningMessage(message: string) {
   const compact = message.trim();
   if (/keys?.+review:/i.test(compact) || /mimir.+:/i.test(compact)) {
@@ -187,15 +115,19 @@ export function LiveSourceMeta({ result, health, healthResult }: LiveSourceMetaP
   const resolvedHealth = healthMatchesMetric ? (healthResult ? healthResult.data : health) : undefined;
   const healthUnavailable = Boolean(healthResult && !healthResult.data && healthMatchesMetric);
   const primaryBadge = sourceBadge(result, resolvedHealth, healthUnavailable, !healthMatchesMetric);
-  const warningSignals = collectWarningSignals(result.data);
-  const warningDetails = warningSignals.details.length
-    ? warningSignals.details
-    : warningSignals.messages.map((message) => ({
+  const warningSignals = collectSourceWarningSignals(result.data);
+  const structuredMessages = new Set(warningSignals.details.map((detail) => detail.message));
+  const warningDetails = [
+    ...warningSignals.details,
+    ...warningSignals.messages
+      .filter((message) => !structuredMessages.has(message))
+      .map((message) => ({
       severity: 'warning' as const,
       category: 'other' as const,
       message,
       action: 'Review this source warning before treating the live value as clean.',
-    }));
+      })),
+  ];
   const warningCount = warningDetails.length;
   const hiddenKeyCount = warningDetails.reduce((count, detail) => count + countHiddenKeys(detail, detail.message), 0);
   const previewWarnings = warningDetails.slice(0, 3);
@@ -235,7 +167,7 @@ export function LiveSourceMeta({ result, health, healthResult }: LiveSourceMetaP
             {previewWarnings.map((detail) => {
               const hiddenKeys = countHiddenKeys(detail, detail.message);
               return (
-                <li key={`${detail.severity}:${detail.category}:${detail.message}`} className="leading-relaxed">
+                <li key={JSON.stringify(detail)} className="leading-relaxed">
                   <span className="font-semibold text-amber-200">{detail.severity} / {detail.category}</span>
                   {': '}
                   <span>{sanitizeWarningMessage(detail.message)}</span>
