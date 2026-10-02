@@ -179,7 +179,7 @@ test.describe('THORChain Wiki Stats Smoke Tests', () => {
     await expect(page.getByLabel(/Pool sort/i)).toBeVisible();
     await expect(page.getByText('Top Pools By RUNE Depth')).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Loaded Row List' })).toBeVisible();
-    await expect(page.getByText('BTC.BTC').first()).toBeVisible();
+    await expect(page.locator('#available-pools').getByRole(isMobile ? 'listitem' : 'row').filter({ hasText: 'BTC.BTC' })).toBeVisible();
     await expect(page.getByText('Unavailable').first()).toBeVisible();
     await expect(page.getByText(/BSC and SOL are swap-limited/i).first()).toBeVisible();
     await expect(page.getByRole('heading', { name: /Related Checks/i })).toBeVisible();
