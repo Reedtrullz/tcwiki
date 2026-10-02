@@ -52,7 +52,7 @@ Execute all accepted work and create/push GitHub PRs; do not merge to main. User
 | PR-45 | queued | issue #144 |
 | PR-52 | queued | issue #151 |
 | PR-04 | verified candidate | b58b536; completed zero, open positive, malformed/missing/duplicate/gap/UTC rollover RED4→GREEN; supplied-clock period and actual comparison days |
-| PR-38 | verified Next candidate | chronology/duplicates/overlaps/gaps/UTC rollover RED5→GREEN44 focused; full542/types/lint/build; 11 desktop/mobile Next checks passed, one desktop-only mobile-card check skipped; CF stats lane pending |
+| PR-38 | verified candidate | chronology/duplicates/overlaps/gaps/UTC rollover RED5→GREEN44 focused; full542/types/lint/build; 11 desktop/mobile Next checks passed, one desktop-only mobile-card check skipped; 11 CF desktop/mobile stats checks passed (one desktop-only mobile-card check skipped); stats added to continuing CF CI lane |
 | PR-05 | verified candidate | separate documented network aggregate and selected subtotal/shares; seven reads capped (14 with fallback); full537/types/lint/Next build; provider and failure coverage; CF search failure tracked separately |
 | PR-09 | queued | issue #174 |
 | PR-40 | queued | issue #139 |
