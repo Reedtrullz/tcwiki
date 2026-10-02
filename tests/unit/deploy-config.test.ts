@@ -440,7 +440,7 @@ describe('release and browser test wiring', () => {
   it('fails local standalone Playwright runs when the browser target is stale', () => {
     expect(existsSync('scripts/start-playwright-server.mjs')).toBe(true);
     expect(existsSync('scripts/lib/standalone-freshness.mjs')).toBe(true);
-    expect(playwrightConfig).toContain("command: process.env.PLAYWRIGHT_WEB_SERVER_COMMAND || 'node scripts/start-playwright-server.mjs'");
+    expect(playwrightConfig).toContain("cloudflare ? 'node scripts/start-cloudflare-candidate.mjs' : 'node scripts/start-playwright-server.mjs'");
     expect(contributing).toContain("PLAYWRIGHT_WEB_SERVER_COMMAND='npm run dev'");
   });
 

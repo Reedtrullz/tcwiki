@@ -12,7 +12,7 @@ try {
     process.exit(1);
   }
 
-  console.log(`Release proof trackedness passed: ${result.referencedFiles.length} referenced scripts/specs are tracked.`);
+  console.log(`Release proof trackedness passed: ${result.referencedFiles.length} Next/Docker and Cloudflare source/config/proof files are tracked (generated dist is checked by the artifact manifest).`);
 } catch (error) {
   console.error(error instanceof Error ? error.message : error);
   process.exit(1);

@@ -3,7 +3,8 @@ import { GET as healthGET } from '@/app/api/health/route';
 import { GET as versionGET } from '@/app/api/version/route';
 import { getRuntimeMetadata, runtimeMetadataResponseFields, runtimeMetadataWarnings } from '@/lib/runtime-metadata';
 
-const { assertRuntimeMetadataContract } = await import('../../scripts/lib/runtime-metadata-contract.mjs') as {
+const { assertRuntimeMetadataContract, runtimeMetadataWarnings: scriptWarnings } = await import('../../scripts/lib/runtime-metadata-contract.mjs') as {
+  runtimeMetadataWarnings: typeof runtimeMetadataWarnings;
   assertRuntimeMetadataContract: (json: unknown, options?: { requireStrict?: boolean; requireVerified?: boolean }) => void;
 };
 
@@ -15,6 +16,20 @@ afterEach(() => {
 });
 
 describe('runtime metadata diagnostics', () => {
+  it.each([
+    [commitSha, commitSha, imageRef],
+    ['release-1', 'abc1234', `cloudflare-worker@sha256:${'F'.repeat(64)}`],
+    [' local ', 'unknown', 'development'],
+    ['0', '0000000', `worker@sha256:${'0'.repeat(64)}`],
+    ['v1', 'abcdef', 'worker:latest'],
+    ['v1', 'a'.repeat(41), `worker@sha256:${'a'.repeat(63)}`],
+    ['', '', ''],
+    ['v1', 'xyz1234', `worker name@sha256:${'a'.repeat(64)}`],
+  ])('keeps app and script identity validation in parity for %s / %s', (version, commit, image) => {
+    const metadata = { version, commit, image };
+    expect(runtimeMetadataWarnings(metadata)).toEqual(scriptWarnings(metadata));
+  });
+
   it('marks local placeholder metadata as unverified but non-strict by default', () => {
     vi.stubEnv('APP_VERSION', 'development');
     vi.stubEnv('COMMIT_SHA', 'unknown');

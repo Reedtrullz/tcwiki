@@ -24,6 +24,8 @@ jobs:
     name: Lint + Typecheck + Tests + Build
     if: github.event_name != 'schedule'
     runs-on: ubuntu-24.04
+    outputs:
+      worker_ref: ${{ steps.worker_artifact.outputs.worker_ref }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v6
@@ -31,6 +33,11 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
       - run: npm ci --include=optional
+      - name: Validate exclusive production targets
+        run: node scripts/cloudflare-artifact.mjs --targets
+        env:
+          TCWIKI_CLOUDFLARE_DEPLOY_ENABLED: ${{ vars.TCWIKI_CLOUDFLARE_DEPLOY_ENABLED }}
+          TCWIKI_VPS_DEPLOY_ENABLED: ${{ vars.TCWIKI_VPS_DEPLOY_ENABLED }}
       - run: npm run check:release-tracked
       - run: npm run audit:prod
       - name: Audit full dependency tree
@@ -50,13 +57,9 @@ jobs:
         run: npm run build:cloudflare
       - name: Validate Cloudflare upload bundle
         run: npx wrangler deploy --config wrangler.do.jsonc --dry-run
-      - name: Save Cloudflare preview bundle
-        if: github.event_name == 'pull_request'
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: cloudflare-preview-${{ github.sha }}
-          path: dist/
-          retention-days: 3
+      - name: Identify complete Cloudflare candidate
+        id: worker_artifact
+        run: node scripts/cloudflare-artifact.mjs --github-output >> "$GITHUB_OUTPUT"
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
         env:
@@ -67,6 +70,20 @@ jobs:
         env:
           CI: true
           PLAYWRIGHT_WEB_SERVER_COMMAND: npm run start:standalone
+      - name: Browser proof on built Cloudflare WikiDO candidate
+        run: npm run test:e2e:cloudflare
+        env:
+          CI: true
+      - name: Retain tested Cloudflare artifact for promotion
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: cloudflare-candidate-${{ github.sha }}
+          path: |
+            dist/
+            .artifacts/cloudflare-manifest.json
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 7
       - name: Build Docker image for PR runtime check
         if: github.event_name == 'pull_request'
         run: |
@@ -298,26 +315,39 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
       - run: npm ci --include=optional
-      - run: npm run build:cloudflare
-      - name: Compute immutable Worker entry digest
-        id: artifact
-        run: echo "image_ref=cloudflare-worker@sha256:$(sha256sum dist/server/index.js | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+      - name: Download tested Cloudflare artifact
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: cloudflare-candidate-${{ github.sha }}
+      - name: Verify promoted artifact without rebuilding
+        run: node scripts/cloudflare-artifact.mjs
+        env:
+          EXPECTED_IMAGE_REF: ${{ needs.build-check.outputs.worker_ref }}
       - name: Deploy verified commit
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          WORKER_REF: ${{ steps.artifact.outputs.image_ref }}
+          WORKER_REF: ${{ needs.build-check.outputs.worker_ref }}
         run: >-
           npx wrangler deploy --config wrangler.do.jsonc --name thorchain-wiki
           --var CSP_ENFORCE:1 --var RUNTIME_METADATA_REQUIRED:1
           --var THORNODE_SNAPSHOT_LAG_BLOCKS:10
           --var APP_VERSION:${{ github.sha }} --var COMMIT_SHA:${{ github.sha }}
           --var IMAGE_REF:$WORKER_REF
-      - name: Verify Worker URL before domain routing
+      - name: Verify Worker URL identity and strict CSP
         env:
           CHECK_BASE_URL: https://thorchain-wiki.reidjoss.workers.dev
           EXPECTED_VERSION: ${{ github.sha }}
           EXPECTED_COMMIT_SHA: ${{ github.sha }}
-          EXPECTED_IMAGE_REF: ${{ steps.artifact.outputs.image_ref }}
+          EXPECTED_IMAGE_REF: ${{ needs.build-check.outputs.worker_ref }}
+          REQUIRE_RUNTIME_METADATA: '1'
+          CSP_ENFORCE: '1'
+        run: npm run check:runtime-url
+      - name: Verify routed public domain after propagation
+        env:
+          CHECK_BASE_URL: https://wiki.thorchain.no
+          EXPECTED_VERSION: ${{ github.sha }}
+          EXPECTED_COMMIT_SHA: ${{ github.sha }}
+          EXPECTED_IMAGE_REF: ${{ needs.build-check.outputs.worker_ref }}
           REQUIRE_RUNTIME_METADATA: '1'
           CSP_ENFORCE: '1'
         run: npm run check:runtime-url

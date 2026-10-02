@@ -134,3 +134,14 @@ The production deploy path is configured for a nonce-based enforced CSP by defau
 ```bash
 CHECK_BASE_URL=https://wiki.thorchain.no REQUIRE_RUNTIME_METADATA=1 CSP_ENFORCE=1 npm run check:runtime-url
 ```
+
+
+## Cloudflare candidate promotion and rollback
+
+CI builds one WikiDO candidate, writes `.artifacts/cloudflare-manifest.json`, exercises that exact module/asset/config tree with local Wrangler and enforced CSP, and retains both under `cloudflare-candidate-<commit>`. Production downloads that artifact and checks its complete digest; it does not rebuild it. Both production target flags must be explicit 0/1 and cannot both be 1. The public domain and workers.dev URL must return the expected commit/digest, strict metadata contract and enforced CSP after propagation. Metadata `verified` validates self-reported identity fields; it is not independent attestation or live-source readiness.
+
+Before an authorized production release, record the current Worker version ID, public `/api/version` identity and previous retained artifact. Keep the SQLite WikiDO migration/binding compatible with that version. Run `wrangler versions list --config wrangler.do.jsonc --name thorchain-wiki` to identify the previous version; after owner authorization, use `wrangler rollback <previous-version-id> --config wrangler.do.jsonc --name thorchain-wiki`, then run `check:runtime-url` against both public URLs with that previous commit/digest and enforced CSP. Record previous, candidate and restored version IDs plus readbacks. Never assume code rollback restores Durable Object data or migrations. Re-deploying a retained artifact is a separate fallback if version rollback is incompatible.
+
+The workplan's local manifest tests rehearse detecting tampered/added/deleted modules, assets and policy. They do not constitute a production rollback rehearsal. Actual Worker rollback/readbacks require a separately authorized release window; the current implementation run creates PRs without merging or deploying. Retired VPS markers, backups, timers and tagged rollback images remain intact.
+
+The Vite MDX build uses the same `src/mdx-components.tsx` provider as Next so heading anchors and contained GFM tables agree. Reference: https://mdxjs.com/packages/mdx/#providerimportsource.

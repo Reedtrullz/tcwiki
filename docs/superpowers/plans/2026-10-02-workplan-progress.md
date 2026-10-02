@@ -22,10 +22,10 @@ Execute all accepted work and create/push GitHub PRs; do not merge to main. User
 
 | Proposal | Status | Commit/PR/evidence |
 |---|---|---|
-| PR-01 | verified candidate | readonly drift diagnostic RED→GREEN; primary React/Vitest mismatches preserved; current locked install matched; CF/VPS vars and version readback |
+| PR-01 | PR open; local verified |155dc79; https://github.com/Reedtrullz/tcwiki/pull/209; readonly drift diagnostic RED→GREEN; primary React/Vitest mismatches preserved; current locked install matched; CF/VPS vars and version readback |
 | PR-37 | PR open; local verified | 172f288; https://github.com/Reedtrullz/tcwiki/pull/207; 482 unit tests/types; lint 0 errors; CI37025577308SUCCESS; broad review pending |
-| PR-02 | verified candidate | scoped exceptions RED→GREEN; strict default rejects overdue; candidate two exemptions through2026-10-09 proposed at owner merge; no review-date changes |
-| PR-55 | verified candidate | mtime/deletion/server replacement RED→GREEN; real standalone build receipt generated; 495 unit tests/types/lint; real build and standalone smoke passed (live age warnings retained) |
+| PR-02 | PR open; local verified |155dc79; https://github.com/Reedtrullz/tcwiki/pull/209; scoped exceptions RED→GREEN; strict default rejects overdue; candidate two exemptions through2026-10-09 proposed at owner merge; no review-date changes |
+| PR-55 | PR open; local verified |155dc79; https://github.com/Reedtrullz/tcwiki/pull/209; mtime/deletion/server replacement RED→GREEN; real standalone build receipt generated; 495 unit tests/types/lint; real build and standalone smoke passed (live age warnings retained) |
 | PR-59 | queued | issue #158 |
 | PR-08 | PR open; local verified | e2e61d4; https://github.com/Reedtrullz/tcwiki/pull/208; 479 unit tests/types; fractional bounds reviewed and corrected; CI pending |
 | PR-03 | queued | issue #168 |
@@ -34,10 +34,10 @@ Execute all accepted work and create/push GitHub PRs; do not merge to main. User
 | PR-13 | queued | issue #178 |
 | PR-06 | queued | issue #171 |
 | PR-18 | queued | issue #183 |
-| PR-14 | queued | issue #179 |
-| PR-53 | queued | issue #152 |
-| PR-54 | queued | issue #153 |
-| PR-15 | queued | issue #180 |
+| PR-14 | verified candidate |23 actual WikiDO browser checks passed after reproducing/fixing missing MDX provider; CSP enforced; manifest-bound local candidate |
+| PR-53 | verified candidate | explicit Next/Docker + CF source/config/copy roots; tracked/untracked/missing RED to GREEN |
+| PR-54 | verified candidate | shared eight-case app/script identity parity matrix; metadata verified is validation not attestation |
+| PR-15 | implemented candidate; operational gate | complete module/asset/config manifest, tested-artifact promotion and exclusive targets; real production rollback/readbacks await authorized release window |
 | PR-17 | queued | issue #182 |
 | PR-56 | queued | issue #155 |
 | PR-10 | queued | issue #175 |
