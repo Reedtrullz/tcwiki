@@ -474,4 +474,16 @@ describe('MidgardAPI', () => {
     expect(unavailable.every(result => result.status === 'degraded')).toBe(true);
     expect(fetchMock).toHaveBeenCalledTimes(14);
   });
+  it('falls back before accepting an inverted or overlapping earnings interval', async () => {
+    const interval = { startTime: '1704067200', endTime: '1704153600', earnings: '100000000', bondingEarnings: '60000000', liquidityEarnings: '40000000' };
+    for (const intervals of [[{ ...interval, endTime: interval.startTime }], [interval, { ...interval, startTime: '1704100000', endTime: '1704186400' }]]) {
+      resetMidgardEndpointForTests();
+      const fetchMock = vi.fn().mockResolvedValueOnce(makeResponse(true, { intervals })).mockResolvedValueOnce(makeResponse(true, { intervals: [interval] }));
+      vi.stubGlobal('fetch', fetchMock);
+      const result = await MidgardAPI.getHistory();
+      expect(fetchMock).toHaveBeenCalledTimes(2);
+      expect(result.source?.label).toBe('THORChain Midgard');
+      expect(result.data).toHaveLength(1);
+    }
+  });
 });

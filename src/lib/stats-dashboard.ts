@@ -34,12 +34,20 @@ export interface StatsMetricCard {
 export interface StatsEarningsRow {
   id: string;
   name: string;
+  startTime: number | null;
+  endTime: number | null;
+  completed: boolean;
+  periodLabel: string;
+  periodIssue?: string;
   earnings: number | null;
   nodeOps: number | null;
   lps: number | null;
 }
 
 export interface StatsEarningsCoverage {
+  completedIntervals: number;
+  missingPeriods: number;
+  periodWarnings: string[];
   availableIntervals: number;
   unavailableIntervals: number;
   recentIntervalCount: number;
@@ -101,13 +109,10 @@ function liveResultHasWarning(result?: LiveDataResult<unknown>) {
   return liveResultIsDegraded(result);
 }
 
-function formatHistoryDate(startTime: string) {
-  const seconds = Number.parseInt(startTime, 10);
-  if (!Number.isSafeInteger(seconds)) {
-    return 'Unknown date';
-  }
-
-  return new Date(seconds * 1000).toLocaleDateString();
+function historyTimestamp(value: string): number | null {
+  if (!/^\d+$/.test(value)) return null;
+  const seconds = Number(value);
+  return Number.isSafeInteger(seconds) && Number.isFinite(new Date(seconds * 1000).getTime()) ? seconds : null;
 }
 
 function midgardHealthFact(result?: LiveDataResult<MidgardHealth>): StatsDecisionFact {
@@ -374,14 +379,50 @@ export function deriveStatsDecisionFacts(input: StatsDecisionInput): StatsDecisi
   ];
 }
 
-export function deriveStatsEarningsRows(earningsData: HistoryItem[] | undefined): StatsEarningsRow[] {
-  return (earningsData ?? []).map((item, index) => ({
-    id: `${item.startTime}-${item.endTime || 'open'}-${index}`,
-    name: formatHistoryDate(item.startTime),
-    earnings: runeBaseUnitsToNumber(item.earnings),
-    nodeOps: runeBaseUnitsToNumber(item.bondingEarnings),
-    lps: runeBaseUnitsToNumber(item.liquidityEarnings),
-  })).reverse();
+export function deriveStatsEarningsRows(earningsData: HistoryItem[] | undefined, observedAtMs = Date.now()): StatsEarningsRow[] {
+  const intervals = new Map<string, { row: StatsEarningsRow; signature: string }>();
+  for (const [index, item] of (earningsData ?? []).entries()) {
+    const startTime = historyTimestamp(item.startTime);
+    const endTime = historyTimestamp(item.endTime);
+    const validBounds = startTime !== null && endTime !== null && endTime > startTime;
+    const daily = validBounds && startTime % 86_400 === 0 && endTime === startTime + 86_400;
+    const completed = daily && Number.isFinite(observedAtMs) && endTime * 1000 <= observedAtMs;
+    const id = validBounds ? `${startTime}-${endTime}` : `invalid-${index}`;
+    const signature = [item.earnings, item.bondingEarnings, item.liquidityEarnings].join('|');
+    const existing = intervals.get(id);
+    if (existing) {
+      if (existing.signature !== signature) {
+        existing.row.periodIssue = 'Conflicting duplicate interval';
+        existing.row.earnings = null; existing.row.nodeOps = null; existing.row.lps = null;
+      } else if (!existing.row.periodIssue?.includes('Conflicting')) {
+        existing.row.periodIssue = existing.row.periodIssue ?? 'Repeated identical interval (counted once)';
+      }
+      continue;
+    }
+    const values = [item.earnings, item.bondingEarnings, item.liquidityEarnings].map(value => {
+      const number = runeBaseUnitsToNumber(value);
+      return completed && number !== null && number >= 0 ? number : null;
+    });
+    intervals.set(id, { signature, row: {
+      id, startTime, endTime, completed,
+      name: validBounds ? `${new Date(startTime * 1000).toISOString().slice(0, 10)} UTC` : 'Period unavailable',
+      periodLabel: validBounds ? `${new Date(startTime * 1000).toISOString()} → ${new Date(endTime * 1000).toISOString()}` : 'UTC boundaries unavailable',
+      periodIssue: !validBounds ? 'Invalid or unknown interval boundary' : !daily ? 'Unexpected daily boundary' : !completed ? 'Incomplete daily interval' : undefined,
+      earnings: values[0], nodeOps: values[1], lps: values[2],
+    } });
+  }
+  const rows = [...intervals.values()].map(entry => entry.row);
+  const boundedRows = rows.filter(row => row.startTime !== null && row.endTime !== null && row.endTime > row.startTime).sort((a, b) => a.startTime! - b.startTime!);
+  // ponytail: at most 400 loaded API intervals; use a sweep if that bound grows.
+  for (let i = 0; i < boundedRows.length; i += 1) {
+    for (let j = i + 1; j < boundedRows.length && boundedRows[j].startTime! < boundedRows[i].endTime!; j += 1) {
+      for (const row of [boundedRows[i], boundedRows[j]]) {
+        row.periodIssue = [...new Set([row.periodIssue, 'Overlapping intervals'].filter(Boolean))].join('; ');
+        row.earnings = null; row.nodeOps = null; row.lps = null;
+      }
+    }
+  }
+  return rows.sort((a, b) => (b.startTime ?? -Infinity) - (a.startTime ?? -Infinity) || a.id.localeCompare(b.id));
 }
 
 export function deriveStatsEarningsCoverage(
@@ -393,8 +434,15 @@ export function deriveStatsEarningsCoverage(
   const totalEarnings = rows.reduce<number | null>((sum, row) => (
     row.earnings === null ? sum : (sum ?? 0) + row.earnings
   ), null);
-  // deriveStatsEarningsRows returns newest-first; keep this window anchored to the latest intervals.
-  const recentRows = rows.slice(0, 7);
+  // Use seven calendar days anchored to the newest completed period, not seven sparse rows.
+  const completedRows = rows.filter(row => row.completed).sort((a, b) => b.startTime! - a.startTime!);
+  const completedIntervals = completedRows.length;
+  const latestStart = completedRows[0]?.startTime;
+  const earliestStart = completedRows.at(-1)?.startTime;
+  const missingPeriods = latestStart !== null && latestStart !== undefined && earliestStart !== null && earliestStart !== undefined
+    ? Math.max(0, (latestStart - earliestStart) / 86_400 + 1 - completedIntervals) : 0;
+  const recentRows = latestStart === null || latestStart === undefined ? [] : completedRows.filter(row => row.startTime! >= latestStart - 6 * 86_400);
+  const periodWarnings = rows.filter(row => row.periodIssue).map(row => `${row.name}: ${row.periodIssue}`);
   const recentIntervalCount = recentRows.length;
   const recentAvailableIntervals = recentRows.filter((row) => row.earnings !== null).length;
   const recentUnavailableIntervals = Math.max(0, recentIntervalCount - recentAvailableIntervals);
@@ -404,10 +452,11 @@ export function deriveStatsEarningsCoverage(
   const summary = earningsLoading && rows.length === 0
     ? 'Loading Midgard daily earnings intervals...'
     : rows.length > 0
-      ? `Showing ${rows.length} Midgard daily earnings intervals; ${availableIntervals} include a valid total earnings value.`
+      ? `Showing ${rows.length} Midgard daily earnings intervals; ${availableIntervals} include a valid total earnings value. ${completedIntervals} completed periods; ${missingPeriods} missing daily periods in the loaded range.`
       : 'No Midgard daily earnings intervals are available.';
 
   return {
+    completedIntervals, missingPeriods, periodWarnings,
     availableIntervals,
     unavailableIntervals,
     recentIntervalCount,

@@ -526,12 +526,34 @@ function normalizeHistory(result: LiveDataResult<RawHistoryResponse>): LiveDataR
   try {
     return {
       ...result,
-      data: result.data.intervals.map((interval, index) => normalizeHistoryItem(interval, index)),
+      data: normalizeHistoryIntervals(result.data.intervals),
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Midgard earnings history response could not be normalized';
     return liveDegraded<HistoryItem[]>(message, result.sources ?? result.source, result.checkedAt);
   }
+}
+
+function normalizeHistoryIntervals(intervals: unknown[]): HistoryItem[] {
+  const unique = new Map<string, HistoryItem>();
+  for (const [index, value] of intervals.entries()) {
+    const interval = normalizeHistoryItem(value, index);
+    const start = Number(interval.startTime); const end = interval.endTime ? Number(interval.endTime) : undefined;
+    if (!Number.isFinite(new Date(start * 1000).getTime()) || (end !== undefined && (!Number.isFinite(new Date(end * 1000).getTime()) || end <= start))) {
+      throw new Error(`Midgard earnings interval ${index} has invalid time boundaries`);
+    }
+    const id = `${interval.startTime}-${interval.endTime}`;
+    const existing = unique.get(id);
+    if (existing && JSON.stringify(existing) !== JSON.stringify(interval)) throw new Error(`Midgard earnings interval ${id} has conflicting duplicates`);
+    unique.set(id, interval);
+  }
+  const rows = [...unique.values()].sort((a, b) => Number(a.startTime) - Number(b.startTime));
+  for (let index = 1; index < rows.length; index += 1) {
+    if (rows[index - 1].endTime && Number(rows[index].startTime) < Number(rows[index - 1].endTime)) {
+      throw new Error(`Midgard earnings intervals overlap at ${rows[index].startTime}`);
+    }
+  }
+  return rows;
 }
 
 function optionalHistoryString(value: unknown): string {
