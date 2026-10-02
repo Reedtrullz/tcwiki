@@ -7,6 +7,7 @@ test.describe('THORChain Wiki Public Route Smoke Tests', () => {
   test.describe.configure({ mode: 'serial' });
 
   test('normal page loads do not emit CSP reports', async ({ page }) => {
+    test.slow(); // Visits every public route, including all MDX articles, on both runtimes.
     const reports: string[] = [];
     await page.route('**/api/csp-report', async (route) => {
       reports.push(route.request().postData() ?? '<empty report body>');
