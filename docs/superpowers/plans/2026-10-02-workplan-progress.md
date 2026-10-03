@@ -75,7 +75,7 @@ Execute all accepted work and create/push GitHub PRs; do not merge to main. User
 | PR-27 | queued | issue #192 |
 | PR-28 | verified candidate; publishing | issue #193;3claim memolesspilot/releasehash/scope/citations/search/reviewtasks; parentAug26dates/Oct9exceptions preserved;692units/types/lint/content/bothbuilds/smoke;11 browserchecks eachtarget |
 | PR-29 | queued | issue #194 |
-| PR-30 | queued | issue #195 |
+| PR-30 | verified candidate; publishing | issue #195; one explicit dated editorialcohortfixture, safety/source/unit/current-historical assertions retained;16focusedtests/types/contentchecks |
 | PR-32 | queued | issue #197 |
 | PR-31 | queued | issue #196 |
 | PR-61 | queued | issue #160 |
