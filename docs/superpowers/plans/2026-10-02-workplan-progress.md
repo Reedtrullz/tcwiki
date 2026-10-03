@@ -41,7 +41,7 @@ Execute all accepted work and create/push GitHub PRs; do not merge to main. User
 | PR-17 | PR214 open; CI passed | f4786a7; CI37034658367; audits0/full508/both targets 8Next+23CF browser |
 | PR-56 | PR214 open; CI passed | f4786a7; removed unused dependencies and starter SVGs after consumer review |
 | PR-10 | verified candidate | scoped provider/path/height request Map; shared latest-block observation and Mimir per cycle; RED3/focused130/full557/types/lint; normal mock reads12→8; independent fallback heights/providers and slow optional history covered; no real latency claim |
-| PR-11 | queued | issue #176 |
+| PR-11 | verified candidate | shared THORNode transport:12s cycle/5s request, external cancellation, wall/monotonic bounds; Retry-After1..300s/default60s, manual quote retry, no automatic retry; six new API checks + stalled release HTTP regression; full564/types/lint/both builds and9 network browser checks each Next/CF |
 | PR-43 | queued | issue #142 |
 | PR-07 | queued | issue #172 |
 | PR-57 | queued | issue #156 |
@@ -117,3 +117,5 @@ PR218 UTC volume periods/universe open (ecb66d0+b58b536). PR219 native search Fo
 - PR222 warning integration published and attached, base220; PR223 POL price provenance published and attached, base220. PR19 header disclosure sidecar in progress; PR13 independent scheduled shape report never runs in ordinary PR tests.
 
 - PR221 CI37079891867 passed; PR222/223/224 CI pending. PR10 context stabilizes fallback order per cycle despite concurrent feature completion; quote reads remain independent.
+
+- PR11 browser mock corrected CORS exposure of Retry-After; inaccessible headers use documented60s default. Next local port3000 was busy with unrelated work; exact data-worktree built candidate verified on owned3016 and cleaned via trap. Old20s timing fixture now exceeds12s budget; retained its freshness regression at2s retrieval/11-to13s block age, without weakening delivery age checks.

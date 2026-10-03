@@ -1549,22 +1549,22 @@ describe('deriveNetworkStatus', () => {
     async (kind) => {
       vi.useFakeTimers({ toFake: ['Date'] });
       vi.setSystemTime(new Date('2026-07-03T12:00:00.000Z'));
-      const latestBlock = { block: { header: { height: '101', time: '2026-07-03T12:00:15.000Z' } } };
+      const latestBlock = { block: { header: { height: '101', time: '2026-07-03T11:59:49.000Z' } } };
       if (kind === 'network') stubNetworkStatusSnapshots(snapshotFixture({ latestBlock }), snapshotFixture({ latestBlock }));
       else if (kind === 'dynamic fees') stubDynamicFeeSnapshots(dynamicFeeFixture({ latestBlock }), dynamicFeeFixture({ latestBlock }));
       else stubRunePoolSnapshots(runePoolFixture({ latestBlock }), runePoolFixture({ latestBlock }));
       const retrieve = vi.mocked(fetch).getMockImplementation()!;
       vi.mocked(fetch).mockImplementation(async (...args) => {
-        vi.setSystemTime(new Date('2026-07-03T12:00:20.000Z'));
+        vi.setSystemTime(new Date('2026-07-03T12:00:02.000Z'));
         return retrieve(...args);
       });
       const result = kind === 'network' ? await ThornodeAPI.getNetworkStatus()
         : kind === 'dynamic fees' ? await ThornodeAPI.getDynamicL1FeeStatus()
           : await ThornodeAPI.getRunePoolPolStatus();
       expect(result.status).toBe('ok');
-      expect(result.data?.sourceWarnings).toEqual([]);
+      expect(result.data?.sourceWarnings.some((message) => message.includes('13 seconds old'))).toBe(true);
       const data = result.data!;
-      expect('sourceFreshness' in data ? data.sourceFreshness.thorchainBlockAgeSeconds : data.thorchainBlockAgeSeconds).toBe(5);
+      expect('sourceFreshness' in data ? data.sourceFreshness.thorchainBlockAgeSeconds : data.thorchainBlockAgeSeconds).toBe(13);
     }
   );
 
@@ -2827,4 +2827,72 @@ it('keeps usable network and POL evidence independent of a slow optional fee his
   history.resolve(makeResponse(false, {}, 503, 'Unavailable'));
   expect((await feeResult).data?.sourceWarnings.some((message) => message.includes('history') && message.includes('unavailable'))).toBe(true);
   vi.unstubAllGlobals();
+});
+
+it('bounds stalled body parsing and fallback by the remaining collection deadline', async () => {
+  vi.useFakeTimers();
+  resetThornodeEndpointForTests();
+  const signals: AbortSignal[] = [];
+  vi.stubGlobal('fetch', vi.fn(async (_url, init) => { signals.push(init.signal); return { ok: true, json: () => new Promise(() => {}) }; }));
+  const context = createThornodeCollectionContext();
+  Object.assign(context, { deadlineAtMs: Date.now() + 7000 });
+  let result: Awaited<ReturnType<typeof ThornodeAPI.getNetworkStatus>> | undefined;
+  void ThornodeAPI.getNetworkStatus(context).then((value) => { result = value; });
+  await vi.advanceTimersByTimeAsync(7000);
+  expect(result?.status).toBe('degraded');
+  expect(signals).toHaveLength(2);
+  expect(signals.every((signal) => signal.aborted)).toBe(true);
+  expect(vi.getTimerCount()).toBe(0);
+  vi.useRealTimers(); vi.unstubAllGlobals();
+});
+
+it('propagates owner cancellation across an in-flight collection without starting fallback requests', async () => {
+  vi.useFakeTimers();
+  resetThornodeEndpointForTests();
+  const owner = new AbortController();
+  const fetchMock = vi.fn(async () => ({ ok: true, json: () => new Promise(() => {}) }));
+  vi.stubGlobal('fetch', fetchMock);
+  const context = createThornodeCollectionContext(owner.signal);
+  let result: Awaited<ReturnType<typeof ThornodeAPI.getNetworkStatus>> | undefined;
+  void ThornodeAPI.getNetworkStatus(context).then((value) => { result = value; });
+  await vi.advanceTimersByTimeAsync(0);
+  owner.abort(new Error('Collection cancelled'));
+  await vi.advanceTimersByTimeAsync(0);
+  expect(result?.status).toBe('degraded');
+  expect(fetchMock).toHaveBeenCalledTimes(1);
+  expect(vi.getTimerCount()).toBe(0);
+  vi.useRealTimers(); vi.unstubAllGlobals();
+});
+
+it('honors bounded Retry-After without automatically repeating quote inputs', async () => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  const start = Date.parse('2026-10-03T00:00:00Z');
+  vi.setSystemTime(start); resetThornodeEndpointForTests();
+  const fetchMock = vi.fn(async () => new Response(JSON.stringify({ code: 429, message: 'too many requests' }), { status: 429, headers: { 'Retry-After': '2' } }));
+  vi.stubGlobal('fetch', fetchMock);
+  const request = { fromAsset: 'BTC.BTC', toAsset: 'ETH.ETH', amountBaseUnits: '100000000' };
+  const first = await ThornodeAPI.getSwapQuoteProbe(request);
+  expect(first.data?.failure?.kind).toBe('rate-limit');
+  expect(first.data?.failure?.retryAt).toBe(new Date(start + 2000).toISOString());
+  await ThornodeAPI.getSwapQuoteProbe(request);
+  expect(fetchMock).toHaveBeenCalledTimes(2);
+  vi.setSystemTime(start + 2000);
+  expect(fetchMock).toHaveBeenCalledTimes(2);
+  await ThornodeAPI.getSwapQuoteProbe(request);
+  expect(fetchMock).toHaveBeenCalledTimes(4);
+  vi.useRealTimers(); vi.unstubAllGlobals();
+});
+
+it.each([
+  ['Sat, 03 Oct 2026 00:00:03 GMT', 3000],
+  ['not-a-date', 60000],
+  ['999999999999999999999999999', 300000],
+] as const)('bounds Retry-After %s while retaining a manual retry time', async (header, delay) => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  const start = Date.parse('2026-10-03T00:00:00Z');
+  vi.setSystemTime(start); resetThornodeEndpointForTests();
+  vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ message: 'rate limited' }), { status: 429, headers: { 'Retry-After': header } })));
+  const result = await ThornodeAPI.getSwapQuoteProbe({ fromAsset: 'BTC.BTC', toAsset: 'ETH.ETH', amountBaseUnits: '100000000' });
+  expect(result.data?.failure?.retryAt).toBe(new Date(start + delay).toISOString());
+  vi.useRealTimers(); vi.unstubAllGlobals();
 });

@@ -295,3 +295,24 @@ test.describe('THORChain Wiki Network Smoke Tests', () => {
   });
 
 });
+
+test('provider Retry-After enables a manual quote retry without an automatic request', async ({ page }) => {
+  await page.clock.install({ time: new Date() });
+  await mockSwapperFirstNetwork(page);
+  let probes = 0;
+  await page.route(/\/quote\/swap\?.*$/, async (route) => {
+    probes += 1;
+    await route.fulfill({ status: 429, contentType: 'application/json', headers: { 'Retry-After': '2', 'Access-Control-Expose-Headers': 'Retry-After' }, body: JSON.stringify({ code: 429, message: 'too many requests' }) });
+  });
+  await page.goto('/network');
+  const panel = page.locator('#check-a-route');
+  await panel.getByRole('button', { name: 'Check route', exact: true }).click();
+  await expect(panel.getByRole('button', { name: 'Retry later', exact: true })).toBeDisabled();
+  await expect(panel.getByText(/Manual retry available after/)).toBeVisible();
+  expect(probes).toBe(2);
+  await page.clock.runFor(2001);
+  await expect(panel.getByRole('button', { name: 'Check route', exact: true })).toBeEnabled();
+  expect(probes).toBe(2);
+  await panel.getByRole('button', { name: 'Check route', exact: true }).click();
+  await expect.poll(() => probes).toBe(4);
+});

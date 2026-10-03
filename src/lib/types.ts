@@ -234,6 +234,7 @@ export interface SwapQuoteSuccess {
 export type SwapQuoteFailureKind = 'halt' | 'input' | 'rate-limit' | 'provider' | 'malformed' | 'unknown';
 
 export interface SwapQuoteFailure {
+  retryAt?: string;
   kind: SwapQuoteFailureKind;
   code?: number;
   httpStatus?: number;

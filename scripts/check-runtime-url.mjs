@@ -11,6 +11,9 @@ const expectedImageRef = process.env.EXPECTED_IMAGE_REF;
 const requireReady = process.env.REQUIRE_READY === '1';
 const requireRuntimeMetadata = process.env.REQUIRE_RUNTIME_METADATA === '1' || shouldRequireRuntimeMetadata(baseUrl);
 const enforcedCsp = process.env.CSP_ENFORCE === '1';
+const budgetMs = Number(process.env.RUNTIME_PROBE_BUDGET_MS ?? 90_000);
+if (!Number.isSafeInteger(budgetMs) || budgetMs < 250 || budgetMs > 90_000) throw new Error('RUNTIME_PROBE_BUDGET_MS must be250..90000.');
+const deadline = performance.now() + budgetMs;
 
 if (!baseUrl) {
   console.error('CHECK_BASE_URL or first argument is required.');
@@ -29,8 +32,10 @@ function shouldRequireRuntimeMetadata(value) {
 async function fetchUntil(path, isExpectedStatus, init = undefined) {
   let lastError;
   for (let attempt = 0; attempt < 60; attempt += 1) {
+    const remaining = deadline - performance.now();
+    if (remaining <= 0) throw new Error('Runtime probe overall deadline exceeded.');
     try {
-      const response = await fetch(`${baseUrl}${path}`, { cache: 'no-store', ...init });
+      const response = await fetch(`${baseUrl}${path}`, { cache: 'no-store', ...init, signal: AbortSignal.timeout(Math.max(1, Math.floor(Math.min(5000, remaining)))) });
       if (await isExpectedStatus(response)) {
         return response;
       }
@@ -38,7 +43,7 @@ async function fetchUntil(path, isExpectedStatus, init = undefined) {
     } catch (error) {
       lastError = error;
     }
-    await wait(500);
+    await wait(Math.max(0, Math.min(500, deadline - performance.now())));
   }
   throw lastError ?? new Error(`${path} did not become ready`);
 }

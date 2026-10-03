@@ -1009,7 +1009,7 @@ function RouteQuoteChecker({ status, statusLoading }: { status: NetworkStatus | 
   const [quoteRequestVersion, setQuoteRequestVersion] = useState(0);
   const [inputError, setInputError] = useState<string | null>(null);
   const [quoteInvalidated, setQuoteInvalidated] = useState(false);
-  const [, refreshQuoteClock] = useState(0);
+  const [quoteNow, refreshQuoteClock] = useState(() => Date.now());
   const routeQueryHydratedRef = useRef(false);
   const routeQueryActiveRef = useRef(false);
   const routeSectionRef = useRef<HTMLElement | null>(null);
@@ -1051,26 +1051,29 @@ function RouteQuoteChecker({ status, statusLoading }: { status: NetworkStatus | 
   const staleQuoteError = activeQuoteData?.quote && quoteValidity !== 'valid'
     ? (quoteValidity === 'expired' ? 'The recorded quote has expired.' : 'The recorded quote has no usable expiry.')
     : undefined;
+  const retryAtMs = Date.parse(activeQuoteData?.failure?.retryAt ?? '');
+  const retryBlocked = Number.isFinite(retryAtMs) && retryAtMs > quoteNow;
   const quoteExpiry = activeQuoteData?.quote?.expiry;
   useEffect(() => {
-    if (quoteExpiry === undefined || !Number.isFinite(quoteExpiry)) return;
+    const deadline = quoteExpiry !== undefined && Number.isFinite(quoteExpiry) ? quoteExpiry * 1000 : retryAtMs;
+    if (!Number.isFinite(deadline)) return;
     let timer: ReturnType<typeof setTimeout> | undefined;
     function schedule() {
-      const remaining = quoteExpiry! * 1000 - Date.now();
+      const remaining = deadline - Date.now();
       if (remaining > 0) timer = setTimeout(update, Math.min(remaining, 2_147_483_647));
     }
     function update() {
       clearTimeout(timer);
-      refreshQuoteClock(value => value + 1);
+      refreshQuoteClock(Date.now());
       schedule();
     }
     function onResume() { if (document.visibilityState === 'visible') update(); }
-    schedule();
+    update();
     document.addEventListener('visibilitychange', onResume);
     window.addEventListener('focus', update);
     return () => { clearTimeout(timer); document.removeEventListener('visibilitychange', onResume); window.removeEventListener('focus', update); };
-  }, [quoteExpiry]);
-  const canSubmit = Boolean(selectedFromAsset && selectedToAsset && !sameAssetSelected && amountBaseUnits && !activeQuoteIsLoading);
+  }, [quoteExpiry, retryAtMs]);
+  const canSubmit = Boolean(selectedFromAsset && selectedToAsset && !sameAssetSelected && amountBaseUnits && !activeQuoteIsLoading && !retryBlocked);
 
   const replaceRouteQueryInUrl = useCallback((nextState: {
     fromAsset: string;
@@ -1233,6 +1236,7 @@ function RouteQuoteChecker({ status, statusLoading }: { status: NetworkStatus | 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const now = Date.now();
+    if (retryBlocked) { setInputError('Provider rate limit: wait for the retry time before checking again.'); return; }
     if (now - lastSubmittedAtRef.current < 1000) {
       setInputError('Quote checks are throttled to about one request per second.');
       return;
@@ -1332,13 +1336,19 @@ function RouteQuoteChecker({ status, statusLoading }: { status: NetworkStatus | 
             disabled={!canSubmit}
             className="w-full rounded-md border border-accent/40 bg-accent/10 px-3 py-2 text-sm font-semibold text-accent transition-colors hover:border-rune hover:text-rune disabled:cursor-not-allowed disabled:border-slate-700 disabled:bg-slate-900 disabled:text-slate-500"
           >
-            {activeQuoteIsLoading ? 'Checking' : 'Check route'}
+            {activeQuoteIsLoading ? 'Checking' : retryBlocked ? 'Retry later' : 'Check route'}
           </button>
         </div>
       </form>
 
       {routeInputMessage && (
         <p className="mt-2 text-xs text-amber-200">{routeInputMessage}</p>
+      )}
+
+      {retryBlocked && (
+        <p className="mt-2 text-xs text-amber-200" role="status">
+          Provider rate limit. Manual retry available after {new Date(retryAtMs).toISOString()}.
+        </p>
       )}
 
       {quoteInvalidated && (

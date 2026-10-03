@@ -67,9 +67,12 @@ const DYNAMIC_L1_FEE_HISTORY_THORNAME_LIMIT = 16;
 const DYNAMIC_L1_FEE_HISTORY_CONCURRENCY = 4;
 
 let activeEndpoint = 0;
+const rateLimitedUntil = new Map<string, number>();
+export const THORNODE_COLLECTION_BUDGET_MS = 12_000;
 
 export function resetThornodeEndpointForTests() {
   activeEndpoint = 0;
+  rateLimitedUntil.clear();
 }
 
 const MIMIR_INTEGER_PATTERN = /^[+-]?\d+$/;
@@ -120,74 +123,89 @@ type ThorchainHeightEvidence = {
 export interface ThornodeCollectionContext {
   initialEndpoint: number;
   startedAtMs: number;
+  deadlineAtMs: number;
+  deadlineMonoMs: number;
+  signal?: AbortSignal;
   requests: Map<string, Promise<unknown>>;
 }
 
 // One collection only: URL keys include provider, path and pinned height.
-export function createThornodeCollectionContext(): ThornodeCollectionContext {
-  return { initialEndpoint: activeEndpoint, startedAtMs: Date.now(), requests: new Map() };
+export function createThornodeCollectionContext(signal?: AbortSignal): ThornodeCollectionContext {
+  const startedAtMs = Date.now();
+  return { initialEndpoint: activeEndpoint, startedAtMs, deadlineAtMs: startedAtMs + THORNODE_COLLECTION_BUDGET_MS, deadlineMonoMs: performance.now() + THORNODE_COLLECTION_BUDGET_MS, signal, requests: new Map() };
 }
 
 async function request<T>(path: string): Promise<LiveDataResult<T>> {
   const errors: string[] = [];
-
+  const context = createThornodeCollectionContext();
   for (let i = 0; i < THORNODE_ENDPOINTS.length; i += 1) {
-    const endpointIndex = (activeEndpoint + i) % THORNODE_ENDPOINTS.length;
+    const endpointIndex = (context.initialEndpoint + i) % THORNODE_ENDPOINTS.length;
     const endpoint = THORNODE_ENDPOINTS[endpointIndex];
-    const controller = new AbortController();
-    const timeoutId = globalThis.setTimeout(() => controller.abort(), 5000);
-
     try {
-      const response = await fetch(`${endpoint.url}${path}`, {
-        signal: controller.signal,
-        cache: 'no-store',
-      });
-
-      if (!response.ok) {
-        throw new Error(`${response.status} ${response.statusText}`);
-      }
-
-      const data = await response.json();
+      const data = await requestJson<T>(`${endpoint.url}${path}`, context);
       if (path === '/mimir' && isPlainRecord(data)) assertUnambiguousMimirAliases(data);
       activeEndpoint = endpointIndex;
       return liveOk(data, endpoint);
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unknown THORNode error';
-      errors.push(`${endpoint.label}: ${message}`);
-    } finally {
-      globalThis.clearTimeout(timeoutId);
+      errors.push(`${endpoint.label}: ${error instanceof Error ? error.message : 'Unknown THORNode error'}`);
     }
   }
-
   return liveDegraded<T>(`THORNode source did not respond (${errors.join('; ')})`);
 }
 
-async function requestJson<T>(url: string, context?: ThornodeCollectionContext): Promise<T> {
-  if (context) {
-    let pending = context.requests.get(url);
-    if (!pending) {
-      pending = requestJson<unknown>(url);
-      context.requests.set(url, pending);
-    }
-    return pending as Promise<T>;
-  }
+class ThornodeRateLimitError extends Error {
+  constructor(readonly retryAtMs: number) { super(`Provider throttled; manual retry after ${new Date(retryAtMs).toISOString()}.`); }
+}
+
+function recordRateLimit(url: string, response: Response) {
+  const raw = response.headers?.get('Retry-After') ?? '';
+  const delay = /^\d+$/.test(raw) ? Number(raw) * 1000 : Date.parse(raw) - Date.now();
+  // ponytail: fixed two-provider cooldown state; no payload cache or retry scheduler.
+  const retryAtMs = Date.now() + Math.min(300_000, Math.max(1000, Number.isFinite(delay) ? delay : 60_000));
+  rateLimitedUntil.set(new URL(url).origin, retryAtMs);
+  return retryAtMs;
+}
+
+async function requestResponse(url: string, context?: ThornodeCollectionContext) {
+  const now = Date.now();
+  const retryAtMs = rateLimitedUntil.get(new URL(url).origin);
+  if (retryAtMs && retryAtMs > now) throw new ThornodeRateLimitError(retryAtMs);
+  const remaining = context ? Math.min(context.deadlineAtMs - now, context.deadlineMonoMs - performance.now()) : 5000;
+  if (context?.signal?.aborted) throw context.signal.reason ?? new Error('Collection cancelled.');
+  if (remaining <= 0) throw new Error('THORNode collection deadline exceeded.');
   const controller = new AbortController();
-  const timeoutId = globalThis.setTimeout(() => controller.abort(), 5000);
-
+  const timeoutId = globalThis.setTimeout(() => controller.abort(new Error('THORNode request deadline exceeded.')), Math.min(5000, remaining));
+  const forwardAbort = () => controller.abort(context?.signal?.reason);
+  context?.signal?.addEventListener('abort', forwardAbort, { once: true });
+  let onAbort: () => void = () => {};
+  const aborted = new Promise<never>((_resolve, reject) => {
+    onAbort = () => reject(controller.signal.reason);
+    controller.signal.addEventListener('abort', onAbort, { once: true });
+  });
   try {
-    const response = await fetch(url, {
-      signal: controller.signal,
-      cache: 'no-store',
-    });
-
-    if (!response.ok) {
-      throw new Error(`${response.status} ${response.statusText}`);
-    }
-
-    return await response.json() as T;
+    return await Promise.race([aborted, (async () => {
+      const response = await fetch(url, { signal: controller.signal, cache: 'no-store' });
+      const retryAt = response.status === 429 ? new Date(recordRateLimit(url, response)).toISOString() : undefined;
+      const raw: unknown = await response.json();
+      return { response, raw, retryAt };
+    })()]);
   } finally {
     globalThis.clearTimeout(timeoutId);
+    controller.signal.removeEventListener('abort', onAbort);
+    context?.signal?.removeEventListener('abort', forwardAbort);
   }
+}
+
+async function requestJson<T>(url: string, context?: ThornodeCollectionContext): Promise<T> {
+  const operation = async () => {
+    const { response, raw } = await requestResponse(url, context);
+    if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
+    return raw;
+  };
+  if (!context) return await operation() as T;
+  let pending = context.requests.get(url);
+  if (!pending) { pending = operation(); context.requests.set(url, pending); }
+  return pending as Promise<T>;
 }
 
 function withQueryHeight(path: string, height: number | undefined) {
@@ -3082,6 +3100,7 @@ export class ThornodeAPI {
 
   static async getSwapQuoteProbe(request: SwapQuoteRequest): Promise<LiveDataResult<SwapQuoteProbeResult>> {
     const checkedAt = new Date().toISOString();
+    const context = createThornodeCollectionContext();
     const errors: string[] = [];
     const sources: SourceMeta[] = [];
     let lastProviderFailure: SwapQuoteProbeResult | undefined;
@@ -3094,22 +3113,17 @@ export class ThornodeAPI {
     }
 
     for (let i = 0; i < THORNODE_ENDPOINTS.length; i += 1) {
-      const endpointIndex = (activeEndpoint + i) % THORNODE_ENDPOINTS.length;
+      const endpointIndex = (context.initialEndpoint + i) % THORNODE_ENDPOINTS.length;
       const endpoint = THORNODE_ENDPOINTS[endpointIndex];
-      const controller = new AbortController();
-      const timeoutId = globalThis.setTimeout(() => controller.abort(), 5000);
       const source = sourceForSwapQuote(endpoint, request);
       sources.push(source);
 
       try {
-        const response = await fetch(source.url, {
-          signal: controller.signal,
-          cache: 'no-store',
-        });
-        const raw = await response.json();
+        const { response, raw, retryAt } = await requestResponse(source.url, context);
         const result = response.ok
           ? normalizeSwapQuoteSuccess(request, raw)
           : normalizeSwapQuoteFailure(request, raw, response.status);
+        if (result.failure && retryAt) result.failure.retryAt = retryAt;
         if (!response.ok && shouldFailoverSwapQuote(result)) {
           lastProviderFailure = result;
           errors.push(`${endpoint.label}: ${result.failure?.message ?? 'quote provider response needs review'}`);
@@ -3120,8 +3134,10 @@ export class ThornodeAPI {
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Unknown THORNode quote error';
         errors.push(`${endpoint.label}: ${message}`);
-      } finally {
-        globalThis.clearTimeout(timeoutId);
+        if (error instanceof ThornodeRateLimitError) {
+          lastProviderFailure = normalizeSwapQuoteFailure(request, { message }, 429);
+          if (lastProviderFailure.failure) lastProviderFailure.failure.retryAt = new Date(error.retryAtMs).toISOString();
+        }
       }
     }
 
