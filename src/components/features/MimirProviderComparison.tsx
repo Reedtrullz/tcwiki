@@ -38,6 +38,7 @@ export function MimirProviderComparison() {
     <summary className="cursor-pointer font-medium">Compare two control providers manually</summary>
     <section aria-label="Two-provider control comparison" className="mt-3 min-w-0 [overflow-wrap:anywhere]">
       <p className="text-sm text-slate-300">Compare six named raw Mimir controls with two fixed public providers. This action sends one read to each provider. Missing values, response-height limits and time skew stay visible. No automatic provider comparison runs.</p>
+      <p className="mt-2 text-sm text-slate-300">Provider rate limits are shared with routine diagnostics. If this comparison receives a Retry-After response, later diagnostic reads respect that provider’s cooldown and may use the other provider.</p>
       <ul className="mt-2 text-xs text-slate-400">{THORNODE_PROVIDER_DEFAULTS.map(source => <li key={source.url}>{source.label}: {source.url}/mimir</li>)}</ul>
       <label className="mt-3 block text-sm" htmlFor="provider-comparison-height">Optional requested THORChain height</label>
       <input id="provider-comparison-height" inputMode="numeric" maxLength={16} value={height} onChange={event => setHeight(event.target.value)} className="mt-1 block w-full min-w-0 rounded border border-border bg-surface p-2 text-sm" />
