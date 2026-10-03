@@ -1,6 +1,19 @@
 import type { ThornodeDataPolicy } from '../../scripts/lib/thornode-data-policy.mjs';
 export const DATA_CONFIDENCES = ['official', 'curated', 'historical', 'needs-review'] as const;
 
+export interface ClpScenarioResult {
+  slipPercent: string;
+  fee: string;
+  output: string;
+}
+
+export interface ClpLearningModel {
+  id: string;
+  title: string;
+  assumptions: string;
+  ruleScope: string;
+}
+
 export type DataConfidence = (typeof DATA_CONFIDENCES)[number];
 
 export interface ResponseHeightEvidence {

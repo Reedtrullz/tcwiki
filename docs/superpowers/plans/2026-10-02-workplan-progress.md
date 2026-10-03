@@ -84,7 +84,7 @@ Execute all accepted work and create/push GitHub PRs; do not merge to main. User
 | PR-67 | queued | issue #202 |
 | PR-60 | verified candidate; PR publication | 710 units/62 files; types/lint/content/both builds/smoke; 9 guide/link checks each runtime plus final 2 map/WCAG/keyboard desktop-mobile checks each; independent cohort, no live outcome |
 | PR-68 | queued | issue #203 |
-| PR-34 | queued | issue #199 |
+| PR-34 | verified bounded candidate; PR publication | source/docs3.20.3 reviewed,713units; bothbuilds/smoke and4desktop/mobile WCAG/keyboard/invalid-input/link checks eachruntime; toy notexecution; humanfeedback pending |
 | PR-36 | queued | issue #201 |
 | PR-22 | queued | issue #187 |
 | PR-48 | queued | issue #147 |
@@ -154,3 +154,5 @@ PR46 final:parent matched pinned sourcehash; unsupportedperiodRED→GREEN nofetc
 PR27 candidate: five allowlisted canonical sources and exact registry dependent IDs, report-only daily artifact with seven-day retention. Parent review covers long Retry-After, partial-body timeout and 304 baseline identity. 708 units/61 files, types/scoped lint/content; live five304 unchanged and offline five unchanged. No prose/date renewal, issue publication, crawl or production deploy.
 
 PR60 final: static ordered five-stage external-swap evidence map, internal-transfer caveat and independent destination evidence. Parent tutorial source read verified; existing source and article dates preserved. 710 units, both builds/smoke, 9 desktop guide checks each runtime and final 2 desktop/mobile WCAG/keyboard map checks each passed. No main merge/deploy.
+
+PR34 final: exact bounded single-leg algebra matches reviewedCLPequations and3.20.3 primitivefunctions, while minimumslip floors/basispoint rounding/streaming/executionexcluded. 713units,types/scopedlint/content/bothbuilds/Nextsmoke and4desktop/mobile lab/link checks eachruntimepassed. No humanlearningacceptance ormainmerge/deploy.

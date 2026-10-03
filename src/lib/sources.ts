@@ -70,6 +70,20 @@ export const continuousLiquidityPoolsSource: SourceMeta = {
   notes: 'Official CLP mechanism and historical IL-protection reference; it explicitly says IL protection was removed, while current route, depth, and yield claims still need live evidence.',
 };
 
+export const clpLearningEquationsSource: SourceMeta = {
+  ...continuousLiquidityPoolsSource,
+  label: 'CLP equations 4–6 (3 October model review)',
+  retrievedAt: '2026-10-03',
+  notes: 'Single-leg algebraic slip ratio, liquidity fee and emission equations. This model excludes live minimum slip floors and current availability.',
+};
+
+export const clpLearningVersionSource: SourceMeta = {
+  label: 'THORNode v3.20.3 swap arithmetic',
+  url: 'https://gitlab.com/thorchain/thornode/-/blob/b08d81f79275093b0fcb753e0d68ff1c16c51cb8/x/thorchain/swap_current.go',
+  retrievedAt: '2026-10-03',
+  notes: 'CalcAssetEmission/CalcLiquidityFee match the algebra; GetSwapCalc can instead apply a minimum slip floor, and CalcSwapSlip rounds basis points. The toy lab does not reproduce those execution rules. File SHA-256 58e6413829ece2e95ef716eab0def293e7e63e789b6159f659d2570931d4cf6e.',
+};
+
 export const runeDocsSource: SourceMeta = {
   label: 'THORChain RUNE docs',
   url: 'https://docs.thorchain.org/technical-documentation/understanding-thorchain/rune',

@@ -1,5 +1,6 @@
 import type {
   Chain,
+  ClpLearningModel,
   DataConfidence,
   EcosystemProject,
   ExecutionEvidenceMap,
@@ -19,6 +20,8 @@ import {
   archivedSaversSource,
   assetNotationSource,
   chainClientsSource,
+  clpLearningEquationsSource,
+  clpLearningVersionSource,
   connectingThorchainSource,
   cosmWasmSource as cosmwasmSource,
   dynamicL1FeesCurrentSource,
@@ -268,6 +271,13 @@ const record = <T>(
     ...(freshnessOptions.reviewedBy ? { reviewedBy: freshnessOptions.reviewedBy } : {}),
   }
 );
+
+export const CLP_LEARNING_MODEL_RECORD: SourcedRecord<ClpLearningModel> = record({
+  id: 'single-leg-clp-model',
+  title: 'Explore input, depth and slip',
+  assumptions: 'Change one hypothetical input or depth to see the single-leg CLP equations. No live pool balances or prices are loaded.',
+  ruleScope: 'Official CLP equations 4–6, reviewed 3 October 2026 alongside THORNode v3.20.3. This algebraic model does not reproduce exact protocol execution.',
+}, [clpLearningEquationsSource, clpLearningVersionSource], 'curated', { checkedAt: '2026-10-03', nextReviewDue: '2026-11-03' });
 
 const sourceMapLiveInboundSource: SourceMeta = {
   ...liveInboundSource,

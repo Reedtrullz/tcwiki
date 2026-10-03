@@ -1,3 +1,5 @@
+import { ClpLearningLab } from '../../src/components/features/ClpLearningLab';
+
 # Continuous Liquidity Pools (CLP) Deep Dive
 
 The Continuous Liquidity Pool is the core innovation that allows THORChain to offer native cross-chain swaps without order books or wrapped assets. THORChain is increasingly described as a decentralized exchange (DEX); "liquidity protocol" remains accurate as mechanism context, but community-maintained docs are phasing it out as a product label.
@@ -47,3 +49,9 @@ A static formula is neither wallet guidance nor support diagnosis. Route executi
 
 - **"The slip ratio IS the fee."** The slip ratio is the input size relative to pool depth. The fee is derived from that ratio but denominated in the output asset, not equal to the slip ratio itself.
 - **"LPs always earn from swap fees."** Impermanent loss can exceed swap-fee income when relative asset prices move. LP returns depend on pool depth, price movement, fees and current availability. Impermanent loss protection (ILP) is historical: the [official CLP documentation](https://docs.thorchain.org/technical-documentation/thorchain-finance/continuous-liquidity-pools#impermanent-loss-protection) says it was removed for all liquidity providers. [ADR-005, amended 7 November 2023](https://dev.thorchain.org/architecture/adr-005-deprecate-ilp.html#amendment-1-nov-23-permanently-sunset-ilp), describes the permanent sunset. The older protection formulas on that page do not promise current coverage. This specific removal claim was source-checked on 2 October 2026; the article as a whole retains its existing review date.
+
+## Try A Single-Leg CLP Scenario
+
+Use hypothetical model units to compare input size with input-side and output-side depth. The model shows slip ratio, liquidity fee and output as separate values. Source and version review belong to this lab alone; the article-wide review date is unchanged. Explain what the lab omits before using the separate live route check.
+
+<ClpLearningLab />
