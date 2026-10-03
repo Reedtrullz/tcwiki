@@ -60,7 +60,7 @@ Execute all accepted work and create/push GitHub PRs; do not merge to main. User
 | PR-46 | queued | issue #145 |
 | PR-65 | queued | issue #164 |
 | PR-19 | queued | issue #184 |
-| PR-24 | queued | issue #189 |
+| PR-24 | local verified; publication pending | Shared MDX heading identity, bounded1200-character section documents;552units/types/content/audits/both builds/smoke;26 browser checks each Next/CF with4device skips; header follow-up integrated |
 | PR-66 | queued | issue #165 |
 | PR-20 | queued | issue #185 |
 | PR-21 | queued | issue #186 |
