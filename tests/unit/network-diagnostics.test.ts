@@ -330,7 +330,7 @@ describe('network diagnostics view models', () => {
       },
     };
 
-    expect(deriveRouteAvailability('BTC.BTC', 'ETH.ETH', undefined, [], quoteResult)).toEqual({
+    expect(deriveRouteAvailability('BTC.BTC', 'ETH.ETH', { ...baseStatus, chainStatuses: [chain({ chain: 'BTC' }), chain({ chain: 'ETH' })] }, [], quoteResult)).toEqual({
       status: 'available',
       label: 'Quote returned',
       reasons: ['THORNode returned a current swap quote for this route.'],
@@ -462,7 +462,7 @@ describe('quote proof validity', () => {
     expect(deriveRouteAvailability('BTC.BTC', 'ETH.ETH', undefined, [], quote, nowMs)).toMatchObject({ status: 'needs-review', label: 'Quote expired' });
   });
   it('keeps an unexpired quote available at the supplied clock', () => {
-    expect(deriveRouteAvailability('BTC.BTC', 'ETH.ETH', undefined, [], quote, 1789999999999).status).toBe('available');
+    expect(deriveRouteAvailability('BTC.BTC', 'ETH.ETH', { ...baseStatus, chainStatuses: [chain({ chain: 'BTC' }), chain({ chain: 'ETH' })] }, [], quote, 1789999999999).status).toBe('available');
   });
   it.each([undefined, NaN, Infinity, -1])('treats expiry %s as unknown', expiry => {
     const unknown = { ...quote, quote: { ...quote.quote!, expiry } };
@@ -474,4 +474,33 @@ it('keeps observed blockers but withdraws clear operation cells when block evide
   const rows = deriveChainAvailability({ ...baseStatus, chainStatuses: [chain({ chain: 'BTC' }), chain({ chain: 'ETH', tradingPaused: true, activeMimirKeys: ['HALTETHTRADING'] })], sourceWarningDetails: [{ severity: 'critical', category: 'freshness', message: 'stale', action: 'refresh' }] });
   expect(rows.find(row => row.chain === 'BTC')?.swapIn).toMatchObject({ state: 'needs-review', label: 'Dated context' });
   expect(rows.find(row => row.chain === 'ETH')?.swapIn.state).toBe('limited');
+});
+
+describe('quote and operational evidence reconciliation', () => {
+  const now = Date.parse('2026-10-03T03:00:00Z');
+  const quote: SwapQuoteProbeResult = { request: { fromAsset: 'BTC.BTC', toAsset: 'ETH.ETH', amountBaseUnits: '1000000' }, status: 'available', summary: 'Quote returned by Q', quote: { expectedAmountOut: '900000', expiry: Math.floor(now / 1000) + 120, fees: {}, raw: { expected_amount_out: '900000' } } };
+  const clear = { ...baseStatus, chainStatuses: [chain({ chain: 'BTC' }), chain({ chain: 'ETH' })] };
+  const quoteEvidence = { status: 'ok' as const, data: quote, checkedAt: '2026-10-03T02:59:50Z', source: { label: 'Quote provider Q', url: 'https://quote.test' } };
+  const blocked = { ...clear, chainStatuses: [chain({ chain: 'BTC' }), chain({ chain: 'ETH', tradingPaused: true, activeMimirKeys: ['HALTETHTRADING'] })] };
+  const context = (status: NetworkStatus, checkedAt = '2026-10-03T02:59:55Z') => ({ quote: quoteEvidence, operations: { status: 'ok' as const, data: status, checkedAt, source: { label: 'Control provider C', url: 'https://controls.test' } } });
+  it.each(['2026-10-03T02:59:55Z', '2026-10-03T02:59:50Z', '2026-10-03T02:59:40Z'])('preserves a contradicting blocker and both receipts at %s', checkedAt => {
+    const result = deriveRouteAvailability('BTC.BTC', 'ETH.ETH', blocked, [], quote, now, context(blocked, checkedAt));
+    expect(result.status).not.toBe('available');
+    expect(result.label).toBe('Quote returned; controls limit execution');
+    expect(result.reasons.join(' ')).toContain('ETH: Trading halted');
+    expect(result.reasons.join(' ')).toContain('Quote provider Q');
+    expect(result.reasons.join(' ')).toContain('Control provider C');
+    expect(result.reasons.join(' ')).toContain(checkedAt);
+    expect(quote.quote?.raw).toEqual({ expected_amount_out: '900000' });
+  });
+  it('cannot confirm execution when diagnostics fail even though quote body exists', () => {
+    expect(deriveRouteAvailability('BTC.BTC', 'ETH.ETH', undefined, [], quote, now, { quote: quoteEvidence, operations: { status: 'degraded', checkedAt: '2026-10-03T02:59:55Z', error: 'provider offline' } })).toMatchObject({ status: 'needs-review', label: 'Quote returned; execution unconfirmed' });
+  });
+  it('keeps an unrelated LP control and third-chain blocker out of this pair', () => {
+    const unrelated = { ...clear, lpPaused: true, chainStatuses: [...clear.chainStatuses, chain({ chain: 'SOL', halted: true, activeMimirKeys: ['HALTSOLCHAIN'] })] };
+    expect(deriveRouteAvailability('BTC.BTC', 'ETH.ETH', unrelated, [], quote, now, context(unrelated)).status).toBe('available');
+  });
+  it('requires an explicit recheck after a material state change even if controls clear again', () => {
+    expect(deriveRouteAvailability('BTC.BTC', 'ETH.ETH', clear, [], quote, now, { ...context(clear), operationChanged: true })).toMatchObject({ status: 'needs-review', label: 'Quote returned; recheck required' });
+  });
 });

@@ -46,7 +46,7 @@ Execute all accepted work and create/push GitHub PRs; do not merge to main. User
 | PR-07 | PR235 open; integration in progress | d0bb5a9;597units;both builds/smoke;offline aging/recovery each runtime; combine234 for economics destinations |
 | PR-57 | PR229 open; CI passed | 433465e; CI37084390703; bounded decoded JSON/rows/depth/string/numeric fields |
 | PR-44 | PR230 open; successor audit gate passed | 6852c2c+70a08a3; strict official echoed height and CORS evidence; full audit failure retained; scoped exception proposed PR232 |
-| PR-42 | queued | issue #141 |
+| PR-42 | local verified; publication pending | quote/operation receipts retained, pair-scoped contradiction/recheck;5RED regressions;609units/types/lint/both builds/smoke;20network browser checks each Next/CF |
 | PR-51 | PR231 open; successor audit gate passed | e425f90; Node absent host; shared JS/jq fixtures,584units; own CI full-audit failure retained; scoped exception proposed PR232 |
 | PR-16 | queued | issue #181 |
 | PR-45 | queued | issue #144 |
@@ -135,3 +135,5 @@ PR66 candidate: direct/reload/history/keyboard disclosure destinations and unava
 Integration of235 and234 preserves both POL price provenance and browser stale-operation tests. Only unit-file append and progress-ledger conflicts required resolution; no product conflict. Full combined-runtime proof is pending.
 
 Combined candidate:603units/types/lint/both builds/smoke. First broad Next129pass/6fail/5skip and CF123pass/12fail/5skip retained as failed evidence. Server navigator without onLine caused false-offline SSR; connectivity now starts shared and is observed after hydration, with direct Node-like navigator regression. Failed dataset badge assertions now expect Unavailable. Focus must be established before reader-closure assertion. Final focused Next14pass; CF36pass then anchor6pass; initial broad unrelated passes remain prior-source evidence. PR235 initial CI37089728660 failed and hydration fixd78a2c4 published; economics fragment acceptance requires234 combined candidate.234 CI passed.
+
+PR42: valid quote body no longer bypasses operation blockers or missing/failed diagnostics. Pair scope excludes LP-only controls and other chains. Check timestamps disclose later/same/earlier recorded checks without claiming atomic observation or settlement. Material state change latches recheck until explicit quote submission even if controls subsequently clear; no automatic quote requests. Final candidate609units and20browser checks each runtime.

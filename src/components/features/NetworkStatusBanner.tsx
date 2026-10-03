@@ -25,6 +25,7 @@ import {
   deriveNetworkWideControls,
   deriveRouteAvailability,
   quoteProofValidity,
+  routeOperationFingerprint,
   NATIVE_RUNE_ASSET,
 } from '@/lib/network-diagnostics';
 
@@ -785,7 +786,7 @@ function routeFallbackStatusLabel(routeStatus: ReturnType<typeof deriveRouteAvai
     <div className={`rounded-md border px-3 py-2 text-xs ${quoteStatusClassName(routeStatus.status)}`}>
       <p className="font-semibold">{routeStatus.label}</p>
       {routeStatus.reasons.length > 0 && (
-        <p className="mt-1 text-slate-300/80">{routeStatus.reasons.slice(0, 2).join(' / ')}</p>
+        <p className="mt-1 text-slate-300/80">{routeStatus.reasons.join(' / ')}</p>
       )}
     </div>
   );
@@ -846,7 +847,9 @@ function getRefundTriageIntro(
   if (quoteData?.quote) {
     return {
       title: 'Quote returned for this route',
-      summary: 'The provider returned an unexpired quote for this pair and amount. Execution and any refund still require transaction evidence.',
+      summary: routeStatus.status === 'available'
+        ? 'The provider returned an unexpired quote for this pair and amount. Execution and any refund still require transaction evidence.'
+        : 'The recorded quote is retained, but operation evidence limits or cannot confirm execution. Recheck explicitly; transaction evidence is still required.',
     };
   }
   if (quoteData?.failure) {
@@ -994,7 +997,7 @@ function RefundTriagePanel({
   );
 }
 
-function RouteQuoteChecker({ status, statusLoading }: { status: NetworkStatus | undefined; statusLoading: boolean }) {
+function RouteQuoteChecker({ status, statusLoading, operationsResult }: { status: NetworkStatus | undefined; statusLoading: boolean; operationsResult?: LiveDataResult<NetworkStatus> }) {
   const { data: pools, result: poolsResult, isLoading: poolsLoading } = usePools();
   const routePools = useMemo(() => routeSelectablePools(pools), [pools]);
   const poolGroups = useMemo(() => groupPoolsByChain(routePools), [routePools]);
@@ -1010,6 +1013,8 @@ function RouteQuoteChecker({ status, statusLoading }: { status: NetworkStatus | 
   const [quoteRequestVersion, setQuoteRequestVersion] = useState(0);
   const [inputError, setInputError] = useState<string | null>(null);
   const [quoteInvalidated, setQuoteInvalidated] = useState(false);
+  const [operationSnapshot, setOperationSnapshot] = useState<string>();
+  const [operationChanged, setOperationChanged] = useState(false);
   const [quoteNow, refreshQuoteClock] = useState(() => Date.now());
   const routeQueryHydratedRef = useRef(false);
   const routeQueryActiveRef = useRef(false);
@@ -1040,12 +1045,21 @@ function RouteQuoteChecker({ status, statusLoading }: { status: NetworkStatus | 
   const sameAssetSelected = Boolean(selectedFromAsset && selectedToAsset && selectedFromAsset === selectedToAsset);
   const amountValidationMessage = amount && !amountBaseUnits ? 'Enter a positive amount with up to 8 decimals.' : null;
   const routeInputMessage = inputError ?? (sameAssetSelected ? 'Choose two different assets.' : amountValidationMessage);
+  const operationFingerprint = routeOperationFingerprint(selectedFromAsset, selectedToAsset, status);
+  const materialChange = Boolean(operationSnapshot && operationSnapshot !== operationFingerprint);
+  useEffect(() => {
+    if (!quoteRequest || !materialChange || operationChanged) return;
+    const timer = window.setTimeout(() => setOperationChanged(true), 0);
+    return () => window.clearTimeout(timer);
+  }, [quoteRequest, materialChange, operationChanged]);
   const routeStatus = deriveRouteAvailability(
     selectedFromAsset,
     selectedToAsset,
     status,
     routePools,
-    activeQuoteData
+    activeQuoteData,
+    quoteNow,
+    { quote: activeQuoteResult, operations: operationsResult, operationChanged: operationChanged || materialChange }
   );
   const quoteValidity = quoteProofValidity(activeQuoteData?.quote);
   const usableQuoteData = activeQuoteData?.quote && quoteValidity !== 'valid' ? undefined : activeQuoteData;
@@ -1257,6 +1271,8 @@ function RouteQuoteChecker({ status, statusLoading }: { status: NetworkStatus | 
 
     setInputError(null);
     setQuoteInvalidated(false);
+    setOperationSnapshot(operationFingerprint);
+    setOperationChanged(false);
     lastSubmittedAtRef.current = now;
     setQuoteRequest({
       fromAsset: selectedFromAsset,
@@ -1908,7 +1924,7 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
       )}
 
       {!compact && showQuoteChecker && (
-        <RouteQuoteChecker status={status} statusLoading={isLoading} />
+        <RouteQuoteChecker status={status} statusLoading={isLoading} operationsResult={result} />
       )}
 
       {!compact && evidenceRows.length > 0 && (

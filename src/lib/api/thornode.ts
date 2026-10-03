@@ -3168,6 +3168,12 @@ export class ThornodeAPI {
   static async getSwapQuoteProbe(request: SwapQuoteRequest): Promise<LiveDataResult<SwapQuoteProbeResult>> {
     const checkedAt = new Date().toISOString();
     const context = createThornodeCollectionContext();
+    const complete = (result: LiveDataResult<SwapQuoteProbeResult>): LiveDataResult<SwapQuoteProbeResult> => {
+      const completedAt = new Date().toISOString();
+      return { ...result, checkedAt: completedAt,
+        source: result.source ? { ...result.source, retrievedAt: completedAt } : undefined,
+        collection: { startedAt: checkedAt, completedAt, durationMs: Math.max(0, Math.round(performance.now() - context.startedMonoMs)) } };
+    };
     const errors: string[] = [];
     const sources: SourceMeta[] = [];
     let lastProviderFailure: SwapQuoteProbeResult | undefined;
@@ -3176,7 +3182,7 @@ export class ThornodeAPI {
       validateSwapQuoteRequest(request);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Invalid swap quote request.';
-      return liveDegraded<SwapQuoteProbeResult>(message, THORNODE_ENDPOINTS, checkedAt);
+      return complete(liveDegraded<SwapQuoteProbeResult>(message, THORNODE_ENDPOINTS, checkedAt));
     }
 
     for (let i = 0; i < THORNODE_ENDPOINTS.length; i += 1) {
@@ -3197,7 +3203,7 @@ export class ThornodeAPI {
           continue;
         }
         activeEndpoint = endpointIndex;
-        return liveOk(result, source, checkedAt);
+        return complete(liveOk(result, source, checkedAt));
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Unknown THORNode quote error';
         errors.push(`${endpoint.label}: ${message}`);
@@ -3209,21 +3215,21 @@ export class ThornodeAPI {
     }
 
     if (lastProviderFailure) {
-      return {
+      return complete({
         status: 'degraded',
         data: lastProviderFailure,
         error: `THORNode quote providers did not return a usable route response (${errors.join('; ')})`,
         source: sources[0],
         sources,
         checkedAt,
-      };
+      });
     }
 
-    return liveDegraded<SwapQuoteProbeResult>(
+    return complete(liveDegraded<SwapQuoteProbeResult>(
       `THORNode quote sources did not provide a usable response (${errors.join('; ')})`,
       sources.length > 0 ? sources : THORNODE_ENDPOINTS,
       checkedAt
-    );
+    ));
   }
 
   static async getRunePoolPolStatus(context = createThornodeCollectionContext()): Promise<LiveDataResult<RunePoolPolStatus>> {
