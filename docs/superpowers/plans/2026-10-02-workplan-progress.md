@@ -42,9 +42,9 @@ Execute all accepted work and create/push GitHub PRs; do not merge to main. User
 | PR-56 | PR214 open; CI passed | f4786a7; removed unused dependencies and starter SVGs after consumer review |
 | PR-10 | PR225 open; CI passed | b8a504c; CI37081330585; scoped provider/path/height request Map; shared latest-block observation and Mimir per cycle; RED3/focused130/full557/types/lint; normal mock reads12→8; independent fallback heights/providers and slow optional history covered; no real latency claim |
 | PR-11 | PR226 open; CI passed | f70c90f; CI37082493599; shared THORNode transport:12s cycle/5s request, external cancellation, wall/monotonic bounds; Retry-After1..300s/default60s, manual quote retry, no automatic retry; six new API checks + stalled release HTTP regression; full564/types/lint/both builds and9 network browser checks each Next/CF |
-| PR-43 | local verified; publishing | collection start/completion/body observation/delivery assessment; monotonic duration/cache expiry; completion-time checkedAt, cached copies reassessed without mutating receipts; RED timing and clock rollback; full568/types/lint/both builds/standalone smoke |
+| PR-43 | PR227 open; local verified | e5c3038; collection start/completion/body observation/delivery assessment; monotonic duration/cache expiry; completion-time checkedAt, cached copies reassessed without mutating receipts; RED timing and clock rollback; full568/types/lint/both builds/standalone smoke |
 | PR-07 | queued | issue #172 |
-| PR-57 | queued | issue #156 |
+| PR-57 | local verified; publishing | shared streaming2MiB/4096rows/depth64/string65536/numeric80 bounds; prefetch quote80/asset256; RED4/full574/types/lint/both builds/smoke;18 network browser checks each Next/CF; recorded capture381437bytes fits >5xheadroom |
 | PR-44 | queued | issue #143 |
 | PR-42 | queued | issue #141 |
 | PR-51 | queued | issue #150 |
@@ -59,7 +59,7 @@ Execute all accepted work and create/push GitHub PRs; do not merge to main. User
 | PR-41 | queued | issue #140 |
 | PR-46 | queued | issue #145 |
 | PR-65 | queued | issue #164 |
-| PR-19 | queued | issue #184 |
+| PR-19 | PR228 open; local verified | 878af86; header ordinary disclosure toggles/actual-trigger focus/outside+route close/connected hidden panels;545units/types/lint;4navigation+4device-skips eachNext/CF |
 | PR-24 | queued | issue #189 |
 | PR-66 | queued | issue #165 |
 | PR-20 | queued | issue #185 |
@@ -121,3 +121,5 @@ PR218 UTC volume periods/universe open (ecb66d0+b58b536). PR219 native search Fo
 - PR11 browser mock corrected CORS exposure of Retry-After; inaccessible headers use documented60s default. Next local port3000 was busy with unrelated work; exact data-worktree built candidate verified on owned3016 and cleaned via trap. Old20s timing fixture now exceeds12s budget; retained its freshness regression at2s retrieval/11-to13s block age, without weakening delivery age checks.
 
 - PR224 CI37080866037, PR225 CI37081330585, PR226 CI37082493599 passed. PR43 readiness cache also expires by monotonic clock; rolling wall time backward cannot extend retention. Freshness thresholds remain12s/30s. Full568 units and both builds/standalone smoke passed; live14s block-age warnings remained visible.
+
+- PR57 bounds verified in both actual built runtimes,18network checks each desktop/mobile; full574units. Test response doubles now use real Response streams; daily-history mock supplies a fresh body per request. Unknown compressed wire length is not treated as decoded length; decoded bytes remain capped. PR24 anchor sidecar active.

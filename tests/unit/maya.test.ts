@@ -1,12 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import MayaAPI from '@/lib/api/maya';
 
-const makeResponse = (data: unknown) => ({
-  ok: true,
-  status: 200,
-  statusText: 'OK',
-  json: vi.fn().mockResolvedValue(data),
-});
+const makeResponse = (data: unknown) => new Response(JSON.stringify(data));
 
 describe('MayaAPI validation', () => {
   afterEach(() => {

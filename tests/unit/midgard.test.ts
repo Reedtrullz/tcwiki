@@ -1,12 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import MidgardAPI, { resetMidgardEndpointForTests } from '@/lib/api/midgard';
 
-const makeResponse = (ok: boolean, data: unknown, status = 200, statusText = 'OK') => ({
-  ok,
-  status,
-  statusText,
-  json: vi.fn().mockResolvedValue(data),
-});
+const makeResponse = (ok: boolean, data: unknown, status = 200, statusText = 'OK') => new Response(JSON.stringify(data), { status: !ok && status === 200 ? 500 : status, statusText });
 
 describe('MidgardAPI', () => {
   beforeEach(() => {
@@ -461,7 +456,7 @@ describe('MidgardAPI', () => {
     expect(result.data).toBeUndefined();
   });
   it('caps daily leaderboard history reads at six selected pools plus one network aggregate', async () => {
-    const fetchMock = vi.fn().mockResolvedValue(makeResponse(true, { intervals: [] }));
+    const fetchMock = vi.fn<(url: string) => Promise<Response>>(async () => makeResponse(true, { intervals: [] }));
     vi.stubGlobal('fetch', fetchMock);
     const results = await MidgardAPI.getDailyVolumeHistories();
     expect(results).toHaveLength(7);

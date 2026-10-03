@@ -1,3 +1,4 @@
+import { readProviderJson } from './bounded-json';
 import type {
   LiveDataResult,
   MayaNetworkStats,
@@ -37,7 +38,7 @@ async function requestFromEndpoint<T>(endpoint: SourceMeta, path: string): Promi
       throw new Error(`${response.status} ${response.statusText}`);
     }
 
-    return await response.json() as T;
+    return await readProviderJson(response, controller.signal) as T;
   } finally {
     globalThis.clearTimeout(timeoutId);
   }

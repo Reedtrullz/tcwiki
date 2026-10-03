@@ -3,12 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import ThornodeAPI, { createThornodeCollectionContext, reassessThornodeResult, deriveDynamicL1FeeStatus, deriveNetworkStatus, deriveRunePoolPolStatus, resetThornodeEndpointForTests } from '@/lib/api/thornode';
 import type { DynamicL1FeeSourceFreshness, RunePoolSourceFreshness, ThornodeInboundAddress } from '@/lib/types';
 
-const makeResponse = (ok: boolean, data: unknown, status = 200, statusText = 'OK') => ({
-  ok,
-  status,
-  statusText,
-  json: vi.fn().mockResolvedValue(data),
-});
+const makeResponse = (ok: boolean, data: unknown, status = 200, statusText = 'OK') => new Response(JSON.stringify(data), { status: !ok && status === 200 ? 500 : status, statusText });
 
 interface SnapshotFixture {
   mimir: unknown;
@@ -2833,7 +2828,7 @@ it('bounds stalled body parsing and fallback by the remaining collection deadlin
   vi.useFakeTimers();
   resetThornodeEndpointForTests();
   const signals: AbortSignal[] = [];
-  vi.stubGlobal('fetch', vi.fn(async (_url, init) => { signals.push(init.signal); return { ok: true, json: () => new Promise(() => {}) }; }));
+  vi.stubGlobal('fetch', vi.fn(async (_url, init) => { signals.push(init.signal); return new Response(new ReadableStream()); }));
   const context = createThornodeCollectionContext();
   Object.assign(context, { deadlineAtMs: Date.now() + 7000 });
   let result: Awaited<ReturnType<typeof ThornodeAPI.getNetworkStatus>> | undefined;
@@ -2850,7 +2845,7 @@ it('propagates owner cancellation across an in-flight collection without startin
   vi.useFakeTimers();
   resetThornodeEndpointForTests();
   const owner = new AbortController();
-  const fetchMock = vi.fn(async () => ({ ok: true, json: () => new Promise(() => {}) }));
+  const fetchMock = vi.fn(async () => (new Response(new ReadableStream())));
   vi.stubGlobal('fetch', fetchMock);
   const context = createThornodeCollectionContext(owner.signal);
   let result: Awaited<ReturnType<typeof ThornodeAPI.getNetworkStatus>> | undefined;

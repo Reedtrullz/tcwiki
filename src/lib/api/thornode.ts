@@ -1,3 +1,4 @@
+import { readProviderJson, PROVIDER_MAX_NUMERIC_CHARACTERS } from './bounded-json';
 import {
   ChainOperationalStatus,
   DynamicL1FeeCurrentAccumulator,
@@ -189,7 +190,7 @@ async function requestResponse(url: string, context?: ThornodeCollectionContext)
     return await Promise.race([aborted, (async () => {
       const response = await fetch(url, { signal: controller.signal, cache: 'no-store' });
       const retryAt = response.status === 429 ? new Date(recordRateLimit(url, response)).toISOString() : undefined;
-      const raw: unknown = await response.json();
+      const raw: unknown = await readProviderJson(response, controller.signal);
       return { response, raw, retryAt };
     })()]);
   } finally {
@@ -435,12 +436,13 @@ function shouldFailoverSwapQuote(result: SwapQuoteProbeResult) {
 }
 
 function validateSwapQuoteRequest(request: SwapQuoteRequest) {
-  if (!request.fromAsset || !request.toAsset) {
-    throw new Error('Swap quote request requires fromAsset and toAsset.');
+  if (typeof request.fromAsset !== 'string' || typeof request.toAsset !== 'string' || !request.fromAsset || !request.toAsset || request.fromAsset.length > 256 || request.toAsset.length > 256) {
+    throw new Error('Swap quote request requires fromAsset and toAsset with 1 to 256 characters each.');
   }
   if (request.fromAsset === request.toAsset) {
     throw new Error('Swap quote request requires two different assets.');
   }
+  if (typeof request.amountBaseUnits !== 'string' || request.amountBaseUnits.length > PROVIDER_MAX_NUMERIC_CHARACTERS) throw new Error('Swap quote amount must have at most 80 digits.');
   if (!SWAP_QUOTE_AMOUNT_PATTERN.test(request.amountBaseUnits) || request.amountBaseUnits === '0') {
     throw new Error('Swap quote request requires a positive base-unit amount.');
   }
