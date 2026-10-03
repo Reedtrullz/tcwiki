@@ -1302,13 +1302,13 @@ Every proposal appears exactly once below. Complete shared execution/review gate
 **Execution note:** Include the 2 October refinement: raw memo, parsed interpretation and separate source-chain confirmation, THORChain processing and destination settlement. Verify chosen provider contracts; OP_RETURN API availability was not established.
 
 - [x] Revalidate against current main and record the source/caller baseline.
-- [ ] Implement the smallest reviewed slice: Start with one public transaction-hash lookup and a cited lifecycle timeline, linking the exact indexer/raw source used. Show unresolved/missing evidence and compare the actual transaction's time/inputs with current context without assigning a cause from present halts.
-- [ ] Verify the acceptance: Sanitized fixtures cover observed, partial, refunded, multiple outbound and not-found cases; stale/indexer failures stay unknown; amounts/fees retain units; historical and current evidence cannot be conflated.
-- [ ] Run `npm run test:unit -- tests/unit/network-diagnostics.test.ts tests/unit/midgard.test.ts`. Exercise `npx playwright test tests/network.spec.ts --project=chromium` against the stated candidate target; expand the existing journeys only where acceptance requires it.
+- [x] Implement the smallest reviewed slice: Start with one public transaction-hash lookup and a cited lifecycle timeline, linking the exact indexer/raw source used. Show unresolved/missing evidence and compare the actual transaction's time/inputs with current context without assigning a cause from present halts.
+- [x] Verify the acceptance: Sanitized fixtures cover observed, partial, refunded, multiple outbound and not-found cases; stale/indexer failures stay unknown; amounts/fees retain units; historical and current evidence cannot be conflated.
+- [x] Run `npm run test:unit -- tests/unit/network-diagnostics.test.ts tests/unit/midgard.test.ts`. Exercise `npx playwright test tests/network.spec.ts --project=chromium` against the stated candidate target; expand the existing journeys only where acceptance requires it.
 
 **Stop at this boundary:** No wallet connection, signing, send instructions, automatic blame, recovery promises, stored address history or arbitrary URL fetches. Validate hash/chain inputs and privacy before adding providers.
 
-**Execution receipt (3 October):** Final implementation/proof in progress. See [the reconciled ledger](2026-10-02-workplan-progress.md) for PR and source-specific proof. No main merge or deployment.
+**Execution receipt (3 October):** Implemented bounded candidate; final combined proof and CI pending. See [the reconciled ledger](2026-10-02-workplan-progress.md) for PR and source-specific proof. No main merge or deployment.
 
 #### PR-63 — Pilot an allowlisted, read-only API query recipe workbench
 
