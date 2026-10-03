@@ -566,3 +566,10 @@ export const mayaNodeDocsSource: SourceMeta = {
   retrievedAt: '2026-08-19',
   notes: 'Official Maya node operator documentation for setup, bonding, and lifecycle.',
 };
+
+export const transactionQueryExamplesSource: SourceMeta = {
+  label: 'THORChain transaction status query examples',
+  url: 'https://dev.thorchain.org/examples/tutorials.html',
+  retrievedAt: '2026-10-03',
+  notes: 'Query-stage meanings for educational evidence routing. A provider processing result is separate from independent source/destination chain inclusion.',
+};

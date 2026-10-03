@@ -2,6 +2,7 @@ import type {
   Chain,
   DataConfidence,
   EcosystemProject,
+  ExecutionEvidenceMap,
   GovernanceProposal,
   ResearchReport,
   SecurityIncident,
@@ -62,6 +63,7 @@ import {
   thornodeMimirSource,
   thornodeV300TagSource,
   tokenomicsSource,
+  transactionQueryExamplesSource,
   xchainJsSource,
 } from '@/lib/sources';
 import { withFreshness } from '@/lib/trust';
@@ -337,6 +339,18 @@ const supportedChainSolSources = [
   chainClientsSource,
   exploitReport2Source,
 ];
+
+export const SWAP_EVIDENCE_MAP_RECORD: SourcedRecord<ExecutionEvidenceMap> = record({
+  id: 'swap-execution-evidence-map',
+  limitation: 'External-asset swap teaching sequence, not a live transaction or promise of completion. Stages may wait, fail or refund; omitted evidence remains unknown. Internal transfers can omit an external outbound; do not invent a transaction hash for them.',
+  stages: [
+    { id: 'source-chain', label: '1. Source-chain inclusion', evidence: 'Inspect the exact inbound transaction and source-chain block.', boundary: 'Recorded memo bytes do not prove THORChain accepted or processed them.', href: '/deep-dives/streaming-swaps-refunds#evidence-ladder' },
+    { id: 'observation', label: '2. THORChain observation', evidence: 'Inspect inbound observation and confirmation stage fields for the same hash.', boundary: 'A source block alone is not a completed protocol observation; missing stage evidence stays unknown.', href: '/deep-dives/streaming-swaps-refunds#swap-lifecycle' },
+    { id: 'processing', label: '3. Protocol processing', evidence: 'Inspect swap stage and pending/scheduled action records with their amount units.', boundary: 'A quote is a prior check. Processing may wait, fail or schedule a refund; present-day halt values do not explain a past cause.', href: '/deep-dives/streaming-swaps-refunds#why-refunds-happen' },
+    { id: 'outbound', label: '4. Outbound or refund evidence', evidence: 'Inspect scheduled outbounds and link each recorded outbound hash, including multiple outputs.', boundary: 'Scheduling or signing progress alone does not prove destination inclusion. A refund branch must be checked against its own transaction evidence.', href: '/deep-dives/streaming-swaps-refunds#swap-lifecycle' },
+    { id: 'destination-chain', label: '5. Destination-chain inclusion', evidence: 'Check each output hash and destination-chain block independently.', boundary: 'Provider completion is scoped to that provider. Independently verify destination inclusion; recipient ownership and finality policy are separate questions.', href: '/deep-dives/build-query-data#shipping-boundary' },
+  ],
+}, [transactionQueryExamplesSource, swapGuideSource, networkHaltsSource], 'curated', { checkedAt: '2026-10-03', nextReviewDue: '2026-11-03' });
 
 export const CHAIN_RECORDS: SourcedRecord<Chain>[] = [
   record({

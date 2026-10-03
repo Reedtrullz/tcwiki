@@ -840,3 +840,9 @@ export interface NetworkStatus {
   sourceWarnings: string[];
   sourceWarningDetails?: NetworkStatusSourceWarning[];
 }
+
+export interface ExecutionEvidenceMap {
+  id: string;
+  limitation: string;
+  stages: Array<{ id: string; label: string; evidence: string; boundary: string; href: string }>;
+}
