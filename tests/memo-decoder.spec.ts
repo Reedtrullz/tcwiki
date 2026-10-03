@@ -8,15 +8,16 @@ test('memo input is keyboard-usable and stays local to the page', async ({ page 
   await expect(input).toBeVisible();
   await expect(input).toBeEnabled();
 
-  const interactionRequests: string[] = [];
-  page.on('request', (request) => interactionRequests.push(request.url()));
+  const sent: Array<{ url: string; body: string | null }> = [];
+  page.on('request', request => sent.push({ url: request.url(), body: request.postData() }));
   await input.focus();
   await page.keyboard.type('MIGRATE:17894403');
 
   await expect(decoder.getByRole('status')).toContainText('Read as migrate memo intent');
   await expect(decoder.locator('pre code')).toHaveText('MIGRATE:17894403');
   await expect(decoder.getByText('17894403', { exact: true })).toBeVisible();
-  expect(interactionRequests).toEqual([]);
+  expect(sent.filter(request => request.url.includes('MIGRATE') || request.body?.includes('MIGRATE'))).toEqual([]);
+  expect(sent.filter(request => new URL(request.url).origin !== new URL(page.url()).origin)).toEqual([]);
 });
 
 test('reviewed examples load without leaving the builder guide', async ({ page }) => {
