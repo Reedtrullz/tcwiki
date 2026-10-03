@@ -91,7 +91,7 @@ Execute all accepted work and create/push GitHub PRs; do not merge to main. User
 | PR-47 | queued | issue #146 |
 | PR-62 | queued | issue #161 |
 | PR-33 | queued | issue #198 |
-| PR-63 | queued | issue #162 |
+| PR-63 | reviewed stop decision; static recipe adequate | Existing guide/source-map/diagnostic answers one current raw-control read with warnings and height limits; no additional API workbench; revisit for a concrete unmet query |
 | PR-64 | queued | issue #163 |
 | PR-35 | queued | issue #200 |
 
