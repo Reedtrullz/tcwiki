@@ -1,5 +1,5 @@
 import { test, expect, type Locator } from '@playwright/test';
-import { mockSwapperFirstNetwork } from './helpers/thornode-mocks';
+import { fulfillJson, mockSwapperFirstNetwork } from './helpers/thornode-mocks';
 
 async function checkRoute(quotePanel: Locator) {
   await expect(quotePanel.getByRole('button', { name: /Check route/i })).toBeEnabled({ timeout: 15_000 });
@@ -59,18 +59,19 @@ test.describe('THORChain Wiki Network Smoke Tests', () => {
       })),
     ];
     await mockSwapperFirstNetwork(page, { nodeRows });
+    await page.route(/\/v2\/network$/, route => fulfillJson(route, { totalPooledRune: '100000000000', totalReserve: '200000000000', activeNodeCount: 100, standbyNodeCount: 20, bondingAPY: '0.1', liquidityAPY: '0.05', nextChurnHeight: 123, bondMetrics: {} }));
     await page.goto('/network');
 
     const coverage = page.getByRole('region', { name: 'THORChain node coverage' });
     await expect(coverage.getByText('Rows in loaded THORNode /nodes response:', { exact: false })).toBeVisible();
-    await expect(coverage.getByText('Observer', { exact: true })).toBeVisible();
-    await expect(coverage.getByText('release-x', { exact: true })).toBeVisible();
+    await expect(coverage.getByRole('list', { name: 'Observed status counts' }).getByText('Observer', { exact: true })).toBeVisible();
+    await expect(coverage.getByRole('list', { name: 'Observed version counts' }).getByText('release-x', { exact: true })).toBeVisible();
     await expect(coverage.getByText(/A difference alone does not indicate an outage\./)).toBeVisible();
     await expect(coverage.getByRole('link', { name: 'Liquify THORNode node set' })).toHaveAttribute(
       'href',
       'https://gateway.liquify.com/chain/thorchain_api/thorchain/nodes'
     );
-    await expect(coverage.getByRole('link', { name: 'THORChain Midgard' })).toHaveAttribute(
+    await expect(coverage.getByRole('link', { name: 'Liquify Midgard' })).toHaveAttribute(
       'href',
       'https://gateway.liquify.com/chain/thorchain_midgard/v2/network'
     );
@@ -94,8 +95,10 @@ test.describe('THORChain Wiki Network Smoke Tests', () => {
     await search.press('Backspace');
     const rowLimit = coverage.getByLabel('Rows shown');
     await rowLimit.focus();
-    await rowLimit.press('ArrowDown');
-    await rowLimit.press('Enter');
+    await expect(rowLimit).toBeFocused();
+    await rowLimit.press('5');
+    await rowLimit.press('Tab');
+    await expect(rowLimit).not.toBeFocused();
     await expect(rowLimit).toHaveValue('50');
     await expect(coverage.getByText('Showing 25 of 25 matching rows (25 loaded).')).toBeVisible();
     await expect(coverage).not.toContainText('198.51.100.8');
