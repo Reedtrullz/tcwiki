@@ -43,11 +43,11 @@ Five dependency PRs remain open: [#130](https://github.com/Reedtrullz/tcwiki/pul
 
 ### Start here
 
-- [ ] Read current root/nested AGENTS, installed framework docs, this plan, live issue deltas and current runtime/deploy configuration. Record the base SHA and open worktree/PR inventory.
-- [ ] Create/reuse an isolated worktree from verified current main. Keep the planning/source documents available without copying dirty app/content files automatically.
-- [ ] Inspect and complete PR-37's non-destructive test-hook slice before ordinary unit runs. Record installed versions and lockfile drift without changing the primary checkout.
-- [ ] Establish a reproducible baseline in that worktree. Classify each failure as environment, existing defect, source drift or patch regression. A baseline failure is recorded and fixed by the corresponding issue, not waived silently.
-- [ ] Compare each issue with merged changes (especially #205). Mark already-satisfied criteria with exact commit/test evidence; implement only the remainder.
+- [x] Read current root/nested AGENTS, installed framework docs, this plan, live issue deltas and current runtime/deploy configuration. Record the base SHA and open worktree/PR inventory.
+- [x] Create/reuse an isolated worktree from verified current main. Keep the planning/source documents available without copying dirty app/content files automatically.
+- [x] Inspect and complete PR-37's non-destructive test-hook slice before ordinary unit runs. Record installed versions and lockfile drift without changing the primary checkout.
+- [x] Establish a reproducible baseline in that worktree. Classify each failure as environment, existing defect, source drift or patch regression. A baseline failure is recorded and fixed by the corresponding issue, not waived silently.
+- [x] Compare each issue with merged changes (especially #205). Mark already-satisfied criteria with exact commit/test evidence; implement only the remainder.
 
 ## How to work each task
 
@@ -160,7 +160,7 @@ Every proposal appears exactly once below. Complete shared execution/review gate
 - [x] Revalidate against current main and record the source/caller baseline.
 - [x] Implement the smallest reviewed slice: Make ordinary tests non-destructive. Report candidate numbered files; use an explicit cleanup action only for reviewed, identical, untracked duplicates. Retain narrowly recognized OS metadata cleanup if needed.
 - [x] Verify the acceptance: Isolated fixtures prove tracked files, nonidentical authored copies and untracked WIP survive the normal test command. Dry-run output names exact candidates; explicit removal is limited to reviewed identical duplicates.
-- [ ] Run the new isolated-file safety check with `node scripts/require-node22.mjs` then direct `npx vitest run tests/unit/platform-cleanup.test.ts` before using the npm hook (suite proposed).
+- [x] Run the isolated-file safety regression before ordinary verification. The direct seven-case RED run reproduced unsafe cleanup; the repaired Node-only npm hook then passed all 482 baseline tests. PR207 records the fixture proof; no real workspace files were removed.
 
 **Stop at this boundary:** No workspace cleanup in this mission; do not delete authored, changed or tracked files, recurse into unrelated trees, or add a cleanup framework.
 
@@ -249,7 +249,7 @@ Every proposal appears exactly once below. Complete shared execution/review gate
 - [x] Revalidate against current main and record the source/caller baseline.
 - [x] Implement the smallest reviewed slice: Remove the duplicate provider alias; use an actual second endpoint only after capability/source verification. Validate shape, units, APY scale, bond and slash-point fields before provider acceptance, following the existing Midgard pattern.
 - [x] Verify the acceptance: Malformed success degrades cleanly; valid zero survives; invalid APY never renders NaN%; each distinct provider is attempted at most once per pass; small mocked Maya tests cover fallback and validation.
-- [ ] Run the smallest proposed offline regression directly, then through the repaired unit-test hook.
+- [x] Verify the offline Maya provider boundaries through the repaired test entry. PR213 records the parent acceptance/shape/address/slash review; the final complete-source suite includes these regressions.
 
 **Stop at this boundary:** Keep Maya independent of THORChain; do not invent redundancy or generalize all APIs behind a new client framework.
 
@@ -1390,11 +1390,11 @@ Use this file's task checkboxes and the existing issue/PR links; no new project-
 
 At each milestone:
 
-- [ ] Rebase the next isolated slice on the verified integrated main; do not automatically pull unrelated WIP into it.
-- [ ] Check shared contracts with downstream callers; review source, privacy/accessibility and both target proofs as applicable.
+- [x] Stack isolated slices on verified candidate predecessors while main remains unmerged; retain their ancestry in PR275 and keep primary WIP separate. This execution uses the recorded stacking ruling rather than merging main between slices.
+- [x] Check shared contracts with downstream callers; review source, privacy/accessibility and both target proofs as applicable. Final combined receipts are in the integration review; human/owner gates remain separate.
 - [ ] Confirm the actual deployed artifact only after an authorized release. Failed source checks retain reasons; liveness alone is insufficient.
-- [ ] Verify the primary checkout's opening WIP hashes/status remain intact, and keep rollback/retirement assets.
-- [ ] Update relevant issue/PR evidence when authorized, record remaining decisions and log a concise Obsidian summary.
+- [x] Verify the primary checkout's opening WIP hashes/status remain intact, and keep rollback/retirement assets. All 21 opening hashes were rechecked unchanged on 3 October; main still matches the opening source SHA.
+- [x] Update relevant PR evidence, record remaining owner/human decisions and log concise evidence-backed summaries to the THORChain Wiki project note and daily Obsidian log. Final current-head CI and merge readiness are reported on PR275.
 
 **Recommended start:** Wave 0, in order: current-source/runtime inventory → safe cleanup hook → reproducible checks → scoped editorial gate and targeted ILP correction. Then the shared data-contract lane and production-shaped browser/release lane. Keep the source-reviewed OP_RETURN registry/examples in the independent editorial lane when it avoids waiting on runtime work.
 
