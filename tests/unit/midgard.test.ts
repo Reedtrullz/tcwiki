@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import MidgardAPI, { resetMidgardEndpointForTests } from '@/lib/api/midgard';
+import type { MidgardPoolPeriod } from '@/lib/types';
 
 const makeResponse = (ok: boolean, data: unknown, status = 200, statusText = 'OK') => new Response(JSON.stringify(data), { status: !ok && status === 200 ? 500 : status, statusText });
 
@@ -61,6 +62,15 @@ describe('MidgardAPI', () => {
 
     expect(fetchMock.mock.calls[0][0]).toBe('https://gateway.liquify.com/chain/thorchain_midgard/v2/pools?status=available&period=30d');
     expect(result.source?.url).toBe('https://gateway.liquify.com/chain/thorchain_midgard/v2/pools?status=available&period=30d');
+  });
+
+  it('rejects unbounded or unsupported pool periods before requesting a provider', async () => {
+    const fetchMock = vi.fn().mockImplementation(() => makeResponse(true, []));
+    vi.stubGlobal('fetch', fetchMock);
+    for (const period of ['all', '500d', '14d&count=10000']) {
+      expect((await MidgardAPI.getPools('available', period as MidgardPoolPeriod)).status).toBe('degraded');
+    }
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it('preserves canonical live Midgard pool liquidity and RUNE volume fields', async () => {

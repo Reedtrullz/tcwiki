@@ -50,14 +50,14 @@ Execute all accepted work and create/push GitHub PRs; do not merge to main. User
 | PR-51 | PR231 open; successor audit gate passed | e425f90; Node absent host; shared JS/jq fixtures,584units; own CI full-audit failure retained; scoped exception proposed PR232 |
 | PR-16 | PR238 open; CI passed | 98c75ed;CI37091851223SUCCESS;612units/16runtime-feechecks eachtarget; origin/source/feature receipts and deduplicated incident lifecycle |
 | PR-45 | PR239 open; CI passed | 6fc370c;CI37092219298SUCCESS;immutableTHORNode3.20.3/b08d81f;36activation rules verified/2unsupported;620units;strictJS/jq applicabilityparity;rawcontrols retained;38network/economics/runtimechecks pertarget |
-| PR-52 | PR240 open; local verified | 9474fec;629units/54files;RED2→GREEN137focused;shareddefaults/age policy;actual3readyreceipts showNextlag1/Workerlag10;32network/runtimebrowserchecks eachtarget |
+| PR-52 | PR240 open; CI passed | 9474fec;629units/54files;RED2→GREEN137focused;shareddefaults/age policy;actual3readyreceipts showNextlag1/Workerlag10;32network/runtimebrowserchecks eachtarget |
 | PR-04 | PR218 open; CI passed | 6b130055; CI37039713892; completed UTC day/zero/duplicate/gap/rollover; separate aggregate and actual comparison days |
 | PR-38 | PR220 open; CI passed | 0982935; https://github.com/Reedtrullz/tcwiki/pull/220; CI37040858697; full542/types/lint/both builds; UTC chronology/gaps/overlap; 11 checks each Next/CF stats; full32 CF checks, one desktop-only skip |
 | PR-05 | PR218 open; CI passed | 6b130055; CI37039713892; seven bounded histories (14 fallback), provider/failed coverage; scoped visible pool-row regression |
 | PR-09 | PR223 open; local verified | c818d47; https://github.com/Reedtrullz/tcwiki/pull/223; full545/types/lint/both builds; 3 economics browser checks each Next/CF; actual price UTC interval/provider/age, degraded price USD withheld; CI pending |
 | PR-40 | verified candidate; publication pending | RED6→GREEN145focused/full639units;reviewedimmutablefee manager/defaults/window30;raw/effective retained;24runtime/feebrowserchecks pertarget |
 | PR-41 | verified candidate; PR publishing | 644units/55files;bothbuilds/Nextsmoke;26fee/runtimechecks eachNext/CF;partial fields, cohort switch, defensive duplicates/conflicts, exact sums and explicit unweighted controller mean |
-| PR-46 | queued | issue #145 |
+| PR-46 | verified candidate; PR publishing | db6d638+integration242;651units;47stats/network/home/runtimechecks eachNext/CF plus1skip;separate reportedAPR/APY identity/decimalscale/same-field ranking, boundedshareableperiod/provenance/cachekey |
 | PR-65 | queued | issue #164 |
 | PR-19 | PR228 open; CI passed | 1c93efa; CI37087634182; one active disclosure, hydration gate/native form values, connected empty panels |
 | PR-24 | PR233 open; CI passed | 1ca5fcd; exact-head CI passed;552units;26browser checks each target plus4device skips |
@@ -148,3 +148,5 @@ Integration of237/238/240 retains quote reconciliation, nameddatareceipts, stric
 Combined operation/policy candidate:644units/55files/types/lint/bothbuilds/Nextsmoke and44network/economics/fee/runtimebrowserchecks eachNext/CF passed. Quote body/explicitrecheck, unsupportedversion rawcontrols, offlineaging, sourcepolicy and optionalhistory boundaries coexist. PR238CI37091851223 and239CI37092219298 SUCCESS. PR240CI37092523901 stillpending at05:24. No mainmerge/deploy.
 
 PR41 final:644units/types/lint/content/bothbuilds/Nextsmoke and26fee/runtimebrowserchecks eachNext/CF passed. Initial24pass/2fail pertarget reflected an immediate test count before data load; finaljourney waits for the visible summary. Immutable3.20.3 source selects one dominant affiliate per eligible leg; text explicitly describes loaded attribution totals and does not claim cross-partner duplication or complete protocol revenue. No reconstruction, causal lift claim or main merge/deploy. PR240CI37092523901,241CI37093120589,242CI37093294012 SUCCESS.
+
+PR46 final:parent matched pinned sourcehash; unsupportedperiodRED→GREEN nofetch;651units/types/lint/content/trackedchecks/bothbuilds/Nextsmoke;47browserchecks eachNext/Worker plus1desktop-onlyskip. APR/APY retain provideridentity and neither compounding nor distinctformulas inferred. Base242CI37093294012 SUCCESS. PR243fee-cohorts open8e1308c,26checks perruntime; its integration is partofPR20 baseline, not this PR46 productdiff.

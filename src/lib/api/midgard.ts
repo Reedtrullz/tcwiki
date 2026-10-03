@@ -6,6 +6,7 @@ import {
   LiveDataResult,
   MidgardHealth,
   DEFAULT_MIDGARD_POOL_PERIOD,
+  MIDGARD_POOL_PERIODS,
   MidgardPoolPeriod,
   NetworkStats,
   Node,
@@ -593,6 +594,7 @@ export class MidgardAPI {
     status = 'available',
     period: MidgardPoolPeriod = DEFAULT_MIDGARD_POOL_PERIOD
   ): Promise<LiveDataResult<Pool[]>> {
+    if (!MIDGARD_POOL_PERIODS.includes(period)) return liveDegraded<Pool[]>('Unsupported pool return period; select a bounded duration.');
     const params = new URLSearchParams();
     if (status) {
       params.set('status', status);
