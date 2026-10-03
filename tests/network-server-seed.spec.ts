@@ -5,7 +5,11 @@ test('network renders dated server evidence and a native reference path without 
   const context = await browser.newContext({ javaScriptEnabled: false, baseURL: info.project.use.baseURL });
   const page = await context.newPage();
   const response = await page.goto('/network');
-  expect(response?.headers()['content-security-policy']).toContain("'nonce-");
+  const enforced = process.env.CSP_ENFORCE === '1';
+  const expectedPolicy = enforced ? 'content-security-policy' : 'content-security-policy-report-only';
+  const otherPolicy = enforced ? 'content-security-policy-report-only' : 'content-security-policy';
+  expect(response?.headers()[expectedPolicy]).toContain("'nonce-");
+  expect(response?.headers()[otherPolicy]).toBeUndefined();
   expect(response?.headers()['cache-control']).toMatch(/no-store|private/);
   await expect(page.getByRole('heading', { name: 'Network evidence without JavaScript' })).toBeVisible();
   const fallback = page.locator('noscript section');
