@@ -86,7 +86,7 @@ Execute all accepted work and create/push GitHub PRs; do not merge to main. User
 | PR-68 | queued | issue #203 |
 | PR-34 | queued | issue #199 |
 | PR-36 | queued | issue #201 |
-| PR-22 | queued | issue #187 |
+| PR-22 | human-gated preparation; trial/UI deferred | two-route task pack and390/1280technicalbaseline/localbuildhashes,0participants; sourceposture alreadycollapsed; no humanbefore-afterclaim; revisit actualparticipants |
 | PR-48 | queued | issue #147 |
 | PR-47 | queued | issue #146 |
 | PR-62 | queued | issue #161 |
@@ -150,3 +150,5 @@ Combined operation/policy candidate:644units/55files/types/lint/bothbuilds/Nexts
 PR46 final:parent matched pinned sourcehash; unsupportedperiodRED→GREEN nofetch;651units/types/lint/content/trackedchecks/bothbuilds/Nextsmoke;47browserchecks eachNext/Worker plus1desktop-onlyskip. APR/APY retain provideridentity and neither compounding nor distinctformulas inferred. Base242CI37093294012 SUCCESS. PR243fee-cohorts open8e1308c,26checks perruntime; its integration is partofPR20 baseline, not this PR46 productdiff.
 
 PR31 final: curated updates/RSS derive from two authored source-qualified records, with historical protocol events separate from wiki review dates. 695 units, both final builds/Next smoke and16desktop/mobile browserchecks each runtime passed. Shared seed/a11y/grid followup committed separately for PR255/256. No main merge/deploy.
+
+PR22 disposition: four technical route/viewport observations captured with source/buildreceipt and visible sourceboundary; one newcomer/practical/builder taskpack with explicitpendinghumanresults. No participant, comprehension/time-improvement oraccepted UIredesign claim. Revisit when actualparticipantsavailable.

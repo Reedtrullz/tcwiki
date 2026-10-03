@@ -1,0 +1,133 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-03T07:05:55.643Z",
+  "candidate": {
+    "version": "development",
+    "commit": "unknown",
+    "image": "unknown",
+    "runtime": {
+      "version": "development",
+      "commit": "unknown",
+      "image": "unknown",
+      "strict": false,
+      "verified": false,
+      "warnings": [
+        "Runtime version metadata is missing or still using a local placeholder.",
+        "Runtime commit metadata is missing or not a git SHA.",
+        "Runtime image metadata is missing or not an immutable sha256 digest ref."
+      ]
+    }
+  },
+  "runtime": "built Next standalone, localhost, CSP enforced",
+  "browser": "153.0.8010.12",
+  "fixtureScope": "browser THORNode and Midgard network/health fixtures; server seed is independently collected and can differ",
+  "participantCount": 0,
+  "humanTaskResults": [],
+  "limitations": [
+    "Technical locator/load times are not human comprehension or task-success measurements.",
+    "Loopback, unthrottled, one run per route and viewport; other live requests may remain.",
+    "No before-after product comparison or redesign has been accepted."
+  ],
+  "records": [
+    {
+      "path": "/",
+      "width": 390,
+      "technicalPageAndTargetReadyMs": 556,
+      "collapsedInitially": true,
+      "geometry": {
+        "answerTopCssPx": 761,
+        "postureTopCssPx": 698,
+        "headings": [
+          "THORChain Wiki",
+          "Start With The Claim",
+          "Live Operations Snapshot",
+          "Some routes limited; source review needed",
+          "Learn in Sequence"
+        ],
+        "disclosureCount": 12,
+        "viewportWidth": 390,
+        "documentWidth": 390
+      },
+      "sourceBoundaryAccessible": true
+    },
+    {
+      "path": "/stats",
+      "width": 390,
+      "technicalPageAndTargetReadyMs": 353,
+      "collapsedInitially": true,
+      "geometry": {
+        "answerTopCssPx": 263,
+        "postureTopCssPx": 200,
+        "headings": [
+          "Network Statistics",
+          "Look Here First",
+          "Operational Check",
+          "Some routes limited; source review needed",
+          "Which Numbers Matter",
+          "Daily Volume Leaderboard",
+          "Live Metrics",
+          "Midgard Available-Pool Rows",
+          "Earnings History",
+          "Related Checks"
+        ],
+        "disclosureCount": 11,
+        "viewportWidth": 390,
+        "documentWidth": 390
+      },
+      "sourceBoundaryAccessible": true
+    },
+    {
+      "path": "/",
+      "width": 1280,
+      "technicalPageAndTargetReadyMs": 268,
+      "collapsedInitially": true,
+      "geometry": {
+        "answerTopCssPx": 634,
+        "postureTopCssPx": 571,
+        "headings": [
+          "THORChain Wiki",
+          "Start With The Claim",
+          "Live Operations Snapshot",
+          "Some routes limited; source review needed",
+          "Learn in Sequence"
+        ],
+        "disclosureCount": 12,
+        "viewportWidth": 1280,
+        "documentWidth": 1280
+      },
+      "sourceBoundaryAccessible": true
+    },
+    {
+      "path": "/stats",
+      "width": 1280,
+      "technicalPageAndTargetReadyMs": 352,
+      "collapsedInitially": true,
+      "geometry": {
+        "answerTopCssPx": 239,
+        "postureTopCssPx": 176,
+        "headings": [
+          "Network Statistics",
+          "Look Here First",
+          "Operational Check",
+          "Some routes limited; source review needed",
+          "Which Numbers Matter",
+          "Daily Volume Leaderboard",
+          "Live Metrics",
+          "Midgard Available-Pool Rows",
+          "Earnings History",
+          "Related Checks"
+        ],
+        "disclosureCount": 11,
+        "viewportWidth": 1280,
+        "documentWidth": 1280
+      },
+      "sourceBoundaryAccessible": true
+    }
+  ],
+  "localSourceIdentity": {
+    "gitHead": "2f2ddc7e20fc39d11ed1177b19c10ef9aa9ef042",
+    "inputReceiptSha256": "7849c2055482a67e768be68956d375b1e20ede3b4ea4eb5e37cda945b9dc7f85",
+    "serverSha256": "4fcdeacb82c34c2e011c0a9112221a12e16007a7850ac4f5a181a6d6d8d2952b",
+    "boundary": "Local source/build identity only; runtime reports development/unknown and no immutable production image is asserted."
+  }
+}
