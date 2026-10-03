@@ -69,7 +69,7 @@ Execute all accepted work and create/push GitHub PRs; do not merge to main. User
 | PR-21 | PR247 open; local verified | 651units;bothbuilds/Nextsmoke;65/70 eachNext/actualWikiDO with5skips;loaded/degraded WCAG rules, keyboard/reflow/reducedmotion and single semantic-update/no repeated-poll text mutations |
 | PR-25 | PR245 open; CI passed | 40fcee3;CI37096816605SUCCESS;24offlinecases;development14/14,held-out8/10 top1/top5;current/exact allpass;31focusedtests |
 | PR-58 | queued | issue #157 |
-| PR-26 | queued | issue #191 |
+| PR-26 | verified candidate; publishing | issue #191; both target artifact-bound local baselines, 31 focused units/types/lint, both builds/Next smoke, 21 runtime/search/network checks per target; no measured justification for architecture change |
 | PR-49 | queued | issue #148 |
 | PR-50 | queued | issue #149 |
 | PR-27 | queued | issue #192 |
