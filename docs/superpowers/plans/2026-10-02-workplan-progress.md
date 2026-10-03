@@ -81,7 +81,7 @@ Execute all accepted work and create/push GitHub PRs; do not merge to main. User
 | PR-61 | queued | issue #160 |
 | PR-23 | queued | issue #188 |
 | PR-69 | queued | issue #204 |
-| PR-67 | queued | issue #202 |
+| PR-67 | verified dated examples; PR publication | Four centralized source-hashed records; 691 units; both builds/smoke and 14 desktop/mobile guide/link/evidence checks each runtime; unknown settlement retained |
 | PR-60 | queued | issue #159 |
 | PR-68 | queued | issue #203 |
 | PR-34 | queued | issue #199 |

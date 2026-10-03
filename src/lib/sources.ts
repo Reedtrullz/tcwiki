@@ -573,3 +573,80 @@ export const opReturnBitcoinMemoSource: SourceMeta = {
   retrievedAt: '2026-10-03',
   notes: 'Curated third-party Bitcoin-only archive pointer: inspect recorded payload bytes, transaction/block references and Bitcoin-side history. Its THORChain classifications and confirmation labels do not establish THORChain validation, destination settlement, complete coverage or address ownership.',
 };
+
+export const transactionExampleMemoMapV3203Source: SourceMeta = {
+  label: 'THORNode v3.20.3 memo type map',
+  url: 'https://gitlab.com/thorchain/thornode/-/blob/b08d81f79275093b0fcb753e0d68ff1c16c51cb8/x/thorchain/memo/memo.go#L59-90',
+  retrievedAt: '2026-10-03',
+  notes: 'Pinned official source for memo action interpretation: = and s map to swap, OUT maps to outbound, refund maps to refund, and MIGRATE maps to migrate. The original memo text remains separate from this interpretation.',
+};
+
+export const transactionExampleMemoDocsSource: SourceMeta = {
+  label: 'THORChain developer memo documentation',
+  url: 'https://dev.thorchain.org/concepts/memos.html',
+  retrievedAt: '2026-10-03',
+  notes: 'Official developer memo reference. Its migration example is not used as a real migration fixture; the example record below is a separately captured Ethereum transaction.',
+};
+
+export const bitcoinBlock969681Source: SourceMeta = {
+  label: 'Bitcoin block 969681',
+  url: 'https://mempool.space/block/0000000000000000000117ce66fe52ea9dcd22d47f2b7ff905b21f79a567ab56',
+  retrievedAt: '2026-10-03',
+  notes: 'mempool.space reports block 969681 with hash 0000000000000000000117ce66fe52ea9dcd22d47f2b7ff905b21f79a567ab56 at 2026-10-03T05:38:13Z. This establishes Bitcoin-side inclusion only.',
+};
+
+export const bitcoinSwapTransactionSource: SourceMeta = {
+  label: 'Bitcoin swap transaction d9e662…0322f',
+  url: 'https://mempool.space/tx/d9e6621125467b58b6ebe424cd83a179d78f4c6e5fac16e17f39c1516cb0322f',
+  retrievedAt: '2026-10-03',
+  notes: 'Captured mempool.space transaction API body at https://mempool.space/api/tx/d9e6621125467b58b6ebe424cd83a179d78f4c6e5fac16e17f39c1516cb0322f; SHA-256 d6156db728543c4eb7292dbc3afa40143db10a6a9f769dc5bcdb1294e524448d. Bitcoin-side inbound transaction and OP_RETURN bytes; no recipient-ownership claim.',
+};
+
+export const midgardBitcoinSwapActionSource: SourceMeta = {
+  label: 'Midgard swap action for the Bitcoin inbound',
+  url: 'https://gateway.liquify.com/chain/thorchain_midgard/v2/actions?txid=D9E6621125467B58B6EBE424CD83A179D78F4C6E5FAC16E17F39C1516CB0322F',
+  retrievedAt: '2026-10-03',
+  notes: 'Captured response SHA-256 0cfd9b659cb450d7915af928743a8450eda4c1298d1994c5d96148d0ffdc57fb. Midgard reports a successful swap action and an outbound record; this does not independently verify TRON destination inclusion, ownership, or user receipt.',
+};
+
+export const midgardPendingRefundSource: SourceMeta = {
+  label: 'Midgard pending refund action',
+  url: 'https://gateway.liquify.com/chain/thorchain_midgard/v2/actions?txid=C573218772AAA37B72F45C220B874BDDED6ED755250596307C28C08E80D10F91',
+  retrievedAt: '2026-10-03',
+  notes: 'Captured response SHA-256 79e36f9bd8be79647cbc72270506288f71bc57fa5311023b5fc4780d4d3ff06a. Midgard reports status pending and no outbound entries. Its reason is a provider-reported explanation, not a current halt cause; source-chain inclusion and refund settlement were not observed.',
+};
+
+export const bitcoinOutboundTransactionSource: SourceMeta = {
+  label: 'Bitcoin transaction with OUT payload 7062ec…de3c',
+  url: 'https://mempool.space/tx/7062ec072b05066dd1c6b2cf259b1275ec40e4c188ff55a4ceef94100b70de3c',
+  retrievedAt: '2026-10-03',
+  notes: 'Captured mempool.space transaction API body at https://mempool.space/api/tx/7062ec072b05066dd1c6b2cf259b1275ec40e4c188ff55a4ceef94100b70de3c; SHA-256 f7e3e8216e3df03991861b0438fbf166de442c935998ef05e74e02546b36710d. The exact OP_RETURN payload is retained; it does not prove the referenced hash meaning.',
+};
+
+export const midgardBitcoinTradeActionSource: SourceMeta = {
+  label: 'Midgard trade action containing the Bitcoin output',
+  url: 'https://gateway.liquify.com/chain/thorchain_midgard/v2/actions?txid=7062EC072B05066DD1C6B2CF259B1275EC40E4C188FF55A4CEEF94100B70DE3C',
+  retrievedAt: '2026-10-03',
+  notes: 'Captured response SHA-256 aa1707b1383ff13b33402f02403af1041ed66c76fe871de4978fd14968d41722. Midgard reports the transaction as an output in a successful trade action. This action category and the Bitcoin OUT transaction role describe different layers and are complementary.',
+};
+
+export const ethereumMigrationTransactionSource: SourceMeta = {
+  label: 'Ethereum migration-memo transaction (Blockscout)',
+  url: 'https://eth.blockscout.com/tx/0x5d8d1807308d7018e49eefb07dcd4613b6b6a174daa7c5906e22f7479d505586',
+  retrievedAt: '2026-10-03',
+  notes: 'Captured Blockscout API body from https://eth.blockscout.com/api/v2/transactions/0x5d8d1807308d7018e49eefb07dcd4613b6b6a174daa7c5906e22f7479d505586; SHA-256 07a3b59c0c7192558bf51f45199c7fe0e90c6ba5edd8a4697502619590d9a5a5. The response reports status ok, result success, block_number 20844210, transferAllowance calldata, and decoded memo MIGRATE:17894403. This is source-chain/provider evidence only.',
+};
+
+export const ethereumMigrationBlockSource: SourceMeta = {
+  label: 'Ethereum block 20844210 (Blockscout)',
+  url: 'https://eth.blockscout.com/block/20844210',
+  retrievedAt: '2026-10-03',
+  notes: 'Block number comes from the captured transaction response block_number field; its separate block field is null. The memo parameter 17894403 is a THORChain height, not this Ethereum block number.',
+};
+
+export const midgardEthereumMigrationLookupSource: SourceMeta = {
+  label: 'Midgard exact-transaction migration lookup',
+  url: 'https://gateway.liquify.com/chain/thorchain_midgard/v2/actions?txid=0x5d8d1807308d7018e49eefb07dcd4613b6b6a174daa7c5906e22f7479d505586',
+  retrievedAt: '2026-10-03',
+  notes: 'Captured 94-byte response SHA-256 1f5cc360dd9cc583655e8667412170fefce44e7780a5ae5c8ccda3aa88e48d83; exact transaction lookup returned zero actions. This leaves a matched THORChain migration lifecycle unknown.',
+};

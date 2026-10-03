@@ -9,9 +9,21 @@ import type {
   SourceMeta,
   SourcedRecord,
   TokenomicsSnapshot,
+  TransactionExample,
 } from '@/lib/types';
 import {
+  bitcoinBlock969681Source,
+  bitcoinOutboundTransactionSource,
+  bitcoinSwapTransactionSource,
+  ethereumMigrationBlockSource,
+  ethereumMigrationTransactionSource,
+  midgardBitcoinSwapActionSource,
+  midgardBitcoinTradeActionSource,
+  midgardEthereumMigrationLookupSource,
+  midgardPendingRefundSource,
   opReturnBitcoinMemoSource,
+  transactionExampleMemoDocsSource,
+  transactionExampleMemoMapV3203Source,
   adr026DynamicFeesSource,
   adr028ExploitConciliationSource,
   archivedLendingSource,
@@ -445,6 +457,173 @@ const developerIntegrationLiveInboundSource: SourceMeta = {
   retrievedAt: '2026-07-14',
   notes: 'Current-only endpoint for chain presence, current vault addresses, routers, gas rates, dust thresholds, and halt fields; never a static transaction template.',
 };
+
+const memoSyntaxSources = [transactionExampleMemoMapV3203Source, transactionExampleMemoDocsSource];
+
+export const TRANSACTION_EXAMPLE_RECORDS: SourcedRecord<TransactionExample>[] = [
+  record({
+    id: 'btc-tron-swap',
+    guide: 'streaming-swaps-refunds',
+    title: 'Bitcoin inbound with a Midgard-reported TRON swap output',
+    summary: 'A confirmed Bitcoin inbound is paired with a successful Midgard swap action. The destination output remains provider-reported evidence.',
+    memo: {
+      sourceLabel: 'Bitcoin OP_RETURN payload',
+      value: '=:tr:TMMcoyunsxpMad5BbbT6BodSDBMw4Pfzya:0/1/0',
+      interpretation: 'The pinned THORNode memo map treats = as swap. The original string, shorthand, destination and trailing tuple are preserved without expanding the tuple into extra claims.',
+    },
+    reports: [
+      {
+        layer: 'source-chain',
+        label: 'Bitcoin transaction',
+        status: 'confirmed',
+        observedAt: '2026-10-03T05:38:13Z',
+        blockHeight: '969681',
+        blockHash: '0000000000000000000117ce66fe52ea9dcd22d47f2b7ff905b21f79a567ab56',
+        blockTime: '2026-10-03T05:38:13Z',
+        transactionId: 'd9e6621125467b58b6ebe424cd83a179d78f4c6e5fac16e17f39c1516cb0322f',
+        source: bitcoinSwapTransactionSource,
+        blockSource: bitcoinBlock969681Source,
+      },
+      {
+        layer: 'thorchain-indexer',
+        label: 'Midgard action',
+        actionType: 'swap',
+        status: 'success',
+        observedAt: '2026-10-03T05:39:15Z',
+        height: '28081155',
+        transactionId: 'D9E6621125467B58B6EBE424CD83A179D78F4C6E5FAC16E17F39C1516CB0322F',
+        outputHeight: '28081160',
+        outputTransactionId: 'C9B90A7C09BAA06E3CED8F17EE39A19A4D1F97399811D6908AA3956C7C65444A',
+        inputs: [{ amount: '10180', asset: 'BTC.BTC', unit: 'raw THORChain base units (1e8)' }],
+        outputs: [{ amount: '2422777500', asset: 'TRON.TRX', unit: 'raw THORChain base units (1e8)' }],
+        source: midgardBitcoinSwapActionSource,
+      },
+    ],
+    unknowns: [
+      'TRON destination-chain inclusion was not independently verified; recipient ownership and user receipt are unknown.',
+      'Midgard status=success is that provider record, not independent settlement proof.',
+    ],
+  }, [bitcoinSwapTransactionSource, bitcoinBlock969681Source, midgardBitcoinSwapActionSource, ...memoSyntaxSources], 'historical', { checkedAt: '2026-10-03', nextReviewDue: '2026-11-03' }),
+
+  record({
+    id: 'pending-usdc-refund',
+    guide: 'streaming-swaps-refunds',
+    title: 'Pending refund record with no refund outbound',
+    summary: 'Midgard records a pending refund action for a token-asset input. The captured response contains no outbound entry.',
+    memo: {
+      sourceLabel: 'Original swap memo retained in Midgard refund metadata',
+      value: '=:TRON~USDT-TR7NHQJEKQXGTCI8Q8ZY4PL8OTSZGJLJ6T:thor17hwqt302e5f2xm4h95ma8wuggqkvfzgvsnh5z9:4575592086/1/1',
+      interpretation: 'This is the swap intent associated with the refund record, not a source-chain refund transaction. ETH~USDC uses THORChain Trade-asset notation (~); it is not native ETH.',
+    },
+    reports: [{
+      layer: 'thorchain-indexer',
+      label: 'Midgard refund action',
+      actionType: 'refund',
+      status: 'pending',
+      observedAt: '2026-10-03T06:16:38Z',
+      height: '28081517',
+      transactionId: 'C573218772AAA37B72F45C220B874BDDED6ED755250596307C28C08E80D10F91',
+      inputs: [{ amount: '4571427086', asset: 'ETH~USDC-0XA0B86991C6218B36C1D19D4A2E9EB0CE3606EB48', kind: 'trade asset', unit: 'raw THORChain base units (1e8)' }],
+      outputs: [],
+      facts: [{ label: 'Midgard reason (provider-reported)', value: 'emit asset 4573885300 less than price limit 4575592086; this is not a current halt cause' }],
+      source: midgardPendingRefundSource,
+    }],
+    unknowns: [
+      'The source-chain block, refund outbound transaction, destination-chain inclusion, and refund settlement are unknown.',
+    ],
+  }, [midgardPendingRefundSource, ...memoSyntaxSources], 'historical', { checkedAt: '2026-10-03', nextReviewDue: '2026-11-03' }),
+
+  record({
+    id: 'bitcoin-outbound',
+    guide: 'build-query-data',
+    title: 'Bitcoin OUT payload inside a Midgard trade action',
+    summary: 'The Bitcoin transaction carries an OUT memo payload, while Midgard returns it as an output in a successful trade action.',
+    memo: {
+      sourceLabel: 'Bitcoin OP_RETURN payload',
+      value: 'OUT:00000650D568062B71D1BF4F0F4EEFED44C3F6FB7ED3F6DBB08E962F492107C6',
+      interpretation: 'THORNode v3.20.3 maps OUT to outbound. Midgard trade labels the encompassing action, while Bitcoin OUT labels this transaction role; these are complementary layers.',
+    },
+    reports: [
+      {
+        layer: 'source-chain',
+        label: 'Bitcoin transaction role',
+        actionType: 'outbound',
+        status: 'confirmed',
+        observedAt: '2026-10-03T05:38:13Z',
+        blockHeight: '969681',
+        blockHash: '0000000000000000000117ce66fe52ea9dcd22d47f2b7ff905b21f79a567ab56',
+        blockTime: '2026-10-03T05:38:13Z',
+        transactionId: '7062ec072b05066dd1c6b2cf259b1275ec40e4c188ff55a4ceef94100b70de3c',
+        outputs: [{ amount: '35663524', asset: 'BTC', unit: 'satoshis reported by Bitcoin transaction data' }],
+        source: bitcoinOutboundTransactionSource,
+        blockSource: bitcoinBlock969681Source,
+      },
+      {
+        layer: 'thorchain-indexer',
+        label: 'Midgard encompassing action',
+        actionType: 'trade',
+        status: 'success',
+        observedAt: '2026-10-03T05:28:44Z',
+        height: '28081053',
+        transactionId: '00000650D568062B71D1BF4F0F4EEFED44C3F6FB7ED3F6DBB08E962F492107C6',
+        outputHeight: '28081065',
+        outputTransactionId: '7062EC072B05066DD1C6B2CF259B1275EC40E4C188FF55A4CEEF94100B70DE3C',
+        destination: '13i9ZaXBYJ74qPuK7JrJ6Znws5uTa37vQt',
+        outputs: [{ amount: '35663524', asset: 'BTC.BTC', unit: 'raw THORChain base units (1e8)' }],
+        source: midgardBitcoinTradeActionSource,
+      },
+    ],
+    unknowns: ['The OUT payload does not by itself prove what the referenced hash represents.'],
+  }, [bitcoinOutboundTransactionSource, bitcoinBlock969681Source, midgardBitcoinTradeActionSource, ...memoSyntaxSources], 'historical', { checkedAt: '2026-10-03', nextReviewDue: '2026-11-03' }),
+
+  record({
+    id: 'ethereum-vault-migration',
+    guide: 'churning',
+    title: 'Ethereum router call carrying a MIGRATE memo',
+    summary: 'Blockscout reports a 2024 Ethereum transferAllowance call with a decoded MIGRATE memo. The exact Midgard transaction lookup returned no actions, so the THORChain lifecycle remains unmatched.',
+    memo: {
+      sourceLabel: 'Blockscout-decoded transferAllowance calldata',
+      value: 'MIGRATE:17894403',
+      interpretation: 'THORNode v3.20.3 maps MIGRATE to migrate. This decoded EVM call is source-chain evidence; it does not establish a matched or completed vault migration.',
+      parameters: [
+        { label: 'THORChain memo height', value: '17894403' },
+        { label: 'Router', value: '0xD37BbE5744D730a1d98d8DC97c42F0Ca46aD7146' },
+        { label: 'New vault', value: '0xcbF8EC65CA8D01bE30669FC22eAA2f1504ED6C07' },
+        { label: 'Asset contract', value: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48' },
+      ],
+    },
+    reports: [
+      {
+        layer: 'source-chain',
+        label: 'Ethereum transaction (Blockscout report)',
+        actionType: 'transferAllowance',
+        status: 'Blockscout reports status ok; EVM result success',
+        observedAt: '2024-09-27T19:59:59Z',
+        blockHeight: '20844210',
+        transactionId: '0x5d8d1807308d7018e49eefb07dcd4613b6b6a174daa7c5906e22f7479d505586',
+        facts: [
+          { label: 'Decoded method', value: 'transferAllowance(address router,address newVault,address asset,uint256 amount,string memo)' },
+          { label: 'Decoded amount parameter', value: '544915588553 USDC raw Ethereum token uint256; not THORChain 1e8 units' },
+          { label: 'Ethereum block field', value: 'block_number=20844210; the response block field is null' },
+        ],
+        source: ethereumMigrationTransactionSource,
+        blockSource: ethereumMigrationBlockSource,
+      },
+      {
+        layer: 'thorchain-indexer',
+        label: 'Midgard exact transaction lookup',
+        actionType: 'exact transaction lookup',
+        status: '0 actions returned for exact transaction lookup',
+        transactionId: '0x5d8d1807308d7018e49eefb07dcd4613b6b6a174daa7c5906e22f7479d505586',
+        source: midgardEthereumMigrationLookupSource,
+      },
+    ],
+    unknowns: [
+      'A matched THORChain migration lifecycle, observed vault move, and migration completion are unknown.',
+      'The developer-docs transaction 8330CAC064370F86352D247DE3046C9AA8C3E53C78760E5D35CFC7CAA3068DC6 is excluded here because the captured Midgard record classifies it as a swap.',
+    ],
+  }, [ethereumMigrationTransactionSource, ethereumMigrationBlockSource, midgardEthereumMigrationLookupSource, ...memoSyntaxSources], 'historical', { checkedAt: '2026-10-03', nextReviewDue: '2026-11-03' }),
+];
 
 export const SOURCE_MAP_SECTION_RECORDS: SourcedRecord<SourceMapSection>[] = [
   record({

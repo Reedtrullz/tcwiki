@@ -1,3 +1,5 @@
+import { TransactionExamples } from '@/components/features/TransactionExamples';
+
 # Streaming Swaps And Refunds
 
 THORChain swaps are not just a formula. A real swap depends on a fresh quote, a current inbound address, a valid memo, enough amount to clear dust and fee thresholds, live chain/trading/signing state, pool availability, and the outbound path.
@@ -30,6 +32,12 @@ A normal base-layer swap moves through a few evidence points:
 - If execution is valid and signing is available, nodes sign the outbound transaction. If execution is invalid or impossible, the protocol can refund according to the available source-chain path.
 
 The [CLP formula](/deep-dives/clp#how-clp-works) explains pricing. It does not prove that the specific route, memo, amount, quote, or outbound path is currently executable.
+
+## Dated Transaction Examples
+
+These records show how a Bitcoin source-chain transaction and a Midgard action can describe different stages. The refund example remains pending because its captured response has no refund outbound.
+
+<TransactionExamples guide="streaming-swaps-refunds" />
 
 ## Streaming Swaps
 

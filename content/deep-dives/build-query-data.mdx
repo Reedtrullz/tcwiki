@@ -1,3 +1,5 @@
+import { TransactionExamples } from '@/components/features/TransactionExamples';
+
 # Build And Query THORChain Data
 
 ## What This Page Can Prove
@@ -31,6 +33,12 @@ The official developer docs describe five primary data sources:
 - **gRPC:** protobuf-based Cosmos SDK access for programmatic clients. gRPC uses protocol buffers over HTTP/2, so it needs a gRPC client rather than an ordinary browser or `curl` JSON request.
 
 For production apps, public endpoints should be treated as shared infrastructure. At this review, the official guide publishes a Liquify limit of 50,000 requests per day per IP, recommends identifying the application with `x-client-id`, and requires exponential backoff for `429` rate limits or `503` overload responses. The same guide recommends running your own THORNode when production uptime and trust requirements exceed shared-endpoint guarantees.
+
+## Dated Transaction Example: Bitcoin OUT And Midgard Trade
+
+Compare the Bitcoin transaction role from its OP_RETURN payload with the Midgard action that contains it. The labels refer to different layers and are complementary.
+
+<TransactionExamples guide="build-query-data" />
 
 ## Current And Historical Endpoint Routing
 
