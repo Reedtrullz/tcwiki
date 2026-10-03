@@ -25,6 +25,7 @@ import {
   TASK_INTENT_GUIDES,
 } from '@/lib/content/registry';
 import { SEARCH_DOCUMENTS } from '@/lib/search/registry';
+import { MDX_DEEP_DIVE_SECTION_DOCUMENTS } from '@/lib/search/mdx-documents.generated';
 import type { SearchDocType } from '@/lib/search/registry';
 import {
   OPERATIONAL_CONTROL_CATALOG,
@@ -32,7 +33,7 @@ import {
   UNKNOWN_OPERATION_REVIEW_MIMIR_PREFIXES,
   operationalControlPrefixSearchKey,
 } from '@/lib/operational-controls';
-import { recordAnchor, slugifyFragment } from '@/lib/utils';
+import { recordAnchor } from '@/lib/utils';
 
 interface AnchoredSearchExpectation {
   id: string;
@@ -169,15 +170,9 @@ function knownAnchorsByRoute() {
   for (const term of GLOSSARY_TERMS) {
     addAnchor(anchorsByRoute, '/glossary', term.category);
   }
-  for (const entry of CONTENT_ENTRIES.filter((candidate) => candidate.category === 'deep-dive')) {
-    const slug = entry.href.replace('/deep-dives/', '');
-    const mdxPath = join(process.cwd(), 'content/deep-dives', `${slug}.mdx`);
-    if (!existsSync(mdxPath)) {
-      continue;
-    }
-    const source = readFileSync(mdxPath, 'utf8');
-    for (const match of source.matchAll(/^#{2,3}\s+(.+)$/gm)) {
-      addAnchor(anchorsByRoute, entry.href, slugifyFragment(match[1]));
+  for (const section of MDX_DEEP_DIVE_SECTION_DOCUMENTS) {
+    if (section.anchor) {
+      addAnchor(anchorsByRoute, section.slug, section.anchor);
     }
   }
 
@@ -223,6 +218,18 @@ function docsMatching(term: string) {
 }
 
 describe('SEARCH_DOCUMENTS', () => {
+  it('indexes bounded deep-dive sections at their heading anchors', () => {
+    const sections = SEARCH_DOCUMENTS.filter((doc) => doc.type === 'deep-dive-section');
+    const endpointRouting = sections.find((doc) => doc.href === '/deep-dives/build-query-data#current-and-historical-endpoint-routing');
+
+    expect(endpointRouting).toMatchObject({
+      id: 'deep-dive-section:build-query-data:current-and-historical-endpoint-routing',
+      title: 'Current And Historical Endpoint Routing',
+    });
+    expect(endpointRouting?.content.toLowerCase()).toContain('current and historical endpoint routing');
+    expect(sections.every((doc) => doc.content.length <= 1200)).toBe(true);
+  });
+
   it('includes deep-dive bodies and curated records', () => {
     const runeSettlement = SEARCH_DOCUMENTS.find((doc) => doc.slug === '/deep-dives/rune-settlement');
 
@@ -426,11 +433,12 @@ describe('SEARCH_DOCUMENTS', () => {
   it('lands every anchored curated record and glossary term on its exact final anchor', () => {
     const expected = new Map(anchoredSearchExpectations().map((entry) => [entry.id, entry]));
     const actualAnchoredIds = SEARCH_DOCUMENTS
-      .filter((doc) => doc.href.includes('#'))
+      .filter((doc) => doc.href.includes('#') && doc.type !== 'deep-dive-section')
       .map((doc) => doc.id)
       .sort();
 
     expect(actualAnchoredIds).toEqual([...expected.keys()].sort());
+    expect(SEARCH_DOCUMENTS.filter((doc) => doc.type === 'deep-dive-section').length).toBeGreaterThan(0);
 
     for (const [id, expectation] of expected) {
       const doc = SEARCH_DOCUMENTS.find((candidate) => candidate.id === id);

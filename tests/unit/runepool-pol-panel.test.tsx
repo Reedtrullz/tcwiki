@@ -97,8 +97,8 @@ const networkResult: LiveDataResult<NetworkStatus> = {
 
 const earningsHistory: HistoryItem[] = [
   {
-    startTime: '1751769600',
-    endTime: '1751856000',
+    startTime: '1751760000',
+    endTime: '1751846400',
     liquidityFees: '0',
     blockRewards: '0',
     earnings: '0',
@@ -110,6 +110,8 @@ const earningsHistory: HistoryItem[] = [
   },
 ];
 
+const earningsResult: LiveDataResult<HistoryItem[]> = { status: 'ok', data: earningsHistory, checkedAt: '2026-07-06T00:00:08Z', source: { label: 'Daily price provider', url: 'https://price.test/v2/history/earnings' } };
+
 describe('RunepoolPolView', () => {
   it('renders current accounting, availability, source labels, and non-claims', () => {
     const html = renderToStaticMarkup(
@@ -117,6 +119,7 @@ describe('RunepoolPolView', () => {
         result={result}
         status={status}
         earningsHistory={earningsHistory}
+        earningsResult={earningsResult}
         networkResult={networkResult}
         networkStatus={networkStatus}
       />
@@ -186,7 +189,8 @@ describe('RunepoolPolView', () => {
     expect(html).toContain('$2.3M');
     expect(html).toContain('-$1.1M');
     expect(html).toContain('Negative');
-    expect(html).toContain('Latest Midgard daily RUNE/USD interval (Jul 6)');
+    expect(html).toContain('Daily reference valuation');
+    expect(html).toContain('2025-07-06T00:00:00.000Z');
   });
 
   it('shows unavailable values and warning posture for malformed accounting', () => {
@@ -255,6 +259,7 @@ describe('RunepoolPolView', () => {
         result={{ ...result, data: oversizedStatus }}
         status={oversizedStatus}
         earningsHistory={earningsHistory}
+        earningsResult={earningsResult}
         networkResult={networkResult}
         networkStatus={networkStatus}
       />
@@ -296,4 +301,34 @@ it('retains accounting but withdraws clear RUNEPool actions when block evidence 
   expect(html).toContain('Dated context');
   expect(html).not.toContain('No tracked deposit halt');
   expect(html).not.toContain('Control enabled');
+});
+
+it('dates the selected earlier daily price and keeps its provider separate from POL accounting', () => {
+  const history = [...earningsHistory, { ...earningsHistory[0], startTime: '1751846400', endTime: '1751932800', runePriceUSD: '' }];
+  const priceResult = { status: 'ok' as const, data: history, checkedAt: '2026-07-06T00:00:08Z', source: { label: 'Daily price provider', url: 'https://price.test/v2/history/earnings' } };
+  const html = renderToStaticMarkup(<RunepoolPolView status={status} result={result} earningsHistory={history} earningsResult={priceResult} observedAtMs={Date.parse('2026-07-06T00:00:08Z')} />);
+  expect(html).toContain('2025-07-06T00:00:00.000Z');
+  expect(html).toContain('2025-07-07T00:00:00.000Z');
+  expect(html).toContain('Daily price provider');
+  expect(html).toContain('Daily reference valuation');
+  expect(html).toContain('364.0 days');
+  expect(html).toContain('not contemporaneous USD accounting');
+  expect(html).not.toContain('Latest Midgard daily RUNE/USD interval (Jul 7)');
+});
+
+it('withholds unusable price evidence independently of exact RUNE accounting', () => {
+  for (const priceResult of [undefined, { status: 'degraded' as const, data: earningsHistory, checkedAt: '2026-07-06T00:00:08Z', error: 'Price source offline' }]) {
+    const html = renderToStaticMarkup(<RunepoolPolView status={status} result={result} earningsHistory={earningsHistory} earningsResult={priceResult} />);
+    expect(html).toContain('3,740,894 RUNE');
+    expect(html).toContain('Price source unavailable');
+    expect(html).not.toContain('$2.3M');
+  }
+});
+
+
+it('withholds a priced row with invalid daily boundaries', () => {
+  const history = [{ ...earningsHistory[0], startTime: '1751769600', endTime: '1751856000' }];
+  const html = renderToStaticMarkup(<RunepoolPolView status={status} result={result} earningsHistory={history} earningsResult={{ ...earningsResult, data: history }} />);
+  expect(html).toContain('No valid completed daily price interval');
+  expect(html).not.toContain('$2.3M');
 });

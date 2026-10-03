@@ -1,19 +1,15 @@
-import { dirname } from "node:path";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import createMDX from "@next/mdx";
 import type { NextConfig } from "next";
 
 const rootDir = dirname(fileURLToPath(import.meta.url));
+const deepDiveHeadingPlugin = join(rootDir, 'scripts/lib/deep-dive-toc.mjs');
 
 const nextConfig: NextConfig = {
   output: process.env.VINEXT_BUILD === "1" ? undefined : "standalone",
   poweredByHeader: false,
   pageExtensions: ['js', 'jsx', 'md', 'mdx', 'ts', 'tsx'],
-  experimental: {
-    mdxRs: {
-      mdxType: 'gfm',
-    },
-  },
   turbopack: {
     root: rootDir,
   },
@@ -50,7 +46,7 @@ const nextConfig: NextConfig = {
 
 const withMDX = createMDX({
   options: {
-    remarkPlugins: ['remark-gfm'],
+    remarkPlugins: ['remark-gfm', deepDiveHeadingPlugin],
     rehypePlugins: [],
   },
 });

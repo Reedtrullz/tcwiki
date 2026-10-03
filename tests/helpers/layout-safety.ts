@@ -86,6 +86,7 @@ export async function expectAnchorTargetVisualSafety(page: Page, href: string, s
     `${href} has clipped elements ${JSON.stringify({ viewportWidth: layout.viewportWidth, overflowing: layout.overflowing })}`
   ).toEqual([]);
 
+  await expect.poll(async () => (await target.boundingBox())?.y ?? Number.POSITIVE_INFINITY, { message: `${href} target should land in the first viewport` }).toBeLessThan(layout.viewportHeight);
   const targetBox = await target.boundingBox();
   expect(targetBox, `${href} target must be measurable`).not.toBeNull();
   expect(targetBox?.y ?? -1, `${href} target should clear the fixed header`).toBeGreaterThanOrEqual(52);
