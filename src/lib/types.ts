@@ -2,7 +2,14 @@ export const DATA_CONFIDENCES = ['official', 'curated', 'historical', 'needs-rev
 
 export type DataConfidence = (typeof DATA_CONFIDENCES)[number];
 
+export interface ResponseHeightEvidence {
+  requestedHeight: number;
+  observedHeight?: number;
+  verification: 'verified' | 'unverified';
+}
+
 export interface SourceMeta {
+  heightPinning?: ResponseHeightEvidence;
   label: string;
   url: string;
   retrievedAt?: string;
@@ -611,7 +618,9 @@ export interface DynamicL1FeeSourceFreshness {
   thorchainHeight: number;
   thorchainBlockTime: string;
   thorchainBlockAgeSeconds?: number;
+  /** Compatibility flag for a requested pin; response verification is separate. */
   snapshotPinned: boolean;
+  heightPinning?: ResponseHeightEvidence;
 }
 
 export interface DynamicL1FeeStatus {
@@ -666,7 +675,9 @@ export interface RunePoolSourceFreshness {
   thorchainHeight: number;
   thorchainBlockTime: string;
   thorchainBlockAgeSeconds?: number;
+  /** Compatibility flag for a requested pin; response verification is separate. */
   snapshotPinned: boolean;
+  heightPinning?: ResponseHeightEvidence;
 }
 
 export interface RunePoolPolStatus {

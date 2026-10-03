@@ -1,3 +1,4 @@
+import { responseHeightEvidence } from './response-height.mjs';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
 
@@ -196,6 +197,7 @@ function providerSnapshotEvidence(snapshot, status = 'usable') {
     status: status === 'usable' && snapshot.warnings.length > 0 ? 'warning' : status,
     latestHeight: snapshot.latestHeight,
     snapshotHeight: snapshot.snapshotHeight,
+    heightPinning: snapshot.heightPinning,
     blockTime: snapshot.blockTime,
     blockAgeSeconds: snapshot.blockAgeSeconds,
     liveChains,
@@ -305,7 +307,7 @@ export class LiveChainSnapshotError extends Error {
   }
 }
 
-async function fetchJson(fetchImpl, url) {
+async function fetchJson(fetchImpl, url, requestedHeight) {
   const controller = new AbortController();
   const timeoutId = globalThis.setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
 
@@ -317,7 +319,8 @@ async function fetchJson(fetchImpl, url) {
     if (!response.ok) {
       throw new Error(`${response.status} ${response.statusText}`);
     }
-    return await response.json();
+    const data = await response.json();
+    return requestedHeight === undefined ? data : { data, heightPinning: responseHeightEvidence(requestedHeight, response.headers?.get('grpc-metadata-x-cosmos-block-height')) };
   } finally {
     globalThis.clearTimeout(timeoutId);
   }
@@ -328,12 +331,13 @@ async function fetchProviderSnapshot(source, fetchImpl, nowMs) {
   const latestBlockInfo = parseLatestBlockInfo(latestBlock);
   const snapshotHeight = getConservativeSnapshotHeight(latestBlockInfo.height);
   const { ageSeconds, warnings } = getBlockAgeWarnings(latestBlockInfo.time, nowMs);
-  const inbound = await fetchJson(fetchImpl, `${source.url}/inbound_addresses?height=${snapshotHeight}`);
+  const { data: inbound, heightPinning } = await fetchJson(fetchImpl, `${source.url}/inbound_addresses?height=${snapshotHeight}`, snapshotHeight);
   const liveChains = validateInboundAddresses(inbound);
 
   return {
     source,
     liveChains,
+    heightPinning,
     latestHeight: latestBlockInfo.height,
     snapshotHeight,
     blockTime: latestBlockInfo.time,

@@ -429,3 +429,18 @@ describe('readiness runtime contract helper', () => {
     expect(() => assertReadinessContract(response)).toThrow(/runePoolPol\.sources must include height-pinned \/runepool/);
   });
 });
+
+it('rejects manufactured height verification and preserves unsupported echo as unverified', () => {
+  const response = readyResponse();
+  const source = response.sources.thornode.sources[2] as import('@/lib/types').SourceMeta;
+  source.heightPinning = { requestedHeight: 26799999, verification: 'unverified' };
+  expect(() => assertReadinessContract(response)).not.toThrow();
+  source.heightPinning.verification = 'verified';
+  expect(() => assertReadinessContract(response)).toThrow(/matching observed height/);
+  source.heightPinning.observedHeight = 26800000;
+  expect(() => assertReadinessContract(response)).toThrow(/matching observed height/);
+  source.heightPinning.observedHeight = 26799999;
+  expect(() => assertReadinessContract(response)).not.toThrow();
+  source.url = 'https://thornode.thorchain.network/thorchain/mimir?height=26800000';
+  expect(() => assertReadinessContract(response)).toThrow(/requested source URL/);
+});

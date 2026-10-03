@@ -245,7 +245,7 @@ function snapshotDetail(status: RunePoolPolStatus | undefined) {
   const age = status.sourceFreshness.thorchainBlockAgeSeconds;
   return [
     `height ${status.sourceFreshness.thorchainHeight.toLocaleString('en-US')}`,
-    status.sourceFreshness.snapshotPinned ? 'height-pinned' : 'not pinned',
+    status.sourceFreshness.heightPinning?.verification === 'verified' ? 'response height verified' : status.sourceFreshness.snapshotPinned ? 'height requested; response unverified' : 'not pinned',
     age === undefined ? undefined : `${age}s block age`,
   ].filter(Boolean).join(' / ');
 }

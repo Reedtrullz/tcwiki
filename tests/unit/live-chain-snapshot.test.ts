@@ -442,3 +442,21 @@ describe('live chain snapshot helper', () => {
     expect(getConservativeSnapshotHeight(0)).toBe(0);
   });
 });
+
+it.each([null, '10', '11', 'bogus'])('keeps requested and echoed heights separate in script receipts (%s)', async (echo) => {
+  const evidence = await buildLiveChainSnapshotEvidence({
+    chainRecords: [chainRecord('BTC')], sources: sources.slice(0, 1), nowMs,
+    fetchImpl: vi.fn(async (input: RequestInfo | URL) => {
+      const url = new URL(String(input));
+      const data = url.pathname.endsWith('/latest') ? latestBlock(11) : [inboundRow('BTC')];
+      return new Response(JSON.stringify(data), { headers: echo && url.searchParams.has('height') ? { 'grpc-metadata-x-cosmos-block-height': echo } : {} });
+    }),
+  });
+  if (echo === '11' || echo === 'bogus') {
+    expect(evidence.status).toBe('fail');
+    expect(evidence.providers[0].error).toMatch(/response height/i);
+  } else {
+    expect(evidence.status).toBe('pass');
+    expect(evidence.providers[0]).toMatchObject({ heightPinning: { requestedHeight: 10, verification: echo ? 'verified' : 'unverified', ...(echo ? { observedHeight: 10 } : {}) } });
+  }
+});

@@ -73,6 +73,16 @@ function assertSourceMeta(value, path) {
   assert(value && typeof value === 'object', `${path} must be an object`);
   assertString(value.label, `${path}.label`);
   assertString(value.url, `${path}.url`);
+  if (value.heightPinning !== undefined) {
+    const pin = value.heightPinning;
+    assert(pin && typeof pin === 'object', `${path}.heightPinning must be an object`);
+    assert(Number.isSafeInteger(pin.requestedHeight) && pin.requestedHeight >= 0, `${path}.heightPinning.requestedHeight must be a safe height`);
+    assert(pin.verification === 'verified' || pin.verification === 'unverified', `${path}.heightPinning.verification is unsupported`);
+    assert(pin.verification === 'verified' ? pin.observedHeight === pin.requestedHeight : pin.observedHeight === undefined, `${path}.heightPinning cannot claim verification without matching observed height`);
+    let height;
+    try { height = new URL(value.url).searchParams.get('height'); } catch { height = null; }
+    assert(height !== null && /^\d+$/.test(height ?? '') && Number(height) === pin.requestedHeight, `${path}.heightPinning must match the requested source URL`);
+  }
 }
 
 function assertSourceMetaArray(value, path) {

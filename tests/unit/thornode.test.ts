@@ -2934,3 +2934,24 @@ it('preserves unrecognized timing diagnostics for strict validation instead of n
   expect(retained.data?.sourceWarningDetails).toContainEqual(unknownFreshness);
   vi.unstubAllGlobals();
 });
+
+it.each([null, '100', '101', 'bogus'])('reports response height separately from the requested pin (%s)', async (echo) => {
+  resetThornodeEndpointForTests();
+  const fixture = runePoolFixture();
+  vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+    const url = new URL(String(input));
+    const raw = url.pathname.endsWith('/latest') ? fixture.latestBlock : url.pathname.endsWith('/mimir') ? fixture.mimir : fixture.runepool;
+    return new Response(JSON.stringify(raw), { headers: echo && url.searchParams.has('height') ? { 'grpc-metadata-x-cosmos-block-height': echo } : {} });
+  }));
+  const result = await ThornodeAPI.getRunePoolPolStatus();
+  if (echo === '101' || echo === 'bogus') {
+    expect(result.status).toBe('degraded');
+    expect(result.data).toBeUndefined();
+    expect(result.error).toMatch(/response height/i);
+  } else {
+    const pinned = result.sources?.filter((source) => new URL(source.url).searchParams.has('height'));
+    expect(pinned?.length).toBe(2);
+    expect(pinned?.map((source) => source.heightPinning)).toEqual(Array.from({ length: 2 }, () => ({ requestedHeight: 100, ...(echo ? { observedHeight: 100 } : {}), verification: echo ? 'verified' : 'unverified' })));
+  }
+  vi.unstubAllGlobals();
+});

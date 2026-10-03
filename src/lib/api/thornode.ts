@@ -1,3 +1,4 @@
+import { responseHeightEvidence } from '../../../scripts/lib/response-height.mjs';
 import { readProviderJson, PROVIDER_MAX_NUMERIC_CHARACTERS } from './bounded-json';
 import {
   ChainOperationalStatus,
@@ -14,6 +15,7 @@ import {
   DynamicL1FeeWhitelistState,
   InboundOperationField,
   LiveDataResult,
+  ResponseHeightEvidence,
   NetworkStatus,
   NetworkStatusSourceWarning,
   OperationalControlStatus,
@@ -126,6 +128,7 @@ export interface ThornodeCollectionContext {
   startedAtMs: number;
   startedMonoMs: number;
   blockObservedAt: Map<string, string>;
+  heightEvidence: Map<string, ResponseHeightEvidence>;
   deadlineAtMs: number;
   deadlineMonoMs: number;
   signal?: AbortSignal;
@@ -136,7 +139,7 @@ export interface ThornodeCollectionContext {
 export function createThornodeCollectionContext(signal?: AbortSignal): ThornodeCollectionContext {
   const startedAtMs = Date.now();
   const startedMonoMs = performance.now();
-  return { initialEndpoint: activeEndpoint, startedAtMs, startedMonoMs, blockObservedAt: new Map(), deadlineAtMs: startedAtMs + THORNODE_COLLECTION_BUDGET_MS, deadlineMonoMs: startedMonoMs + THORNODE_COLLECTION_BUDGET_MS, signal, requests: new Map() };
+  return { initialEndpoint: activeEndpoint, startedAtMs, startedMonoMs, blockObservedAt: new Map(), heightEvidence: new Map(), deadlineAtMs: startedAtMs + THORNODE_COLLECTION_BUDGET_MS, deadlineMonoMs: startedMonoMs + THORNODE_COLLECTION_BUDGET_MS, signal, requests: new Map() };
 }
 
 async function request<T>(path: string): Promise<LiveDataResult<T>> {
@@ -203,6 +206,13 @@ async function requestResponse(url: string, context?: ThornodeCollectionContext)
 async function requestJson<T>(url: string, context?: ThornodeCollectionContext): Promise<T> {
   const operation = async () => {
     const { response, raw } = await requestResponse(url, context);
+    if (response.ok) {
+      const height = new URL(url).searchParams.get('height');
+      if (height !== null) {
+        const evidence = responseHeightEvidence(Number(height), response.headers.get('grpc-metadata-x-cosmos-block-height'));
+        context?.heightEvidence.set(url, evidence);
+      }
+    }
     if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
     return raw;
   };
@@ -230,7 +240,8 @@ function sourceForThornodePath(endpoint: SourceMeta, label: string, path: string
     url: thornodePathUrl(endpoint, path, height),
     notes: height === undefined
       ? 'Latest unpinned THORNode read used to choose a conservative pinned snapshot height.'
-      : `Height-pinned THORNode read at ${height}.`,
+      : `THORNode height ${height} requested; response height unverified.`,
+    ...(height !== undefined ? { heightPinning: responseHeightEvidence(height, null) } : {}),
   };
 }
 
@@ -941,8 +952,14 @@ function completeThornodeResult<T extends NetworkStatus | DynamicL1FeeStatus | R
   result: LiveDataResult<T>, context: ThornodeCollectionContext
 ): LiveDataResult<T> {
   const completedAt = new Date().toISOString();
-  const sources = result.sources?.map((source) => ({ ...source, retrievedAt: completedAt }));
-  return reassessThornodeResult({ ...result, sources, source: sources?.[0] ?? result.source,
+  const sources = result.sources?.map((source) => {
+    const heightPinning = context.heightEvidence.get(source.url) ?? source.heightPinning;
+    return { ...source, retrievedAt: completedAt, ...(heightPinning ? { heightPinning, notes: heightPinning.verification === 'verified' ? `Height ${heightPinning.requestedHeight} requested; response header confirms height ${heightPinning.observedHeight}.` : `Height ${heightPinning.requestedHeight} requested; response height unverified.` } : {}) };
+  });
+  const requested = sources?.flatMap((source) => source.heightPinning ? [source.heightPinning] : []) ?? [];
+  const heightPinning = requested.length ? responseHeightEvidence(requested[0].requestedHeight, requested.every((evidence) => evidence.verification === 'verified' && evidence.observedHeight === requested[0].requestedHeight) ? String(requested[0].requestedHeight) : null) : undefined;
+  const data = result.data && 'sourceFreshness' in result.data ? { ...result.data, sourceFreshness: { ...result.data.sourceFreshness, heightPinning } } : result.data;
+  return reassessThornodeResult({ ...result, data, sources, source: sources?.[0] ?? result.source,
     checkedAt: completedAt,
     collection: { startedAt: new Date(context.startedAtMs).toISOString(), completedAt,
       durationMs: Math.max(0, Math.round(performance.now() - context.startedMonoMs)),
