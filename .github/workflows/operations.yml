@@ -6,6 +6,7 @@ on:
     - cron: '23 * * * *'
     - cron: '53 * * * *'
     - cron: '41 6 * * 1'
+    - cron: '19 7 * * *'
 
 permissions:
   contents: read
@@ -84,3 +85,31 @@ jobs:
       - name: Fail when content reviews are overdue
         if: steps.reviews.outcome == 'failure'
         run: exit 1
+
+  canonical-source-drift:
+    name: Report canonical source drift
+    permissions:
+      contents: read
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '19 7 * * *'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci --include=optional
+      - name: Capture and compare the five allowlisted public sources
+        run: >-
+          npm run report:source-drift --
+          --refresh
+          --artifact .artifacts/source-drift/canonical-source-drift.json
+      - name: Upload source drift evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: canonical-source-drift-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .artifacts/source-drift/canonical-source-drift.json
+          if-no-files-found: warn
+          retention-days: 7
