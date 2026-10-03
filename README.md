@@ -132,7 +132,7 @@ Current focus areas:
 
 ## License
 
-MIT.
+Owner licensing decision pending. The previous MIT statement was not accompanied by a LICENSE file. See the [rights and attribution inventory](docs/rights-and-attribution.md) for current provenance, exclusions and the decision needed before new full-text exports.
 
 ---
 

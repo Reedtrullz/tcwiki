@@ -78,7 +78,7 @@ Execute all accepted work and create/push GitHub PRs; do not merge to main. User
 | PR-30 | queued | issue #195 |
 | PR-32 | verified candidate; publishing | issue #197; two issue templates, focused PR template, complete source correction example; front matter/manual links/content/tracked-input verification |
 | PR-31 | queued | issue #196 |
-| PR-61 | queued | issue #160 |
+| PR-61 | inventory candidate; owner decision pending | issue #160; README unbacked MIT claim corrected without choosing license;17MDX/126TS files/categories and Discord quotation exclusions recorded; explicit earlier owner choice remains unanswered; full-text exports gated |
 | PR-23 | queued | issue #188 |
 | PR-69 | queued | issue #204 |
 | PR-67 | queued | issue #202 |

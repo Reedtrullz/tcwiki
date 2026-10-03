@@ -85,7 +85,7 @@ For a new article, add `content/deep-dives/<slug>.mdx`, its thin `src/app/deep-d
 
 For application behavior, run focused units, typecheck and lint, then build and exercise the affected visible states on the named runtime. Next proof uses `npm run build`, `npm run smoke:standalone` and the default standalone browser lane. Cloudflare proof uses `npm run build:cloudflare`, the manifest-validating `node scripts/start-cloudflare-candidate.mjs` launcher and an explicit `PLAYWRIGHT_BASE_URL=http://127.0.0.1:3015 PLAYWRIGHT_RUNTIME=cloudflare CSP_ENFORCE=1 npm run test:e2e -- <affected-spec> --project=chromium --workers=1`. Dry-run uploads do not prove hydration. Separate production readback and owner release approval from either local lane.
 
-Preserve author/source attribution and identify externally quoted material. The repository's rights inventory and owner licensing decision must govern redistribution; this guide grants no additional rights to third-party material.
+Preserve author/source attribution and identify externally quoted material. The [rights inventory](docs/rights-and-attribution.md) and owner licensing decision must govern redistribution; this guide grants no additional rights to third-party material.
 
 ## Common Contribution Tasks
 
