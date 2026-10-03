@@ -11,12 +11,12 @@
   },
   "identity": {
     "authoredInputs": {
-      "src/lib/data/static.ts": "b55b564fe301435344819a1b73dc004e7e1f3c8897533155e5efd3bd9ad1595c",
-      "src/lib/content/registry.ts": "836bf06bc4c0cae14c266d32deeb0dd033969d02efff6db438ea4a242ab697fd",
-      "src/lib/sources.ts": "58b2b3dad7a7be214040118a4485ff9cf819fee11b3137b00cfcbeb2c4182a49",
-      "src/lib/types.ts": "decd5096f011d994ec35d49de6b57e01e2824a1831f815262007f856abbf7620",
+      "src/lib/data/static.ts": "8838ee2cb843c30cd927c51deeb72545bfff80994ddbd76f5b788c771a14620c",
+      "src/lib/content/registry.ts": "4fbd8e079d342585d034936c15e9bbe31587324de3c8f508332d0b3042b5e3e4",
+      "src/lib/sources.ts": "7be253d5ba906765a0fcc7bdebe12f8fd42afe56e23764762c6df1e0fbd26e52",
+      "src/lib/types.ts": "8b34a71b5cdaac313bbd366176077acb78b6e973dba985eb744f63ddef5dc0af",
       "src/lib/site.ts": "e79a4609bcf097347fe1660252b7d4db81ae149520cca0b27c7059fd24a07f6d",
-      "content/deep-dives/build-query-data.mdx": "9e05e3576f1940c809257bbb2edb4d0bd601a72be072a2008668be7b798c6ab2",
+      "content/deep-dives/build-query-data.mdx": "d63a031b796c07eac8b50975c4358dc3b599c1455c2813ac9db08a54492b9e83",
       "scripts/lib/knowledge-links.mjs": "1d2c3fbafd6d754696a1824cf1f50f7c9a574aaaaf4aae832d131d9de3825316",
       "scripts/lib/deep-dive-toc.mjs": "73458b1084d09f2c9c46e54b0ac287a640d4d822435d3440388639b832c536e3",
       "src/lib/deep-dive-heading-id.mjs": "9ecba84bf8d1f47133c0ab6c08e2bd05edb5c4fc828c0e25474aafba3f0c52b6"
@@ -233,6 +233,6 @@
   ],
   "checksum": {
     "algorithm": "sha256",
-    "value": "5b0aaa2250d0507268f23c1e521d9fe539d2d2a3f378c431c993c1a3a5834a79"
+    "value": "3d18bb290aac3e445da2e4a78574f39dfed79d8823ab754b916ed5f3271ca66e"
   }
 }

@@ -28,6 +28,7 @@ import {
   opReturnBitcoinMemoSource,
   transactionExampleMemoDocsSource,
   transactionExampleMemoMapV3203Source,
+  transactionMemoParserV3203Source,
   adr026DynamicFeesSource,
   adr028ExploitConciliationSource,
   archivedLendingSource,
@@ -511,6 +512,21 @@ const developerIntegrationLiveInboundSource: SourceMeta = {
 };
 
 const memoSyntaxSources = [transactionExampleMemoMapV3203Source, transactionExampleMemoDocsSource];
+
+export const LOCAL_MEMO_DECODER_REVIEW = record({
+  id: 'local-memo-decoder',
+  supportedActions: ['=', 's', 'SWAP', 'OUT', 'REFUND', 'MIGRATE'],
+  boundaries: [
+    'This is an educational syntax subset pinned to the reviewed THORNode v3.20.3 sources; it is not a protocol validator.',
+    'The 250-byte limit and eight-affiliate limit are local tool bounds, not claims about protocol limits.',
+    'Affiliate tokens remain literal; current documentation, parser basis-point constants, configured affiliate caps, and dynamic-fee rules are not reconciled or validated.',
+    'Asset shorthand, historical aliases, destination/refund addresses, THORNames, chain ownership, and current-version applicability remain unresolved.',
+    'A decoded memo does not prove feature availability, quote validity, transaction execution, refund completion, or settlement.',
+  ],
+}, [...memoSyntaxSources, transactionMemoParserV3203Source], 'curated', {
+  checkedAt: '2026-10-03',
+  nextReviewDue: '2026-11-03',
+});
 
 export const TRANSACTION_EXAMPLE_RECORDS: SourcedRecord<TransactionExample>[] = [
   record({

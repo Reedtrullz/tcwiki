@@ -1,5 +1,6 @@
 import { SwapEvidenceMap } from '@/components/features/SwapEvidenceMap';
 import { TransactionExamples } from '@/components/features/TransactionExamples';
+import { MemoDecoderSection } from '@/components/features/MemoDecoderSection';
 
 # Build And Query THORChain Data
 
@@ -118,6 +119,10 @@ Before release, confirm source ownership, provider mixing, quote throttling and 
 Follow one transaction hash from source-chain inclusion through THORChain observation, protocol processing and outbound scheduling to an independently checked destination transaction. This static learning map includes the waiting, failure and refund boundaries. The ordered text is also the diagram: every stage names the evidence needed and links to the explanation. It does not show a live transaction progressing.
 
 <SwapEvidenceMap />
+## Local Memo Decoder
+
+<MemoDecoderSection />
+
 ## Bitcoin Memo Archive Pointer
 
 The [curated OP_RETURN source entry](/docs#bitcoin-memo-archive) links to recorded Bitcoin payload bytes, transaction/block references and Bitcoin-side history. Reviewed 3 October 2026 as a third-party discovery pointer, it covers Bitcoin rather than all THORChain activity. Reconcile the original bytes with primary chain evidence before interpreting the memo.
