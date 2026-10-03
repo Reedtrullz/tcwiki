@@ -123,4 +123,21 @@ test.describe('THORChain Wiki Public Route Smoke Tests', () => {
       });
     }
   });
+
+  test('unmatched routes keep the requested URL and offer recovery destinations', async ({ page }) => {
+    const response = await page.goto('/__pr58_unmatched_route__');
+    test.info().annotations.push({
+      type: 'pr58-unmatched-route-status',
+      description: String(response?.status() ?? 'no response'),
+    });
+
+    await expect(page).toHaveURL(/\/__pr58_unmatched_route__$/);
+    await expect(page.getByRole('main')).toBeVisible();
+    await expect(page.getByRole('banner')).toBeVisible();
+    await expect(page.getByRole('status')).toContainText('That page could not be found');
+    await expect(page.getByRole('heading', { name: 'That page could not be found' })).toBeFocused();
+    await expect(page.getByRole('link', { name: 'Wiki home' })).toHaveAttribute('href', '/');
+    await expect(page.getByRole('link', { name: 'Browse the source map' })).toHaveAttribute('href', '/docs');
+    await expect(page.getByRole('link', { name: 'Search the wiki' })).toHaveAttribute('href', '/search');
+  });
 });
