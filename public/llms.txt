@@ -1,0 +1,10 @@
+# THORChain Wiki
+
+Registry-generated metadata pointers for builders. Article text is not redistributed here.
+
+- Knowledge JSON v1: https://wiki.thorchain.no/knowledge/v1.json
+- Governance incident metadata: https://wiki.thorchain.no/governance (reviewed 2026-07-13; next review 2026-11-17)
+- Build and query guide: https://wiki.thorchain.no/deep-dives/build-query-data (reviewed 2026-07-14; next review 2026-11-17)
+- Builder reading path: https://wiki.thorchain.no/deep-dives/build-query-data#query-plan (reviewed 2026-07-14; next review 2026-11-17)
+
+Dates describe the authored review metadata; they do not certify current protocol state.

@@ -29,12 +29,15 @@ import {
   type SearchFilterId,
 } from '@/lib/search/presentation';
 
+if (typeof window !== 'undefined') performance.mark('wiki-search-index-start');
 const searchIndex = lunr(function () {
   this.ref('id');
   this.field('title');
   this.field('content');
   SEARCH_DOCUMENTS.forEach((doc) => this.add(doc));
 });
+
+if (typeof window !== 'undefined') performance.measure('wiki-search-index-construction', 'wiki-search-index-start');
 
 const searchDocumentsById = new Map(SEARCH_DOCUMENTS.map((doc) => [doc.id, doc]));
 const SNIPPET_LENGTH = 180;
