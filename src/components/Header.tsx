@@ -8,21 +8,22 @@ import { JOURNEY_LINKS, NAV_GROUPS, TASK_GUIDE_GROUPED } from '@/lib/content/reg
 
 export default function Header() {
   const pathname = usePathname();
+  return <HeaderContent key={pathname} pathname={pathname} />;
+}
+
+function HeaderContent({ pathname }: { pathname: string }) {
   const router = useRouter();
-  const [isOpen, setIsOpen] = useState(false);
-  const [showSearch, setShowSearch] = useState(false);
-  const [showGuides, setShowGuides] = useState(false);
-  const [openNavGroup, setOpenNavGroup] = useState<string | null>(null);
+  const [openPanel, setOpenPanel] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [panelPathname, setPanelPathname] = useState(pathname);
+  const headerRef = useRef<HTMLElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const searchButtonRef = useRef<HTMLButtonElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
-  const guidesButtonRef = useRef<HTMLButtonElement>(null);
   const lastTriggerRef = useRef<HTMLButtonElement | null>(null);
-  const isOpenForPath = isOpen && panelPathname === pathname;
-  const showSearchForPath = showSearch && panelPathname === pathname;
-  const showGuidesForPath = showGuides && panelPathname === pathname;
-  const showNavGroupForPath = openNavGroup !== null && panelPathname === pathname;
+  const activePanel = openPanel;
+  const isOpenForPath = activePanel === 'mobile';
+  const showSearchForPath = activePanel === 'search';
+  const showGuidesForPath = activePanel === 'guides';
   const isCurrentHref = (href: string) => (
     href === '/' ? pathname === href : pathname === href || pathname.startsWith(`${href}/`)
   );
@@ -58,14 +59,32 @@ export default function Header() {
   };
 
   const closePanels = useCallback((restoreFocus = false) => {
-    setIsOpen(false);
-    setShowSearch(false);
-    setShowGuides(false);
-    setOpenNavGroup(null);
+    setOpenPanel(null);
     if (restoreFocus) {
-      window.requestAnimationFrame(() => lastTriggerRef.current?.focus());
+      lastTriggerRef.current?.focus();
     }
   }, []);
+
+  const togglePanel = (panel: string, trigger: HTMLButtonElement) => {
+    lastTriggerRef.current = trigger;
+    setOpenPanel(activePanel === panel ? null : panel);
+  };
+
+  useEffect(() => {
+    const closeOnOutsideInteraction = (event: PointerEvent | FocusEvent) => {
+      if (event.target instanceof Node && !headerRef.current?.contains(event.target)) closePanels();
+    };
+    document.addEventListener('pointerdown', closeOnOutsideInteraction);
+    document.addEventListener('focusin', closeOnOutsideInteraction);
+    return () => {
+      document.removeEventListener('pointerdown', closeOnOutsideInteraction);
+      document.removeEventListener('focusin', closeOnOutsideInteraction);
+    };
+  }, [closePanels]);
+
+  useEffect(() => {
+    if (showSearchForPath) searchInputRef.current?.focus();
+  }, [showSearchForPath]);
 
   // Global ⌘K / Ctrl+K to open search
   useEffect(() => {
@@ -73,20 +92,16 @@ export default function Header() {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
         lastTriggerRef.current = searchButtonRef.current;
-        setPanelPathname(pathname);
-        setIsOpen(false);
-        setShowGuides(false);
-        setShowSearch(true);
-        // Focus will be handled by autoFocus on the input
+        setOpenPanel('search');
       }
-      if (e.key === 'Escape' && (showSearchForPath || isOpenForPath || showGuidesForPath || openNavGroup !== null)) {
+      if (e.key === 'Escape' && activePanel !== null) {
         e.preventDefault();
         closePanels(true);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [showSearchForPath, isOpenForPath, showGuidesForPath, openNavGroup, closePanels, pathname]);
+  }, [activePanel, closePanels]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -99,7 +114,7 @@ export default function Header() {
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-surface/95 backdrop-blur-sm border-b border-border">
+    <header ref={headerRef} className="fixed top-0 left-0 right-0 z-50 bg-surface/95 backdrop-blur-sm border-b border-border">
       <div className="max-w-7xl mx-auto px-6">
         <div className="flex items-center justify-between h-[52px]">
           <Link href="/" className="flex items-center gap-2.5 shrink-0">
@@ -118,48 +133,33 @@ export default function Header() {
                 <div key={group.id} className="relative">
                   <button
                     type="button"
-                    onClick={() => {
-                      setPanelPathname(pathname);
-                      setIsOpen(false);
-                      setShowSearch(false);
-                      setShowGuides(false);
-                      setOpenNavGroup(group.id);
-                    }}
-                    aria-expanded={showNavGroupForPath && openNavGroup === group.id}
-                    aria-haspopup="true"
-                    className={navLinkClassName(group.items[0]?.href ?? '', groupActive && showNavGroupForPath)}
+                    onClick={(event) => togglePanel(`nav:${group.id}`, event.currentTarget)}
+                    aria-expanded={activePanel === `nav:${group.id}`}
+                    aria-controls={`nav-panel-${group.id}`}
+                    className={navLinkClassName(group.items[0]?.href ?? '', groupActive && activePanel === `nav:${group.id}`)}
                   >
                     {group.label}
-                    <ChevronDown className={`ml-1 inline h-3 w-3 transition-transform ${showNavGroupForPath && openNavGroup === group.id ? 'rotate-180' : ''}`} />
+                    <ChevronDown className={`ml-1 inline h-3 w-3 transition-transform ${activePanel === `nav:${group.id}` ? 'rotate-180' : ''}`} />
                   </button>
-                  {showNavGroupForPath && openNavGroup === group.id && (
-                    <div className="absolute left-0 top-full z-10 mt-1 min-w-[180px] rounded-lg border border-border bg-surface-elevated p-1 shadow-lg">
-                      {group.items.map((item) => (
-                        <Link
-                          key={item.href}
-                          href={item.href}
-                          aria-current={isCurrentLink(item.href) ? 'page' : undefined}
-                          className="block rounded-md px-3 py-1.5 text-sm transition-colors hover:bg-slate-800/50 hover:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
-                          onClick={() => closePanels(false)}
-                        >
-                          {item.name}
-                        </Link>
-                      ))}
-                    </div>
-                  )}
+                  <div id={`nav-panel-${group.id}`} hidden={activePanel !== `nav:${group.id}`} className="absolute left-0 top-full z-10 mt-1 min-w-[180px] rounded-lg border border-border bg-surface-elevated p-1 shadow-lg">
+                    {group.items.map((item) => (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        aria-current={isCurrentLink(item.href) ? 'page' : undefined}
+                        className="block rounded-md px-3 py-1.5 text-sm transition-colors hover:bg-slate-800/50 hover:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
+                        onClick={() => closePanels(false)}
+                      >
+                        {item.name}
+                      </Link>
+                    ))}
+                  </div>
                 </div>
               );
             })}
             <button
-              ref={guidesButtonRef}
               type="button"
-              onClick={() => {
-                lastTriggerRef.current = guidesButtonRef.current;
-                setPanelPathname(pathname);
-                setIsOpen(false);
-                setShowSearch(false);
-                setShowGuides((value) => panelPathname === pathname ? !value : true);
-              }}
+              onClick={(event) => togglePanel('guides', event.currentTarget)}
               aria-expanded={showGuidesForPath}
               aria-controls="desktop-guides-panel"
               className={[
@@ -179,11 +179,7 @@ export default function Header() {
               ref={searchButtonRef}
               type="button"
               onClick={() => {
-                lastTriggerRef.current = searchButtonRef.current;
-                setPanelPathname(pathname);
-                setIsOpen(false);
-                setShowGuides(false);
-                setShowSearch((value) => panelPathname === pathname ? !value : true);
+                if (searchButtonRef.current) togglePanel('search', searchButtonRef.current);
               }}
               aria-label={showSearchForPath ? 'Close search' : 'Open search'}
               aria-expanded={showSearchForPath}
@@ -197,11 +193,7 @@ export default function Header() {
               ref={menuButtonRef}
               type="button"
               onClick={() => {
-                lastTriggerRef.current = menuButtonRef.current;
-                setPanelPathname(pathname);
-                setShowSearch(false);
-                setShowGuides(false);
-                setIsOpen((value) => panelPathname === pathname ? !value : true);
+                if (menuButtonRef.current) togglePanel('mobile', menuButtonRef.current);
               }}
               aria-label={isOpenForPath ? 'Close navigation menu' : 'Open navigation menu'}
               aria-expanded={isOpenForPath}
@@ -214,20 +206,19 @@ export default function Header() {
         </div>
       </div>
 
-      {showSearchForPath && (
-        <div id="site-search-panel" className="border-t border-border px-6 py-3 bg-surface-elevated">
+      <div id="site-search-panel" hidden={!showSearchForPath} className="border-t border-border px-6 py-3 bg-surface-elevated">
           <form role="search" aria-label="Site search" onSubmit={handleSearch} className="max-w-2xl mx-auto">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <label htmlFor="site-search" className="sr-only">Search the wiki</label>
               <input
+                ref={searchInputRef}
                 id="site-search"
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search the wiki..."
                 className="w-full pl-9 pr-11 py-2 bg-surface border border-border rounded-md text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-colors"
-                autoFocus
               />
               <button
                 type="submit"
@@ -247,11 +238,9 @@ export default function Header() {
               </Link>
             </div>
           </form>
-        </div>
-      )}
+      </div>
 
-      {showGuidesForPath && (
-        <div id="desktop-guides-panel" className="hidden max-h-[calc(100vh-52px)] overflow-y-auto border-t border-border bg-surface-elevated px-6 py-3 xl:block">
+      <div id="desktop-guides-panel" hidden={!showGuidesForPath} className={`hidden ${showGuidesForPath ? 'xl:block' : ''} max-h-[calc(100vh-52px)] overflow-y-auto border-t border-border bg-surface-elevated px-6 py-3`}>
           <nav aria-label="Guide links" className="mx-auto grid max-w-7xl gap-4 xl:grid-cols-[0.95fr_1.35fr]">
             <section aria-labelledby="desktop-reader-paths">
               <p id="desktop-reader-paths" className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
@@ -310,11 +299,9 @@ export default function Header() {
               </div>
             </section>
           </nav>
-        </div>
-      )}
+      </div>
 
-      {isOpenForPath && (
-        <div id="mobile-navigation" className="max-h-[calc(100vh-52px)] overflow-y-auto overscroll-contain border-t border-border bg-surface-elevated xl:hidden">
+      <div id="mobile-navigation" hidden={!isOpenForPath} className="max-h-[calc(100vh-52px)] overflow-y-auto overscroll-contain border-t border-border bg-surface-elevated xl:hidden">
           <nav aria-label="Mobile navigation" className="px-4 py-2 space-y-0.5">
             <p className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
               Sections
@@ -384,7 +371,6 @@ export default function Header() {
             ))}
           </nav>
         </div>
-      )}
     </header>
   );
 }
