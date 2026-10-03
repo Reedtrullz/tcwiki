@@ -93,7 +93,7 @@ Execute all accepted work and create/push GitHub PRs; do not merge to main. User
 | PR-69 | queued | issue #204 |
 | PR-67 | verified dated examples; PR publication | Four centralized source-hashed records; 691 units; both builds/smoke and 14 desktop/mobile guide/link/evidence checks each runtime; unknown settlement retained |
 | PR-60 | queued | issue #159 |
-| PR-68 | queued | issue #203 |
+| PR-68 | verified local decoder; PR publication | Pinned3.20.3 supported syntax only, exact original and UTF8 bounds;711units/62files;bothbuilds/smoke and8desktop/mobile decoder checks eachruntime; no network/name/keeper validation |
 | PR-34 | queued | issue #199 |
 | PR-36 | verified opt-in local progress; PR publication | Bounded64KiB/100records schema and storage recovery;707units; both builds/smoke and14desktop/mobile reader/heading/link checks each runtime; no accounts or history transmission |
 | PR-22 | queued | issue #187 |
