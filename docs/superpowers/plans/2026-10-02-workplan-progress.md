@@ -99,7 +99,7 @@ Execute all accepted work and create/push GitHub PRs; do not merge to main. User
 | PR-22 | queued | issue #187 |
 | PR-48 | queued | issue #147 |
 | PR-47 | queued | issue #146 |
-| PR-62 | queued | issue #161 |
+| PR-62 | verified metadata-only candidate; PR publication | 701 units/65 files; deterministic checksummed bounded JSON/llms; deleted routes/sections/claims reject; both final builds/smoke and14desktop/mobile checks eachruntime; ownerlicense fulltext remainsgated |
 | PR-33 | queued | issue #198 |
 | PR-63 | queued | issue #162 |
 | PR-64 | queued | issue #163 |
@@ -160,3 +160,5 @@ Combined operation/policy candidate:644units/55files/types/lint/bothbuilds/Nexts
 PR46 final:parent matched pinned sourcehash; unsupportedperiodRED→GREEN nofetch;651units/types/lint/content/trackedchecks/bothbuilds/Nextsmoke;47browserchecks eachNext/Worker plus1desktop-onlyskip. APR/APY retain provideridentity and neither compounding nor distinctformulas inferred. Base242CI37093294012 SUCCESS. PR243fee-cohorts open8e1308c,26checks perruntime; its integration is partofPR20 baseline, not this PR46 productdiff.
 
 PR23 candidate: curatedarticle print + text/Markdowncitation copy/visiblefallback/citation-onlydownload with canonicalsection/sourceURLs/dates/confidence/evidenceboundary.658units/types/lint/content/bothbuilds/smoke;11earlierarticlebrowserchecks eachruntime +final4desktop/mobilecitationchecks each. A4 firstpage/source metadata andwideclaimtable visualproof inspected; nophysicalprinter/PDFaccessibilityclaim. Fulltext redistribution remains61owner-gated; no mainmerge/deploy.
+
+PR62 final: metadata-onlythree-claimcohort/registrylinks, deterministic identity/checksum plus direct stale/deletedlinkchecks and consistentgraphnodeIDs. 701units,types/lint/content/bothfinalbuilds/Nextsmoke and14desktop/mobilechecks eachactualruntime passed. Enclosingconfidence and independentclaimdecisions preserved; fullarticlelicense unresolved. No mainmerge/deploy.
