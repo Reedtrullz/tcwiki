@@ -26,7 +26,16 @@ export type LiveDataStatus = 'ok' | 'degraded';
 
 export type SourceHealthSeverity = 'ok' | 'warning' | 'degraded' | 'unknown';
 
+export interface LiveCollectionTiming {
+  startedAt: string;
+  completedAt: string;
+  durationMs: number;
+  blockObservedAt?: string;
+}
+
 export interface LiveDataResult<T> {
+  collection?: LiveCollectionTiming;
+  assessedAt?: string;
   status: LiveDataStatus;
   checkedAt: string;
   data?: T;
@@ -99,6 +108,8 @@ export interface ReadinessResponse {
     thornode: {
       status: LiveDataStatus;
       checkedAt?: string;
+      collection?: LiveCollectionTiming;
+      assessedAt?: string;
       source?: SourceMeta;
       sources?: SourceMeta[];
       sourceCount: number;
@@ -125,6 +136,8 @@ export interface ReadinessResponse {
       dynamicFees: {
         status: LiveDataStatus;
         checkedAt?: string;
+        collection?: LiveCollectionTiming;
+        assessedAt?: string;
         source?: SourceMeta;
         sources?: SourceMeta[];
         error?: string;
@@ -146,6 +159,8 @@ export interface ReadinessResponse {
       runePoolPol: {
         status: LiveDataStatus;
         checkedAt?: string;
+        collection?: LiveCollectionTiming;
+        assessedAt?: string;
         source?: SourceMeta;
         sources?: SourceMeta[];
         error?: string;

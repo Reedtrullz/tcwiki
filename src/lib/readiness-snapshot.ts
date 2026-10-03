@@ -1,5 +1,5 @@
 import MidgardAPI from '@/lib/api/midgard';
-import ThornodeAPI, { createThornodeCollectionContext, getThornodeBlockAgeSeconds, getThornodeBlockAgeWarnings, THORNODE_BLOCK_STALE_WARNING_SECONDS } from '@/lib/api/thornode';
+import ThornodeAPI, { createThornodeCollectionContext, reassessThornodeResult, getThornodeBlockAgeSeconds, getThornodeBlockAgeWarnings, THORNODE_BLOCK_STALE_WARNING_SECONDS } from '@/lib/api/thornode';
 import type {
   DynamicL1FeeStatus,
   HistoryItem,
@@ -26,6 +26,7 @@ export interface ReadinessUpstreamSnapshot {
 
 interface CachedReadinessSnapshot {
   expiresAt: number;
+  expiresAtMono: number;
   snapshot: ReadinessUpstreamSnapshot;
 }
 
@@ -74,20 +75,23 @@ async function computeReadinessUpstreamSnapshot(): Promise<ReadinessUpstreamSnap
   };
 }
 
+function reassessSnapshot(snapshot: ReadinessUpstreamSnapshot): ReadinessUpstreamSnapshot {
+  const now = Date.now();
+  return { ...snapshot, thornode: reassessThornodeResult(snapshot.thornode, now), dynamicFees: reassessThornodeResult(snapshot.dynamicFees, now), runePoolPol: reassessThornodeResult(snapshot.runePoolPol, now) };
+}
+
 export function getReadinessUpstreamSnapshot(): Promise<ReadinessUpstreamSnapshot> {
   const now = Date.now();
-  if (cachedSnapshot && now < cachedSnapshot.expiresAt) {
-    return Promise.resolve(cachedSnapshot.snapshot);
+  if (cachedSnapshot && now < cachedSnapshot.expiresAt && performance.now() < cachedSnapshot.expiresAtMono) {
+    return Promise.resolve(reassessSnapshot(cachedSnapshot.snapshot));
   }
   if (inFlightSnapshot) {
-    return inFlightSnapshot;
+    return inFlightSnapshot.then(reassessSnapshot);
   }
 
   const snapshotPromise = computeReadinessUpstreamSnapshot()
     .then((snapshot) => {
-      cachedSnapshot = {
-        snapshot,
-        expiresAt: Math.min(
+      const expiresAt = Math.min(
           Date.parse(snapshot.checkedAt) + READINESS_SNAPSHOT_TTL_MS,
           ...[
             snapshot.thornode.data?.thorchainBlockTime,
@@ -100,7 +104,10 @@ export function getReadinessUpstreamSnapshot(): Promise<ReadinessUpstreamSnapsho
               getThornodeBlockAgeWarnings(getThornodeBlockAgeSeconds(time), 'live operation state').length === 0
               ? [freshUntil] : [];
           })
-        ),
+        );
+      cachedSnapshot = {
+        snapshot, expiresAt,
+        expiresAtMono: performance.now() + Math.max(0, Math.min(READINESS_SNAPSHOT_TTL_MS, expiresAt - Date.now())),
       };
       return snapshot;
     })
@@ -110,7 +117,7 @@ export function getReadinessUpstreamSnapshot(): Promise<ReadinessUpstreamSnapsho
       }
     });
   inFlightSnapshot = snapshotPromise;
-  return snapshotPromise;
+  return snapshotPromise.then(reassessSnapshot);
 }
 
 export function resetReadinessSnapshotCacheForTests() {

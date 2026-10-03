@@ -38,7 +38,7 @@ import {
   getOperationalControlCatalogEntry,
 } from '@/lib/operational-controls';
 import { liveDegraded, liveOk } from '@/lib/trust';
-import { uniqueSourceWarningDetails } from '@/lib/source-warnings';
+import { isWarningDetail, uniqueSourceWarningDetails } from '@/lib/source-warnings';
 
 type ThornodeEndpoint = SourceMeta & {
   cosmosUrl: string;
@@ -123,6 +123,8 @@ type ThorchainHeightEvidence = {
 export interface ThornodeCollectionContext {
   initialEndpoint: number;
   startedAtMs: number;
+  startedMonoMs: number;
+  blockObservedAt: Map<string, string>;
   deadlineAtMs: number;
   deadlineMonoMs: number;
   signal?: AbortSignal;
@@ -132,7 +134,8 @@ export interface ThornodeCollectionContext {
 // One collection only: URL keys include provider, path and pinned height.
 export function createThornodeCollectionContext(signal?: AbortSignal): ThornodeCollectionContext {
   const startedAtMs = Date.now();
-  return { initialEndpoint: activeEndpoint, startedAtMs, deadlineAtMs: startedAtMs + THORNODE_COLLECTION_BUDGET_MS, deadlineMonoMs: performance.now() + THORNODE_COLLECTION_BUDGET_MS, signal, requests: new Map() };
+  const startedMonoMs = performance.now();
+  return { initialEndpoint: activeEndpoint, startedAtMs, startedMonoMs, blockObservedAt: new Map(), deadlineAtMs: startedAtMs + THORNODE_COLLECTION_BUDGET_MS, deadlineMonoMs: startedMonoMs + THORNODE_COLLECTION_BUDGET_MS, signal, requests: new Map() };
 }
 
 async function request<T>(path: string): Promise<LiveDataResult<T>> {
@@ -461,7 +464,9 @@ async function requestLatestBlockFromEndpoint<T>(endpoint: ThornodeEndpoint, con
   // request key refreshes discovery without changing the canonical source URL
   // or the height-pinned reads derived from this response.
   requestUrl.searchParams.set('tcwiki_cache_bust', String(context?.startedAtMs ?? Date.now()));
-  return requestJson<T>(requestUrl.toString(), context);
+  const data = await requestJson<T>(requestUrl.toString(), context);
+  if (context && !context.blockObservedAt.has(endpoint.url)) context.blockObservedAt.set(endpoint.url, new Date().toISOString());
+  return data;
 }
 
 async function forEachWithConcurrency<T>(
@@ -894,10 +899,53 @@ function getThornodeBlockAgeWarningDetails(
     ? [warningDetail({
         severity,
         category: 'freshness',
+        keys: ['block.header.time'],
         message,
         action,
       })]
     : [];
+}
+
+export function reassessThornodeResult<T extends NetworkStatus | DynamicL1FeeStatus | RunePoolPolStatus>(
+  result: LiveDataResult<T>, assessedAtMs = Date.now()
+): LiveDataResult<T> {
+  const assessedAt = new Date(assessedAtMs).toISOString();
+  const data = result.data;
+  if (!data) return { ...result, assessedAt };
+  const time = 'sourceFreshness' in data ? data.sourceFreshness.thorchainBlockTime : data.thorchainBlockTime;
+  const age = getThornodeBlockAgeSeconds(time, assessedAtMs);
+  const label = 'records' in data ? 'dynamic fee state' : 'sourceFreshness' in data ? 'RUNEPool state' : 'live operation state';
+  const validDetails = Array.isArray(data.sourceWarningDetails) && data.sourceWarningDetails.every(isWarningDetail);
+  const details = validDetails ? data.sourceWarningDetails ?? [] : [];
+  const managedDetails = details.filter((detail) => detail.category === 'freshness' && detail.keys?.includes('block.header.time'));
+  const oldMessages = new Set(managedDetails.map((detail) => detail.message));
+  const newDetails = getThornodeBlockAgeWarningDetails(age, label,
+    managedDetails[0]?.action ?? ('records' in data ? 'Treat dynamic-fee values as stale until THORNode returns a fresh latest-block timestamp.' : 'sourceFreshness' in data ? 'Treat RUNEPool accounting as stale until THORNode returns a fresh latest-block timestamp.' : 'Treat live operations as dated context until THORNode returns fresh block evidence.'));
+  // Legacy/unknown contracts retain their exact diagnostics for strict validation.
+  const warnings = result.collection && validDetails && Array.isArray(data.sourceWarnings) && data.sourceWarnings.every((message) => typeof message === 'string') ? {
+    sourceWarningDetails: uniqueSourceWarningDetails([...details.filter((detail) => !managedDetails.includes(detail)), ...newDetails]),
+    sourceWarnings: [...new Set([...data.sourceWarnings.filter((message) => !oldMessages.has(message)), ...newDetails.map((detail) => detail.message)])],
+  } : {};
+  const freshness = 'sourceFreshness' in data
+    ? { sourceFreshness: { ...data.sourceFreshness, thorchainBlockAgeSeconds: age } }
+    : { thorchainBlockAgeSeconds: age };
+  const state = 'state' in data && data.state === 'operational' && newDetails.length
+    ? { state: 'degraded' as const, summary: 'Current-only live sources do not show active halt flags, but source warnings need review.' }
+    : {};
+  return { ...result, assessedAt, data: { ...data, ...freshness, ...state, ...warnings } };
+}
+
+function completeThornodeResult<T extends NetworkStatus | DynamicL1FeeStatus | RunePoolPolStatus>(
+  result: LiveDataResult<T>, context: ThornodeCollectionContext
+): LiveDataResult<T> {
+  const completedAt = new Date().toISOString();
+  const sources = result.sources?.map((source) => ({ ...source, retrievedAt: completedAt }));
+  return reassessThornodeResult({ ...result, sources, source: sources?.[0] ?? result.source,
+    checkedAt: completedAt,
+    collection: { startedAt: new Date(context.startedAtMs).toISOString(), completedAt,
+      durationMs: Math.max(0, Math.round(performance.now() - context.startedMonoMs)),
+      blockObservedAt: result.source ? context.blockObservedAt.get(result.source.url) : undefined },
+  });
 }
 
 function runePoolWarningKeys(message: string) {
@@ -3070,7 +3118,7 @@ export class ThornodeAPI {
         );
         if (status.sourceWarnings.length === 0) {
           activeEndpoint = endpointIndex;
-          return liveOk(status, sources, checkedAt);
+          return completeThornodeResult(liveOk(status, sources, checkedAt), context);
         }
 
         warningSnapshots.push({ endpointIndex, endpoint, status, sources });
@@ -3088,14 +3136,14 @@ export class ThornodeAPI {
       ));
     if (bestWarningSnapshot) {
       activeEndpoint = bestWarningSnapshot.endpointIndex;
-      return liveOk(bestWarningSnapshot.status, bestWarningSnapshot.sources, checkedAt);
+      return completeThornodeResult(liveOk(bestWarningSnapshot.status, bestWarningSnapshot.sources, checkedAt), context);
     }
 
-    return liveDegraded<NetworkStatus>(
+    return completeThornodeResult(liveDegraded<NetworkStatus>(
       `THORNode status sources did not provide a usable snapshot (${errors.join('; ')})`,
       THORNODE_ENDPOINTS,
       checkedAt
-    );
+    ), context);
   }
 
   static async getSwapQuoteProbe(request: SwapQuoteRequest): Promise<LiveDataResult<SwapQuoteProbeResult>> {
@@ -3209,7 +3257,7 @@ export class ThornodeAPI {
 
         if (status.sourceWarnings.length === 0) {
           activeEndpoint = endpointIndex;
-          return liveOk(status, sources, checkedAt);
+          return completeThornodeResult(liveOk(status, sources, checkedAt), context);
         }
 
         warningSnapshots.push({ endpointIndex, status, sources });
@@ -3227,14 +3275,14 @@ export class ThornodeAPI {
       ));
     if (bestWarningSnapshot) {
       activeEndpoint = bestWarningSnapshot.endpointIndex;
-      return liveOk(bestWarningSnapshot.status, bestWarningSnapshot.sources, checkedAt);
+      return completeThornodeResult(liveOk(bestWarningSnapshot.status, bestWarningSnapshot.sources, checkedAt), context);
     }
 
-    return liveDegraded<RunePoolPolStatus>(
+    return completeThornodeResult(liveDegraded<RunePoolPolStatus>(
       `THORNode RUNEPool sources did not provide a usable snapshot (${errors.join('; ')})`,
       THORNODE_ENDPOINTS,
       checkedAt
-    );
+    ), context);
   }
 
   static async getDynamicL1FeeStatus(context = createThornodeCollectionContext()): Promise<LiveDataResult<DynamicL1FeeStatus>> {
@@ -3303,7 +3351,7 @@ export class ThornodeAPI {
           const finalized = await finalizeDynamicL1FeeProviderSnapshot(snapshot, context);
           if (finalized.status.sourceWarnings.length === 0 || !shouldTryNextDynamicFeeProvider(finalized.status)) {
             activeEndpoint = endpointIndex;
-            return liveOk(finalized.status, finalized.sources, checkedAt);
+            return completeThornodeResult(liveOk(finalized.status, finalized.sources, checkedAt), context);
           }
 
           warningSnapshots.push(finalized);
@@ -3332,16 +3380,16 @@ export class ThornodeAPI {
       activeEndpoint = bestWarningSnapshot.endpointIndex;
       if (bestWarningSnapshot.snapshot) {
         const finalized = await finalizeDynamicL1FeeProviderSnapshot(bestWarningSnapshot.snapshot, context);
-        return liveOk(finalized.status, finalized.sources, checkedAt);
+        return completeThornodeResult(liveOk(finalized.status, finalized.sources, checkedAt), context);
       }
-      return liveOk(bestWarningSnapshot.status, bestWarningSnapshot.sources, checkedAt);
+      return completeThornodeResult(liveOk(bestWarningSnapshot.status, bestWarningSnapshot.sources, checkedAt), context);
     }
 
-    return liveDegraded<DynamicL1FeeStatus>(
+    return completeThornodeResult(liveDegraded<DynamicL1FeeStatus>(
       `THORNode dynamic fee sources did not provide a usable snapshot (${errors.join('; ')})`,
       THORNODE_ENDPOINTS,
       checkedAt
-    );
+    ), context);
   }
 }
 

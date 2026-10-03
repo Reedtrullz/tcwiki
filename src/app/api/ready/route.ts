@@ -566,6 +566,8 @@ export async function GET(request?: Request) {
       thornode: {
         status: thornode.status,
         checkedAt: thornode.checkedAt,
+        collection: thornode.collection,
+        assessedAt: new Date(assessedAt).toISOString(),
         source: thornode.source,
         sources: thornode.sources,
         sourceCount: thornode.sources?.length ?? (thornode.source ? 1 : 0),
@@ -592,6 +594,8 @@ export async function GET(request?: Request) {
         dynamicFees: {
           status: dynamicFees.status,
           checkedAt: dynamicFees.checkedAt,
+          collection: dynamicFees.collection,
+          assessedAt: new Date(assessedAt).toISOString(),
           source: dynamicFees.source,
           sources: dynamicFees.sources,
           error: dynamicFees.error,
@@ -613,6 +617,8 @@ export async function GET(request?: Request) {
         runePoolPol: {
           status: runePoolPol.status,
           checkedAt: runePoolPol.checkedAt,
+          collection: runePoolPol.collection,
+          assessedAt: new Date(assessedAt).toISOString(),
           source: runePoolPol.source,
           sources: runePoolPol.sources,
           error: runePoolPol.error,

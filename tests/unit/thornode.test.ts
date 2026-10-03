@@ -1,6 +1,6 @@
 import { partitionReadinessWarnings } from '../../scripts/lib/readiness-warning-policy.mjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import ThornodeAPI, { createThornodeCollectionContext, deriveDynamicL1FeeStatus, deriveNetworkStatus, deriveRunePoolPolStatus, resetThornodeEndpointForTests } from '@/lib/api/thornode';
+import ThornodeAPI, { createThornodeCollectionContext, reassessThornodeResult, deriveDynamicL1FeeStatus, deriveNetworkStatus, deriveRunePoolPolStatus, resetThornodeEndpointForTests } from '@/lib/api/thornode';
 import type { DynamicL1FeeSourceFreshness, RunePoolSourceFreshness, ThornodeInboundAddress } from '@/lib/types';
 
 const makeResponse = (ok: boolean, data: unknown, status = 200, statusText = 'OK') => ({
@@ -2895,4 +2895,47 @@ it.each([
   const result = await ThornodeAPI.getSwapQuoteProbe({ fromAsset: 'BTC.BTC', toAsset: 'ETH.ETH', amountBaseUnits: '100000000' });
   expect(result.data?.failure?.retryAt).toBe(new Date(start + delay).toISOString());
   vi.useRealTimers(); vi.unstubAllGlobals();
+});
+
+it('records collection start, body observation and completion separately', async () => {
+  vi.useFakeTimers(); resetThornodeEndpointForTests();
+  const start = Date.parse('2026-10-03T00:00:00Z'); vi.setSystemTime(start);
+  const mock = stubCollectionCycle(); const original = mock.getMockImplementation()!;
+  mock.mockImplementation(async (input) => { await new Promise((resolve) => setTimeout(resolve, 1000)); return original(input); });
+  const pending = ThornodeAPI.getNetworkStatus();
+  await vi.advanceTimersByTimeAsync(2000);
+  const result = await pending;
+  expect(result.checkedAt).toBe(new Date(start + 2000).toISOString());
+  expect(result.collection).toEqual({ startedAt: new Date(start).toISOString(), completedAt: new Date(start + 2000).toISOString(), durationMs: 2000, blockObservedAt: new Date(start + 1000).toISOString() });
+  expect(result.assessedAt).toBe(result.checkedAt);
+  vi.useRealTimers(); vi.unstubAllGlobals();
+});
+
+it('reassesses retained evidence at delivery without rewriting its observation receipt', async () => {
+  resetThornodeEndpointForTests(); stubCollectionCycle();
+  const original = await ThornodeAPI.getNetworkStatus();
+  const observed = Date.parse(original.data!.thorchainBlockTime!);
+  const delivered = reassessThornodeResult(original, observed + 31000);
+  expect(delivered.data?.thorchainBlockAgeSeconds).toBe(31);
+  expect(delivered.data?.sourceWarningDetails?.some((detail) => detail.category === 'freshness' && detail.severity === 'critical')).toBe(true);
+  expect(delivered.data?.state).toBe('degraded');
+  expect(delivered.checkedAt).toBe(original.checkedAt);
+  expect(delivered.collection).toEqual(original.collection);
+  expect(delivered.assessedAt).toBe(new Date(observed + 31000).toISOString());
+  expect(original.data?.sourceWarnings).toEqual([]);
+  const future = reassessThornodeResult(original, observed - 31000);
+  expect(future.data?.sourceWarningDetails?.some((detail) => detail.message.includes('in the future') && detail.severity === 'critical')).toBe(true);
+  vi.unstubAllGlobals();
+});
+
+it('preserves unrecognized timing diagnostics for strict validation instead of normalizing them clean', async () => {
+  resetThornodeEndpointForTests(); stubCollectionCycle();
+  const original = await ThornodeAPI.getNetworkStatus();
+  const malformed = JSON.parse(JSON.stringify(original));
+  malformed.data.sourceWarningDetails = [{ severity: 'review', category: 'unexpected-category', message: 'Unknown', action: 'Review' }];
+  expect(reassessThornodeResult(malformed).data?.sourceWarningDetails).toEqual(malformed.data.sourceWarningDetails);
+  const unknownFreshness = { severity: 'warning' as const, category: 'freshness' as const, message: 'Another freshness concern', action: 'Review', keys: ['another.source'] };
+  const retained = reassessThornodeResult({ ...original, data: { ...original.data!, sourceWarnings: [unknownFreshness.message], sourceWarningDetails: [unknownFreshness] } });
+  expect(retained.data?.sourceWarningDetails).toContainEqual(unknownFreshness);
+  vi.unstubAllGlobals();
 });

@@ -5,7 +5,7 @@ export interface SourceWarningSignals {
   details: NetworkStatusSourceWarning[];
 }
 
-function isWarningDetail(value: unknown): value is NetworkStatusSourceWarning {
+export function isWarningDetail(value: unknown): value is NetworkStatusSourceWarning {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     return false;
   }
