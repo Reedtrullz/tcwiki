@@ -76,3 +76,16 @@ test('transaction observations wrap at 320px and satisfy scoped WCAG rules', asy
   const failures = await page.evaluate(async () => (await (window as unknown as { axe: typeof import('axe-core') }).axe.run(document.querySelector('#transaction-evidence')!, { runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21aa'] } })).violations);
   expect(failures, JSON.stringify(failures)).toEqual([]);
 });
+
+test('submission reads the visible native form value', async ({ page }) => {
+  let reads = 0;
+  await page.route(/\/v2\/actions\?/, route => { reads++; return fulfillJson(route, { actions: [action], count: '1' }); });
+  const panel = await open(page);
+  const input = panel.getByRole('textbox', { name: 'Public transaction hash' });
+  // Native autofill can update a field before its framework change handler runs.
+  await input.evaluate((element, value) => { (element as HTMLInputElement).value = value; }, hash);
+  await expect(input).toHaveValue(hash);
+  await panel.getByRole('button', { name: 'Look up transaction' }).click();
+  await expect(panel.getByRole('heading', { name: 'Indexed action 1: refund — pending' })).toBeVisible();
+  expect(reads).toBe(1);
+});
