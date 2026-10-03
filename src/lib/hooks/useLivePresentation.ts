@@ -5,7 +5,9 @@ import { assessLivePresentation, type LivePresentationPolicy } from '@/lib/live-
 import { liveResultIsDegraded } from '@/lib/live-result';
 
 export function useLivePresentation<T>(result: LiveDataResult<T> | undefined, error: unknown, isLoading: boolean, isValidating: boolean, policy: LivePresentationPolicy<T>, refresh: () => unknown) {
-  const [online, setOnline] = useState(() => typeof navigator === 'undefined' || navigator.onLine);
+  // Node/Worker navigator may exist without onLine. Initial markup is shared;
+  // browser connectivity is observed only after hydration.
+  const [online, setOnline] = useState(true);
   const [now, setNow] = useState(() => Date.now());
   const interval = policy.kind === 'operational' ? 1000 : policy.kind === 'aggregate' ? 10000 : 0;
   useEffect(() => {
@@ -22,7 +24,7 @@ export function useLivePresentation<T>(result: LiveDataResult<T> | undefined, er
     };
   }, [interval]);
   useEffect(() => {
-    const timer = window.setTimeout(() => setNow(Date.now()), 0);
+    const timer = window.setTimeout(() => { setNow(Date.now()); setOnline(navigator.onLine); }, 0);
     return () => window.clearTimeout(timer);
   }, [result?.checkedAt]);
   const errorMessage = error instanceof Error ? error.message : !online ? 'Browser is offline.' : undefined;

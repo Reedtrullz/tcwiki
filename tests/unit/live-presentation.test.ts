@@ -1,4 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { useLivePresentation } from '@/lib/hooks/useLivePresentation';
 import { assessLivePresentation } from '@/lib/live-presentation';
 import { liveOk } from '@/lib/trust';
 import { reassessThornodeResult } from '@/lib/api/thornode';
@@ -38,4 +41,16 @@ describe('browser live evidence presentation', () => {
     expect(failed.data?.state).toBe('degraded');
     expect(failed.data?.sourceWarningDetails).toEqual(expect.arrayContaining([expect.objectContaining({ keys: ['browser-refresh'], severity: 'critical' })]));
   });
+});
+
+// Node 22 and Workers expose navigator without browser connectivity fields.
+// This reproduction catches server-only offline markup and hydration drift.
+it('does not infer browser connectivity from a server navigator', () => {
+  vi.stubGlobal('navigator', { userAgent: 'Node.js/22' });
+  function Probe() {
+    const live = useLivePresentation(undefined, undefined, true, false, options, () => undefined);
+    return createElement('span', null, live.result?.presentation?.state ?? 'Loading');
+  }
+  try { expect(renderToStaticMarkup(createElement(Probe))).toBe('<span>Loading</span>'); }
+  finally { vi.unstubAllGlobals(); }
 });
