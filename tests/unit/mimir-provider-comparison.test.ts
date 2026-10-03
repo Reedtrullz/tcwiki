@@ -1,7 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import ThornodeAPI, { resetThornodeEndpointForTests } from '@/lib/api/thornode';
 import { collectMimirProviderComparison, compareMimirProviderSamples } from '@/lib/api/mimir-provider-comparison';
 
-afterEach(() => { vi.unstubAllGlobals(); });
+afterEach(() => { vi.unstubAllGlobals(); resetThornodeEndpointForTests(); });
 function response(value: unknown, height?: string) {
   return new Response(JSON.stringify(value), { headers: { 'Content-Type': 'application/json', ...(height ? { 'grpc-metadata-x-cosmos-block-height': height } : {}) } });
 }
@@ -43,4 +44,24 @@ describe('explicit two-provider control observation', () => {
     const samples = await collectMimirProviderComparison();
     expect(samples[0].status).toBe('unavailable');
   });
+});
+
+it('shares provider Retry-After cooldown with later routine diagnostics', async () => {
+  resetThornodeEndpointForTests();
+  const fetcher = vi.fn().mockImplementation((url: string) => url.includes('gateway.liquify.com')
+    ? new Response('{}', { status: 429, headers: { 'Retry-After': '60' } })
+    : response({ HALTTRADING: 0 }));
+  vi.stubGlobal('fetch', fetcher);
+  const compared = await collectMimirProviderComparison();
+  expect(compared[0].status).toBe('unavailable');
+  expect(compared[1].status).toBe('observed');
+  expect(fetcher).toHaveBeenCalledTimes(2);
+  const ordinary = await ThornodeAPI.getMimir();
+  expect(fetcher).toHaveBeenCalledTimes(3);
+  expect(fetcher.mock.calls[2][0]).toBe('https://thornode.thorchain.network/thorchain/mimir');
+  expect(ordinary.source?.label).toBe('THORChain THORNode');
+  // The subsequent routine read honors the sticky fallback selected by that read.
+  await ThornodeAPI.getMimir();
+  expect(fetcher).toHaveBeenCalledTimes(4);
+  expect(fetcher.mock.calls[3][0]).toBe('https://thornode.thorchain.network/thorchain/mimir');
 });
