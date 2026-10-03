@@ -73,7 +73,7 @@ Execute all accepted work and create/push GitHub PRs; do not merge to main. User
 | PR-49 | verified candidate; publishing | issue #148; one existing12s server cycle/SWR fallback with mount revalidation, UTC hydration fix;683units/types/lint/bothbuilds/smoke;20network/noJS/manualrefresh/runtimebrowser checks eachtarget |
 | PR-50 | local verified; PR publishing | 42focusedunits/types/lint;bothbuilds/smoke;30network/docs/glossarychecks eachruntime;manual quote exact3parameters/0requests-before-click;sharedproviderdestinations andURL/referrer disclosures |
 | PR-27 | queued | issue #192 |
-| PR-28 | queued | issue #193 |
+| PR-28 | verified candidate; publishing | issue #193;3claim memolesspilot/releasehash/scope/citations/search/reviewtasks; parentAug26dates/Oct9exceptions preserved;692units/types/lint/content/bothbuilds/smoke;11 browserchecks eachtarget |
 | PR-29 | queued | issue #194 |
 | PR-30 | queued | issue #195 |
 | PR-32 | queued | issue #197 |

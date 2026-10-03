@@ -7,6 +7,7 @@ import { usePathname, useSearchParams } from 'next/navigation';
 import { Search, X } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
+import { ClaimCitations } from '@/components/features/ClaimCitations';
 import { FreshnessMeta } from '@/components/ui/FreshnessMeta';
 import { recordAnchor } from '@/lib/utils';
 import type { SecurityIncident, SourcedRecord } from '@/lib/types';
@@ -319,6 +320,7 @@ export function GovernanceIncidentArchiveExplorer({
                 </div>
                 <div className="space-y-2">
                   <FreshnessMeta freshness={record.freshness} sources={record.sources} />
+                  <ClaimCitations claims={record.claims ?? []} />
                   {incident.url && (
                     <a
                       href={incident.url}
