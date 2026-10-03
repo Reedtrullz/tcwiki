@@ -51,7 +51,7 @@ test.describe('THORChain Wiki Navigation Smoke Tests', () => {
     const toolsPanel = page.locator('#nav-panel-tools');
     await expect(toolsButton).toHaveAttribute('aria-controls', 'nav-panel-tools');
     await expect(toolsPanel).toBeHidden();
-    await expect(toolsPanel.locator('a').first()).toBeAttached();
+    await expect(toolsPanel.locator('a')).toHaveCount(0);
     await toolsButton.click();
     await expect(toolsButton).toHaveAttribute('aria-expanded', 'true');
     await expect(toolsPanel).toBeVisible();
