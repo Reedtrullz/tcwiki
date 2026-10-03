@@ -11,6 +11,7 @@ import type {
   TokenomicsSnapshot,
 } from '@/lib/types';
 import {
+  opReturnBitcoinMemoSource,
   adr026DynamicFeesSource,
   adr028ExploitConciliationSource,
   archivedLendingSource,
@@ -446,6 +447,17 @@ const developerIntegrationLiveInboundSource: SourceMeta = {
 };
 
 export const SOURCE_MAP_SECTION_RECORDS: SourcedRecord<SourceMapSection>[] = [
+  record({
+    id: 'bitcoin-memo-archive',
+    title: 'Bitcoin Memo Archive',
+    decision: 'Do you need to inspect recorded Bitcoin memo bytes and transaction references?',
+    use: 'OP_RETURN offers a third-party Bitcoin memo archive with payload bytes, transaction/block links and Bitcoin-side history. Start from the recorded bytes and independently check the chain evidence.',
+    caveat: 'Bitcoin-only and third-party. Archive classification, address grouping and confirmation labels are its own observations; Bitcoin confirmation is separate from THORChain processing and destination settlement.',
+    claimExamples: ['A pointer to a recorded Bitcoin OP_RETURN payload.', 'Bitcoin transaction and block references to investigate independently.'],
+    nonClaims: ['Complete THORChain history or all-chain coverage.', 'Validated memo interpretation, ticker counts or address ownership.', 'Successful cross-chain execution, THORChain validation or destination settlement.', 'Official endorsement, safe execution instructions or a current route quote.'],
+    links: [opReturnBitcoinMemoSource],
+  }, [opReturnBitcoinMemoSource], 'curated', { checkedAt: '2026-10-03', nextReviewDue: '2026-11-03' }),
+
   record({
     id: 'current-protocol-state',
     title: 'Current Protocol State',
