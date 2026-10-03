@@ -151,7 +151,7 @@ describe('release proof trackedness audit', () => {
   });
   it('requires both runtime families including Cloudflare copy/config inputs', () => {
     const root = makeRoot();
-    const files = ['package.json', 'Dockerfile', 'next.config.ts', 'playwright.config.ts', '.github/workflows/ci.yml', '.github/workflows/operations.yml', 'README.md', 'CONTRIBUTING.md', 'docs/maintenance.md', 'docs/operations.md', 'ansible-playbook.yml', 'package-lock.json', 'vite.config.ts', 'wrangler.do.jsonc', 'cloudflare/do-entry.mjs'];
+    const files = ['scripts/lib/readiness-contract.jq', 'package.json', 'Dockerfile', 'next.config.ts', 'playwright.config.ts', '.github/workflows/ci.yml', '.github/workflows/operations.yml', 'README.md', 'CONTRIBUTING.md', 'docs/maintenance.md', 'docs/operations.md', 'ansible-playbook.yml', 'package-lock.json', 'vite.config.ts', 'wrangler.do.jsonc', 'cloudflare/do-entry.mjs'];
     for (const path of files) write(root, path, path.endsWith('.json') ? '{}' : '');
     const clean = auditReleaseTrackedFiles({ root, trackedFiles: files });
     expect(clean.missingFiles).toEqual([]);

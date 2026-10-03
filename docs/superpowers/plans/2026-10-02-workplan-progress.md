@@ -47,7 +47,7 @@ Execute all accepted work and create/push GitHub PRs; do not merge to main. User
 | PR-57 | PR229 open; local verified | 433465e; shared streaming2MiB/4096rows/depth64/string65536/numeric80 bounds; prefetch quote80/asset256; RED4/full574/types/lint/both builds/smoke;18 network browser checks each Next/CF; recorded capture381437bytes fits >5xheadroom |
 | PR-44 | local verified; publishing | shared app/script header parser; requested/observed/verified per source, aggregate fee/POL receipt; unsupportedecho unverified/malformed+mismatchfailover; RED4/full583/types/lint/both builds/smoke/20network+economics eachNext/CF; one bounded Liquify version3.20.3 header capability observation |
 | PR-42 | queued | issue #141 |
-| PR-51 | queued | issue #150 |
+| PR-51 | local verified; publication pending | Node absent on independent host; jq required-contract counterpart/shared positive-negative fixtures;584units/types/both builds/smoke/Ansible syntax;45 focused checks;64 release inputs |
 | PR-16 | queued | issue #181 |
 | PR-45 | queued | issue #144 |
 | PR-52 | queued | issue #151 |

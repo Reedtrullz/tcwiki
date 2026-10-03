@@ -70,7 +70,7 @@ npm run check:production-readiness -- --samples 1 --interval-ms 0 --artifact .ar
 
 ### Independent VPS readiness timer
 
-The VPS also runs `tcwiki-readiness-monitor.timer` at minutes 08 and 38 with up to two minutes of randomized delay. It uses the same three-observation rule: the window passes when at least one valid sample is ready and fails when no sample is ready. The host monitor validates monitor-critical fields; GitHub Actions retains full JavaScript contract validation, direct-provider comparison, and issue lifecycle.
+The VPS also runs `tcwiki-readiness-monitor.timer` at minutes 08 and 38 with up to two minutes of randomized delay. It uses the same three-observation rule: the window passes when at least one valid sample is ready and fails when no sample is ready. The host monitor uses a jq counterpart of the required JavaScript identity/source contract because Node is absent on the host (read-only checked2026-10-03). Shared positive/negative fixtures cover parity; GitHub Actions retains direct-provider comparison and issue lifecycle. The service loads the root-owned `/usr/local/libexec/tcwiki-readiness-monitor-lib/readiness-contract.jq`; installation is supplied by Ansible, and missing/invalid library state fails closed. Neither validator independently enforces a timestamp calendar/age policy merely by requiring nonempty checkedAt; the application supplies the delivery age assessment. Candidate changes need owner merge/deploy before host behavior changes.
 
 The service runs as non-login account `tcwiki-readiness` with no Docker access or GitHub credential. It writes only latest bounded evidence and transition state. It does not open or close GitHub issues.
 

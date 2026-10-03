@@ -4,6 +4,7 @@ import { dirname, join } from 'node:path';
 
 export const RELEASE_TRACKED_SOURCE_FILES = [
   'package.json',
+  'scripts/lib/readiness-contract.jq',
   '.github/workflows/ci.yml',
   '.github/workflows/operations.yml',
   'README.md',
