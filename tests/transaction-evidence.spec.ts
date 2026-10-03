@@ -19,7 +19,9 @@ test('lookup is explicit, preserves raw indexer evidence and separates settlemen
   expect(reads).toBe(0);
   await input.fill('https://example.com'); await panel.getByRole('button', { name: 'Look up transaction' }).click();
   await expect(panel.getByRole('status')).toContainText('Enter one 32-byte'); expect(reads).toBe(0);
-  await input.fill(hash); expect(reads).toBe(0);
+  // Mobile Chromium insertText can truncate replacement text against maxlength
+  // using the old value's length. Clear first and verify the actual fixture value.
+  await input.fill(''); await input.fill(hash); await expect(input).toHaveValue(hash); expect(reads).toBe(0);
   await input.press('Tab'); const button = panel.getByRole('button', { name: 'Look up transaction' }); await expect(button).toBeFocused(); await button.press('Enter');
   await expect(panel.getByRole('heading', { name: 'Indexed action 1: refund — pending' })).toBeVisible();
   expect(reads).toBe(1);
