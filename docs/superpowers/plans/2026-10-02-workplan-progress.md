@@ -56,8 +56,8 @@ Execute all accepted work and create/push GitHub PRs; do not merge to main. User
 | PR-05 | PR218 open; CI passed | 6b130055; CI37039713892; seven bounded histories (14 fallback), provider/failed coverage; scoped visible pool-row regression |
 | PR-09 | PR223 open; local verified | c818d47; https://github.com/Reedtrullz/tcwiki/pull/223; full545/types/lint/both builds; 3 economics browser checks each Next/CF; actual price UTC interval/provider/age, degraded price USD withheld; CI pending |
 | PR-40 | queued | issue #139 |
-| PR-41 | queued | issue #140 |
-| PR-46 | verified candidate; PR publishing | db6d638+integration242;651units;47stats/network/home/runtimechecks eachNext/CF plus1skip;separate reportedAPR/APY identity/decimalscale/same-field ranking, boundedshareableperiod/provenance/cachekey |
+| PR-41 | PR243 open; CI passed | 8e1308c;644units;26fee/runtimechecks eachtarget |
+| PR-46 | PR244 open; CI passed | db6d638+integration242;651units;47stats/network/home/runtimechecks eachNext/CF plus1skip;separate reportedAPR/APY identity/decimalscale/same-field ranking, boundedshareableperiod/provenance/cachekey |
 | PR-65 | queued | issue #164 |
 | PR-19 | PR228 open; CI passed | 1c93efa; CI37087634182; one active disclosure, hydration gate/native form values, connected empty panels |
 | PR-24 | PR233 open; CI passed | 1ca5fcd; exact-head CI passed;552units;26browser checks each target plus4device skips |
@@ -66,8 +66,8 @@ Execute all accepted work and create/push GitHub PRs; do not merge to main. User
 
 
 | PR-20 | queued | issue #185 |
-| PR-21 | local verified; PR publishing | 651units;bothbuilds/Nextsmoke;65/70 eachNext/actualWikiDO with5skips;loaded/degraded WCAG rules, keyboard/reflow/reducedmotion and single semantic-update/no repeated-poll text mutations |
-| PR-25 | queued | issue #190 |
+| PR-21 | PR247 open; local verified | 651units;bothbuilds/Nextsmoke;65/70 eachNext/actualWikiDO with5skips;loaded/degraded WCAG rules, keyboard/reflow/reducedmotion and single semantic-update/no repeated-poll text mutations |
+| PR-25 | PR245 open; CI passed | 40fcee3;CI37096816605SUCCESS;24offlinecases;development14/14,held-out8/10 top1/top5;current/exact allpass;31focusedtests |
 | PR-58 | queued | issue #157 |
 | PR-26 | queued | issue #191 |
 | PR-49 | queued | issue #148 |
