@@ -155,6 +155,27 @@ jobs:
           REQUIRE_RUNTIME_METADATA: '1'
           CSP_ENFORCE: '1'
 
+  upstream-shape-report:
+    name: Independent upstream shape report
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Capture sanitized contract shapes for review
+        run: node scripts/check-upstream-contracts.mjs --report .artifacts/upstream-contract-report.json
+      - name: Retain independent provider evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: upstream-shape-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .artifacts/upstream-contract-report.json
+          if-no-files-found: warn
+          retention-days: 7
+
   publish:
     name: Build & publish image
     needs: [build-check]

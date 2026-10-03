@@ -31,7 +31,7 @@ Execute all accepted work and create/push GitHub PRs; do not merge to main. User
 | PR-03 | PR open; local verified |6398da9+e082581; https://github.com/Reedtrullz/tcwiki/pull/213; parent review fixed acceptance timing/address/shape/slash tests; 486units/types/lint; single source disclosed |
 | PR-12 | PR221 open; local verified | 139f3e4; https://github.com/Reedtrullz/tcwiki/pull/221; origin-typed warnings, shared cycle-safe collector; wording/malformed/provenance regressions; full520/types/lint; integration with220 full549/types; CI pending |
 | PR-39 | PR215 open; CI passed | a9b3ab5; CI37035192897; canonical alias RED5/full513/types/lint |
-| PR-13 | queued | issue #178 |
+| PR-13 | verified candidate | ten selected sanitized schemas observed2026-10-03; version/height context explicit; sample3/read512KiB/5s bounds; report no shape changes on second capture; full553/types/lint; provider-failure and malformed-field regression |
 | PR-06 | PR216 open; CI passed | 2938a70; CI37036720991; supplied-clock states/full520/8Next network checks; deadline/resume never auto-probe |
 | PR-18 | verified candidate | stalled read timeout/cancellation, bounded batch/depth/fields and suppressed-item response count; RED2 then GREEN11; full508/types/lint pass |
 | PR-14 | verified candidate |23 actual WikiDO browser checks passed after reproducing/fixing missing MDX provider; CSP enforced; manifest-bound local candidate |
@@ -54,7 +54,7 @@ Execute all accepted work and create/push GitHub PRs; do not merge to main. User
 | PR-04 | PR218 open; CI passed | 6b130055; CI37039713892; completed UTC day/zero/duplicate/gap/rollover; separate aggregate and actual comparison days |
 | PR-38 | PR220 open; CI passed | 0982935; https://github.com/Reedtrullz/tcwiki/pull/220; CI37040858697; full542/types/lint/both builds; UTC chronology/gaps/overlap; 11 checks each Next/CF stats; full32 CF checks, one desktop-only skip |
 | PR-05 | PR218 open; CI passed | 6b130055; CI37039713892; seven bounded histories (14 fallback), provider/failed coverage; scoped visible pool-row regression |
-| PR-09 | in progress | POL price source/actual period/interval age; focused25/types/lint; bounded economics browser review underway |
+| PR-09 | PR223 open; local verified | c818d47; https://github.com/Reedtrullz/tcwiki/pull/223; full545/types/lint/both builds; 3 economics browser checks each Next/CF; actual price UTC interval/provider/age, degraded price USD withheld; CI pending |
 | PR-40 | queued | issue #139 |
 | PR-41 | queued | issue #140 |
 | PR-46 | queued | issue #145 |
@@ -113,3 +113,5 @@ PR218 UTC volume periods/universe open (ecb66d0+b58b536). PR219 native search Fo
 
 - PR219 search FormData CI37039715393 passed after the scoped pool-row correction. Partial contribution to PR20/49; broader recovery tasks remain queued.
 - PR221 parent review reproduced and fixed malformed-warning disappearance and compatibility-string reclassification; action/key/scope identity retained. Warning integration with220 is conflict-free and passes549units/types. No main merge/deploy.
+
+- PR222 warning integration published and attached, base220; PR223 POL price provenance published and attached, base220. PR19 header disclosure sidecar in progress; PR13 independent scheduled shape report never runs in ordinary PR tests.
