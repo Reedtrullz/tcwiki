@@ -82,6 +82,51 @@ export interface SourcedRecord<T> {
   freshness: FreshnessMeta;
 }
 
+export type TransactionExampleGuide = 'streaming-swaps-refunds' | 'build-query-data' | 'churning';
+
+export interface TransactionExampleAmount {
+  amount: string;
+  asset: string;
+  unit: string;
+  kind?: 'trade asset' | 'native asset' | 'token asset';
+}
+
+export interface TransactionExampleReport {
+  layer: 'source-chain' | 'thorchain-indexer';
+  label: string;
+  actionType?: string;
+  status: string;
+  observedAt?: string;
+  height?: string;
+  blockHeight?: string;
+  blockHash?: string;
+  blockTime?: string;
+  transactionId?: string;
+  outputHeight?: string;
+  outputTransactionId?: string;
+  destination?: string;
+  inputs?: TransactionExampleAmount[];
+  outputs?: TransactionExampleAmount[];
+  facts?: Array<{ label: string; value: string }>;
+  source: SourceMeta;
+  blockSource?: SourceMeta;
+}
+
+export interface TransactionExample {
+  id: string;
+  guide: TransactionExampleGuide;
+  title: string;
+  summary: string;
+  memo: {
+    sourceLabel: string;
+    value: string;
+    interpretation: string;
+    parameters?: Array<{ label: string; value: string }>;
+  };
+  reports: TransactionExampleReport[];
+  unknowns: string[];
+}
+
 export type LiveDataStatus = 'ok' | 'degraded';
 
 export type SourceHealthSeverity = 'ok' | 'warning' | 'degraded' | 'unknown';
