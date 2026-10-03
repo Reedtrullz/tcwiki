@@ -8,6 +8,7 @@ import {
   deriveStatsPoolSnapshot,
   midgardResultHasCleanHealth,
   midgardSourceIssueIsVisible,
+  normalizeStatsPoolPeriod,
 } from '@/lib/stats-dashboard';
 import type { HistoryItem, LiveDataResult, MidgardHealth, NetworkStats, NetworkStatus, Pool, SourceMeta } from '@/lib/types';
 
@@ -87,12 +88,14 @@ function pool(
     status = 'available',
     liquidityInUSD,
     volume24h,
+    annualPercentageRate,
     poolAPY,
   }: {
     runeDepth?: string;
     status?: string;
     liquidityInUSD?: string;
     volume24h?: string;
+    annualPercentageRate?: string;
     poolAPY?: string;
   }
 ): Pool {
@@ -107,6 +110,9 @@ function pool(
   }
   if (volume24h !== undefined) {
     item.volume24h = volume24h;
+  }
+  if (annualPercentageRate !== undefined) {
+    item.annualPercentageRate = annualPercentageRate;
   }
   if (poolAPY !== undefined) {
     item.poolAPY = poolAPY;
@@ -321,7 +327,7 @@ describe('stats dashboard decision facts', () => {
       runeDepthLabel: '2 RUNE',
       liquidityUsdLabel: '$1M',
       volume24hRuneLabel: '250K RUNE',
-      apyLabel: '12.50%',
+      poolAPYLabel: '12.50%',
     }));
     expect(snapshot.rows[1]).toEqual(expect.objectContaining({
       asset: 'ETH.ETH',
@@ -329,7 +335,7 @@ describe('stats dashboard decision facts', () => {
       volume24hRune: null,
       liquidityUsdLabel: 'Unavailable',
       volume24hRuneLabel: 'Unavailable',
-      apyLabel: 'Unavailable',
+      poolAPYLabel: 'Unavailable',
     }));
   });
 
@@ -348,12 +354,12 @@ describe('stats dashboard decision facts', () => {
       liquidityUsdLabel: '$1.05M',
       volume24hRune: 291098.30445174,
       volume24hRuneLabel: '291K RUNE',
-      apyLabel: '0.00%',
+      poolAPYLabel: '0.00%',
     }));
     expect(snapshot.highestVolumePool?.asset).toBe('AVAX.AVAX');
   });
 
-  it('rejects malformed USD and overflowing APY at the presentation boundary', () => {
+  it('rejects malformed USD and overflowing poolAPY at the presentation boundary', () => {
     const [row] = deriveStatsPoolSnapshot([pool('BTC.BTC', {
       liquidityInUSD: '0x10',
       poolAPY: '9'.repeat(307),
@@ -361,8 +367,48 @@ describe('stats dashboard decision facts', () => {
 
     expect(row.liquidityUsd).toBeNull();
     expect(row.liquidityUsdLabel).toBe('Unavailable');
-    expect(row.apyPercent).toBeNull();
-    expect(row.apyLabel).toBe('Unavailable');
+    expect(row.poolAPYPercent).toBeNull();
+    expect(row.poolAPYLabel).toBe('Unavailable');
+  });
+
+  it('does not rank a reported annualPercentageRate field as poolAPY', () => {
+    const rows = deriveStatsPoolSnapshot([
+      pool('APR.ONLY', { annualPercentageRate: '0.50' }),
+      pool('APY.ONLY', { poolAPY: '0.03' }),
+    ], false).rows;
+
+    expect(rows.find((row) => row.asset === 'APR.ONLY')?.poolAPYLabel).toBe('Unavailable');
+    expect(deriveStatsPoolExplorer(rows, {
+      query: '',
+      chain: 'all',
+      status: 'all',
+      sort: 'poolAPYPercent',
+    }).rows.map((row) => row.asset)).toEqual(['APY.ONLY', 'APR.ONLY']);
+  });
+
+  it('keeps both disagreeing return fields distinct for labels and rankings', () => {
+    const rows = deriveStatsPoolSnapshot([
+      pool('POOL.A', { annualPercentageRate: '0.04', poolAPY: '0.11' }),
+      pool('POOL.B', { annualPercentageRate: '0.08', poolAPY: '0.03' }),
+    ], false).rows;
+
+    expect(rows.find((row) => row.asset === 'POOL.A')).toEqual(expect.objectContaining({
+      annualPercentageRateLabel: '4.00%',
+      poolAPYLabel: '11.00%',
+    }));
+    expect(deriveStatsPoolExplorer(rows, {
+      query: '', chain: 'all', status: 'all', sort: 'annualPercentageRatePercent',
+    }).rows.map((row) => row.asset)).toEqual(['POOL.B', 'POOL.A']);
+    expect(deriveStatsPoolExplorer(rows, {
+      query: '', chain: 'all', status: 'all', sort: 'poolAPYPercent',
+    }).rows.map((row) => row.asset)).toEqual(['POOL.A', 'POOL.B']);
+  });
+
+  it('bounds URL-selected pool periods to the Midgard enum and defaults invalid values', () => {
+    expect(normalizeStatsPoolPeriod('30d')).toBe('30d');
+    expect(normalizeStatsPoolPeriod('all')).toBe('14d');
+    expect(normalizeStatsPoolPeriod('unknown')).toBe('14d');
+    expect(normalizeStatsPoolPeriod(null)).toBe('14d');
   });
 
   it('filters and sorts Midgard pool rows while keeping missing values last', () => {
@@ -415,7 +461,7 @@ describe('stats dashboard decision facts', () => {
       query: '',
       chain: 'all',
       status: 'available',
-      sort: 'apyPercent',
+      sort: 'poolAPYPercent',
     });
 
     expect(availableApy.rows.map((row) => row.asset)).toEqual([
@@ -423,7 +469,7 @@ describe('stats dashboard decision facts', () => {
       'SOL.SOL',
       'ETH.USDC-0XA0B86991C6218B36C1D19D4A2E9EB0CE3606EB48',
     ]);
-    expect(availableApy.activeFilterLabels).toEqual(['Status: available', 'Sort: APY']);
+    expect(availableApy.activeFilterLabels).toEqual(['Status: available', 'Sort: poolAPY']);
   });
 
   it('keeps real zero source values as zero while missing values stay unavailable', () => {

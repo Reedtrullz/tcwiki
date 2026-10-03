@@ -18,6 +18,7 @@ import {
   deriveStatsPoolExplorer,
   deriveStatsPoolSnapshot,
   midgardSourceIssueIsVisible,
+  normalizeStatsPoolPeriod,
   type StatsDecisionFact,
   type StatsMetricCard,
 } from '@/lib/stats-dashboard';
@@ -159,6 +160,7 @@ export default function StatsPage() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const searchParamString = searchParams.toString();
+  const selectedPoolPeriod = normalizeStatsPoolPeriod(searchParams.get('pool_period'));
   const {
     data: networkData,
     result: networkResult,
@@ -179,7 +181,7 @@ export default function StatsPage() {
     error: poolsError,
     isLoading: poolsLoading,
     isDegraded: poolsDegraded,
-  } = usePools();
+  } = usePools(selectedPoolPeriod);
   const { result: midgardHealthResult } = useMidgardHealth();
   const { result: statusResult, isLoading: statusLoading, refresh: refreshStatus } = useNetworkStatus();
 
@@ -202,6 +204,8 @@ export default function StatsPage() {
     poolFilters,
     updatePoolFilters,
     replacePoolFiltersInUrl,
+    poolPeriod,
+    updatePoolPeriod,
   } = usePoolExplorerFilters({
     router,
     pathname,
@@ -355,6 +359,10 @@ export default function StatsPage() {
         poolAvailableChains={poolAvailableChains}
         poolAvailableStatuses={poolAvailableStatuses}
         poolsLoading={poolsLoading}
+        poolPeriod={poolPeriod}
+        updatePoolPeriod={updatePoolPeriod}
+        poolsResult={poolsResult}
+        midgardHealthResult={midgardHealthResult}
       />
 
       <StatsEarningsTable

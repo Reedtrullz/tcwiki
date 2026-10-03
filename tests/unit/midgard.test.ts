@@ -12,7 +12,7 @@ describe('MidgardAPI', () => {
     vi.unstubAllGlobals();
   });
 
-  it('falls back from Liquify to public Midgard and normalizes pool APY', async () => {
+  it('falls back from Liquify to public Midgard and preserves the raw pool APY field', async () => {
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce(makeResponse(false, {}, 500, 'Server Error'))
@@ -23,14 +23,44 @@ describe('MidgardAPI', () => {
 
     expect(result.status).toBe('ok');
     expect(fetchMock.mock.calls[0][0]).toContain('gateway.liquify.com');
-    expect(fetchMock.mock.calls[0][0]).toContain('/pools?status=available');
+    expect(fetchMock.mock.calls[0][0]).toContain('/pools?status=available&period=14d');
     expect(fetchMock.mock.calls[1][0]).toContain('midgard.thorchain.network');
-    expect(result.data?.[0].apyPercent).toBe(12);
+    expect(result.data?.[0].poolAPY).toBe('0.12');
+    expect(result.data?.[0].annualPercentageRate).toBeUndefined();
     expect(result.source).toEqual({
       label: 'THORChain Midgard',
-      url: 'https://midgard.thorchain.network/v2/pools?status=available',
+      url: 'https://midgard.thorchain.network/v2/pools?status=available&period=14d',
       retrievedAt: result.checkedAt,
     });
+  });
+
+  it('preserves separate APR/APY source fields and the explicit default pool period', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(makeResponse(true, [
+      { asset: 'APR.ONLY', assetDepth: '1', runeDepth: '1', status: 'available', annualPercentageRate: '0.07' },
+      { asset: 'APY.ONLY', assetDepth: '1', runeDepth: '1', status: 'available', poolAPY: '0.09' },
+      { asset: 'BOTH.BOTH', assetDepth: '1', runeDepth: '1', status: 'available', annualPercentageRate: '0.04', poolAPY: '0.11' },
+      { asset: 'NONE.NONE', assetDepth: '1', runeDepth: '1', status: 'available' },
+    ])));
+
+    const result = await MidgardAPI.getPools();
+
+    expect(result.source?.url).toBe('https://gateway.liquify.com/chain/thorchain_midgard/v2/pools?status=available&period=14d');
+    expect(result.data?.map(({ annualPercentageRate, poolAPY }) => [annualPercentageRate, poolAPY])).toEqual([
+      ['0.07', undefined],
+      [undefined, '0.09'],
+      ['0.04', '0.11'],
+      [undefined, undefined],
+    ]);
+  });
+
+  it('uses the requested non-default pool period in the request and provenance URL', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(makeResponse(true, []));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const result = await MidgardAPI.getPools('available', '30d');
+
+    expect(fetchMock.mock.calls[0][0]).toBe('https://gateway.liquify.com/chain/thorchain_midgard/v2/pools?status=available&period=30d');
+    expect(result.source?.url).toBe('https://gateway.liquify.com/chain/thorchain_midgard/v2/pools?status=available&period=30d');
   });
 
   it('preserves canonical live Midgard pool liquidity and RUNE volume fields', async () => {
