@@ -103,7 +103,7 @@ Execute all accepted work and create/push GitHub PRs; do not merge to main. User
 | PR-33 | queued | issue #198 |
 | PR-63 | queued | issue #162 |
 | PR-64 | queued | issue #163 |
-| PR-35 | queued | issue #200 |
+| PR-35 | owner-gated preparation; storage deferred | concrete cohort/caps/backend/backup-restore decision pack, bounded existing-artifact inventory; no accepted operationalowner/quota/backupdestination, no storage implemented; revisit after ownerreceipt |
 
 Task PR-37: local verified (172f288; seven RED→GREEN file safety checks, full suite482/482, typecheck pass; lint existing warning). PR207 created/attached; not merged.
 Ruling: one native Luna sidecar for disjoint PR08 numeric boundaries while parent executes foundation tooling, using subagent-driven-development for that slice; routed discovery remains blocked.
@@ -162,3 +162,5 @@ PR46 final:parent matched pinned sourcehash; unsupportedperiodRED→GREEN nofetc
 PR23 candidate: curatedarticle print + text/Markdowncitation copy/visiblefallback/citation-onlydownload with canonicalsection/sourceURLs/dates/confidence/evidenceboundary.658units/types/lint/content/bothbuilds/smoke;11earlierarticlebrowserchecks eachruntime +final4desktop/mobilecitationchecks each. A4 firstpage/source metadata andwideclaimtable visualproof inspected; nophysicalprinter/PDFaccessibilityclaim. Fulltext redistribution remains61owner-gated; no mainmerge/deploy.
 
 PR62 final: metadata-onlythree-claimcohort/registrylinks, deterministic identity/checksum plus direct stale/deletedlinkchecks and consistentgraphnodeIDs. 701units,types/lint/content/bothfinalbuilds/Nextsmoke and14desktop/mobilechecks eachactualruntime passed. Enclosingconfidence and independentclaimdecisions preserved; fullarticlelicense unresolved. No mainmerge/deploy.
+
+PR35 disposition: bounded one-cohort64KiB/12manualcapturesdaily/seven-day5.25MiBproposal and exact backup/restore acceptance pack. Read-only first200/479GitHubartifacts quantified; no accountquotaguarantee. Storage/replay deferred until operationalowner accepts quota/backend/backupdestination and drill. No newstorage orhistoryclaims.
