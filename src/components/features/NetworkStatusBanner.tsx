@@ -1766,9 +1766,9 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
             </span>
           </div>
           {nodeOperationRows.length > 0 ? (
-            <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
               {nodeOperationRows.map((operation) => (
-                <div key={operation.id} className={`rounded-md border p-3 ${nodeOperationCardClassName(operation.cell)}`}>
+                <div key={operation.id} className={`min-w-0 rounded-md border p-3 [overflow-wrap:anywhere] ${nodeOperationCardClassName(operation.cell)}`}>
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="text-sm font-semibold text-slate-200">{operation.label}</span>
                     {renderStatusCell(operation.cell)}
