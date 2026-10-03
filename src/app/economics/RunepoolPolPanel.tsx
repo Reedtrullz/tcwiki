@@ -7,6 +7,7 @@ import { LiveSourceMeta } from '@/components/ui/LiveSourceMeta';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { useEarningsHistory, useNetworkStatus, useRunePoolPolStatus } from '@/lib/hooks/useMidgard';
 import { liveResultIsDegraded } from '@/lib/live-result';
+import { deriveStatsEarningsRows } from '@/lib/stats-dashboard';
 import { summarizeSourceWarning } from '@/lib/source-warnings';
 import { formatRuneFromBaseUnits, parseFiniteDecimal, runeBaseUnitsToNumber } from '@/lib/trust';
 import type { HistoryItem, LiveDataResult, NetworkStatus, RunePoolPolStatus } from '@/lib/types';
@@ -21,6 +22,9 @@ interface RunePoolPolViewProps {
   isLoading?: boolean;
   earningsHistory?: HistoryItem[];
   earningsLoading?: boolean;
+  earningsResult?: LiveDataResult<HistoryItem[]>;
+  earningsError?: string;
+  observedAtMs?: number;
   networkResult?: LiveDataResult<NetworkStatus>;
   networkStatus?: NetworkStatus;
   networkLoading?: boolean;
@@ -117,24 +121,13 @@ function formatUsdPrice(value: number | null) {
   return `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}`;
 }
 
-function formatHistoryDate(seconds: string | undefined) {
-  const parsed = parseFiniteDecimal(seconds);
-  if (parsed === null) {
-    return null;
-  }
-
-  const date = new Date(parsed * 1000);
-  if (!Number.isFinite(date.getTime())) {
-    return null;
-  }
-
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
-}
-
 function derivePolTrackerSummary(
   status: RunePoolPolStatus | undefined,
   earningsHistory: HistoryItem[] | undefined,
-  earningsLoading: boolean | undefined
+  earningsLoading: boolean | undefined,
+  earningsResult: LiveDataResult<HistoryItem[]> | undefined,
+  earningsError: string | undefined,
+  observedAtMs = Date.now()
 ): PolTrackerSummary | undefined {
   if (!status) {
     return undefined;
@@ -144,17 +137,25 @@ function derivePolTrackerSummary(
   const polRune = runeNumberFromBaseUnits(status.pol.valueRuneBaseUnits);
   const pnlBaseUnits = parseRuneBaseUnits(status.pol.pnlRuneBaseUnits);
   const pnlRune = runeNumberFromBaseUnits(status.pol.pnlRuneBaseUnits);
-  const runePriceUsd = earningsHistory
-    ?.map((item) => parseFiniteDecimal(item.runePriceUSD))
-    .filter((price): price is number => price !== null && price > 0)
-    .at(-1);
-  const latestEarningsItem = earningsHistory?.at(-1);
-  const usdPriceNote = earningsLoading && runePriceUsd === undefined
-    ? 'Midgard daily RUNE/USD price is loading.'
-    : runePriceUsd === undefined
-      ? 'Midgard daily RUNE/USD price was not available in the loaded history.'
-      : `Latest Midgard daily RUNE/USD interval (${formatHistoryDate(latestEarningsItem?.startTime) ?? 'date unavailable'})`;
-  const usdTone: FactTone = runePriceUsd === undefined ? 'info' : 'success';
+  const priceSourceReady = earningsResult?.status === 'ok' && !earningsError && !liveResultIsDegraded(earningsResult)
+    && Boolean(earningsResult.source || earningsResult.sources?.length);
+  const history = earningsResult?.data ?? earningsHistory;
+  let priceRecord: { price: number; period: string; endTime: number } | undefined;
+  if (priceSourceReady) {
+    for (const row of deriveStatsEarningsRows(history, observedAtMs)) {
+      if (!row.completed || row.periodIssue || row.startTime === null || row.endTime === null) continue;
+      const item = history?.find(item => item.startTime === String(row.startTime) && item.endTime === String(row.endTime));
+      const price = parseFiniteDecimal(item?.runePriceUSD);
+      if (price !== null && price > 0) { priceRecord = { price, period: row.periodLabel, endTime: row.endTime }; break; }
+    }
+  }
+  const runePriceUsd = priceRecord?.price;
+  const ageDays = priceRecord ? (observedAtMs - priceRecord.endTime * 1000) / 86_400_000 : undefined;
+  const usdPriceNote = earningsLoading && !priceRecord ? 'Midgard daily RUNE/USD price is loading.'
+    : !priceSourceReady ? 'Price source unavailable; USD valuation withheld.'
+      : !priceRecord ? 'No valid completed daily price interval; USD valuation withheld.'
+        : `Daily reference valuation: ${priceRecord.period}; price interval age ${ageDays!.toFixed(1)} days. This is not contemporaneous USD accounting with the THORNode POL snapshot.`;
+  const usdTone: FactTone = !priceRecord ? 'info' : ageDays! > 1 ? 'warning' : 'info';
 
   return {
     polRune: formatRuneOrUnavailable(status.pol.valueRuneBaseUnits),
@@ -457,6 +458,9 @@ export function RunepoolPolView({
   isLoading,
   earningsHistory,
   earningsLoading,
+  earningsResult,
+  earningsError,
+  observedAtMs,
   networkResult,
   networkStatus,
   networkLoading,
@@ -488,7 +492,7 @@ export function RunepoolPolView({
   const warningHeadline = sourceWarningHeadline(status);
   const relationship = bucketRelationship(status);
   const snapshotCards = decisionCards;
-  const tracker = derivePolTrackerSummary(status, earningsHistory, earningsLoading);
+  const tracker = derivePolTrackerSummary(status, earningsHistory, earningsLoading, earningsResult, earningsError, observedAtMs);
 
   return (
     <section id="runepool-pol-live" className="mb-12 scroll-mt-24">
@@ -540,6 +544,7 @@ export function RunepoolPolView({
             <Badge variant={badgeVariant(tracker?.usdTone ?? 'info')}>{tracker?.usdPrice ?? 'Unavailable'}</Badge>
           </div>
           <p className="text-[11px] leading-relaxed text-slate-500">{tracker?.usdPriceNote ?? 'Midgard daily RUNE/USD price was not loaded.'}</p>
+          <LiveSourceMeta result={earningsResult} />
         </div>
       </Card>
 
@@ -755,7 +760,7 @@ export function RunepoolPolPanel() {
     data,
     isLoading,
   } = useRunePoolPolStatus();
-  const { data: earningsHistory, isLoading: earningsLoading } = useEarningsHistory('day', 30);
+  const { data: earningsHistory, result: earningsResult, error: earningsError, isLoading: earningsLoading } = useEarningsHistory('day', 30);
   const {
     result: networkResult,
     data: networkStatus,
@@ -769,6 +774,8 @@ export function RunepoolPolPanel() {
       isLoading={isLoading}
       earningsHistory={earningsHistory}
       earningsLoading={earningsLoading}
+      earningsResult={earningsResult}
+      earningsError={earningsError}
       networkResult={networkResult}
       networkStatus={networkStatus}
       networkLoading={networkLoading}
