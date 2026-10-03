@@ -87,7 +87,7 @@ Execute all accepted work and create/push GitHub PRs; do not merge to main. User
 | PR-34 | verified bounded candidate; PR publication | source/docs3.20.3 reviewed,713units; bothbuilds/smoke and4desktop/mobile WCAG/keyboard/invalid-input/link checks eachruntime; toy notexecution; humanfeedback pending |
 | PR-36 | queued | issue #201 |
 | PR-22 | queued | issue #187 |
-| PR-48 | queued | issue #147 |
+| PR-48 | verified bounded candidate; PR publication | Same loaded snapshot, three URL-selected pools; 716 units; both builds/smoke and 27 desktop/mobile checks plus one presentation skip each runtime; no extra provider requests |
 | PR-47 | queued | issue #146 |
 | PR-62 | queued | issue #161 |
 | PR-33 | queued | issue #198 |

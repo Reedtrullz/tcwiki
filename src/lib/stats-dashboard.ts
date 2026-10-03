@@ -675,6 +675,24 @@ export function deriveStatsPoolRows(pools: Pool[] | undefined): StatsPoolRow[] {
   });
 }
 
+export function normalizePoolComparison(params: URLSearchParams): string[] {
+  const selected: string[] = [];
+  for (const asset of params.getAll('compare_pool').slice(0, 12)) {
+    if (asset.length > 256 || !/^[A-Za-z0-9]+[.~\/][A-Za-z0-9][A-Za-z0-9_-]*$/.test(asset) || selected.includes(asset)) continue;
+    selected.push(asset);
+    if (selected.length === 3) break;
+  }
+  return selected;
+}
+
+export function derivePoolComparison(rows: StatsPoolRow[], selected: string[]) {
+  return selected.slice(0, 3).map(asset => {
+    const matches = rows.filter(row => row.asset === asset);
+    return { asset, row: matches.length === 1 ? matches[0] : null,
+      reason: matches.length === 1 ? null : matches.length === 0 ? 'Not in the loaded pool snapshot' : 'Duplicate asset rows are not uniquely comparable' };
+  });
+}
+
 export function deriveStatsPoolSnapshot(pools: Pool[] | undefined, poolsLoading: boolean): StatsPoolSnapshot {
   const rows = deriveStatsPoolRows(pools);
   const chainCount = new Set(rows.map((row) => row.chain)).size;

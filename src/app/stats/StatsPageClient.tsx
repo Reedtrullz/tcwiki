@@ -28,6 +28,7 @@ import { usePoolExplorerFilters } from '@/hooks/usePoolExplorerFilters';
 import { StatsPoolExplorer } from '@/components/features/StatsPoolExplorer';
 import { StatsEarningsTable } from '@/components/features/StatsEarningsTable';
 import { DailyVolumeLeaderboard } from '@/components/features/DailyVolumeLeaderboard';
+import { PoolComparison } from '@/components/features/PoolComparison';
 
 const statsRelatedChecks: RelatedCheck[] = [
   {
@@ -362,6 +363,8 @@ export default function StatsPage() {
         poolsResult={poolsResult}
         midgardHealthResult={midgardHealthResult}
       />
+
+      <PoolComparison rows={poolSnapshot.rows} period={poolPeriod} result={poolsResult} health={midgardHealthResult} />
 
       <StatsEarningsTable
         earningsChart={earningsChart}

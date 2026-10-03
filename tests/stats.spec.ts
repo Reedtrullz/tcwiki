@@ -1,6 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import { readLayoutSafety } from './helpers/layout-safety';
 import { fulfillJson, mockSwapperFirstNetwork } from './helpers/thornode-mocks';
+import axe from 'axe-core';
 
 function earningsInterval(index: number) {
   const startTime = 1_704_067_200 + index * 86_400;
@@ -300,4 +301,55 @@ test.describe('Earnings UTC period evidence', () => {
     await expect(earnings.getByText('9 RUNE', { exact: true }).first()).toBeVisible();
     await expect(earnings.getByText('Partial window', { exact: true })).toBeVisible();
   });
+});
+
+
+test('loaded pool comparison preserves basis, missing values and URL without detail requests', async ({ page }) => {
+  await mockSwapperFirstNetwork(page);
+  await mockStatsMidgard(page);
+  let poolListReads = 0;
+  const detailReads: string[] = [];
+  page.on('request', request => {
+    if (/\/v2\/pools\?/.test(request.url())) poolListReads += 1;
+    if (/\/v2\/pool\//.test(request.url())) detailReads.push(request.url());
+  });
+  await page.goto('/stats?pool_q=BTC');
+  const comparison = page.getByRole('region', { name: 'Compare loaded pools', exact: true });
+  const addPool = comparison.getByLabel('Add a loaded pool', { exact: true });
+  await expect(addPool.getByRole('option', { name: 'BTC.BTC', exact: true })).toBeAttached();
+  await expect(page.getByRole('button', { name: 'Open search', exact: true })).toBeEnabled();
+  const readsBefore = poolListReads;
+  for (const asset of ['BTC.BTC', 'ETH.ETH', 'GAIA.ATOM']) {
+    await addPool.selectOption(asset);
+    const add = comparison.getByRole('button', { name: 'Add to comparison' });
+    await expect(add).toBeEnabled();
+    await add.focus();
+    await page.keyboard.press('Enter');
+    await expect(comparison.getByRole('columnheader', { name: asset, exact: true })).toBeVisible();
+  }
+  await expect(addPool).toBeDisabled();
+  await expect(page).toHaveURL(/pool_q=BTC/);
+  await expect(page).toHaveURL(/compare_pool=BTC.BTC/);
+  const table = comparison.getByRole('table');
+  await expect(table).toContainText('rate window 14d');
+  await expect(table.getByRole('row').filter({ has: page.getByRole('rowheader', { name: 'poolAPY (14d window)', exact: true }) }).getByRole('cell').nth(2)).toHaveText('Unavailable');
+  expect(poolListReads).toBe(readsBefore);
+  expect(detailReads).toEqual([]);
+  await page.reload();
+  await expect(comparison.getByRole('columnheader', { name: 'BTC.BTC', exact: true })).toBeVisible();
+  await page.goto('/docs');
+  await page.goBack();
+  await expect(comparison.getByRole('columnheader', { name: 'ETH.ETH', exact: true })).toBeVisible();
+  await page.goForward();
+  await expect(page).toHaveURL(/\/docs$/);
+  await page.goBack();
+  await expect(comparison.getByRole('columnheader', { name: 'GAIA.ATOM', exact: true })).toBeVisible();
+  await comparison.getByRole('button', { name: 'Remove ETH.ETH from comparison', exact: true }).click();
+  await expect(comparison.getByRole('columnheader', { name: 'ETH.ETH', exact: true })).toHaveCount(0);
+  await page.setViewportSize({ width: 320, height: 844 });
+  const widths = await comparison.evaluate(node => ({ actual: node.scrollWidth, available: node.clientWidth }));
+  expect(widths.actual).toBeLessThanOrEqual(widths.available + 2);
+  await page.addScriptTag({ content: axe.source });
+  const violations = await comparison.evaluate(async node => (await (window as unknown as { axe: typeof import('axe-core') }).axe.run(node, { runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] } })).violations);
+  expect(violations).toEqual([]);
 });
