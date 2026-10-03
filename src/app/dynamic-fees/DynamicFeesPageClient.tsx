@@ -89,6 +89,7 @@ interface DynamicFeesViewProps {
   isLoading?: boolean;
   isDegraded?: boolean;
   error?: string;
+  onRefresh?: () => unknown;
 }
 
 export function DynamicFeesView({
@@ -98,6 +99,7 @@ export function DynamicFeesView({
   isLoading = false,
   isDegraded = false,
   error,
+  onRefresh,
 }: DynamicFeesViewProps) {
   const currentEntries = useMemo(() => currentByRecord(status), [status]);
   const orphanCurrentEntries = useMemo(() => currentWithoutSealedRecords(status), [status]);
@@ -135,6 +137,7 @@ export function DynamicFeesView({
       {children}
 
       <SourceStatusStrip
+        onRefresh={onRefresh}
         result={result}
         status={status}
         isDegraded={isDegraded}
@@ -271,10 +274,11 @@ export function DynamicFeesView({
 }
 
 export default function DynamicFeesPageClient({ children }: { children?: ReactNode }) {
-  const { result, data: status, isLoading, isDegraded, error } = useDynamicL1FeeStatus();
+  const { result, data: status, isLoading, isDegraded, error, refresh } = useDynamicL1FeeStatus();
 
   return (
     <DynamicFeesView
+      onRefresh={refresh}
       result={result}
       status={status}
       isLoading={isLoading}

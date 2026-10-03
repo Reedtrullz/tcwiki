@@ -29,9 +29,9 @@ Execute all accepted work and create/push GitHub PRs; do not merge to main. User
 | PR-59 | verified candidate | official CLP removal and amended ADR005 reviewed2026-10-02; claim-specific date, overall dates preserved; search regenerated; 506 unit/types/build +8 standalone browser checks |
 | PR-08 | PR open; local verified | e2e61d4; https://github.com/Reedtrullz/tcwiki/pull/208; 479 unit tests/types; fractional bounds reviewed and corrected; CI37030208807 passed |
 | PR-03 | PR open; local verified |6398da9+e082581; https://github.com/Reedtrullz/tcwiki/pull/213; parent review fixed acceptance timing/address/shape/slash tests; 486units/types/lint; single source disclosed |
-| PR-12 | PR221 open; local verified | 139f3e4; https://github.com/Reedtrullz/tcwiki/pull/221; origin-typed warnings, shared cycle-safe collector; wording/malformed/provenance regressions; full520/types/lint; integration with220 full549/types; CI passed |
+| PR-12 | PR221 open; CI passed | 139f3e4; CI37079891867; typed warning provenance/compatibility and malformed details preserved |
 | PR-39 | PR215 open; CI passed | a9b3ab5; CI37035192897; canonical alias RED5/full513/types/lint |
-| PR-13 | PR224 open; local verified | ten selected sanitized schemas observed2026-10-03; version/height context explicit; sample3/read512KiB/5s bounds; report no shape changes on second capture; full553/types/lint; provider-failure and malformed-field regression |
+| PR-13 | PR224 open; CI passed | 713dc92; CI37080866037; ten bounded sanitized v3.20.3 captures, explicit report-only drift review |
 | PR-06 | PR216 open; CI passed | 2938a70; CI37036720991; supplied-clock states/full520/8Next network checks; deadline/resume never auto-probe |
 | PR-18 | verified candidate | stalled read timeout/cancellation, bounded batch/depth/fields and suppressed-item response count; RED2 then GREEN11; full508/types/lint pass |
 | PR-14 | verified candidate |23 actual WikiDO browser checks passed after reproducing/fixing missing MDX provider; CSP enforced; manifest-bound local candidate |
@@ -40,14 +40,14 @@ Execute all accepted work and create/push GitHub PRs; do not merge to main. User
 | PR-15 | implemented candidate; operational gate | complete module/asset/config manifest, tested-artifact promotion and exclusive targets; real production rollback/readbacks await authorized release window |
 | PR-17 | PR214 open; CI passed | f4786a7; CI37034658367; audits0/full508/both targets 8Next+23CF browser |
 | PR-56 | PR214 open; CI passed | f4786a7; removed unused dependencies and starter SVGs after consumer review |
-| PR-10 | PR225 open; CI passed | b8a504c; CI37081330585; scoped provider/path/height request Map; shared latest-block observation and Mimir per cycle; RED3/focused130/full557/types/lint; normal mock reads12→8; independent fallback heights/providers and slow optional history covered; no real latency claim |
-| PR-11 | PR226 open; CI passed | f70c90f; CI37082493599; shared THORNode transport:12s cycle/5s request, external cancellation, wall/monotonic bounds; Retry-After1..300s/default60s, manual quote retry, no automatic retry; six new API checks + stalled release HTTP regression; full564/types/lint/both builds and9 network browser checks each Next/CF |
-| PR-43 | PR227 open; CI passed | CI37083785483; e5c3038; collection start/completion/body observation/delivery assessment; monotonic duration/cache expiry; completion-time checkedAt, cached copies reassessed without mutating receipts; RED timing and clock rollback; full568/types/lint/both builds/standalone smoke |
-| PR-07 | queued | issue #172 |
-| PR-57 | PR229 open; local verified | 433465e; shared streaming2MiB/4096rows/depth64/string65536/numeric80 bounds; prefetch quote80/asset256; RED4/full574/types/lint/both builds/smoke;18 network browser checks each Next/CF; recorded capture381437bytes fits >5xheadroom |
-| PR-44 | local verified; publishing | shared app/script header parser; requested/observed/verified per source, aggregate fee/POL receipt; unsupportedecho unverified/malformed+mismatchfailover; RED4/full583/types/lint/both builds/smoke/20network+economics eachNext/CF; one bounded Liquify version3.20.3 header capability observation |
+| PR-10 | PR225 open; CI passed | b8a504c; CI37081330585; per-cycle coalescing, 12 to 8 reads, optional slow source nonblocking |
+| PR-11 | PR226 open; CI passed | f70c90f; CI37082493599; bounded 12s collection/5s request, cooldown/manual retry |
+| PR-43 | PR227 open; CI passed | 433465e; CI37083785483; started/observed/completed/assessed times, monotonic cache age |
+| PR-07 | PR235 open; integration in progress | d0bb5a9;597units;both builds/smoke;offline aging/recovery each runtime; combine234 for economics destinations |
+| PR-57 | PR229 open; CI passed | 433465e; CI37084390703; bounded decoded JSON/rows/depth/string/numeric fields |
+| PR-44 | PR230 open; successor audit gate passed | 6852c2c+70a08a3; strict official echoed height and CORS evidence; full audit failure retained; scoped exception proposed PR232 |
 | PR-42 | queued | issue #141 |
-| PR-51 | local verified; publication pending | Node absent on independent host; jq required-contract counterpart/shared positive-negative fixtures;584units/types/both builds/smoke/Ansible syntax;45 focused checks;64 release inputs |
+| PR-51 | PR231 open; successor audit gate passed | e425f90; Node absent host; shared JS/jq fixtures,584units; own CI full-audit failure retained; scoped exception proposed PR232 |
 | PR-16 | queued | issue #181 |
 | PR-45 | queued | issue #144 |
 | PR-52 | queued | issue #151 |
@@ -59,9 +59,12 @@ Execute all accepted work and create/push GitHub PRs; do not merge to main. User
 | PR-41 | queued | issue #140 |
 | PR-46 | queued | issue #145 |
 | PR-65 | queued | issue #164 |
-| PR-19 | PR228 open; CI follow-up required | CI37083819955failed13legacyselectors; 878af86; header ordinary disclosure toggles/actual-trigger focus/outside+route close/connected hidden panels;545units/types/lint;4navigation+4device-skips eachNext/CF |
-| PR-24 | queued | issue #189 |
-| PR-66 | queued | issue #165 |
+| PR-19 | PR228 open; CI passed | 1c93efa; CI37087634182; one active disclosure, hydration gate/native form values, connected empty panels |
+| PR-24 | PR233 open; CI passed | 1ca5fcd; exact-head CI passed;552units;26browser checks each target plus4device skips |
+| PR-66 | PR234 open; local verified | 31a4bbb;552units;both builds/smoke;20browser checks each Next/CF plus4device skips |
+
+
+
 | PR-20 | queued | issue #185 |
 | PR-21 | queued | issue #186 |
 | PR-25 | queued | issue #190 |
@@ -125,3 +128,10 @@ PR218 UTC volume periods/universe open (ecb66d0+b58b536). PR219 native search Fo
 - PR57 bounds verified in both actual built runtimes,18network checks each desktop/mobile; full574units. Test response doubles now use real Response streams; daily-history mock supplies a fresh body per request. Unknown compressed wire length is not treated as decoded length; decoded bytes remain capped. PR24 anchor sidecar active.
 
 - PR227 CI37083785483 passed. PR228 CI37083819955 caught persistent hidden-header content in thirteen old page-wide selector checks; focused navigation remained passing. Parent isolates follow-up at878af86 in managed wiki-header-ci rather than changing PR24 sidecar WIP. Scope actual main content/form and test hidden presence correctly; full candidate browser validation underway.
+
+PR07: existing merged205 reassessment is reused; operational12/30s source policy unchanged. Aggregate aging reflects two missed60s refresh opportunities; historical intervals retain their meaning. SWR retains successful values on failed fetches, no automatic quote recheck, no rapid retry. Offline/resume/failure/manual recovery journey passes desktop/mobile on both runtimes. Full economics journey on this branch reveals the independent closed-details anchor issue now fixed by PR234; integration is required before claiming full acceptance.
+PR66 candidate: direct/reload/history/keyboard disclosure destinations and unavailable-target notice pass on both runtimes. First notice assertion collided with Next route announcer; scoped to the visible navigation notice. Shared layout listener serves multiple TOCs and cross-route URLs without changing public IDs. No deployment or main merge.
+
+Integration of235 and234 preserves both POL price provenance and browser stale-operation tests. Only unit-file append and progress-ledger conflicts required resolution; no product conflict. Full combined-runtime proof is pending.
+
+Combined candidate:603units/types/lint/both builds/smoke. First broad Next129pass/6fail/5skip and CF123pass/12fail/5skip retained as failed evidence. Server navigator without onLine caused false-offline SSR; connectivity now starts shared and is observed after hydration, with direct Node-like navigator regression. Failed dataset badge assertions now expect Unavailable. Focus must be established before reader-closure assertion. Final focused Next14pass; CF36pass then anchor6pass; initial broad unrelated passes remain prior-source evidence. PR235 initial CI37089728660 failed and hydration fixd78a2c4 published; economics fragment acceptance requires234 combined candidate.234 CI passed.

@@ -245,7 +245,7 @@ test.describe('THORChain Wiki Dynamic Fees Smoke Tests', () => {
 
     const sourceStatus = page.locator('#dynamic-fee-source-status');
     const liveTracker = page.locator('#dynamic-fees-live');
-    await expect(sourceStatus.getByText('Degraded', { exact: true })).toBeVisible();
+    await expect(sourceStatus.getByText('Unavailable', { exact: true })).toBeVisible();
     await expect(sourceStatus).toContainText(/did not provide a usable snapshot/i);
     await expect(liveTracker.getByText('Sources unavailable', { exact: true })).toBeVisible();
     await expect(liveTracker.getByText('Coverage unavailable', { exact: true })).toBeVisible();

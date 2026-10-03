@@ -500,3 +500,9 @@ describe('quote proof validity', () => {
     expect(deriveRouteAvailability('BTC.BTC', 'ETH.ETH', undefined, [], unknown, 1789999999999)).toMatchObject({ status: 'needs-review', label: 'Quote expiry unknown' });
   });
 });
+
+it('keeps observed blockers but withdraws clear operation cells when block evidence ages', () => {
+  const rows = deriveChainAvailability({ ...baseStatus, chainStatuses: [chain({ chain: 'BTC' }), chain({ chain: 'ETH', tradingPaused: true, activeMimirKeys: ['HALTETHTRADING'] })], sourceWarningDetails: [{ severity: 'critical', category: 'freshness', message: 'stale', action: 'refresh' }] });
+  expect(rows.find(row => row.chain === 'BTC')?.swapIn).toMatchObject({ state: 'needs-review', label: 'Dated context' });
+  expect(rows.find(row => row.chain === 'ETH')?.swapIn.state).toBe('limited');
+});

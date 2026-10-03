@@ -88,3 +88,7 @@ export function getSecuredAssetsSummaryPaused(networkStatus: NetworkStatus | und
 
   return networkStatus.securedAssetsPaused;
 }
+
+export function operationEvidenceNeedsRefresh(status: NetworkStatus | undefined) {
+  return Boolean(status?.sourceWarningDetails?.some(detail => detail.category === 'freshness' && detail.severity !== 'review'));
+}

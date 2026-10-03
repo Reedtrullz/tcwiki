@@ -38,6 +38,7 @@ interface NetworkStatusBannerProps {
   isLoading?: boolean;
   variant?: NetworkStatusBannerVariant;
   showQuoteChecker?: boolean;
+  onRefresh?: () => unknown;
 }
 
 interface EvidenceRow {
@@ -1467,7 +1468,7 @@ function chunkControlsByGroup(controls: OperationalControlStatus[]) {
   return [...groups.entries()];
 }
 
-export function NetworkStatusBanner({ result, isLoading = false, variant = 'diagnostic', showQuoteChecker = false }: NetworkStatusBannerProps) {
+export function NetworkStatusBanner({ result, isLoading = false, variant = 'diagnostic', showQuoteChecker = false, onRefresh }: NetworkStatusBannerProps) {
   const status = result?.data;
   const unreviewedControls = hasUnreviewedControlSemantics(status);
   const isPaused = status?.state === 'paused';
@@ -1681,7 +1682,7 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
           </div>
         </div>
         <div className="min-w-52">
-          <LiveSourceMeta result={sourceMetaResult} />
+          <LiveSourceMeta result={sourceMetaResult} onRefresh={onRefresh} />
           {status?.thorNodeVersion && (
             <p className="mt-1 text-[11px] text-slate-400">THORNode {status.thorNodeVersion}</p>
           )}

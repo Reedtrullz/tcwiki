@@ -46,7 +46,7 @@ function PoolRow({ pool, rank, maxUsd }: { pool: DailyVolumePool; rank: number; 
 }
 
 export function DailyVolumeLeaderboard() {
-  const { data, networkResult, result, error, isLoading, isDegraded } = useDailyVolume();
+  const { data, networkResult, result, error, isLoading, isDegraded, refresh } = useDailyVolume();
 
   const summary = useMemo(
     () => deriveDailyVolumeSummary(
@@ -87,7 +87,7 @@ export function DailyVolumeLeaderboard() {
               </span>
             )}
             <span className="text-xs text-slate-500">{summary.comparisonDays}/7 comparison days · avg {summary.usdAvgLabel}</span>
-            <LiveSourceMeta result={result} />
+            <LiveSourceMeta result={result} onRefresh={refresh} />
           </div>
           {isDegraded && !isLoading && (
             <p className="w-full text-xs text-amber-300">

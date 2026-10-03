@@ -22,15 +22,21 @@ test.describe('THORChain Wiki Navigation Smoke Tests', () => {
     const navBox = await page.locator('#mobile-navigation').boundingBox();
     expect(navBox?.height ?? 0).toBeLessThanOrEqual(268);
     await page.keyboard.press('Escape');
-    await expect(page.locator('#mobile-navigation')).toHaveCount(0);
+    await expect(page.locator('#mobile-navigation')).toBeHidden();
+    await expect(page.getByRole('button', { name: /open navigation menu/i })).toBeFocused();
     await page.getByRole('button', { name: /open navigation menu/i }).click();
     await page.getByRole('button', { name: /open search/i }).click();
-    await expect(page.locator('#mobile-navigation')).toHaveCount(0);
+    await expect(page.locator('#mobile-navigation')).toBeHidden();
     const siteSearch = page.getByRole('search', { name: /Site search/i });
     await expect(siteSearch.getByLabel(/Search the wiki/i)).toBeVisible();
     await expect(siteSearch.getByRole('button', { name: /Submit site search/i })).toBeVisible();
     await page.keyboard.press('Escape');
-    await expect(page.getByLabel(/Search the wiki/i)).toHaveCount(0);
+    await expect(page.locator('#site-search-panel')).toBeHidden();
+    await expect(page.getByRole('button', { name: /open search/i })).toBeFocused();
+    await page.getByRole('button', { name: /open navigation menu/i }).click();
+    await page.locator('#mobile-navigation').getByRole('link', { name: 'Deep Dives' }).click();
+    await expect(page).toHaveURL(/\/deep-dives$/);
+    await expect(page.locator('#mobile-navigation')).toBeHidden();
   });
 
   test('desktop primary navigation stays single-row and routes deep dives through guides', async ({ page, isMobile }) => {
@@ -41,11 +47,31 @@ test.describe('THORChain Wiki Navigation Smoke Tests', () => {
     const primaryNavigation = page.locator('nav[aria-label="Primary navigation"]');
     await expect(primaryNavigation.getByRole('button', { name: /Tools/i })).toBeVisible();
     await expect(page.locator('button[aria-controls="site-search-panel"] span', { hasText: 'Search' })).toBeHidden();
-    await primaryNavigation.getByRole('button', { name: /Tools/i }).click();
+    const toolsButton = primaryNavigation.getByRole('button', { name: /Tools/i });
+    const toolsPanel = page.locator('#nav-panel-tools');
+    await expect(toolsButton).toHaveAttribute('aria-controls', 'nav-panel-tools');
+    await expect(toolsPanel).toBeHidden();
+    await expect(toolsPanel.locator('a')).toHaveCount(0);
+    await toolsButton.click();
+    await expect(toolsButton).toHaveAttribute('aria-expanded', 'true');
+    await expect(toolsPanel).toBeVisible();
     await expect(primaryNavigation.getByRole('link', { name: 'Statistics' })).toHaveAttribute('href', '/stats');
-    await page.keyboard.press('Escape');
+    await toolsButton.click();
+    await expect(toolsButton).toHaveAttribute('aria-expanded', 'false');
+    await expect(toolsPanel).toBeHidden();
 
-    const navItems = await primaryNavigation.locator('a,button').evaluateAll((items) => (
+    const learnButton = primaryNavigation.getByRole('button', { name: /Learn/i });
+    await toolsButton.click();
+    await learnButton.click();
+    await expect(toolsPanel).toBeHidden();
+    await expect(page.locator('#nav-panel-learn')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(learnButton).toBeFocused();
+    await expect(page.locator('#nav-panel-learn')).toBeHidden();
+    await page.keyboard.press('Tab');
+    await expect(primaryNavigation.getByRole('button', { name: 'Tokens' })).toBeFocused();
+
+    const navItems = await primaryNavigation.locator(':scope > div > button, :scope > button').evaluateAll((items) => (
       items.map((item) => {
         const rect = item.getBoundingClientRect();
         return {
@@ -62,10 +88,22 @@ test.describe('THORChain Wiki Navigation Smoke Tests', () => {
       expect(Math.abs(item.top - firstRowTop), `${item.text} should not wrap below the first row`).toBeLessThanOrEqual(2);
     }
 
-    await primaryNavigation.getByRole('button', { name: /Guides/i }).click();
+    const guidesButton = primaryNavigation.getByRole('button', { name: /Guides/i });
+    await guidesButton.click();
+    await expect(guidesButton).toHaveAttribute('aria-expanded', 'true');
     const guides = page.getByRole('navigation', { name: /Guide links/i });
     await expect(guides.getByRole('link', { name: /Learning paths/i })).toHaveAttribute('href', '/deep-dives#deep-dive-reader-paths');
-    await page.goto('/deep-dives');
+    await page.keyboard.press('Escape');
+    await expect(guidesButton).toBeFocused();
+    await expect(page.locator('#desktop-guides-panel')).toBeHidden();
+    await guidesButton.click();
+    await expect(page.locator('#desktop-guides-panel')).toBeVisible();
+    await page.locator('body').dispatchEvent('pointerdown');
+    await expect(page.locator('#desktop-guides-panel')).toBeHidden();
+    await guidesButton.click();
+    await guides.getByRole('link', { name: 'Learning paths' }).click();
+    await expect(page).toHaveURL(/\/deep-dives#deep-dive-reader-paths$/);
+    await expect(page.locator('#desktop-guides-panel')).toBeHidden();
     await expect(primaryNavigation.getByRole('button', { name: /Guides/i })).toHaveClass(/bg-accent\/10/);
   });
 
@@ -96,9 +134,14 @@ test.describe('THORChain Wiki Navigation Smoke Tests', () => {
     }
   });
 
-  test('global header search opens from keyboard and submits reader-job queries', async ({ page }) => {
+  test('global header search opens from keyboard and submits reader-job queries', async ({ page, isMobile }) => {
+    test.skip(isMobile, 'desktop keyboard shortcut');
     await page.goto('/');
 
+    const openSearchButton = page.getByRole('button', { name: /Open search/i });
+    await openSearchButton.click();
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#site-search-panel')).toBeHidden();
     await page.keyboard.press('Control+K');
     const siteSearch = page.getByRole('search', { name: /Site search/i });
     const searchInput = siteSearch.getByLabel(/Search the wiki/i);
@@ -114,6 +157,7 @@ test.describe('THORChain Wiki Navigation Smoke Tests', () => {
     await page.goto('/');
     await page.getByRole('button', { name: /Open search/i }).click();
     await page.keyboard.press('Escape');
-    await expect(page.getByLabel(/Search the wiki/i)).toHaveCount(0);
+    await expect(page.locator('#site-search-panel')).toBeHidden();
+    await expect(page.getByRole('button', { name: /Open search/i })).toBeFocused();
   });
 });

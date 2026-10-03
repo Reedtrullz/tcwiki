@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { readLayoutSafety } from './helpers/layout-safety';
-import { mockSwapperFirstNetwork } from './helpers/thornode-mocks';
+import { fulfillJson, mockSwapperFirstNetwork } from './helpers/thornode-mocks';
 
 test.describe('THORChain Wiki Economics Smoke Tests', () => {
   test('economics page shows source-labeled RUNEPool POL current snapshot @docker-smoke', async ({ page, isMobile }) => {
@@ -57,5 +57,33 @@ test.describe('THORChain Wiki Economics Smoke Tests', () => {
       layout.pageWidth,
       `economics RUNEPool panel overflow ${JSON.stringify({ viewportWidth: layout.viewportWidth, overflowing: layout.overflowing })}`
     ).toBeLessThanOrEqual(layout.viewportWidth + 2);
+  });
+
+  test('POL USD price keeps the date of the earlier interval when the latest price is missing', async ({ page }) => {
+    await mockSwapperFirstNetwork(page);
+    await page.route(/\/history\/earnings\?.*$/, (route) => fulfillJson(route, {
+      intervals: [
+        { startTime: '1751760000', endTime: '1751846400', earnings: '0', bondingEarnings: '0', liquidityEarnings: '0', runePriceUSD: '0.62' },
+        { startTime: '1751846400', endTime: '1751932800', earnings: '0', bondingEarnings: '0', liquidityEarnings: '0', runePriceUSD: '' },
+      ],
+    }));
+
+    await page.goto('/economics#runepool-pol-live');
+    const panel = page.locator('#runepool-pol-live');
+    await expect(panel.getByText(/Daily reference valuation: 2025-07-06T00:00:00\.000Z/)).toBeVisible();
+    await expect(panel.getByText(/price interval age .* days/)).toBeVisible();
+    await expect(panel.getByText('Liquify Midgard')).toBeVisible();
+    await expect(panel.getByText(/3,740,894 RUNE/).first()).toBeVisible();
+  });
+
+  test('degraded earnings price source withholds POL USD and retains RUNE accounting', async ({ page }) => {
+    await mockSwapperFirstNetwork(page);
+    await page.route(/\/history\/earnings\?.*$/, (route) => route.fulfill({ status: 503 }));
+
+    await page.goto('/economics#runepool-pol-live');
+    const panel = page.locator('#runepool-pol-live');
+    await expect(panel.getByText('Price source unavailable; USD valuation withheld.')).toBeVisible();
+    await expect(panel.getByText(/3,740,894 RUNE/).first()).toBeVisible();
+    await expect(panel.getByText('Unavailable', { exact: true }).first()).toBeVisible();
   });
 });

@@ -66,7 +66,7 @@ import {
   thornodeVaultBehaviorsSource,
   tokenomicsSource,
 } from '@/lib/sources';
-import { slugifyFragment } from '@/lib/utils';
+import { slugifyDeepDiveHeading } from '@/lib/deep-dive-heading-id.mjs';
 
 export interface ContentEntry {
   id: string;
@@ -89,7 +89,7 @@ export interface ContentEntry {
    * right-rail PageTableOfContents using these items instead of the top-of-page
    * chip strip. Use only for long deep-dives where readers need scroll-spy to
    * find their place. Each id must match the auto-generated slug of the
-   * matching h2/h3 in the MDX body (see slugifyFragment in src/lib/utils.ts).
+   * matching h2/h3 in the MDX body (see deep-dive-heading-id.mjs).
    */
   onPageNav?: ReadonlyArray<{ id: string; label: string; level?: 1 | 2 }>;
 }
@@ -1992,7 +1992,7 @@ export const TASK_GUIDE_GROUPED = groupedTaskGuides(TASK_INTENT_GUIDES);
 function tocItem(title: string): DeepDiveTocItem {
   return {
     title,
-    href: `#${slugifyFragment(title)}`,
+    href: `#${slugifyDeepDiveHeading(title)}`,
   };
 }
 

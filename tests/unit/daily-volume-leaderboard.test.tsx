@@ -13,7 +13,7 @@ it('renders network and selected-pool totals separately, including zero and fail
   const zero = liveOk(rows, { label: 'Pool provider', url: 'https://pool.test/v2/history/swaps' }, '2026-10-02T12:00:00Z');
   const failed = { status: 'degraded' as const, error: 'Offline', checkedAt: '2026-10-02T11:00:00Z' };
   const network = liveOk([{ ...rows[0], totalVolumeUSD: '100000' }], { label: 'Network provider', url: 'https://network.test/v2/history/swaps' }, '2026-10-02T11:59:00Z');
-  vi.mocked(useDailyVolume).mockReturnValue({ data: [zero, failed, failed, failed, failed, failed], networkResult: network, result: undefined, error: undefined, isLoading: false, isDegraded: true });
+  vi.mocked(useDailyVolume).mockReturnValue({ data: [zero, failed, failed, failed, failed, failed], networkResult: network, result: undefined, error: undefined, isLoading: false, refresh: () => undefined, isRefreshing: false, isDegraded: true });
   const html = renderToStaticMarkup(<DailyVolumeLeaderboard />);
   expect(html).toContain('Network daily volume');
   expect(html).toContain('$1.0K');

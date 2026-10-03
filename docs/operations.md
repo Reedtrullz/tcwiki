@@ -145,3 +145,9 @@ Before an authorized production release, record the current Worker version ID, p
 The workplan's local manifest tests rehearse detecting tampered/added/deleted modules, assets and policy. They do not constitute a production rollback rehearsal. Actual Worker rollback/readbacks require a separately authorized release window; the current implementation run creates PRs without merging or deploying. Retired VPS markers, backups, timers and tagged rollback images remain intact.
 
 The Vite MDX build uses the same `src/mdx-components.tsx` provider as Next so heading anchors and contained GFM tables agree. Reference: https://mdxjs.com/packages/mdx/#providerimportsource.
+
+### Browser sample age and recovery
+
+Browser live data uses the existing SWR60s fetch cadence with no focus polling. A presentation clock reassesses operation block age every second and on tab resume/online/offline; it does not fetch. Existing12s warning/30s degraded block rules remain authoritative. Aggregate samples become stale context after missing two configured refresh opportunities (120s receipt age); this is a browser sampling policy, not a provider/chain freshness guarantee. Historical intervals retain their period meaning regardless of receipt age.
+
+Failed refreshes keep the prior successful payload, provider and checkedAt and label it Last good sample; first-load failure is Unavailable. Dated operation cells require review rather than implying availability, while observed blockers remain visible. Each source exposes a manual refresh; SWR reconnect recovery remains enabled and automatic error retries are disabled, leaving scheduled/manual recovery. Quote input/expiry policy remains separate and never gains an automatic probe. There is no global store or interval-invalidating universal TTL.

@@ -41,6 +41,10 @@ export interface LiveCollectionTiming {
 }
 
 export interface LiveDataResult<T> {
+  presentation?: {
+    kind: 'operational' | 'aggregate' | 'historical';
+    state: 'current' | 'refreshing' | 'last-good' | 'stale' | 'unavailable' | 'historical';
+  };
   collection?: LiveCollectionTiming;
   assessedAt?: string;
   status: LiveDataStatus;

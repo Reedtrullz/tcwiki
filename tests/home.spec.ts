@@ -71,7 +71,7 @@ test.describe('THORChain Wiki Home Smoke Tests', () => {
       await expect(guides.locator('a[href="/deep-dives/build-query-data#query-plan"]').first()).toBeVisible();
       await expect(guides.getByRole('link', { name: /RUNE and tokenomics claims/i })).toHaveAttribute('href', '/rune#rune-number-router');
       await page.keyboard.press('Escape');
-      await expect(page.locator('#desktop-guides-panel')).toHaveCount(0);
+      await expect(page.locator('#desktop-guides-panel')).toBeHidden();
     }
   });
 });
