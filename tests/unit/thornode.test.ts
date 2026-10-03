@@ -2955,3 +2955,21 @@ it.each([null, '100', '101', 'bogus'])('reports response height separately from 
   }
   vi.unstubAllGlobals();
 });
+
+it('keeps required dynamic-fee readiness independent of optional history endpoints', async () => {
+  resetThornodeEndpointForTests();
+  const fetchMock = stubCollectionCycle();
+  const original = fetchMock.getMockImplementation()!;
+  fetchMock.mockImplementation(async (input) => {
+    const pathname = new URL(String(input)).pathname;
+    if (pathname.endsWith('/mimir')) return makeResponse(true, { ...(runePoolFixture().mimir as Record<string, unknown>), 'DYNAMICFEE-WHITELIST-SS': 1 });
+    if (pathname.endsWith('/dynamic_l1_fees/ss')) return makeResponse(false, {}, 503, 'History unavailable');
+    return original(input);
+  });
+  const result = await ThornodeAPI.getDynamicL1FeeStatus(createThornodeCollectionContext(), { includeHistory: false });
+  expect(result.status).toBe('ok');
+  expect(result.data?.sourceWarnings).toEqual([]);
+  expect(fetchMock.mock.calls.some(([url]) => String(url).includes('/dynamic_l1_fees/ss'))).toBe(false);
+  expect(result.data?.histories).toEqual([]);
+  vi.unstubAllGlobals();
+});

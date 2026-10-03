@@ -1674,8 +1674,10 @@ function shouldTryNextDynamicFeeProvider(status: DynamicL1FeeStatus) {
 
 async function finalizeDynamicL1FeeProviderSnapshot(
   snapshot: DynamicL1FeeProviderSnapshot,
-  context?: ThornodeCollectionContext
+  context?: ThornodeCollectionContext,
+  includeHistory = true
 ): Promise<DynamicL1FeeWarningCandidate> {
+  if (!includeHistory) return { endpointIndex: snapshot.endpointIndex, status: snapshot.status, sources: snapshot.sources };
   const historyResult = await requestDynamicL1FeeHistories(
     snapshot.endpoint,
     snapshot.sourceFreshness.thorchainHeight,
@@ -3304,7 +3306,7 @@ export class ThornodeAPI {
     ), context);
   }
 
-  static async getDynamicL1FeeStatus(context = createThornodeCollectionContext()): Promise<LiveDataResult<DynamicL1FeeStatus>> {
+  static async getDynamicL1FeeStatus(context = createThornodeCollectionContext(), options: { includeHistory?: boolean } = {}): Promise<LiveDataResult<DynamicL1FeeStatus>> {
     const checkedAt = new Date().toISOString();
     const errors: string[] = [];
     const warningSnapshots: DynamicL1FeeWarningCandidate[] = [];
@@ -3367,7 +3369,7 @@ export class ThornodeAPI {
         };
 
         if (snapshot.status.sourceWarnings.length === 0) {
-          const finalized = await finalizeDynamicL1FeeProviderSnapshot(snapshot, context);
+          const finalized = await finalizeDynamicL1FeeProviderSnapshot(snapshot, context, options.includeHistory !== false);
           if (finalized.status.sourceWarnings.length === 0 || !shouldTryNextDynamicFeeProvider(finalized.status)) {
             activeEndpoint = endpointIndex;
             return completeThornodeResult(liveOk(finalized.status, finalized.sources, checkedAt), context);
@@ -3398,7 +3400,7 @@ export class ThornodeAPI {
     if (bestWarningSnapshot) {
       activeEndpoint = bestWarningSnapshot.endpointIndex;
       if (bestWarningSnapshot.snapshot) {
-        const finalized = await finalizeDynamicL1FeeProviderSnapshot(bestWarningSnapshot.snapshot, context);
+        const finalized = await finalizeDynamicL1FeeProviderSnapshot(bestWarningSnapshot.snapshot, context, options.includeHistory !== false);
         return completeThornodeResult(liveOk(finalized.status, finalized.sources, checkedAt), context);
       }
       return completeThornodeResult(liveOk(bestWarningSnapshot.status, bestWarningSnapshot.sources, checkedAt), context);

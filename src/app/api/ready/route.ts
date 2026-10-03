@@ -607,6 +607,7 @@ export async function GET(request?: Request) {
           whitelistedThornameCount: dynamicFees.data?.mimir.whitelistedPartners.filter((partner) => partner.whitelisted === true).length,
           historyThornameCount: dynamicFees.data?.histories.length,
           historySampleCount: dynamicFeeHistorySampleCount(dynamicFees.data),
+          historyPolicy: 'not-requested',
           thorchainHeight: dynamicFees.data?.sourceFreshness.thorchainHeight,
           snapshotPinned: dynamicFees.data?.sourceFreshness.snapshotPinned,
           thorchainBlockTime: dynamicFees.data?.sourceFreshness.thorchainBlockTime,

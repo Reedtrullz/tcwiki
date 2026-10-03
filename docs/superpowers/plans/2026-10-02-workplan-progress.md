@@ -46,9 +46,9 @@ Execute all accepted work and create/push GitHub PRs; do not merge to main. User
 | PR-07 | PR235 open; integration in progress | d0bb5a9;597units;both builds/smoke;offline aging/recovery each runtime; combine234 for economics destinations |
 | PR-57 | PR229 open; CI passed | 433465e; CI37084390703; bounded decoded JSON/rows/depth/string/numeric fields |
 | PR-44 | PR230 open; successor audit gate passed | 6852c2c+70a08a3; strict official echoed height and CORS evidence; full audit failure retained; scoped exception proposed PR232 |
-| PR-42 | queued | issue #141 |
+| PR-42 | PR237 open; CI passed | 88e2890; CI37090784031SUCCESS;609units;20networkchecks eachNext/CF;pair-scoped quote contradictions and explicit recheck latch |
 | PR-51 | PR231 open; successor audit gate passed | e425f90; Node absent host; shared JS/jq fixtures,584units; own CI full-audit failure retained; scoped exception proposed PR232 |
-| PR-16 | queued | issue #181 |
+| PR-16 | verified candidate; publication pending | 612units/54files; origin/source/feature fingerprints; one-alert lifecycle fake-GH CLI; optional fee history omitted from required readiness; whole-body10s/1MiB;16browserchecks each Next/CF;prod audit0/dev9explicit exception |
 | PR-45 | queued | issue #144 |
 | PR-52 | queued | issue #151 |
 | PR-04 | PR218 open; CI passed | 6b130055; CI37039713892; completed UTC day/zero/duplicate/gap/rollover; separate aggregate and actual comparison days |
@@ -135,3 +135,5 @@ PR66 candidate: direct/reload/history/keyboard disclosure destinations and unava
 Integration of235 and234 preserves both POL price provenance and browser stale-operation tests. Only unit-file append and progress-ledger conflicts required resolution; no product conflict. Full combined-runtime proof is pending.
 
 Combined candidate:603units/types/lint/both builds/smoke. First broad Next129pass/6fail/5skip and CF123pass/12fail/5skip retained as failed evidence. Server navigator without onLine caused false-offline SSR; connectivity now starts shared and is observed after hydration, with direct Node-like navigator regression. Failed dataset badge assertions now expect Unavailable. Focus must be established before reader-closure assertion. Final focused Next14pass; CF36pass then anchor6pass; initial broad unrelated passes remain prior-source evidence. PR235 initial CI37089728660 failed and hydration fixd78a2c4 published; economics fragment acceptance requires234 combined candidate.234 CI passed.
+
+PR236 exact-head CI37090582106 passed; PR237 CI37090784031 passed. PR16 alert lifecycle fixture creates one issue across repeated identical windows, retains previous cause evidence on change, and closes only after sampled recovery. Production workflow has not been run by this session. Optional dynamic fee history remains requested by the dashboard and is explicitly not requested for required readiness. Full612units/types/lint/content/bothbuilds/Nextsmoke and16runtime/fee browser checks pertarget passed. Invalid smoke:cloudflare invocation after completed CF build was corrected by actual Worker browser evidence; no such npm script exists.

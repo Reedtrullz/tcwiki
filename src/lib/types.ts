@@ -158,6 +158,7 @@ export interface ReadinessResponse {
         trackedRecordCount?: number;
         currentEntryCount?: number;
         whitelistedThornameCount?: number;
+        historyPolicy?: 'not-requested';
         historyThornameCount?: number;
         historySampleCount?: number;
         thorchainHeight?: number;

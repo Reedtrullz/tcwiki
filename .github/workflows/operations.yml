@@ -17,6 +17,9 @@ env:
 jobs:
   production-readiness:
     name: Sample production readiness
+    concurrency:
+      group: production-readiness-incident
+      cancel-in-progress: false
     if: github.event_name == 'workflow_dispatch' || github.event.schedule == '23 * * * *' || github.event.schedule == '53 * * * *'
     runs-on: ubuntu-24.04
     steps:
@@ -34,6 +37,7 @@ jobs:
           --interval-ms 60000
           --artifact .artifacts/readiness-monitor/production-readiness.json
       - name: Upload readiness evidence
+        id: readiness_evidence
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -41,26 +45,12 @@ jobs:
           path: .artifacts/readiness-monitor/production-readiness.json
           if-no-files-found: warn
           retention-days: 30
-      - name: Open persistent readiness alert
-        if: steps.monitor.outcome == 'failure'
+      - name: Reconcile readiness incident and recovery evidence
+        if: always() && (steps.monitor.outcome == 'failure' || steps.monitor.outcome == 'success')
         env:
           GH_TOKEN: ${{ github.token }}
-        run: |
-          issue_number="$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search 'Production readiness monitor degraded in:title' --json number,title --jq '.[] | select(.title == "Production readiness monitor degraded") | .number' | head -1)"
-          if [ -z "$issue_number" ]; then
-            gh issue create \
-              --repo "$GITHUB_REPOSITORY" \
-              --title 'Production readiness monitor degraded' \
-              --body "Three sampled production readiness checks had no ready observation. This is an operational alert, not permission to weaken the readiness contract. Evidence: https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
-          fi
-      - name: Close recovered readiness alert
-        if: steps.monitor.outcome == 'success'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh issue list --repo "$GITHUB_REPOSITORY" --state open --search 'Production readiness monitor degraded in:title' --json number,title --jq '.[] | select(.title == "Production readiness monitor degraded") | .number' | while read -r issue_number; do
-            gh issue close "$issue_number" --repo "$GITHUB_REPOSITORY" --comment "The sampled readiness window recovered. Evidence: https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
-          done
+          READINESS_ARTIFACT_URL: ${{ steps.readiness_evidence.outputs.artifact-url }}
+        run: node scripts/update-readiness-incident.mjs .artifacts/readiness-monitor/production-readiness.json
       - name: Fail on persistent degraded readiness
         if: steps.monitor.outcome == 'failure'
         run: exit 1
