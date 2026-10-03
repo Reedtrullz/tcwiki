@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useMemo } from 'react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { Activity, TrendingUp, TrendingDown, Zap } from 'lucide-react';
 import { useNetworkData, useEarningsHistory, useNetworkStatus, useMidgardHealth, usePools } from '@/lib/hooks/useMidgard';
 import { NetworkStatusBanner } from '@/components/features/NetworkStatusBanner';
@@ -156,7 +156,6 @@ function StatsSourceIssueNotice({
 }
 
 export default function StatsPage() {
-  const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const searchParamString = searchParams.toString();
@@ -207,7 +206,6 @@ export default function StatsPage() {
     poolPeriod,
     updatePoolPeriod,
   } = usePoolExplorerFilters({
-    router,
     pathname,
     searchParamString,
     poolAvailableChains,

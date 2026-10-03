@@ -1,4 +1,5 @@
 import { LiveDataResult, MidgardHealth, NetworkStatusSourceWarning, SourceHealthSeverity } from '@/lib/types';
+import { formatEvidenceTimestamp } from '@/lib/utils';
 import { Badge } from '@/components/ui/Badge';
 import { liveResultHasSourceWarnings } from '@/lib/live-result';
 import { collectSourceWarningSignals } from '@/lib/source-warnings';
@@ -106,7 +107,7 @@ export function LiveSourceMeta({ result, health, healthResult, onRefresh }: Live
     return <p className="text-xs text-slate-400">Loading live source...</p>;
   }
 
-  const checkedAt = new Date(result.checkedAt).toLocaleString();
+  const checkedAt = formatEvidenceTimestamp(result.checkedAt);
   const sources = result.sources?.length ? result.sources : result.source ? [result.source] : [];
   const primarySource = sources[0];
   const secondarySources = sources.slice(1);

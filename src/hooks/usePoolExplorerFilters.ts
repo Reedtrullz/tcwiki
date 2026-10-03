@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
-import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
+import { replaceExplorerUrl } from '@/lib/explorer-url';
 import { normalizeStatsPoolPeriod, type StatsPoolExplorerFilters, type StatsPoolSortKey } from '@/lib/stats-dashboard';
 import type { MidgardPoolPeriod } from '@/lib/types';
 
@@ -52,13 +52,11 @@ export interface UsePoolExplorerFiltersResult {
 }
 
 export function usePoolExplorerFilters({
-  router,
   pathname,
   searchParamString,
   poolAvailableChains,
   poolAvailableStatuses,
 }: {
-  router: AppRouterInstance;
   pathname: string;
   searchParamString: string;
   poolAvailableChains: string[];
@@ -81,7 +79,7 @@ export function usePoolExplorerFilters({
 
   const replacePoolFiltersInUrl = useCallback((nextFilters: StatsPoolExplorerFilters) => {
     const params = new URLSearchParams(searchParamString);
-    const query = nextFilters.query.trim();
+    const query = nextFilters.query.slice(0, 256);
     if (query) {
       params.set('pool_q', query);
     } else {
@@ -103,28 +101,21 @@ export function usePoolExplorerFilters({
       params.delete('pool_sort');
     }
     const queryString = params.toString();
-    router.replace(
-      pathname + (queryString ? '?' + queryString : '') + '#available-pools',
-      { scroll: false },
-    );
-  }, [pathname, router, searchParamString]);
+    replaceExplorerUrl(pathname + (queryString ? '?' + queryString : '') + '#available-pools', ['pool_q', 'pool_chain', 'pool_status', 'pool_sort']);
+  }, [pathname, searchParamString]);
 
   const updatePoolFilters = useCallback((partialFilters: Partial<StatsPoolExplorerFilters>) => {
-    replacePoolFiltersInUrl({
-      ...latestPoolFiltersRef.current,
-      ...partialFilters,
-    });
+    const next = { ...latestPoolFiltersRef.current, ...partialFilters };
+    latestPoolFiltersRef.current = next;
+    replacePoolFiltersInUrl(next);
   }, [replacePoolFiltersInUrl]);
 
   const updatePoolPeriod = useCallback((period: MidgardPoolPeriod) => {
     const params = new URLSearchParams(searchParamString);
     params.set('pool_period', period);
     const queryString = params.toString();
-    router.replace(
-      pathname + (queryString ? '?' + queryString : '') + '#available-pools',
-      { scroll: false },
-    );
-  }, [pathname, router, searchParamString]);
+    replaceExplorerUrl(pathname + (queryString ? '?' + queryString : '') + '#available-pools', ['pool_period']);
+  }, [pathname, searchParamString]);
 
   return {
     poolFilters,

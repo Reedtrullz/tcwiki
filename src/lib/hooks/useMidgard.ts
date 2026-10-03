@@ -84,13 +84,14 @@ export function useDailyVolume() {
   return { data: live.result?.data?.slice(0, DAILY_VOLUME_POOLS.length), networkResult: live.result?.data?.[DAILY_VOLUME_POOLS.length], result: live.result, error: live.error, isLoading, isDegraded: live.isDegraded, refresh: live.refresh, isRefreshing: live.isRefreshing };
 }
 
-export function useNetworkStatus() {
+export function useNetworkStatus(initialResult?: LiveDataResult<NetworkStatus>) {
   const { data, error, isLoading, isValidating, mutate } = useSWR<LiveDataResult<NetworkStatus>>(
     'thornode:network-status',
     () => requireLiveData(() => ThornodeAPI.getNetworkStatus()),
-    SWR_OPTIONS
+    initialResult ? { ...SWR_OPTIONS, fallbackData: initialResult, revalidateOnMount: true } : SWR_OPTIONS
   );
-  return useLivePresentation(data, error, isLoading, isValidating, { kind: 'operational', reassess: reassessThornodeResult }, () => mutate(current => current, { revalidate: true, throwOnError: false }));
+  const seedClock = Date.parse(initialResult?.assessedAt ?? '');
+  return useLivePresentation(data, error, isLoading, isValidating, { kind: 'operational', reassess: reassessThornodeResult }, () => mutate(current => current, { revalidate: true, throwOnError: false }), Number.isFinite(seedClock) ? seedClock : undefined);
 }
 
 export function useDynamicL1FeeStatus() {
