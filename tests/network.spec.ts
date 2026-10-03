@@ -1,4 +1,5 @@
 import { test, expect, type Locator } from '@playwright/test';
+import { readFile } from 'node:fs/promises';
 import { mockSwapperFirstNetwork } from './helpers/thornode-mocks';
 
 async function checkRoute(quotePanel: Locator) {
@@ -7,6 +8,51 @@ async function checkRoute(quotePanel: Locator) {
 }
 
 test.describe('THORChain Wiki Network Smoke Tests', () => {
+  test('observed control exports preserve unsupported proof and offer a clipboard fallback without requests', async ({ page }) => {
+    await page.addInitScript(() => { Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: () => Promise.reject(new Error('Clipboard unavailable')) } }); });
+    await mockSwapperFirstNetwork(page, { version: '3.21.0', mimir: { HALTTRADING: 100, RAWPRECISION: '9007199254740993' } });
+    let reads = 0;
+    page.on('request', request => { if (/\/thorchain\/mimir(?:\?|$)/.test(request.url())) reads += 1; });
+    await page.goto('/network');
+    await expect(page.getByText('Review applicability', { exact: true }).first()).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole('button', { name: 'Open search', exact: true })).toBeEnabled();
+    const evidence = page.locator('details').filter({ has: page.locator('summary').filter({ hasText: 'Operational evidence' }) });
+    await evidence.locator(':scope > summary').click();
+    await expect(evidence).toContainText('"RAWPRECISION": "9007199254740993"');
+    const before = reads;
+    await page.locator('summary').filter({ hasText: 'Export observed network controls' }).click();
+    const panel = page.getByRole('region', { name: 'Observed control evidence export' });
+    const capture = panel.getByRole('button', { name: 'Capture JSON evidence' });
+    await capture.focus();
+    await page.keyboard.press('Enter');
+    const output = panel.getByLabel('Observed evidence text');
+    await expect(output).toBeVisible();
+    const text = await output.inputValue();
+    const snapshot = JSON.parse(text);
+    expect(snapshot.format).toBe('tcwiki-network-controls');
+    expect(snapshot.schemaVersion).toBe(1);
+    expect(snapshot.rawMimir.values.HALTTRADING).toBe(100);
+    expect(snapshot.rawMimir.values.RAWPRECISION).toBe('9007199254740993');
+    expect(snapshot.warnings.join(' ')).toMatch(/3\.21\.0/);
+    expect(snapshot.runtime).toEqual({ version: null, commit: null, image: null });
+    expect(snapshot.sources.some((source: { heightPinning?: { verification: string } }) => source.heightPinning?.verification === 'unverified')).toBe(true);
+    await panel.getByRole('button', { name: 'Copy observed evidence' }).click();
+    await expect(panel.getByRole('status')).toHaveText('Clipboard unavailable. Select and copy the evidence below.');
+    await expect(output).toHaveValue(text);
+    const downloadPromise = page.waitForEvent('download');
+    await panel.getByRole('button', { name: 'Download observed evidence' }).click();
+    const download = await downloadPromise;
+    expect(download.suggestedFilename()).toBe('tcwiki-network-controls-v1.json');
+    const path = await download.path();
+    if (!path) throw new Error('Evidence download unavailable');
+    expect(JSON.parse(await readFile(path, 'utf8'))).toEqual(snapshot);
+    await panel.getByRole('button', { name: 'Capture Markdown evidence' }).click();
+    await expect(output).toHaveValue(/# THORChain Wiki observed network controls/);
+    expect(reads).toBe(before);
+    await page.setViewportSize({ width: 320, height: 844 });
+    const width = await panel.evaluate(node => ({ content: node.scrollWidth, available: node.clientWidth }));
+    expect(width.content).toBeLessThanOrEqual(width.available + 2);
+  });
   test('unreviewed protocol versions retain raw controls and require applicability review', async ({ page }) => {
     await mockSwapperFirstNetwork(page, { version: '3.21.0', mimir: { HALTTRADING: 100 } });
     await page.goto('/network');

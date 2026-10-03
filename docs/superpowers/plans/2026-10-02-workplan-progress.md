@@ -88,7 +88,7 @@ Execute all accepted work and create/push GitHub PRs; do not merge to main. User
 | PR-36 | queued | issue #201 |
 | PR-22 | human-gated preparation; trial/UI deferred | two-route task pack and390/1280technicalbaseline/localbuildhashes,0participants; sourceposture alreadycollapsed; no humanbefore-afterclaim; revisit actualparticipants |
 | PR-48 | queued | issue #147 |
-| PR-47 | queued | issue #146 |
+| PR-47 | verified bounded control export; PR publication | Already collected schema-v1 JSON/Markdown, raw precision/unknown identity/pinning;699units; both builds/smoke and32desktop/mobile network/source checks each runtime; no added reads |
 | PR-62 | queued | issue #161 |
 | PR-33 | queued | issue #198 |
 | PR-63 | queued | issue #162 |
