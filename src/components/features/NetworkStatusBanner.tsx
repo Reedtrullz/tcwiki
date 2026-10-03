@@ -17,6 +17,7 @@ import { Card } from '@/components/ui/Card';
 import { ResponsiveVisibility } from '@/components/ui/ResponsiveVisibility';
 import { LiveSourceMeta } from '@/components/ui/LiveSourceMeta';
 import { usePools, useSwapQuoteProbe } from '@/lib/hooks/useMidgard';
+import { hasUnreviewedControlSemantics } from '@/lib/source-warnings';
 import {
   AvailabilityCell,
   ChainAvailability,
@@ -156,6 +157,9 @@ function isEnablementControlKey(key: string) {
 }
 
 function getControlStateLabel(key: string, state: string) {
+  if (state === 'unsupported') {
+    return 'review applicability';
+  }
   if (!isEnablementControlKey(key)) {
     if (state === 'active') {
       const upperKey = key.toUpperCase();
@@ -190,6 +194,9 @@ function getControlClassName(state: string, active: boolean) {
   }
   if (state === 'unparseable') {
     return 'border-amber-500/30 bg-amber-500/10 text-amber-200';
+  }
+  if (state === 'unsupported') {
+    return 'border-amber-500/30 bg-amber-500/10 text-amber-100';
   }
   if (state === 'scheduled') {
     return 'border-sky-500/30 bg-sky-500/10 text-sky-200';
@@ -294,19 +301,22 @@ function parseWarningKeys(message: string) {
 }
 
 function fallbackWarningDetail(message: string): NetworkStatusSourceWarning {
-  const category = message.includes('Unknown operation-like')
-    ? 'unknown-operation'
-    : message.includes('Known operational-support')
-      ? 'mimir-support'
-      : message.includes('Unknown chain-scoped')
-        ? 'unknown-chain'
-        : message.includes('could not be parsed')
-          ? 'mimir-parse'
-          : message.includes('latest block timestamp')
-            ? 'freshness'
-            : message.includes('omitted') || message.includes('missing') || message.includes('did not include')
-              ? 'source-shape'
-              : 'other';
+  let category: NetworkStatusSourceWarning['category'] = 'other';
+  if (message.includes('Unknown operation-like')) {
+    category = 'unknown-operation';
+  } else if (message.includes('Known operational-support')) {
+    category = 'mimir-support';
+  } else if (message.includes('Unknown chain-scoped')) {
+    category = 'unknown-chain';
+  } else if (message.includes('Operational-control semantics have not been reviewed')) {
+    category = 'control-applicability';
+  } else if (message.includes('could not be parsed')) {
+    category = 'mimir-parse';
+  } else if (message.includes('latest block timestamp')) {
+    category = 'freshness';
+  } else if (message.includes('omitted') || message.includes('missing') || message.includes('did not include')) {
+    category = 'source-shape';
+  }
   const keys = category === 'unknown-operation' || category === 'unknown-chain' || category === 'mimir-support'
     ? parseWarningKeys(message)
     : [];
@@ -330,6 +340,9 @@ function getWarningDetails(status: NetworkStatus | undefined) {
 }
 
 function getWarningTitle(detail: NetworkStatusSourceWarning) {
+  if (detail.category === 'control-applicability') {
+    return 'Operational-control applicability needs review.';
+  }
   if ((detail.category === 'unknown-operation' || detail.category === 'unknown-chain') && detail.keys?.length) {
     return `${detail.keys.length} ${detail.category === 'unknown-operation' ? 'operation-like' : 'chain-scoped'} Mimir ${detail.keys.length === 1 ? 'key needs' : 'keys need'} review.`;
   }
@@ -356,7 +369,8 @@ function hasKeyLikeWarning(detail: NetworkStatusSourceWarning) {
   return detail.category === 'unknown-operation' ||
     detail.category === 'unknown-chain' ||
     detail.category === 'mimir-support' ||
-    detail.category === 'mimir-parse';
+    detail.category === 'mimir-parse' ||
+    detail.category === 'control-applicability';
 }
 
 function getDisclosureKeys(keys: string[] | undefined) {
@@ -426,6 +440,14 @@ function getSwapStatusPresentation(
       badge: 'unknown',
       summary: status.summary || 'THORNode status could not be classified.',
       detail: 'Live swap controls could not be classified.',
+    };
+  }
+
+  if (hasUnreviewedControlSemantics(status)) {
+    return {
+      tone: 'unknown', label: 'Review applicability', badge: 'needs review',
+      summary: 'Control applicability is unreviewed; raw Mimir observations do not prove swap availability.',
+      detail: 'Review the exact THORNode source revision',
     };
   }
 
@@ -562,6 +584,13 @@ function deriveNodeOperationCell(
   pausedOrHalted: boolean | null | undefined,
   control: OperationalControlStatus | undefined
 ): { cell: AvailabilityCell; reason: string } {
+  if (control?.state === 'unsupported') {
+    const reason = `${definition.key} semantics are unreviewed for the reported THORNode version.`;
+    return {
+      cell: { state: 'needs-review', label: 'Review applicability', reasons: [reason] },
+      reason,
+    };
+  }
   if (control?.state === 'active' || pausedOrHalted === true) {
     const reason = `${definition.key} is active in current Mimir.`;
     return {
@@ -1457,6 +1486,7 @@ function chunkControlsByGroup(controls: OperationalControlStatus[]) {
 
 export function NetworkStatusBanner({ result, isLoading = false, variant = 'diagnostic', showQuoteChecker = false, onRefresh }: NetworkStatusBannerProps) {
   const status = result?.data;
+  const unreviewedControls = hasUnreviewedControlSemantics(status);
   const isPaused = status?.state === 'paused';
   const isDegraded = result?.status === 'degraded' || status?.state === 'degraded';
   const isUnknown = status?.state === 'unknown';
@@ -1464,7 +1494,7 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
   const hasInvalidMimirKeys = Boolean(status && status.invalidMimirKeys.length > 0);
   const warningDetails = getWarningDetails(status);
   const hasSourceWarnings = Boolean(status && (hasInvalidMimirKeys || status.sourceWarnings.length > 0 || warningDetails.length > 0));
-  const scheduledMimirKeys = status?.scheduledMimirKeys ?? [];
+  const scheduledMimirKeys = unreviewedControls ? [] : status?.scheduledMimirKeys ?? [];
   const hasScheduledMimirKeys = scheduledMimirKeys.length > 0;
   const scheduledControls = status?.monitoredControls.filter((control) => control.state === 'scheduled') ?? [];
   const hasTrustWarning = isPaused || isDegraded || isUnknown || isUnavailable || hasSourceWarnings || hasScheduledMimirKeys;
@@ -1487,7 +1517,8 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
     control.active ||
     control.state === 'disabled' ||
     control.state === 'scheduled' ||
-    control.state === 'unparseable'
+    control.state === 'unparseable' ||
+    control.state === 'unsupported'
   )) ?? [];
   const secondaryControls = status?.monitoredControls.filter((control) => !priorityControls.includes(control)) ?? [];
 
@@ -1552,8 +1583,8 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
       key,
       state: 'active',
     }));
-  const evidenceRows = [...controlEvidenceRows, ...chainMimirEvidenceRows, ...inboundEvidenceRows, ...scopedEvidenceRows];
-  const evidenceCount = evidenceRows.length;
+  const evidenceRows = unreviewedControls ? [] : [...controlEvidenceRows, ...chainMimirEvidenceRows, ...inboundEvidenceRows, ...scopedEvidenceRows];
+  const evidenceCount = unreviewedControls ? Object.keys(status?.observedMimir ?? {}).length : evidenceRows.length;
   const Icon = hasTrustWarning ? AlertTriangle : CheckCircle2;
   const primaryBadgeVariant = swapStatus.tone === 'open'
     ? 'success'
@@ -1590,7 +1621,9 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
     : result?.error ?? (isUnavailable ? 'Current-only THORNode status is unavailable.' : swapStatus.summary);
   const compact = variant === 'compact';
   const otherOperationsDetail = status
-    ? activeActions.length === 0
+    ? unreviewedControls
+      ? 'Raw controls need source review before operation availability can be classified'
+      : activeActions.length === 0
       ? 'No LP, loans, churning, node, secured, TCY, trade, WASM, or app-layer pause observed'
       : operationAffectedChains.length > 0
         ? `${operationAffectedChains.length} chain status${operationAffectedChains.length === 1 ? '' : 'es'} with direct non-swap operation impacts`
@@ -1604,14 +1637,14 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
     },
     {
       label: 'Limited chains',
-      value: status ? (swapLimitedChains.length > 0 ? swapLimitedChains.map((chain) => chain.chain).join(', ') : 'None observed') : 'Unavailable',
+      value: unreviewedControls ? 'Review applicability' : status ? (swapLimitedChains.length > 0 ? swapLimitedChains.map((chain) => chain.chain).join(', ') : 'None observed') : 'Unavailable',
       detail: status && swapLimitedChains.length > 0
         ? swapLimitedChains.map((chain) => `${chain.chain}: ${firstSwapReasonText(chain)}`).join(' / ')
         : undefined,
     },
     {
       label: 'Other operations',
-      value: status ? (activeActions.length > 0 ? activeActions.slice(0, 2).join(', ') : 'None observed') : 'Unavailable',
+      value: unreviewedControls ? 'Review applicability' : status ? (activeActions.length > 0 ? activeActions.slice(0, 2).join(', ') : 'None observed') : 'Unavailable',
       detail: otherOperationsDetail ?? undefined,
     },
     {
@@ -1927,7 +1960,7 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
         <RouteQuoteChecker status={status} statusLoading={isLoading} operationsResult={result} />
       )}
 
-      {!compact && evidenceRows.length > 0 && (
+      {!compact && (evidenceRows.length > 0 || (unreviewedControls && status?.observedMimir)) && (
         <details className="mt-4 rounded-md border border-border bg-surface/50">
           <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2 text-xs font-semibold text-slate-300">
             <span>Operational evidence</span>
@@ -1935,8 +1968,16 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
           </summary>
           <div className="border-t border-border px-3 py-3">
             <p className="text-[11px] text-slate-400">
-              Active Mimir keys and inbound-address fields from the live THORNode source above. Global controls appear once here instead of being repeated on every inherited chain card.
+              {unreviewedControls
+                ? 'Raw Mimir observations are retained without assigning active or inactive meaning to unreviewed semantics.'
+                : 'Active Mimir keys and inbound-address fields from the live THORNode source above. Global controls appear once here instead of being repeated on every inherited chain card.'}
             </p>
+            {unreviewedControls && (
+              <pre className="mt-3 max-h-80 overflow-auto rounded border border-border bg-slate-950 p-2 text-[10px] text-slate-300">
+                {JSON.stringify(status?.observedMimir, null, 2)}
+              </pre>
+            )}
+            {!unreviewedControls && <>
             <div className="mt-3 space-y-2 sm:hidden" role="list" aria-label="Active source evidence for network operation state">
               {evidenceRows.map((row) => (
                 <div key={`mobile:${row.id}`} role="listitem" className="rounded-md border border-border bg-slate-950/30 p-2">
@@ -1984,6 +2025,7 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
                 </tbody>
               </table>
             </div>
+            </>}
           </div>
         </details>
       )}
@@ -2057,7 +2099,7 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
             {priorityControls.length > 0 ? (
               priorityControls.map(renderControlChip)
             ) : (
-              <span className="text-xs text-slate-400">No active, disabled, scheduled, or unparseable monitored controls.</span>
+              <span className="text-xs text-slate-400">No active, disabled, scheduled, unparseable, or unsupported monitored controls.</span>
             )}
           </div>
           {secondaryControls.length > 0 && (

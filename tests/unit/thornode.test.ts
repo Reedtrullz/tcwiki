@@ -2,6 +2,7 @@ import { partitionReadinessWarnings } from '../../scripts/lib/readiness-warning-
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import ThornodeAPI, { createThornodeCollectionContext, reassessThornodeResult, deriveDynamicL1FeeStatus, deriveNetworkStatus, deriveRunePoolPolStatus, resetThornodeEndpointForTests } from '@/lib/api/thornode';
 import type { DynamicL1FeeSourceFreshness, RunePoolSourceFreshness, ThornodeInboundAddress } from '@/lib/types';
+import { OPERATIONAL_CONTROL_CATALOG, REVIEWED_OPERATIONAL_CONTROL_SOURCE } from '@/lib/operational-controls';
 
 const makeResponse = (ok: boolean, data: unknown, status = 200, statusText = 'OK') => new Response(JSON.stringify(data), { status: !ok && status === 200 ? 500 : status, statusText });
 
@@ -36,7 +37,7 @@ function snapshotFixture(overrides: Partial<SnapshotFixture> = {}): SnapshotFixt
   return {
     mimir: { HALTTRADING: 0 },
     inbound: [completeInbound('BTC')],
-    version: { current: '3.19.2' },
+    version: { current: '3.20.3' },
     lastBlock: [{ chain: 'BTC', thorchain: 100, last_observed_in: 1000, last_signed_out: 99 }],
     latestBlock: { block: { header: { height: '101', time: new Date().toISOString() } } },
     ...overrides,
@@ -250,7 +251,7 @@ describe('deriveNetworkStatus', () => {
     const status = deriveNetworkStatus(
       { HALTTRADING: 1, HALTSIGNING: '1', PAUSELP: 1, PAUSELOANS: 0 },
       [completeInbound('BTC')],
-      '3.19.1'
+      '3.20.3'
     );
 
     expect(status.state).toBe('paused');
@@ -262,7 +263,7 @@ describe('deriveNetworkStatus', () => {
     expect(status.activeEvidenceKeys).toEqual([]);
     expect(status.activePauseKeys).toEqual(['HALTTRADING', 'HALTSIGNING', 'PAUSELP']);
     expect(status.chainStatuses[0]?.inheritedMimirKeys).toEqual(['HALTTRADING', 'HALTSIGNING', 'PAUSELP']);
-    expect(status.thorNodeVersion).toBe('3.19.1');
+    expect(status.thorNodeVersion).toBe('3.20.3');
   });
 
   it('tracks newer Mimir controls and marks missing optional controls as not monitored', () => {
@@ -279,7 +280,7 @@ describe('deriveNetworkStatus', () => {
         MANUALSWAPSTOSYNTHDISABLED: 1,
         RUNEPOOLENABLED: 1,
       },
-      [completeInbound('BTC')]
+      [completeInbound('BTC')], '3.20.3'
     );
 
     expect(status.state).toBe('paused');
@@ -320,7 +321,7 @@ describe('deriveNetworkStatus', () => {
           chain_trading_paused: true,
           chain_lp_actions_paused: true,
         },
-      ]
+      ], '3.20.3'
     );
 
     expect(status.state).toBe('paused');
@@ -359,7 +360,7 @@ describe('deriveNetworkStatus', () => {
         completeInbound('BSC'),
         completeInbound('SOL'),
         completeInbound('ETH'),
-      ]
+      ], '3.20.3'
     );
 
     expect(status.state).toBe('paused');
@@ -428,7 +429,7 @@ describe('deriveNetworkStatus', () => {
       [
         completeInbound('BTC'),
         completeInbound('ETH'),
-      ]
+      ], '3.20.3'
     );
 
     expect(status.chainStatuses.map((chain) => [chain.chain, chain.tradingPaused])).toEqual([
@@ -446,7 +447,7 @@ describe('deriveNetworkStatus', () => {
         HALTBSCTRADING: 1,
         'PAUSELPDEPOSIT-SOL-SOL': 1,
       },
-      []
+      [], '3.20.3'
     );
 
     expect(status.chainStatuses).toEqual([
@@ -499,7 +500,7 @@ describe('deriveNetworkStatus', () => {
         'HaltWasmCs-abc123': 1,
         'HaltWasmContract-thor1contract': 1,
       },
-      [completeInbound('BTC'), completeInbound('ETH')]
+      [completeInbound('BTC'), completeInbound('ETH')], '3.20.3'
     );
 
     expect(status.state).toBe('paused');
@@ -511,7 +512,9 @@ describe('deriveNetworkStatus', () => {
     expect(status.unbondPaused).toBe(true);
     expect(status.rebondHalted).toBe(true);
     expect(status.operatorRotateHalted).toBe(true);
-    expect(status.oracleHalted).toBe(true);
+    expect(status.oracleHalted).toBeNull();
+    expect(status.observedMimir?.HaltOracle).toBe(1);
+    expect(status.monitoredControls.find((control) => control.key === 'HaltOracle')?.state).toBe('unsupported');
     expect(status.securedAssetDepositPauseKeys).toEqual(['HaltSecuredDeposit-ETH-ETH']);
     expect(status.securedAssetWithdrawPauseKeys).toEqual(['HaltSecuredWithdraw-BTC-BTC']);
     expect(status.wasmDeployerHaltKeys).toEqual(['HaltWasmDeployer-thor1deployer']);
@@ -531,7 +534,6 @@ describe('deriveNetworkStatus', () => {
       'PauseUnbond',
       'HaltRebond',
       'HaltOperatorRotate',
-      'HaltOracle',
       'HaltSecuredDeposit-*',
       'HaltSecuredWithdraw-*',
       'HaltWasmDeployer-*',
@@ -554,7 +556,6 @@ describe('deriveNetworkStatus', () => {
       'PauseUnbond',
       'HaltRebond',
       'HaltOperatorRotate',
-      'HaltOracle',
       'HaltSecuredDeposit-*',
       'HaltSecuredWithdraw-*',
       'HaltWasmDeployer-*',
@@ -571,7 +572,7 @@ describe('deriveNetworkStatus', () => {
   it('classifies NODEPAUSECHAINGLOBAL as both node pause control and source evidence', () => {
     const status = deriveNetworkStatus(
       { NODEPAUSECHAINGLOBAL: 1 },
-      [completeInbound('BTC')]
+      [completeInbound('BTC')], '3.20.3'
     );
 
     expect(status.state).toBe('paused');
@@ -589,7 +590,7 @@ describe('deriveNetworkStatus', () => {
         'EVMALLOWANCECHECK-AVAX': 1,
         'DYNAMICFEE-WHITELIST-SYMBIOSIS': 1,
       },
-      [completeInbound('AVAX')]
+      [completeInbound('AVAX')], '3.20.3'
     );
 
     expect(status.state).toBe('operational');
@@ -607,7 +608,7 @@ describe('deriveNetworkStatus', () => {
         HALTWASMGLOBAL: 100,
       },
       [completeInbound('BTC')],
-      '3.19.2',
+      '3.20.3',
       100
     );
 
@@ -648,13 +649,13 @@ describe('deriveNetworkStatus', () => {
     const active = deriveNetworkStatus(
       { NODEPAUSECHAINGLOBAL: 150 },
       [completeInbound('BTC')],
-      '3.19.2',
+      '3.20.3',
       100
     );
     const expired = deriveNetworkStatus(
       { NODEPAUSECHAINGLOBAL: 50 },
       [completeInbound('BTC')],
-      '3.19.2',
+      '3.20.3',
       100
     );
 
@@ -678,7 +679,7 @@ describe('deriveNetworkStatus', () => {
         BANKSENDENABLED: 0,
       },
       [],
-      '3.19.2',
+      '3.20.3',
       100
     );
 
@@ -710,7 +711,7 @@ describe('deriveNetworkStatus', () => {
         'HaltWasmContract-thor1contract': 100,
       },
       [completeInbound('BTC'), completeInbound('ETH')],
-      '3.19.2',
+      '3.20.3',
       100
     );
 
@@ -759,7 +760,7 @@ describe('deriveNetworkStatus', () => {
         'HaltTradeDeposit-ETH': 0,
       },
       [completeInbound('BASE'), completeInbound('BSC'), completeInbound('ETH')],
-      '3.19.3',
+      '3.20.3',
       100
     );
 
@@ -780,7 +781,7 @@ describe('deriveNetworkStatus', () => {
     const scheduled = deriveNetworkStatus(
       { 'HaltTradeDeposit-BSC': 200 },
       [completeInbound('BSC')],
-      '3.19.3',
+      '3.20.3',
       100
     );
     expect(scheduled.state).toBe('operational');
@@ -791,7 +792,7 @@ describe('deriveNetworkStatus', () => {
     const malformed = deriveNetworkStatus(
       { 'HaltTradeWithdraw-BASE': 'not-a-height' },
       [completeInbound('BASE')],
-      '3.19.3',
+      '3.20.3',
       100
     );
     expect(malformed.state).toBe('degraded');
@@ -807,7 +808,7 @@ describe('deriveNetworkStatus', () => {
         'HaltTradeWithdraw-FOO': 1,
       },
       [completeInbound('BASE'), completeInbound('TRON')],
-      '3.19.3',
+      '3.20.3',
       100
     );
     expect(nearMiss.state).toBe('degraded');
@@ -831,7 +832,7 @@ describe('deriveNetworkStatus', () => {
         HALTTRRONTRADING: 1,
       },
       [completeInbound('TRON')],
-      '3.20.0',
+      '3.20.3',
       100
     );
 
@@ -860,7 +861,7 @@ describe('deriveNetworkStatus', () => {
   it('marks per-chain signing halts as paused even when global signing is open', () => {
     const status = deriveNetworkStatus(
       { HALTSIGNING: 0, HALTSIGNINGBTC: 1 },
-      [completeInbound('BTC')]
+      [completeInbound('BTC')], '3.20.3'
     );
 
     expect(status.state).toBe('paused');
@@ -887,7 +888,7 @@ describe('deriveNetworkStatus', () => {
         HALTETHSIGNING: 1,
         SOLVENCYHALTBTCCHAIN: '1',
       },
-      []
+      [], '3.20.3'
     );
 
     expect(status.state).toBe('paused');
@@ -930,7 +931,7 @@ describe('deriveNetworkStatus', () => {
         HALTBTCCHAIN: '',
         PAUSELPBTC: ' ',
       },
-      []
+      [], '3.20.3'
     );
 
     expect(status.state).toBe('degraded');
@@ -971,7 +972,7 @@ describe('deriveNetworkStatus', () => {
         HALTETHSIGNING: 'paused',
         SOLVENCYHALTBTCCHAIN: 'halted',
       },
-      []
+      [], '3.20.3'
     );
 
     expect(status.state).toBe('degraded');
@@ -1011,7 +1012,7 @@ describe('deriveNetworkStatus', () => {
   it('marks clean state operational', () => {
     const status = deriveNetworkStatus(
       { HALTTRADING: 0, HALTSIGNING: 0, PAUSELP: 0 },
-      [completeInbound('BTC')]
+      [completeInbound('BTC')], '3.20.3'
     );
 
     expect(status.state).toBe('operational');
@@ -1023,11 +1024,125 @@ describe('deriveNetworkStatus', () => {
     expect(status.sourceWarnings).toEqual([]);
   });
 
+  it('uses reviewed activation boundaries for catalog controls', () => {
+    const cases = [
+      { key: 'HALTTRADING', mode: 'at-or-after-height', heights: [[99, 'scheduled'], [100, 'active'], [101, 'active']] },
+      { key: 'HALTWASMGLOBAL', mode: 'after-height', heights: [[99, 'scheduled'], [100, 'scheduled'], [101, 'active']] },
+      { key: 'NODEPAUSECHAINGLOBAL', mode: 'until-height', heights: [[99, 'active'], [100, 'active'], [101, 'inactive']] },
+    ] as const;
+
+    for (const testCase of cases) {
+      const definition = OPERATIONAL_CONTROL_CATALOG.find((control) => control.key === testCase.key);
+      expect(definition?.activationMode).toBe(testCase.mode);
+      expect(definition?.reviewedSource).toEqual(REVIEWED_OPERATIONAL_CONTROL_SOURCE);
+      for (const [height, expectedState] of testCase.heights) {
+        const status = deriveNetworkStatus({ [testCase.key]: 100 }, [], '3.20.3', height);
+        expect(status.monitoredControls.find((control) => control.key === testCase.key)?.state)
+          .toBe(expectedState);
+      }
+    }
+
+    const disabledAtZero = deriveNetworkStatus({ BANKSENDENABLED: 0 }, [], '3.20.3', 100);
+    const enabledAtOne = deriveNetworkStatus({ BANKSENDENABLED: 1 }, [], '3.20.3', 100);
+    expect(disabledAtZero.monitoredControls.find((control) => control.key === 'BANKSENDENABLED'))
+      .toMatchObject({ state: 'disabled', active: true });
+    expect(enabledAtOne.monitoredControls.find((control) => control.key === 'BANKSENDENABLED'))
+      .toMatchObject({ state: 'inactive', active: false });
+  });
+
+  it('keeps absent and invalid values distinct and warns on unreviewed versions', () => {
+    const absent = deriveNetworkStatus({}, [], '3.20.3', 100);
+    const absentControl = absent.monitoredControls.find((control) => control.key === 'HALTTRADING');
+    expect(absentControl?.state).toBe('not-monitored');
+    expect(absentControl?.description).toContain('no Mimir override was returned');
+    expect(absentControl?.description).toContain('effective protocol default is not inferred');
+    expect(absent.monitoredControls.find((control) => control.key === 'HaltTradeDeposit-*')?.description)
+      .toContain('effective protocol default is not inferred');
+
+    const invalid = deriveNetworkStatus({ HALTTRADING: 'invalid' }, [], '3.20.3', 100);
+    expect(invalid.monitoredControls.find((control) => control.key === 'HALTTRADING')?.state).toBe('unparseable');
+
+    const unsupported = deriveNetworkStatus({ HALTTRADING: 1 }, [], '3.19.2', 100);
+    expect(unsupported.monitoredControls.find((control) => control.key === 'HALTTRADING')?.state).toBe('unsupported');
+    expect(unsupported.sourceWarningDetails).toContainEqual(expect.objectContaining({
+      category: 'control-applicability',
+      severity: 'review',
+      keys: OPERATIONAL_CONTROL_CATALOG.map((control) => control.key),
+    }));
+    expect(unsupported.activeControlKeys).toEqual([]);
+  });
+
+  it('applies each reviewed height-control boundary, including scoped controls', () => {
+    const inclusive = [
+      ['HALTTRADING', 'HALTTRADING'], ['HALTSIGNING', 'HALTSIGNING'], ['PAUSELP', 'PAUSELP'],
+      ['RUNEPoolHaltDeposit', 'RUNEPoolHaltDeposit'], ['RUNEPoolHaltWithdraw', 'RUNEPoolHaltWithdraw'],
+      ['HALTCHAINGLOBAL', 'HALTCHAINGLOBAL'], ['HALTCHURNING', 'HALTCHURNING'],
+      ['HALTSECUREDGLOBAL', 'HALTSECUREDGLOBAL'], ['HALTTCYTRADING', 'HALTTCYTRADING'],
+      ['HaltSecuredDeposit-*', 'HaltSecuredDeposit-BTC'], ['HaltSecuredWithdraw-*', 'HaltSecuredWithdraw-BTC'],
+      ['HaltTradeDeposit-*', 'HaltTradeDeposit-BTC'], ['HaltTradeWithdraw-*', 'HaltTradeWithdraw-BTC'],
+    ];
+    const exclusive = [
+      ['HALTWASMGLOBAL', 'HALTWASMGLOBAL'], ['HaltWasmDeployer-*', 'HaltWasmDeployer-thor1actor'],
+      ['HaltWasmCs-*', 'HaltWasmCs-ABC234'], ['HaltWasmContract-*', 'HaltWasmContract-abc123'],
+    ];
+    for (const [rows, states] of [
+      [inclusive, ['scheduled', 'active', 'active']],
+      [exclusive, ['scheduled', 'scheduled', 'active']],
+    ] as const) {
+      for (const [catalogKey, observedKey] of rows) {
+        for (const [index, height] of [99, 100, 101].entries()) {
+          const status = deriveNetworkStatus({ [observedKey]: 100 }, [completeInbound('BTC')], '3.20.3', height);
+          expect(status.monitoredControls.find((control) => control.key === catalogKey)?.state, `${catalogKey} at ${height}`)
+            .toBe(states[index]);
+        }
+      }
+    }
+    expect(deriveNetworkStatus({ NODEPAUSECHAINGLOBAL: 0 }, [], '3.20.3', 0)
+      .monitoredControls.find((control) => control.key === 'NODEPAUSECHAINGLOBAL')?.state).toBe('active');
+  });
+
+  it.each(['PAUSELOANS', 'HaltOracle'])('preserves %s without assigning an unverified activation rule', (key) => {
+    for (const value of [0, 1]) {
+      const status = deriveNetworkStatus({ [key]: value }, [], '3.20.3', 100);
+      expect(status.monitoredControls.find((control) => control.key === key))
+        .toMatchObject({ state: 'unsupported', active: false });
+      expect(status.observedMimir?.[key]).toBe(value);
+      expect(status.activeControlKeys).not.toContain(key);
+      expect(status.sourceWarningDetails).toContainEqual(expect.objectContaining({ category: 'control-applicability', keys: [key] }));
+    }
+  });
+
+  it.each([
+    ['HALTTRADING', 'HALTTRADING'],
+    ['TRADEACCOUNTSDEPOSITENABLED', 'TRADEACCOUNTSDEPOSITENABLED'],
+    ['HaltSecuredDeposit-BTC', 'HaltSecuredDeposit-*'],
+  ])('rejects a returned negative sentinel for %s instead of inferring a default', (key, catalogKey) => {
+    const status = deriveNetworkStatus({ [key]: -1 }, [completeInbound('BTC')], '3.20.3', 100);
+    expect(status.monitoredControls.find((control) => control.key === catalogKey)?.state).toBe('unparseable');
+    expect(status.invalidMimirKeys).toContain(key);
+    expect(status.observedMimir?.[key]).toBe(-1);
+    expect(status.sourceWarningDetails?.some((detail) => detail.category === 'mimir-parse')).toBe(true);
+  });
+
+  it.each([undefined, '', '3.19.2', '3.20.4'])('withdraws interpreted control flags for unreviewed version %s', (version) => {
+    const mimir = { HALTTRADING: 0, PauseBond: 1, TRADEACCOUNTSENABLED: 1 };
+    const status = deriveNetworkStatus(mimir, [completeInbound('BTC')], version, 100);
+    expect(status.state).toBe('degraded');
+    expect(status.tradingPaused).toBeNull();
+    expect(status.bondPaused).toBeNull();
+    expect(status.tradeAccountsEnabled).toBeNull();
+    expect(status.observedMimir).toEqual(mimir);
+    expect(status.monitoredControls.find((control) => control.key === 'PauseBond')?.state).toBe('unsupported');
+    expect(status.sourceWarningDetails).toContainEqual(expect.objectContaining({ category: 'control-applicability' }));
+    expect(partitionReadinessWarnings(status.sourceWarnings, status.sourceWarningDetails ?? []).blocking.length).toBeGreaterThan(0);
+    expect(status.summary).not.toContain('do not show active halt');
+  });
+
   it('degrades when inbound_addresses omits operation fields needed to prove chains open', () => {
     const status = deriveNetworkStatus(
       { HALTTRADING: 0, HALTSIGNING: 0, PAUSELP: 0 },
       [{ chain: 'BTC' }],
-      '3.19.2',
+      '3.20.3',
       100
     );
 
@@ -1083,7 +1198,7 @@ describe('deriveNetworkStatus', () => {
         TRADEACCOUNTSENABLED: 'maybe',
         RUNEPOOLENABLED: ' ',
       },
-      [completeInbound('BTC'), completeInbound('ETH')]
+      [completeInbound('BTC'), completeInbound('ETH')], '3.20.3'
     );
 
     expect(status.state).toBe('degraded');
@@ -1137,7 +1252,7 @@ describe('deriveNetworkStatus', () => {
         'HaltSecuredWithdraw-BTC': 1.5,
       },
       [completeInbound('BTC'), completeInbound('ETH')],
-      '3.19.2',
+      '3.20.3',
       100
     );
 
@@ -1164,7 +1279,7 @@ describe('deriveNetworkStatus', () => {
         HALTFOOTRADING: 'bad',
         PAUSELPFOO: ' ',
       },
-      [completeInbound('BTC')]
+      [completeInbound('BTC')], '3.20.3'
     );
 
     expect(status.state).toBe('degraded');
@@ -1186,7 +1301,7 @@ describe('deriveNetworkStatus', () => {
         OtherFeatureDisabled: 1,
         BenignLimit: 1,
       },
-      [completeInbound('BTC')]
+      [completeInbound('BTC')], '3.20.3'
     );
 
     expect(status.state).toBe('degraded');
@@ -1223,7 +1338,7 @@ describe('deriveNetworkStatus', () => {
         'DYNAMICFEE-WHITELIST-SS': 1,
         'EVMALLOWANCECHECK-AVAX': 1,
       },
-      [completeInbound('BTC'), completeInbound('AVAX')]
+      [completeInbound('BTC'), completeInbound('AVAX')], '3.20.3'
     );
 
 	    expect(status.state).toBe('degraded');
@@ -1265,7 +1380,7 @@ describe('deriveNetworkStatus', () => {
           chain_lp_actions_paused: true,
         }),
       ],
-      '3.19.2',
+      '3.20.3',
       100
     );
 
@@ -1285,13 +1400,13 @@ describe('deriveNetworkStatus', () => {
       snapshotFixture({
         mimir: [],
         inbound: [completeInbound('ETH', { halted: true })],
-        version: { current: 'first-provider' },
+        version: { current: '3.20.3' },
         lastBlock: [{ chain: 'BTC', thorchain: 100, last_observed_in: 1000, last_signed_out: 99 }],
       }),
       snapshotFixture({
         mimir: { HALTTRADING: 0 },
         inbound: [completeInbound('BTC')],
-        version: { current: 'second-provider' },
+        version: { current: '3.20.3' },
         lastBlock: [{ chain: 'BTC', thorchain: 100, last_observed_in: 1000, last_signed_out: 99 }],
       })
     );
@@ -1301,7 +1416,7 @@ describe('deriveNetworkStatus', () => {
     expect(result.status).toBe('ok');
     expect(result.source?.label).toBe('THORChain THORNode');
     expect(result.data?.state).toBe('operational');
-    expect(result.data?.thorNodeVersion).toBe('second-provider');
+    expect(result.data?.thorNodeVersion).toBe('3.20.3');
     expect(result.data?.thorchainHeight).toBe(100);
     expect(result.data?.chainStatuses.map((chain) => chain.chain)).toEqual(['BTC']);
   });
@@ -1324,7 +1439,7 @@ describe('deriveNetworkStatus', () => {
         return makeResponse(true, [completeInbound('BTC')]);
       }
       if (pathname.endsWith('/version')) {
-        return makeResponse(true, { current: '3.19.2' });
+        return makeResponse(true, { current: '3.20.3' });
       }
       if (pathname.endsWith('/lastblock')) {
         return makeResponse(true, [{ chain: 'BTC', thorchain: 99, last_observed_in: 1000, last_signed_out: 99 }]);
@@ -1367,9 +1482,16 @@ describe('deriveNetworkStatus', () => {
         latestBlock: { block: { header: { height: '110', time: new Date().toISOString() } } },
       });
       stubNetworkStatusSnapshots(fixture, fixture);
-      const result = await ThornodeAPI.getNetworkStatus();
+      const context = createThornodeCollectionContext();
+      process.env.THORNODE_SNAPSHOT_LAG_BLOCKS = '1';
+      const result = await ThornodeAPI.getNetworkStatus(context);
       expect(result.status).toBe('ok');
       expect(result.data?.thorchainHeight).toBe(100);
+      expect(result).toMatchObject({ dataPolicy: {
+        profile: 'app-operations', snapshotLagBlocks: 10,
+        blockAgeWarningSeconds: 12, blockAgeDegradedSeconds: 30,
+        futureWarningSeconds: 12, futureDegradedSeconds: 30,
+      } });
       expect(result.sources?.filter((source) => source.url.includes('?height='))
         .every((source) => source.url.endsWith('?height=100'))).toBe(true);
     } finally {
@@ -1383,13 +1505,13 @@ describe('deriveNetworkStatus', () => {
       snapshotFixture({
         mimir: { HALTTRADING: 1 },
         inbound: [completeInbound('BTC', { halted: true })],
-        version: { current: 'first-provider' },
+        version: { current: '3.20.3' },
         lastBlock: [{ chain: 'THOR' }],
       }),
       snapshotFixture({
         mimir: { HALTTRADING: 0 },
         inbound: [completeInbound('BTC')],
-        version: { current: 'second-provider' },
+        version: { current: '3.20.3' },
         lastBlock: [{ chain: 'BTC', thorchain: 100, last_observed_in: 1000, last_signed_out: 99 }],
       })
     );
@@ -1401,7 +1523,7 @@ describe('deriveNetworkStatus', () => {
     expect(result.data?.state).toBe('operational');
     expect(result.data?.tradingPaused).toBe(false);
     expect(result.data?.chainStatuses[0]?.halted).toBe(false);
-    expect(result.data?.thorNodeVersion).toBe('second-provider');
+    expect(result.data?.thorNodeVersion).toBe('3.20.3');
   });
 
   it('falls back when a THORNode provider returns an unusable version shape', async () => {
@@ -1411,7 +1533,7 @@ describe('deriveNetworkStatus', () => {
         lastBlock: [{ chain: 'BTC', thorchain: 100, last_observed_in: 1000, last_signed_out: 99 }],
       }),
       snapshotFixture({
-        version: { current: 'second-provider' },
+        version: { current: '3.20.3' },
         lastBlock: [{ chain: 'BTC', thorchain: 100, last_observed_in: 1000, last_signed_out: 99 }],
       })
     );
@@ -1420,7 +1542,7 @@ describe('deriveNetworkStatus', () => {
 
     expect(result.status).toBe('ok');
     expect(result.source?.label).toBe('THORChain THORNode');
-    expect(result.data?.thorNodeVersion).toBe('second-provider');
+    expect(result.data?.thorNodeVersion).toBe('3.20.3');
     expect(result.data?.thorchainHeight).toBe(100);
   });
 
@@ -1428,12 +1550,12 @@ describe('deriveNetworkStatus', () => {
     stubNetworkStatusSnapshots(
       snapshotFixture({
         inbound: [],
-        version: { current: 'first-provider' },
+        version: { current: '3.20.3' },
         lastBlock: [{ chain: 'BTC', thorchain: 100, last_observed_in: 1000, last_signed_out: 99 }],
       }),
       snapshotFixture({
         inbound: [completeInbound('BTC')],
-        version: { current: 'second-provider' },
+        version: { current: '3.20.3' },
         lastBlock: [{ chain: 'BTC', thorchain: 100, last_observed_in: 1000, last_signed_out: 99 }],
       })
     );
@@ -1443,7 +1565,7 @@ describe('deriveNetworkStatus', () => {
     expect(result.status).toBe('ok');
     expect(result.source?.label).toBe('THORChain THORNode');
     expect(result.data?.chainStatuses.map((chain) => chain.chain)).toEqual(['BTC']);
-    expect(result.data?.thorNodeVersion).toBe('second-provider');
+    expect(result.data?.thorNodeVersion).toBe('3.20.3');
   });
 
   it('degrades when every THORNode endpoint returns an empty inbound address list', async () => {
@@ -1475,7 +1597,7 @@ describe('deriveNetworkStatus', () => {
         lastBlock: [{ chain: 'BTC', thorchain: 99, last_observed_in: 1000, last_signed_out: 98 }],
       }),
       snapshotFixture({
-        version: { current: 'second-provider' },
+        version: { current: '3.20.3' },
         inbound: [completeInbound('BTC')],
       })
     );
@@ -1485,7 +1607,7 @@ describe('deriveNetworkStatus', () => {
     expect(result.status).toBe('ok');
     expect(result.source?.label).toBe('THORChain THORNode');
     expect(result.data?.state).toBe('operational');
-    expect(result.data?.thorNodeVersion).toBe('second-provider');
+    expect(result.data?.thorNodeVersion).toBe('3.20.3');
     expect(result.data?.sourceWarnings).toEqual([]);
   });
 
@@ -1510,7 +1632,7 @@ describe('deriveNetworkStatus', () => {
       }),
       snapshotFixture({
         mimir: unknownOperationMimir,
-        version: { current: 'less-degraded-provider' },
+        version: { current: '3.20.3' },
         latestBlock: {
           block: {
             header: {
@@ -1527,7 +1649,7 @@ describe('deriveNetworkStatus', () => {
 
     expect(result.status).toBe('ok');
     expect(result.source?.label).toBe('THORChain THORNode');
-    expect(result.data?.thorNodeVersion).toBe('less-degraded-provider');
+    expect(result.data?.thorNodeVersion).toBe('3.20.3');
     expect(result.data?.sourceWarnings).toEqual([
       'Known operational-support Mimir key present: BURNSYNTHS.',
     ]);
@@ -1637,7 +1759,7 @@ describe('deriveNetworkStatus', () => {
         ],
         latestBlock: { block: { header: { height: '110', time: new Date().toISOString() } } },
       }),
-      snapshotFixture({ version: { current: 'second-provider' } })
+      snapshotFixture({ version: { current: '3.20.3' } })
     );
 
     const result = await ThornodeAPI.getNetworkStatus();
@@ -1645,7 +1767,7 @@ describe('deriveNetworkStatus', () => {
     expect(result.status).toBe('ok');
     expect(result.source?.label).toBe('THORChain THORNode');
     expect(result.data?.state).toBe('operational');
-    expect(result.data?.thorNodeVersion).toBe('second-provider');
+    expect(result.data?.thorNodeVersion).toBe('3.20.3');
   });
 
   it('surfaces missing per-chain lastblock evidence as a chain source warning', async () => {
@@ -1675,11 +1797,11 @@ describe('deriveNetworkStatus', () => {
     stubNetworkStatusSnapshots(
       snapshotFixture({
         inbound: [completeInbound('BTC'), completeInbound('btc')],
-        version: { current: 'first-provider' },
+        version: { current: '3.20.3' },
       }),
       snapshotFixture({
         inbound: [completeInbound('ETH')],
-        version: { current: 'second-provider' },
+        version: { current: '3.20.3' },
       })
     );
 
@@ -1687,7 +1809,7 @@ describe('deriveNetworkStatus', () => {
 
     expect(result.status).toBe('ok');
     expect(result.source?.label).toBe('THORChain THORNode');
-    expect(result.data?.thorNodeVersion).toBe('second-provider');
+    expect(result.data?.thorNodeVersion).toBe('3.20.3');
     expect(result.data?.chainStatuses.map((chain) => chain.chain)).toEqual(['ETH']);
   });
 
@@ -1708,10 +1830,10 @@ describe('deriveNetworkStatus', () => {
     stubNetworkStatusSnapshots(
       snapshotFixture({
         latestBlock: { block: { header: { height: '100' } } },
-        version: { current: 'first-provider' },
+        version: { current: '3.20.3' },
       }),
       snapshotFixture({
-        version: { current: 'second-provider' },
+        version: { current: '3.20.3' },
       })
     );
 
@@ -1719,7 +1841,7 @@ describe('deriveNetworkStatus', () => {
 
     expect(result.status).toBe('ok');
     expect(result.source?.label).toBe('THORChain THORNode');
-    expect(result.data?.thorNodeVersion).toBe('second-provider');
+    expect(result.data?.thorNodeVersion).toBe('3.20.3');
   });
 
   it('degrades network status when every THORNode endpoint has an unusable snapshot', async () => {
@@ -2745,7 +2867,7 @@ describe('Mimir canonical alias boundary', () => {
 it('keeps explicit warning policy stable when compatibility wording changes', () => {
   for (const message of ['An operational-support detail was renamed.', 'Unknown words still carry the explicit policy.']) {
     const detail = { severity: 'review' as const, category: 'mimir-support' as const, message, action: 'Review the documented operational-support key.', keys: ['MaximumPriceAge'] };
-    const status = deriveNetworkStatus({}, [], undefined, undefined, { sourceWarnings: [message], sourceWarningDetails: [detail] });
+    const status = deriveNetworkStatus({}, [], '3.20.3', undefined, { sourceWarnings: [message], sourceWarningDetails: [detail] });
     expect(status.sourceWarningDetails).toEqual([detail]);
     expect(partitionReadinessWarnings(status.sourceWarnings, status.sourceWarningDetails ?? []).blocking).toEqual([]);
   }

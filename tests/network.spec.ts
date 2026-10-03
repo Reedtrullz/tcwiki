@@ -7,6 +7,17 @@ async function checkRoute(quotePanel: Locator) {
 }
 
 test.describe('THORChain Wiki Network Smoke Tests', () => {
+  test('unreviewed protocol versions retain raw controls and require applicability review', async ({ page }) => {
+    await mockSwapperFirstNetwork(page, { version: '3.21.0', mimir: { HALTTRADING: 100 } });
+    await page.goto('/network');
+    await expect(page.getByText('Review applicability', { exact: true }).first()).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText(/raw Mimir observations do not prove swap availability/i).first()).toBeVisible();
+    await expect(page.getByText('No swap blocker', { exact: true })).toHaveCount(0);
+    const evidence = page.locator('details').filter({ has: page.locator('summary').filter({ hasText: 'Operational evidence' }) });
+    await evidence.locator('summary').click();
+    await expect(evidence).toContainText('"HALTTRADING": 100');
+    await expect(evidence).toContainText('"PAUSELP": 1');
+  });
   test('network page uses explicit live-state labels', async ({ page }) => {
     await mockSwapperFirstNetwork(page);
     await page.goto('/network');

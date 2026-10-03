@@ -1,4 +1,9 @@
-import type { NetworkStatusSourceWarning } from '@/lib/types';
+import type { NetworkStatus, NetworkStatusSourceWarning } from '@/lib/types';
+
+export function hasUnreviewedControlSemantics(status: NetworkStatus | undefined) {
+  return Boolean(status?.sourceWarningDetails?.some((detail) => detail.category === 'control-applicability') ||
+    status?.monitoredControls.some((control) => control.state === 'unsupported'));
+}
 
 export interface SourceWarningSignals {
   messages: string[];
@@ -12,7 +17,7 @@ export function isWarningDetail(value: unknown): value is NetworkStatusSourceWar
 
   const detail = value as Record<string, unknown>;
   return ['critical', 'warning', 'review'].includes(String(detail.severity)) &&
-    ['freshness', 'pinning', 'height-divergence', 'source-shape', 'mimir-parse', 'mimir-support', 'unknown-chain', 'unknown-operation', 'other'].includes(String(detail.category)) &&
+    ['freshness', 'pinning', 'height-divergence', 'source-shape', 'mimir-parse', 'mimir-support', 'unknown-chain', 'unknown-operation', 'control-applicability', 'other'].includes(String(detail.category)) &&
     typeof detail.message === 'string' && detail.message.trim().length > 0 &&
     typeof detail.action === 'string' &&
     [detail.keys, detail.scopes].every((items) => items === undefined || (Array.isArray(items) && items.every((item) => typeof item === 'string')));
@@ -120,6 +125,10 @@ export function summarizeSourceWarning(
     return count > 0
       ? `${count} operational-support Mimir key${count === 1 ? '' : 's'} need review.`
       : 'Operational-support Mimir keys need review.';
+  }
+
+  if (category === 'control-applicability') {
+    return 'Operational-control applicability needs review for this THORNode version.';
   }
 
   return message.length > 220 ? `${message.slice(0, 217)}...` : message;

@@ -6,6 +6,9 @@ import {
   deriveRouteAvailability,
 } from '@/lib/network-diagnostics';
 import type { ChainOperationalStatus, NetworkStatus, Pool, SwapQuoteProbeResult } from '@/lib/types';
+import { summarizeSourceWarning } from '@/lib/source-warnings';
+import { deriveNetworkStatus } from '@/lib/api/thornode';
+import { getNetworkCurrentOnlyStateLabel } from '@/lib/network-status-summary';
 
 function chain(overrides: Partial<ChainOperationalStatus> & { chain: string }): ChainOperationalStatus {
   return {
@@ -59,6 +62,21 @@ function pool(asset: string): Pool {
 }
 
 describe('network diagnostics view models', () => {
+  it('withholds clean chain and current-only labels when control applicability is unreviewed', () => {
+    const status = deriveNetworkStatus({ HALTTRADING: 0, PauseBond: 1 }, [{
+      chain: 'BTC', halted: false, global_trading_paused: false,
+      chain_trading_paused: false, chain_lp_actions_paused: false,
+    }], undefined, 100);
+    const availability = deriveChainAvailability(status);
+    for (const row of availability) {
+      for (const cell of [row.swapIn, row.swapOut, row.lpActions, row.poolDeposits, row.scopedOperations, row.dataQuality]) {
+        expect(cell).toMatchObject({ state: 'needs-review', label: 'Review applicability' });
+      }
+    }
+    expect(getNetworkCurrentOnlyStateLabel({
+      paused: status.tradingPaused, statusLoading: false, sourceUnavailable: false, networkStatus: status,
+    })).toBe('Review applicability');
+  });
   it('keeps a global LP pause out of ordinary swap availability', () => {
     const status: NetworkStatus = {
       ...baseStatus,
@@ -306,6 +324,19 @@ describe('network diagnostics view models', () => {
     expect(availability[0]?.dataQuality.state).toBe('needs-review');
     expect(availability[0]?.reasons).toContain('Mimir halt: HALTBSCTRADING');
     expect(availability[0]?.reasons).toContain('BSC inbound_addresses omitted halted.');
+  });
+
+  it('keeps unsupported control semantics visible in diagnostics and current-only summaries', () => {
+    const applicabilityWarning = {
+      severity: 'review' as const,
+      category: 'control-applicability' as const,
+      message: 'Operational-control semantics have not been reviewed for THORNode 3.19.2.',
+      action: 'Review the exact THORNode source revision before interpreting monitored control values.',
+      keys: ['HALTTRADING'],
+    };
+    expect(summarizeSourceWarning(applicabilityWarning)).toBe(
+      'Operational-control applicability needs review for this THORNode version.'
+    );
   });
 
   it('uses quote results as the strongest route proof', () => {

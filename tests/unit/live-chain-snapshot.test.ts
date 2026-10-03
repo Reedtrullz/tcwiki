@@ -153,6 +153,11 @@ describe('live chain snapshot helper', () => {
 
     expect(result.source?.label).toBe('A THORNode');
     expect(result.evidence.status).toBe('pass');
+    expect(result.evidence).toMatchObject({ sourcePolicy: {
+      profile: 'independent-chain-set', snapshotLagBlocks: 1,
+      blockAgeWarningSeconds: 12, blockAgeDegradedSeconds: 30,
+      futureWarningSeconds: 12, futureDegradedSeconds: 30,
+    } });
     expect(result.latestHeight).toBe(11);
     expect(result.snapshotHeight).toBe(10);
     expect(result.blockAgeSeconds).toBe(5);
