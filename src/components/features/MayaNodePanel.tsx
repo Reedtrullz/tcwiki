@@ -57,8 +57,8 @@ function NodeRow({ node }: { node: MayaNode }) {
 }
 
 export function MayaNodePanel() {
-  const { data: network, result: networkResult, isLoading: networkLoading } = useMayaNetwork();
-  const { data: nodes, result: nodesResult, isLoading: nodesLoading } = useMayaNodes();
+  const { data: network, result: networkResult, isLoading: networkLoading, refresh: refreshNetwork } = useMayaNetwork();
+  const { data: nodes, result: nodesResult, isLoading: nodesLoading, refresh: refreshNodes } = useMayaNodes();
 
   const activeNodes = nodes?.filter((n) => n.isActive) ?? [];
 
@@ -119,7 +119,7 @@ export function MayaNodePanel() {
             <p className="text-xs text-slate-500">Network data unavailable.</p>
           )}
           <div className="mt-3">
-            <LiveSourceMeta result={networkResult} />
+            <LiveSourceMeta result={networkResult} onRefresh={refreshNetwork} />
           </div>
         </Card>
 
@@ -148,7 +148,7 @@ export function MayaNodePanel() {
             <p className="text-xs text-slate-500">Node data unavailable.</p>
           )}
           <div className="mt-3">
-            <LiveSourceMeta result={nodesResult} />
+            <LiveSourceMeta result={nodesResult} onRefresh={refreshNodes} />
           </div>
         </Card>
       </div>

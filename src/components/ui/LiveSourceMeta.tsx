@@ -6,6 +6,7 @@ import { AdditionalSourceDisclosure, SourceMetaLink } from '@/components/ui/Sour
 
 interface LiveSourceMetaProps {
   result?: LiveDataResult<unknown>;
+  onRefresh?: () => unknown;
   health?: MidgardHealth;
   healthResult?: LiveDataResult<MidgardHealth>;
 }
@@ -100,7 +101,7 @@ function formatSourceWarningSummary(count: number, hiddenKeyCount: number) {
   return `${warningLabel}; open details for the source-quality note`;
 }
 
-export function LiveSourceMeta({ result, health, healthResult }: LiveSourceMetaProps) {
+export function LiveSourceMeta({ result, health, healthResult, onRefresh }: LiveSourceMetaProps) {
   if (!result) {
     return <p className="text-xs text-slate-400">Loading live source...</p>;
   }
@@ -114,7 +115,11 @@ export function LiveSourceMeta({ result, health, healthResult }: LiveSourceMetaP
     sources.some((source) => sameSourceGroup(source.url, healthSource.url));
   const resolvedHealth = healthMatchesMetric ? (healthResult ? healthResult.data : health) : undefined;
   const healthUnavailable = Boolean(healthResult && !healthResult.data && healthMatchesMetric);
-  const primaryBadge = sourceBadge(result, resolvedHealth, healthUnavailable, !healthMatchesMetric);
+  const sourceStateBadge = sourceBadge(result, resolvedHealth, healthUnavailable, !healthMatchesMetric);
+  const presentation = result.presentation?.state;
+  const primaryBadge = presentation && presentation !== 'current' && (presentation !== 'historical' || sourceStateBadge.variant === 'success')
+    ? { label: { refreshing: 'Refreshing', 'last-good': 'Last good sample', stale: 'Stale context', unavailable: 'Unavailable', historical: 'Historical intervals' }[presentation], variant: presentation === 'historical' ? 'info' as const : 'warning' as const }
+    : sourceStateBadge;
   const warningSignals = collectSourceWarningSignals(result.data);
   const structuredMessages = new Set(warningSignals.details.map((detail) => detail.message));
   const warningDetails = [
@@ -138,6 +143,7 @@ export function LiveSourceMeta({ result, health, healthResult }: LiveSourceMetaP
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-400">
         <Badge variant={primaryBadge.variant}>{primaryBadge.label}</Badge>
         <span>Checked {checkedAt}</span>
+        {onRefresh && <button type="button" onClick={() => { void onRefresh(); }} disabled={presentation === 'refreshing'} className="rounded text-accent underline underline-offset-2 disabled:opacity-50" aria-label={`Refresh ${primarySource?.label ?? 'live source'} data`}>Refresh source</button>}
         {primarySource && (
           <div aria-label="Live data sources" className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
             <span className="inline-flex min-w-0 max-w-full">

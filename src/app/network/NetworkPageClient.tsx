@@ -107,9 +107,9 @@ function operationBadgeVariant(value: CurrentOperationRow['value']) {
 }
 
 export default function NetworkPageClient({ children }: NetworkPageClientProps) {
-  const { data: networkData, result: networkResult } = useNetworkData();
+  const { data: networkData, result: networkResult, refresh: refreshNetwork } = useNetworkData();
   const { result: midgardHealthResult } = useMidgardHealth();
-  const { result: statusResult, isLoading: statusLoading } = useNetworkStatus();
+  const { result: statusResult, isLoading: statusLoading, refresh: refreshStatus } = useNetworkStatus();
   const networkStatus = statusResult?.data;
 
   const liveStateValue = (
@@ -281,7 +281,7 @@ export default function NetworkPageClient({ children }: NetworkPageClientProps) 
         <div className="grid gap-3 lg:grid-cols-2">
           <div>
             <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Midgard node-count source</p>
-            <LiveSourceMeta result={networkResult} healthResult={midgardHealthResult} />
+            <LiveSourceMeta result={networkResult} onRefresh={refreshNetwork} healthResult={midgardHealthResult} />
           </div>
           <div>
             <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">THORNode operation-state source</p>
@@ -378,7 +378,7 @@ export default function NetworkPageClient({ children }: NetworkPageClientProps) 
         <div className="min-w-0">
 
       <div id="network-diagnostics" className="scroll-mt-24 mb-12">
-        <NetworkStatusBanner result={statusResult} isLoading={statusLoading} variant="diagnostic" showQuoteChecker />
+        <NetworkStatusBanner onRefresh={refreshStatus} result={statusResult} isLoading={statusLoading} variant="diagnostic" showQuoteChecker />
       </div>
 
       {currentOperationSnapshot}

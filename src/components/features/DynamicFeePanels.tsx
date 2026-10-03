@@ -886,12 +886,14 @@ export function SourceStatusStrip({
   isDegraded,
   error,
   sourceWarningCount,
+  onRefresh,
 }: {
   result?: LiveDataResult<DynamicL1FeeStatus>;
   status?: DynamicL1FeeStatus;
   isDegraded?: boolean;
   error?: string;
   sourceWarningCount?: number;
+  onRefresh?: () => unknown;
 }) {
   return (
     <div id="dynamic-fee-source-status" className="mb-8 scroll-mt-24 rounded-md border border-border bg-surface-elevated px-4 py-3">
@@ -902,7 +904,7 @@ export function SourceStatusStrip({
         </div>
         <div className="min-w-0 lg:text-right">
           <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-slate-400">Live snapshot</p>
-          <LiveSourceMeta result={result} />
+          <LiveSourceMeta result={result} onRefresh={onRefresh} />
           {(isDegraded || error) && (
             <p className="mt-2 text-xs text-amber-300">
               {error ?? 'Dynamic fee live data is degraded. Static documentation remains visible.'}

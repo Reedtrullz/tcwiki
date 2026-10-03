@@ -1,3 +1,4 @@
+import { operationEvidenceNeedsRefresh } from '@/lib/network-status-summary';
 import type {
   ChainOperationalStatus,
   NetworkStatus,
@@ -217,6 +218,9 @@ export function deriveNodeOperatorActionControls(status: NetworkStatus | undefin
 }
 
 export function deriveChainAvailability(status: NetworkStatus | undefined): ChainAvailability[] {
+  const stale = operationEvidenceNeedsRefresh(status);
+  const assessedCell = (cell: AvailabilityCell): AvailabilityCell => stale && cell.state === 'available'
+    ? { state: 'needs-review', label: 'Dated context', reasons: ['Refresh operational evidence before treating this observation as current availability.'] } : cell;
   return (status?.chainStatuses ?? [])
     .map((chain) => {
       const reasonGroups = chainReasonGroups(chain);
@@ -252,11 +256,11 @@ export function deriveChainAvailability(status: NetworkStatus | undefined): Chai
 
       return {
         chain: chain.chain,
-        swapIn,
-        swapOut,
-        lpActions,
-        poolDeposits,
-        scopedOperations,
+        swapIn: assessedCell(swapIn),
+        swapOut: assessedCell(swapOut),
+        lpActions: assessedCell(lpActions),
+        poolDeposits: assessedCell(poolDeposits),
+        scopedOperations: assessedCell(scopedOperations),
         dataQuality,
         reasons: reasons.length > 0 ? reasons : ['No active chain-specific swap blocker observed.'],
         swapReasons,

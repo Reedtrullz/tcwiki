@@ -181,7 +181,7 @@ export default function StatsPage() {
     isDegraded: poolsDegraded,
   } = usePools();
   const { result: midgardHealthResult } = useMidgardHealth();
-  const { result: statusResult, isLoading: statusLoading } = useNetworkStatus();
+  const { result: statusResult, isLoading: statusLoading, refresh: refreshStatus } = useNetworkStatus();
 
   const networkHasError = !networkLoading && (networkError || networkDegraded || !networkData);
   const earningsHasError = !earningsLoading && (earningsError || earningsDegraded);
@@ -276,7 +276,7 @@ export default function StatsPage() {
         <p className="mb-3 max-w-3xl text-sm leading-relaxed text-slate-400">
           Check network status before treating loaded metrics as route-ready. A healthy-looking Midgard number does not override a current THORNode pause or source warning.
         </p>
-        <NetworkStatusBanner result={statusResult} isLoading={statusLoading} variant="compact" />
+        <NetworkStatusBanner onRefresh={refreshStatus} result={statusResult} isLoading={statusLoading} variant="compact" />
       </section>
 
       <section id="stats-which-numbers-matter" aria-labelledby="stats-number-guide-heading" className="mb-8">

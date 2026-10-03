@@ -67,20 +67,22 @@ export default function HomePageClient({ sourcePosture }: HomePageClientProps) {
     result: networkResult,
     isLoading: networkLoading,
     isDegraded: networkDegraded,
+    refresh: refreshNetwork,
   } = useNetworkData();
   const { result: midgardHealthResult } = useMidgardHealth();
-  const { result: statusResult, isLoading: statusLoading } = useNetworkStatus();
+  const { result: statusResult, isLoading: statusLoading, refresh: refreshStatus } = useNetworkStatus();
   const {
     data: pools,
     result: poolsResult,
     isLoading: poolsLoading,
     isDegraded: poolsDegraded,
+    refresh: refreshPools,
   } = usePools();
 
   const networkFallbackValue = networkLoading && !networkData ? 'Loading' : 'Unavailable';
   const poolFallbackValue = poolsLoading && !pools ? 'Loading' : 'Unavailable';
-  const networkMetricsAvailable = Boolean(networkData && !networkDegraded && midgardResultHasCleanHealth(networkResult, midgardHealthResult));
-  const poolsAvailable = Boolean(pools && !poolsDegraded && midgardResultHasCleanHealth(poolsResult, midgardHealthResult));
+  const networkMetricsAvailable = Boolean(networkData && (['last-good', 'stale'].includes(networkResult?.presentation?.state ?? '') || (!networkDegraded && midgardResultHasCleanHealth(networkResult, midgardHealthResult))));
+  const poolsAvailable = Boolean(pools && (['last-good', 'stale'].includes(poolsResult?.presentation?.state ?? '') || (!poolsDegraded && midgardResultHasCleanHealth(poolsResult, midgardHealthResult))));
   const midgardSourceIssueVisible = midgardSourceIssueIsVisible(networkResult, midgardHealthResult, networkLoading) ||
     midgardSourceIssueIsVisible(poolsResult, midgardHealthResult, poolsLoading);
   const poolCount = poolsAvailable && pools ? String(pools.length) : poolFallbackValue;
@@ -163,7 +165,7 @@ export default function HomePageClient({ sourcePosture }: HomePageClientProps) {
             Open diagnostics →
           </Link>
         </div>
-        <NetworkStatusBanner result={statusResult} isLoading={statusLoading} variant="compact" />
+        <NetworkStatusBanner onRefresh={refreshStatus} result={statusResult} isLoading={statusLoading} variant="compact" />
       </section>
 
       <section className="px-6 max-w-7xl mx-auto mb-16">
@@ -207,11 +209,11 @@ export default function HomePageClient({ sourcePosture }: HomePageClientProps) {
         <div className="mt-3 grid gap-3 lg:grid-cols-2">
           <div>
             <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Network metrics source</p>
-            <LiveSourceMeta result={networkResult} healthResult={midgardHealthResult} />
+            <LiveSourceMeta result={networkResult} onRefresh={refreshNetwork} healthResult={midgardHealthResult} />
           </div>
           <div>
             <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Pool rows source</p>
-            <LiveSourceMeta result={poolsResult} healthResult={midgardHealthResult} />
+            <LiveSourceMeta result={poolsResult} onRefresh={refreshPools} healthResult={midgardHealthResult} />
             <p className="mt-2 text-[11px] leading-relaxed text-slate-500">
               Counts Midgard <code>/pools?status=available</code> rows. This is pool-list context, not proof that a route will quote or settle.
             </p>

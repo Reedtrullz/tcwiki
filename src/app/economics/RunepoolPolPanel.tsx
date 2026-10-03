@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/Card';
 import { LiveSourceMeta } from '@/components/ui/LiveSourceMeta';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { useEarningsHistory, useNetworkStatus, useRunePoolPolStatus } from '@/lib/hooks/useMidgard';
+import { operationEvidenceNeedsRefresh } from '@/lib/network-status-summary';
 import { liveResultIsDegraded } from '@/lib/live-result';
 import { summarizeSourceWarning } from '@/lib/source-warnings';
 import { formatRuneFromBaseUnits, parseFiniteDecimal, runeBaseUnitsToNumber } from '@/lib/trust';
@@ -24,6 +25,8 @@ interface RunePoolPolViewProps {
   networkResult?: LiveDataResult<NetworkStatus>;
   networkStatus?: NetworkStatus;
   networkLoading?: boolean;
+  onRefresh?: () => unknown;
+  onRefreshNetwork?: () => unknown;
 }
 
 interface PolTrackerSummary {
@@ -170,10 +173,11 @@ function derivePolTrackerSummary(
   };
 }
 
-function availabilityValue(value: boolean | null | undefined, isLoading: boolean | undefined) {
+function availabilityValue(value: boolean | null | undefined, isLoading: boolean | undefined, stale = false) {
   if (isLoading && value === undefined) {
     return { value: 'Loading', tone: 'info' as const, detail: 'Network diagnostics are still loading RUNEPool controls.' };
   }
+  if (value === true && stale) return { value: 'Dated context', tone: 'warning' as const, detail: 'Refresh operation evidence before relying on this observed enablement.' };
   if (value === true) {
     return { value: 'Control enabled', tone: 'success' as const, detail: '`RUNEPOOLENABLED` is active in the checked network snapshot; this is not deposit, withdrawal, wallet, or future-availability proof.' };
   }
@@ -188,7 +192,8 @@ function actionPauseValue(
   enabled: boolean | null | undefined,
   label: string,
   key: string,
-  isLoading: boolean | undefined
+  isLoading: boolean | undefined,
+  stale = false
 ) {
   if (isLoading && paused === undefined) {
     return { value: 'Loading', tone: 'info' as const, detail: `Network diagnostics are still loading ${label}.` };
@@ -199,6 +204,7 @@ function actionPauseValue(
   if (paused === true) {
     return { value: 'Paused', tone: 'danger' as const, detail: `\`${key}\` is active in the checked network snapshot.` };
   }
+  if (paused === false && stale) return { value: 'Dated context', tone: 'warning' as const, detail: 'Refresh operation evidence before relying on this observed inactive halt.' };
   if (paused === false) {
     return { value: 'No active halt', tone: 'success' as const, detail: `\`${key}\` is present and inactive in the checked network snapshot; this clears the tracked halt only.` };
   }
@@ -444,6 +450,8 @@ function actionDecisionValue(value: string, action: 'deposit' | 'withdraw') {
       return 'RUNEPool disabled';
     case 'Loading':
       return 'Loading';
+    case 'Dated context':
+      return 'Dated context';
     case 'Needs review':
       return 'Needs review';
     default:
@@ -460,13 +468,16 @@ export function RunepoolPolView({
   networkResult,
   networkStatus,
   networkLoading,
+  onRefresh,
+  onRefreshNetwork,
 }: RunePoolPolViewProps) {
   const accounting = sourceQuality(result, isLoading);
-  const enabled = availabilityValue(networkStatus?.runePoolEnabled, networkLoading);
-  const deposits = actionPauseValue(networkStatus?.runePoolDepositPaused, networkStatus?.runePoolEnabled, 'RUNEPool deposits', 'RUNEPoolHaltDeposit', networkLoading);
-  const withdrawals = actionPauseValue(networkStatus?.runePoolWithdrawPaused, networkStatus?.runePoolEnabled, 'RUNEPool withdrawals', 'RUNEPoolHaltWithdraw', networkLoading);
+  const staleOperations = operationEvidenceNeedsRefresh(networkStatus);
+  const enabled = availabilityValue(networkStatus?.runePoolEnabled, networkLoading, staleOperations);
+  const deposits = actionPauseValue(networkStatus?.runePoolDepositPaused, networkStatus?.runePoolEnabled, 'RUNEPool deposits', 'RUNEPoolHaltDeposit', networkLoading, staleOperations);
+  const withdrawals = actionPauseValue(networkStatus?.runePoolWithdrawPaused, networkStatus?.runePoolEnabled, 'RUNEPool withdrawals', 'RUNEPoolHaltWithdraw', networkLoading, staleOperations);
   const scope = polScope(status, isLoading);
-  const actionTone = deposits.tone === 'danger' || withdrawals.tone === 'danger' ? 'danger' as const : 'success' as const;
+  const actionTone = deposits.tone === 'danger' || withdrawals.tone === 'danger' ? 'danger' as const : staleOperations ? 'warning' as const : 'success' as const;
   const actionDetail = deposits.value === withdrawals.value
     ? deposits.detail
     : `Deposit: ${deposits.value}. Withdraw: ${withdrawals.value}. Halt controls do not prove wallet/interface support or future availability.`;
@@ -659,7 +670,7 @@ export function RunepoolPolView({
         <Card>
           <h3 className="text-base font-semibold text-slate-100">Source Posture</h3>
           <div className="mt-3">
-            <LiveSourceMeta result={result} />
+            <LiveSourceMeta result={result} onRefresh={onRefresh} />
           </div>
           {warningHeadline && (
             <div className="mt-3 rounded-md border border-amber-500/25 bg-amber-500/10 p-3 text-xs leading-relaxed text-amber-200">
@@ -670,7 +681,7 @@ export function RunepoolPolView({
           {networkResult && (
             <div className="mt-3 border-t border-border pt-3">
               <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Network diagnostics</p>
-              <LiveSourceMeta result={networkResult} />
+              <LiveSourceMeta result={networkResult} onRefresh={onRefreshNetwork} />
             </div>
           )}
         </Card>
@@ -754,16 +765,20 @@ export function RunepoolPolPanel() {
     result,
     data,
     isLoading,
+    refresh,
   } = useRunePoolPolStatus();
   const { data: earningsHistory, isLoading: earningsLoading } = useEarningsHistory('day', 30);
   const {
     result: networkResult,
     data: networkStatus,
     isLoading: networkLoading,
+    refresh: refreshNetwork,
   } = useNetworkStatus();
 
   return (
     <RunepoolPolView
+      onRefresh={refresh}
+      onRefreshNetwork={refreshNetwork}
       result={result}
       status={data}
       isLoading={isLoading}

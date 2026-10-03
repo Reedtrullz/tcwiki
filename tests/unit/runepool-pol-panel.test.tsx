@@ -289,3 +289,11 @@ describe('RunepoolPolView', () => {
     expect(html).toContain('Value split parsed, but provider plus reserve value does not match `pol.value`');
   });
 });
+
+it('retains accounting but withdraws clear RUNEPool actions when block evidence is stale', () => {
+  const stale: NetworkStatus = { ...networkStatus, runePoolEnabled: true, runePoolDepositPaused: false, runePoolWithdrawPaused: false, sourceWarnings: ['stale block'], sourceWarningDetails: [{ severity: 'critical', category: 'freshness', message: 'stale block', action: 'refresh' }] };
+  const html = renderToStaticMarkup(<RunepoolPolView result={result} status={status} networkResult={{ ...networkResult, data: stale }} networkStatus={stale} />);
+  expect(html).toContain('Dated context');
+  expect(html).not.toContain('No tracked deposit halt');
+  expect(html).not.toContain('Control enabled');
+});
