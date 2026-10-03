@@ -1,6 +1,6 @@
 import { partitionReadinessWarnings } from '../../scripts/lib/readiness-warning-policy.mjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import ThornodeAPI, { deriveDynamicL1FeeStatus, deriveNetworkStatus, deriveRunePoolPolStatus, resetThornodeEndpointForTests } from '@/lib/api/thornode';
+import ThornodeAPI, { createThornodeCollectionContext, deriveDynamicL1FeeStatus, deriveNetworkStatus, deriveRunePoolPolStatus, resetThornodeEndpointForTests } from '@/lib/api/thornode';
 import type { DynamicL1FeeSourceFreshness, RunePoolSourceFreshness, ThornodeInboundAddress } from '@/lib/types';
 
 const makeResponse = (ok: boolean, data: unknown, status = 200, statusText = 'OK') => ({
@@ -2754,4 +2754,77 @@ it('keeps explicit warning policy stable when compatibility wording changes', ()
     expect(status.sourceWarningDetails).toEqual([detail]);
     expect(partitionReadinessWarnings(status.sourceWarnings, status.sourceWarningDetails ?? []).blocking).toEqual([]);
   }
+});
+
+function stubCollectionCycle(networkFallback = false) {
+  const pool = runePoolFixture();
+  const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+    const url = new URL(String(input));
+    const secondary = !url.hostname.includes('liquify');
+    const height = secondary ? 200 : 100;
+    if (url.pathname.endsWith('/blocks/latest')) return makeResponse(true, { block: { header: { height: String(height + 1), time: new Date().toISOString() } } });
+    if (url.pathname.endsWith('/mimir')) return makeResponse(true, pool.mimir);
+    if (url.pathname.endsWith('/inbound_addresses')) return makeResponse(true, networkFallback && !secondary ? {} : [completeInbound('BTC')]);
+    if (url.pathname.endsWith('/version')) return makeResponse(true, { current: '3.20.3' });
+    if (url.pathname.endsWith('/lastblock')) return makeResponse(true, [{ chain: 'BTC', thorchain: height, last_observed_in: 1000, last_signed_out: 99 }]);
+    if (url.pathname.endsWith('/runepool')) return makeResponse(true, pool.runepool);
+    if (url.pathname.endsWith('/dynamic_l1_fees')) return makeResponse(true, { entries: [] });
+    if (url.pathname.endsWith('/dynamic_l1_fees_current')) return makeResponse(true, { epoch: '1', entries: [] });
+    return makeResponse(false, {}, 404, 'Not Found');
+  });
+  vi.stubGlobal('fetch', fetchMock);
+  return fetchMock;
+}
+
+it('shares one provider block and pinned Mimir read within a collection cycle only', async () => {
+  resetThornodeEndpointForTests();
+  const fetchMock = stubCollectionCycle();
+  const context = createThornodeCollectionContext();
+  const results = await Promise.all([ThornodeAPI.getNetworkStatus(context), ThornodeAPI.getDynamicL1FeeStatus(context), ThornodeAPI.getRunePoolPolStatus(context)]);
+  expect(results.every((result) => result.status === 'ok')).toBe(true);
+  expect(fetchMock).toHaveBeenCalledTimes(8);
+  expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/mimir?height=100'))).toHaveLength(1);
+  expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/blocks/latest'))).toHaveLength(1);
+  await ThornodeAPI.getNetworkStatus(createThornodeCollectionContext());
+  expect(fetchMock).toHaveBeenCalledTimes(13);
+  vi.unstubAllGlobals();
+});
+
+it('namespaces fallback reads by provider and height while preserving independent feature evidence', async () => {
+  resetThornodeEndpointForTests();
+  const fetchMock = stubCollectionCycle(true);
+  const context = createThornodeCollectionContext();
+  const [network, fees, pol] = await Promise.all([ThornodeAPI.getNetworkStatus(context), ThornodeAPI.getDynamicL1FeeStatus(context), ThornodeAPI.getRunePoolPolStatus(context)]);
+  expect(network.data?.thorchainHeight).toBe(200);
+  expect(network.source?.url).toContain('thornode.thorchain.network');
+  expect(fees.data?.sourceFreshness.thorchainHeight).toBe(100);
+  expect(pol.data?.sourceFreshness.thorchainHeight).toBe(100);
+  expect(pol.source?.url).toContain('liquify');
+  expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('liquify') && String(url).includes('/mimir?height=100'))).toHaveLength(1);
+  expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('thornode.thorchain.network') && String(url).includes('/mimir?height=200'))).toHaveLength(1);
+  expect(network.sources?.filter((source) => source.url.includes('?height=')).every((source) => source.url.includes('height=200'))).toBe(true);
+  vi.unstubAllGlobals();
+});
+
+it('keeps usable network and POL evidence independent of a slow optional fee history', async () => {
+  resetThornodeEndpointForTests();
+  const fetchMock = stubCollectionCycle();
+  const original = fetchMock.getMockImplementation()!;
+  const history = Promise.withResolvers<ReturnType<typeof makeResponse>>();
+  fetchMock.mockImplementation(async (input) => {
+    const pathname = new URL(String(input)).pathname;
+    if (pathname.endsWith('/mimir')) return makeResponse(true, { ...(runePoolFixture().mimir as Record<string, unknown>), 'DYNAMICFEE-WHITELIST-SS': 1 });
+    if (pathname.endsWith('/dynamic_l1_fees/ss')) return history.promise;
+    return original(input);
+  });
+  const context = createThornodeCollectionContext();
+  let feeCompleted = false;
+  const feeResult = ThornodeAPI.getDynamicL1FeeStatus(context).then((result) => { feeCompleted = true; return result; });
+  const [network, pol] = await Promise.all([ThornodeAPI.getNetworkStatus(context), ThornodeAPI.getRunePoolPolStatus(context)]);
+  expect(network.data?.thorchainHeight).toBe(100);
+  expect(pol.data?.sourceFreshness.thorchainHeight).toBe(100);
+  expect(feeCompleted).toBe(false);
+  history.resolve(makeResponse(false, {}, 503, 'Unavailable'));
+  expect((await feeResult).data?.sourceWarnings.some((message) => message.includes('history') && message.includes('unavailable'))).toBe(true);
+  vi.unstubAllGlobals();
 });

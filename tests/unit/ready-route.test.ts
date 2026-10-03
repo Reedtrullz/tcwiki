@@ -1301,6 +1301,14 @@ describe('/api/ready', () => {
     expect(body.reasons).toEqual(['Midgard latest height is 50 blocks behind THORNode lastblock.']);
   });
 
+  it('passes the same request-scoped THORNode context to all feature checks', async () => {
+    await GET();
+    const [context] = vi.mocked(ThornodeAPI.getNetworkStatus).mock.calls[0];
+    expect(context).toBeDefined();
+    expect(vi.mocked(ThornodeAPI.getDynamicL1FeeStatus).mock.calls[0][0]).toBe(context);
+    expect(vi.mocked(ThornodeAPI.getRunePoolPolStatus).mock.calls[0][0]).toBe(context);
+  });
+
   it('returns degraded when Midgard health and visible datasets use different providers', async () => {
     vi.mocked(MidgardAPI.getNetworkData).mockResolvedValue({
       ...networkData(),

@@ -1,5 +1,5 @@
 import MidgardAPI from '@/lib/api/midgard';
-import ThornodeAPI, { getThornodeBlockAgeSeconds, getThornodeBlockAgeWarnings, THORNODE_BLOCK_STALE_WARNING_SECONDS } from '@/lib/api/thornode';
+import ThornodeAPI, { createThornodeCollectionContext, getThornodeBlockAgeSeconds, getThornodeBlockAgeWarnings, THORNODE_BLOCK_STALE_WARNING_SECONDS } from '@/lib/api/thornode';
 import type {
   DynamicL1FeeStatus,
   HistoryItem,
@@ -51,14 +51,15 @@ async function safeLiveCheck<T>(
 
 async function computeReadinessUpstreamSnapshot(): Promise<ReadinessUpstreamSnapshot> {
   const checkedAt = new Date().toISOString();
+  const thornodeContext = createThornodeCollectionContext();
   const [midgard, midgardNetwork, midgardPools, midgardEarnings, thornode, dynamicFees, runePoolPol] = await Promise.all([
     safeLiveCheck('Midgard health', checkedAt, () => MidgardAPI.getHealth()),
     safeLiveCheck('Midgard network data', checkedAt, () => MidgardAPI.getNetworkData()),
     safeLiveCheck('Midgard pools data', checkedAt, () => MidgardAPI.getPools('available')),
     safeLiveCheck('Midgard earnings history', checkedAt, () => MidgardAPI.getHistory('day', 1)),
-    safeLiveCheck('THORNode network status', checkedAt, () => ThornodeAPI.getNetworkStatus()),
-    safeLiveCheck('THORNode dynamic fee status', checkedAt, () => ThornodeAPI.getDynamicL1FeeStatus()),
-    safeLiveCheck('THORNode RUNEPool/POL status', checkedAt, () => ThornodeAPI.getRunePoolPolStatus()),
+    safeLiveCheck('THORNode network status', checkedAt, () => ThornodeAPI.getNetworkStatus(thornodeContext)),
+    safeLiveCheck('THORNode dynamic fee status', checkedAt, () => ThornodeAPI.getDynamicL1FeeStatus(thornodeContext)),
+    safeLiveCheck('THORNode RUNEPool/POL status', checkedAt, () => ThornodeAPI.getRunePoolPolStatus(thornodeContext)),
   ]);
 
   return {

@@ -117,6 +117,17 @@ type ThorchainHeightEvidence = {
   byChain: Map<string, LastBlockChainEvidence>;
 };
 
+export interface ThornodeCollectionContext {
+  initialEndpoint: number;
+  startedAtMs: number;
+  requests: Map<string, Promise<unknown>>;
+}
+
+// One collection only: URL keys include provider, path and pinned height.
+export function createThornodeCollectionContext(): ThornodeCollectionContext {
+  return { initialEndpoint: activeEndpoint, startedAtMs: Date.now(), requests: new Map() };
+}
+
 async function request<T>(path: string): Promise<LiveDataResult<T>> {
   const errors: string[] = [];
 
@@ -151,7 +162,15 @@ async function request<T>(path: string): Promise<LiveDataResult<T>> {
   return liveDegraded<T>(`THORNode source did not respond (${errors.join('; ')})`);
 }
 
-async function requestJson<T>(url: string): Promise<T> {
+async function requestJson<T>(url: string, context?: ThornodeCollectionContext): Promise<T> {
+  if (context) {
+    let pending = context.requests.get(url);
+    if (!pending) {
+      pending = requestJson<unknown>(url);
+      context.requests.set(url, pending);
+    }
+    return pending as Promise<T>;
+  }
   const controller = new AbortController();
   const timeoutId = globalThis.setTimeout(() => controller.abort(), 5000);
 
@@ -414,17 +433,17 @@ function getConservativeSnapshotHeight(latestHeight: number) {
   return Math.max(0, latestHeight - lag);
 }
 
-async function requestFromEndpoint<T>(endpoint: SourceMeta, path: string, height?: number): Promise<T> {
-  return requestJson<T>(thornodePathUrl(endpoint, path, height));
+async function requestFromEndpoint<T>(endpoint: SourceMeta, path: string, height?: number, context?: ThornodeCollectionContext): Promise<T> {
+  return requestJson<T>(thornodePathUrl(endpoint, path, height), context);
 }
 
-async function requestLatestBlockFromEndpoint<T>(endpoint: ThornodeEndpoint): Promise<T> {
+async function requestLatestBlockFromEndpoint<T>(endpoint: ThornodeEndpoint, context?: ThornodeCollectionContext): Promise<T> {
   const requestUrl = new URL(`${endpoint.cosmosUrl}${THORNODE_LATEST_BLOCK_PATH}`);
   // Liquify's geo-routed gateway can cache the bare latest-block path. A unique
   // request key refreshes discovery without changing the canonical source URL
   // or the height-pinned reads derived from this response.
-  requestUrl.searchParams.set('tcwiki_cache_bust', String(Date.now()));
-  return requestJson<T>(requestUrl.toString());
+  requestUrl.searchParams.set('tcwiki_cache_bust', String(context?.startedAtMs ?? Date.now()));
+  return requestJson<T>(requestUrl.toString(), context);
 }
 
 async function forEachWithConcurrency<T>(
@@ -1481,7 +1500,8 @@ function parseDynamicL1FeeThornameHistory(
 async function requestDynamicL1FeeHistories(
   endpoint: ThornodeEndpoint,
   snapshotHeight: number,
-  status: DynamicL1FeeStatus
+  status: DynamicL1FeeStatus,
+  context?: ThornodeCollectionContext
 ): Promise<{ histories: DynamicL1FeeThornameHistory[]; sourceWarningDetails: NetworkStatusSourceWarning[]; sources: SourceMeta[] }> {
   const recordThornames = [...new Set(status.records.map((record) => record.thorname))]
     .sort((left, right) => left.localeCompare(right));
@@ -1519,7 +1539,8 @@ async function requestDynamicL1FeeHistories(
       const response = await requestFromEndpoint<unknown>(
         endpoint,
         `/dynamic_l1_fees/${encodeURIComponent(thorname)}`,
-        snapshotHeight
+        snapshotHeight,
+        context
       );
       const parsed = parseDynamicL1FeeThornameHistory(response, thorname);
       histories.push(parsed.history);
@@ -1567,12 +1588,14 @@ function shouldTryNextDynamicFeeProvider(status: DynamicL1FeeStatus) {
 }
 
 async function finalizeDynamicL1FeeProviderSnapshot(
-  snapshot: DynamicL1FeeProviderSnapshot
+  snapshot: DynamicL1FeeProviderSnapshot,
+  context?: ThornodeCollectionContext
 ): Promise<DynamicL1FeeWarningCandidate> {
   const historyResult = await requestDynamicL1FeeHistories(
     snapshot.endpoint,
     snapshot.sourceFreshness.thorchainHeight,
-    snapshot.status
+    snapshot.status,
+    context
   );
   const sourceFreshness = {
     ...snapshot.sourceFreshness,
@@ -2990,7 +3013,7 @@ export class ThornodeAPI {
     return request<ThornodeLastBlock[]>('/lastblock');
   }
 
-  static async getNetworkStatus(): Promise<LiveDataResult<NetworkStatus>> {
+  static async getNetworkStatus(context = createThornodeCollectionContext()): Promise<LiveDataResult<NetworkStatus>> {
     const checkedAt = new Date().toISOString();
     const errors: string[] = [];
     const warningSnapshots: Array<{
@@ -3001,11 +3024,11 @@ export class ThornodeAPI {
     }> = [];
 
     for (let i = 0; i < THORNODE_ENDPOINTS.length; i += 1) {
-      const endpointIndex = (activeEndpoint + i) % THORNODE_ENDPOINTS.length;
+      const endpointIndex = (context.initialEndpoint + i) % THORNODE_ENDPOINTS.length;
       const endpoint = THORNODE_ENDPOINTS[endpointIndex];
 
       try {
-        const latestBlock = await requestLatestBlockFromEndpoint<unknown>(endpoint);
+        const latestBlock = await requestLatestBlockFromEndpoint<unknown>(endpoint, context);
         const latestBlockInfo = getTendermintLatestBlockInfo(latestBlock);
         if (latestBlockInfo === null) {
           throw new Error('THORNode latest block response did not include a usable height and timestamp.');
@@ -3014,10 +3037,10 @@ export class ThornodeAPI {
         const snapshotHeight = getConservativeSnapshotHeight(latestBlockInfo.height);
         const sources = networkStatusSources(endpoint, snapshotHeight);
         const [mimir, inbound, version, lastBlock] = await Promise.all([
-          requestFromEndpoint<unknown>(endpoint, '/mimir', snapshotHeight),
-          requestFromEndpoint<unknown>(endpoint, '/inbound_addresses', snapshotHeight),
-          requestFromEndpoint<unknown>(endpoint, '/version', snapshotHeight),
-          requestFromEndpoint<unknown>(endpoint, '/lastblock', snapshotHeight),
+          requestFromEndpoint<unknown>(endpoint, '/mimir', snapshotHeight, context),
+          requestFromEndpoint<unknown>(endpoint, '/inbound_addresses', snapshotHeight, context),
+          requestFromEndpoint<unknown>(endpoint, '/version', snapshotHeight, context),
+          requestFromEndpoint<unknown>(endpoint, '/lastblock', snapshotHeight, context),
         ]);
         const status = deriveValidatedNetworkStatusSnapshot(
           mimir,
@@ -3120,7 +3143,7 @@ export class ThornodeAPI {
     );
   }
 
-  static async getRunePoolPolStatus(): Promise<LiveDataResult<RunePoolPolStatus>> {
+  static async getRunePoolPolStatus(context = createThornodeCollectionContext()): Promise<LiveDataResult<RunePoolPolStatus>> {
     const checkedAt = new Date().toISOString();
     const errors: string[] = [];
     const warningSnapshots: Array<{
@@ -3130,11 +3153,11 @@ export class ThornodeAPI {
     }> = [];
 
     for (let i = 0; i < THORNODE_ENDPOINTS.length; i += 1) {
-      const endpointIndex = (activeEndpoint + i) % THORNODE_ENDPOINTS.length;
+      const endpointIndex = (context.initialEndpoint + i) % THORNODE_ENDPOINTS.length;
       const endpoint = THORNODE_ENDPOINTS[endpointIndex];
 
       try {
-        const latestBlock = await requestLatestBlockFromEndpoint<unknown>(endpoint);
+        const latestBlock = await requestLatestBlockFromEndpoint<unknown>(endpoint, context);
         const latestBlockInfo = getTendermintLatestBlockInfo(latestBlock);
         if (latestBlockInfo === null) {
           throw new Error('THORNode latest block response did not include a usable height and timestamp.');
@@ -3143,8 +3166,8 @@ export class ThornodeAPI {
         const snapshotHeight = getConservativeSnapshotHeight(latestBlockInfo.height);
         const sources = runePoolPolStatusSources(endpoint, snapshotHeight);
         const [mimir, runepool] = await Promise.all([
-          requestFromEndpoint<unknown>(endpoint, '/mimir', snapshotHeight),
-          requestFromEndpoint<unknown>(endpoint, '/runepool', snapshotHeight),
+          requestFromEndpoint<unknown>(endpoint, '/mimir', snapshotHeight, context),
+          requestFromEndpoint<unknown>(endpoint, '/runepool', snapshotHeight, context),
         ]);
         const blockAgeSeconds = getThornodeBlockAgeSeconds(latestBlockInfo.time);
         const sourceFreshness: RunePoolSourceFreshness = {
@@ -3198,17 +3221,17 @@ export class ThornodeAPI {
     );
   }
 
-  static async getDynamicL1FeeStatus(): Promise<LiveDataResult<DynamicL1FeeStatus>> {
+  static async getDynamicL1FeeStatus(context = createThornodeCollectionContext()): Promise<LiveDataResult<DynamicL1FeeStatus>> {
     const checkedAt = new Date().toISOString();
     const errors: string[] = [];
     const warningSnapshots: DynamicL1FeeWarningCandidate[] = [];
 
     for (let i = 0; i < THORNODE_ENDPOINTS.length; i += 1) {
-      const endpointIndex = (activeEndpoint + i) % THORNODE_ENDPOINTS.length;
+      const endpointIndex = (context.initialEndpoint + i) % THORNODE_ENDPOINTS.length;
       const endpoint = THORNODE_ENDPOINTS[endpointIndex];
 
       try {
-        const latestBlock = await requestLatestBlockFromEndpoint<unknown>(endpoint);
+        const latestBlock = await requestLatestBlockFromEndpoint<unknown>(endpoint, context);
         const latestBlockInfo = getTendermintLatestBlockInfo(latestBlock);
         if (latestBlockInfo === null) {
           throw new Error('THORNode latest block response did not include a usable height and timestamp.');
@@ -3217,9 +3240,9 @@ export class ThornodeAPI {
         const snapshotHeight = getConservativeSnapshotHeight(latestBlockInfo.height);
         const baseSources = dynamicL1FeeStatusSources(endpoint, snapshotHeight);
         const [mimir, dynamicFees, currentDynamicFees] = await Promise.all([
-          requestFromEndpoint<unknown>(endpoint, '/mimir', snapshotHeight),
-          requestFromEndpoint<unknown>(endpoint, '/dynamic_l1_fees', snapshotHeight),
-          requestFromEndpoint<unknown>(endpoint, '/dynamic_l1_fees_current', snapshotHeight),
+          requestFromEndpoint<unknown>(endpoint, '/mimir', snapshotHeight, context),
+          requestFromEndpoint<unknown>(endpoint, '/dynamic_l1_fees', snapshotHeight, context),
+          requestFromEndpoint<unknown>(endpoint, '/dynamic_l1_fees_current', snapshotHeight, context),
         ]);
         if (!isPlainRecord(mimir)) {
           throw new Error('THORNode Mimir response was not a plain object.');
@@ -3261,7 +3284,7 @@ export class ThornodeAPI {
         };
 
         if (snapshot.status.sourceWarnings.length === 0) {
-          const finalized = await finalizeDynamicL1FeeProviderSnapshot(snapshot);
+          const finalized = await finalizeDynamicL1FeeProviderSnapshot(snapshot, context);
           if (finalized.status.sourceWarnings.length === 0 || !shouldTryNextDynamicFeeProvider(finalized.status)) {
             activeEndpoint = endpointIndex;
             return liveOk(finalized.status, finalized.sources, checkedAt);
@@ -3292,7 +3315,7 @@ export class ThornodeAPI {
     if (bestWarningSnapshot) {
       activeEndpoint = bestWarningSnapshot.endpointIndex;
       if (bestWarningSnapshot.snapshot) {
-        const finalized = await finalizeDynamicL1FeeProviderSnapshot(bestWarningSnapshot.snapshot);
+        const finalized = await finalizeDynamicL1FeeProviderSnapshot(bestWarningSnapshot.snapshot, context);
         return liveOk(finalized.status, finalized.sources, checkedAt);
       }
       return liveOk(bestWarningSnapshot.status, bestWarningSnapshot.sources, checkedAt);
