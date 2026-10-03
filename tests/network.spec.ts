@@ -363,3 +363,25 @@ test('returned quote retains its body while later controls and diagnostics requi
   await expect(checker.getByText('Expected output', { exact: true })).toBeVisible();
   expect(quotes).toBe(2);
 });
+
+
+test('quote disclosure describes the exact manual request before its parameters leave the browser', async ({ page }) => {
+  await mockSwapperFirstNetwork(page);
+  const sent: string[] = [];
+  page.on('request', request => { if (request.url().includes('/quote/swap')) sent.push(request.url()); });
+  await page.goto('/network?from_asset=BTC.BTC&to_asset=ETH.ETH&amount=0.015#check-a-route');
+  const checker = page.locator('#check-a-route');
+  await expect(checker.getByRole('button', { name: 'Check route', exact: true })).toBeEnabled({ timeout: 15_000 });
+  await expect(checker.locator('#quote-request-disclosure')).toContainText('selected asset pair and amount');
+  expect(sent).toHaveLength(0);
+  await checker.getByText('What the quote request shares', { exact: true }).click();
+  await expect(checker.getByLabel('Quote provider destinations')).toContainText('https://gateway.liquify.com/chain/thorchain_api/thorchain');
+  await expect(checker).toContainText('from_asset, to_asset and amount in 1e8 base units');
+  await checker.getByRole('button', { name: 'Check route', exact: true }).click();
+  await expect.poll(() => sent.length).toBe(1);
+  const request = new URL(sent[0]);
+  expect([...request.searchParams.keys()].sort()).toEqual(['amount', 'from_asset', 'to_asset']);
+  expect(request.searchParams.get('amount')).toBe('1500000');
+  expect(request.searchParams.get('from_asset')).toBe('BTC.BTC');
+  expect(request.searchParams.get('to_asset')).toBe('ETH.ETH');
+});

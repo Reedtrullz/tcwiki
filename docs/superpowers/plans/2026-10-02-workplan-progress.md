@@ -65,13 +65,13 @@ Execute all accepted work and create/push GitHub PRs; do not merge to main. User
 
 
 
-| PR-20 | verified candidate; PR publishing | 679units/58files;bothbuilds/Nextsmoke;Cloudflare79/84 with5skips;Next78 plus final30/30 affected journeys eachtarget;owned query keys, rapid edits, fragments, hydration and browser restoration |
+| PR-20 | PR246 open; local verified | 679units/58files;bothbuilds/Nextsmoke;Cloudflare79/84 with5skips;Next78 plus final30/30 affected journeys eachtarget;owned query keys, rapid edits, fragments, hydration and browser restoration |
 | PR-21 | queued | issue #186 |
 | PR-25 | queued | issue #190 |
 | PR-58 | queued | issue #157 |
 | PR-26 | queued | issue #191 |
 | PR-49 | queued | issue #148 |
-| PR-50 | queued | issue #149 |
+| PR-50 | local verified; PR publishing | 42focusedunits/types/lint;bothbuilds/smoke;30network/docs/glossarychecks eachruntime;manual quote exact3parameters/0requests-before-click;sharedproviderdestinations andURL/referrer disclosures |
 | PR-27 | queued | issue #192 |
 | PR-28 | queued | issue #193 |
 | PR-29 | queued | issue #194 |
