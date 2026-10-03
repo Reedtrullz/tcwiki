@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { ArticleCitationTools } from '@/components/features/ArticleCitationTools';
 import type { ReactNode } from 'react';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { PageTableOfContents, type TocItem } from '@/components/layout/PageTableOfContents';
@@ -233,7 +234,7 @@ export function DeepDiveShell({ entryId, editPath, children }: DeepDiveShellProp
   );
 
   return (
-    <PageContainer maxWidth="narrow">
+    <PageContainer maxWidth="narrow" className="printable-article">
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Link href="/deep-dives" className="text-sm text-slate-400 hover:text-accent transition-colors">
           \u2190 All Deep Dives
@@ -303,6 +304,8 @@ export function DeepDiveShell({ entryId, editPath, children }: DeepDiveShellProp
           </div>
         )}
       </details>
+
+      <ArticleCitationTools entry={entry} boundary={articleClaimBoundary} />
 
       {toc.length > 0 && (
         <nav aria-label="Table of contents" className="mb-6 rounded-lg border border-border bg-surface-elevated/60 p-4">
