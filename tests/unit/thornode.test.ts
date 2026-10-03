@@ -1482,9 +1482,16 @@ describe('deriveNetworkStatus', () => {
         latestBlock: { block: { header: { height: '110', time: new Date().toISOString() } } },
       });
       stubNetworkStatusSnapshots(fixture, fixture);
-      const result = await ThornodeAPI.getNetworkStatus();
+      const context = createThornodeCollectionContext();
+      process.env.THORNODE_SNAPSHOT_LAG_BLOCKS = '1';
+      const result = await ThornodeAPI.getNetworkStatus(context);
       expect(result.status).toBe('ok');
       expect(result.data?.thorchainHeight).toBe(100);
+      expect(result).toMatchObject({ dataPolicy: {
+        profile: 'app-operations', snapshotLagBlocks: 10,
+        blockAgeWarningSeconds: 12, blockAgeDegradedSeconds: 30,
+        futureWarningSeconds: 12, futureDegradedSeconds: 30,
+      } });
       expect(result.sources?.filter((source) => source.url.includes('?height='))
         .every((source) => source.url.endsWith('?height=100'))).toBe(true);
     } finally {

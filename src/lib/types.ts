@@ -1,3 +1,4 @@
+import type { ThornodeDataPolicy } from '../../scripts/lib/thornode-data-policy.mjs';
 export const DATA_CONFIDENCES = ['official', 'curated', 'historical', 'needs-review'] as const;
 
 export type DataConfidence = (typeof DATA_CONFIDENCES)[number];
@@ -46,6 +47,7 @@ export interface LiveDataResult<T> {
     state: 'current' | 'refreshing' | 'last-good' | 'stale' | 'unavailable' | 'historical';
   };
   collection?: LiveCollectionTiming;
+  dataPolicy?: Readonly<ThornodeDataPolicy>;
   assessedAt?: string;
   status: LiveDataStatus;
   checkedAt: string;
@@ -120,6 +122,7 @@ export interface ReadinessResponse {
       status: LiveDataStatus;
       checkedAt?: string;
       collection?: LiveCollectionTiming;
+      dataPolicy?: Readonly<ThornodeDataPolicy>;
       assessedAt?: string;
       source?: SourceMeta;
       sources?: SourceMeta[];
@@ -148,6 +151,7 @@ export interface ReadinessResponse {
         status: LiveDataStatus;
         checkedAt?: string;
         collection?: LiveCollectionTiming;
+        dataPolicy?: Readonly<ThornodeDataPolicy>;
         assessedAt?: string;
         source?: SourceMeta;
         sources?: SourceMeta[];
@@ -171,6 +175,7 @@ export interface ReadinessResponse {
         status: LiveDataStatus;
         checkedAt?: string;
         collection?: LiveCollectionTiming;
+        dataPolicy?: Readonly<ThornodeDataPolicy>;
         assessedAt?: string;
         source?: SourceMeta;
         sources?: SourceMeta[];

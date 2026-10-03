@@ -1,3 +1,5 @@
+import { THORNODE_PROVIDER_DEFAULTS, THORNODE_BLOCK_AGE_POLICY, appThornodeDataPolicy } from '../../../scripts/lib/thornode-data-policy.mjs';
+import type { ThornodeDataPolicy } from '../../../scripts/lib/thornode-data-policy.mjs';
 import { responseHeightEvidence } from '../../../scripts/lib/response-height.mjs';
 import { readProviderJson, PROVIDER_MAX_NUMERIC_CHARACTERS } from './bounded-json';
 import {
@@ -51,23 +53,12 @@ type ThornodeEndpoint = SourceMeta & {
   cosmosUrl: string;
 };
 
-const THORNODE_ENDPOINTS: ThornodeEndpoint[] = [
-  {
-    label: 'Liquify THORNode',
-    url: 'https://gateway.liquify.com/chain/thorchain_api/thorchain',
-    cosmosUrl: 'https://gateway.liquify.com/chain/thorchain_api/cosmos',
-  },
-  {
-    label: 'THORChain THORNode',
-    url: 'https://thornode.thorchain.network/thorchain',
-    cosmosUrl: 'https://thornode.thorchain.network/cosmos',
-  },
-];
+const THORNODE_ENDPOINTS: ThornodeEndpoint[] = [...THORNODE_PROVIDER_DEFAULTS];
 
-export const THORNODE_BLOCK_STALE_WARNING_SECONDS = 12;
-const THORNODE_BLOCK_STALE_DEGRADED_SECONDS = 30;
-const THORNODE_BLOCK_FUTURE_WARNING_SECONDS = 12;
-const THORNODE_BLOCK_FUTURE_DEGRADED_SECONDS = 30;
+export const THORNODE_BLOCK_STALE_WARNING_SECONDS = THORNODE_BLOCK_AGE_POLICY.blockAgeWarningSeconds;
+const THORNODE_BLOCK_STALE_DEGRADED_SECONDS = THORNODE_BLOCK_AGE_POLICY.blockAgeDegradedSeconds;
+const THORNODE_BLOCK_FUTURE_WARNING_SECONDS = THORNODE_BLOCK_AGE_POLICY.futureWarningSeconds;
+const THORNODE_BLOCK_FUTURE_DEGRADED_SECONDS = THORNODE_BLOCK_AGE_POLICY.futureDegradedSeconds;
 const THORNODE_LASTBLOCK_SPREAD_WARNING_BLOCKS = 3;
 const THORNODE_LATEST_BLOCK_PATH = '/base/tendermint/v1beta1/blocks/latest';
 const DYNAMIC_L1_FEE_HISTORY_THORNAME_LIMIT = 16;
@@ -128,6 +119,7 @@ type ThorchainHeightEvidence = {
 };
 
 export interface ThornodeCollectionContext {
+  dataPolicy: Readonly<ThornodeDataPolicy>;
   initialEndpoint: number;
   startedAtMs: number;
   startedMonoMs: number;
@@ -143,7 +135,7 @@ export interface ThornodeCollectionContext {
 export function createThornodeCollectionContext(signal?: AbortSignal): ThornodeCollectionContext {
   const startedAtMs = Date.now();
   const startedMonoMs = performance.now();
-  return { initialEndpoint: activeEndpoint, startedAtMs, startedMonoMs, blockObservedAt: new Map(), heightEvidence: new Map(), deadlineAtMs: startedAtMs + THORNODE_COLLECTION_BUDGET_MS, deadlineMonoMs: startedMonoMs + THORNODE_COLLECTION_BUDGET_MS, signal, requests: new Map() };
+  return { dataPolicy: appThornodeDataPolicy(process.env.THORNODE_SNAPSHOT_LAG_BLOCKS), initialEndpoint: activeEndpoint, startedAtMs, startedMonoMs, blockObservedAt: new Map(), heightEvidence: new Map(), deadlineAtMs: startedAtMs + THORNODE_COLLECTION_BUDGET_MS, deadlineMonoMs: startedMonoMs + THORNODE_COLLECTION_BUDGET_MS, signal, requests: new Map() };
 }
 
 async function request<T>(path: string): Promise<LiveDataResult<T>> {
@@ -463,12 +455,8 @@ function validateSwapQuoteRequest(request: SwapQuoteRequest) {
   }
 }
 
-function getConservativeSnapshotHeight(latestHeight: number) {
-  // Cloudflare can reach a geo-routed Liquify reader several blocks behind its latest-block endpoint.
-  const configuredLag = Number(process.env.THORNODE_SNAPSHOT_LAG_BLOCKS ?? '1');
-  const lag = Number.isInteger(configuredLag) && configuredLag >= 1 && configuredLag <= 20
-    ? configuredLag : 1;
-  return Math.max(0, latestHeight - lag);
+function getConservativeSnapshotHeight(latestHeight: number, context: ThornodeCollectionContext) {
+  return Math.max(0, latestHeight - context.dataPolicy.snapshotLagBlocks);
 }
 
 async function requestFromEndpoint<T>(endpoint: SourceMeta, path: string, height?: number, context?: ThornodeCollectionContext): Promise<T> {
@@ -966,7 +954,7 @@ function completeThornodeResult<T extends NetworkStatus | DynamicL1FeeStatus | R
   const heightPinning = requested.length ? responseHeightEvidence(requested[0].requestedHeight, requested.every((evidence) => evidence.verification === 'verified' && evidence.observedHeight === requested[0].requestedHeight) ? String(requested[0].requestedHeight) : null) : undefined;
   const data = result.data && 'sourceFreshness' in result.data ? { ...result.data, sourceFreshness: { ...result.data.sourceFreshness, heightPinning } } : result.data;
   return reassessThornodeResult({ ...result, data, sources, source: sources?.[0] ?? result.source,
-    checkedAt: completedAt,
+    checkedAt: completedAt, dataPolicy: context.dataPolicy,
     collection: { startedAt: new Date(context.startedAtMs).toISOString(), completedAt,
       durationMs: Math.max(0, Math.round(performance.now() - context.startedMonoMs)),
       blockObservedAt: result.source ? context.blockObservedAt.get(result.source.url) : undefined },
@@ -3151,7 +3139,7 @@ export class ThornodeAPI {
           throw new Error('THORNode latest block response did not include a usable height and timestamp.');
         }
 
-        const snapshotHeight = getConservativeSnapshotHeight(latestBlockInfo.height);
+        const snapshotHeight = getConservativeSnapshotHeight(latestBlockInfo.height, context);
         const sources = networkStatusSources(endpoint, snapshotHeight);
         const [mimir, inbound, version, lastBlock] = await Promise.all([
           requestFromEndpoint<unknown>(endpoint, '/mimir', snapshotHeight, context),
@@ -3278,7 +3266,7 @@ export class ThornodeAPI {
           throw new Error('THORNode latest block response did not include a usable height and timestamp.');
         }
 
-        const snapshotHeight = getConservativeSnapshotHeight(latestBlockInfo.height);
+        const snapshotHeight = getConservativeSnapshotHeight(latestBlockInfo.height, context);
         const sources = runePoolPolStatusSources(endpoint, snapshotHeight);
         const [mimir, runepool] = await Promise.all([
           requestFromEndpoint<unknown>(endpoint, '/mimir', snapshotHeight, context),
@@ -3352,7 +3340,7 @@ export class ThornodeAPI {
           throw new Error('THORNode latest block response did not include a usable height and timestamp.');
         }
 
-        const snapshotHeight = getConservativeSnapshotHeight(latestBlockInfo.height);
+        const snapshotHeight = getConservativeSnapshotHeight(latestBlockInfo.height, context);
         const baseSources = dynamicL1FeeStatusSources(endpoint, snapshotHeight);
         const [mimir, dynamicFees, currentDynamicFees] = await Promise.all([
           requestFromEndpoint<unknown>(endpoint, '/mimir', snapshotHeight, context),
