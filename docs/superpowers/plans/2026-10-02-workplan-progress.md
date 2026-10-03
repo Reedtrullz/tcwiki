@@ -100,7 +100,7 @@ Execute all accepted work and create/push GitHub PRs; do not merge to main. User
 | PR-48 | queued | issue #147 |
 | PR-47 | queued | issue #146 |
 | PR-62 | verified metadata-only candidate; PR publication | 701 units/65 files; deterministic checksummed bounded JSON/llms; deleted routes/sections/claims reject; both final builds/smoke and14desktop/mobile checks eachruntime; ownerlicense fulltext remainsgated |
-| PR-33 | queued | issue #198 |
+| PR-33 | Verified bounded one-hash pilot; PR publication | 743 units/71 files, 38 focused boundaries, both final builds/smoke and32desktop/mobile network+lookupchecks each runtime; exact indexed/raw/parsed evidence, independent confirmation/settlement unknown |
 | PR-63 | queued | issue #162 |
 | PR-64 | queued | issue #163 |
 | PR-35 | owner-gated preparation; storage deferred | concrete cohort/caps/backend/backup-restore decision pack, bounded existing-artifact inventory; no accepted operationalowner/quota/backupdestination, no storage implemented; revisit after ownerreceipt |

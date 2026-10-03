@@ -23,11 +23,14 @@ test('lookup is explicit, preserves raw indexer evidence and separates settlemen
   await input.press('Tab'); const button = panel.getByRole('button', { name: 'Look up transaction' }); await expect(button).toBeFocused(); await button.press('Enter');
   await expect(panel.getByRole('heading', { name: 'Indexed action 1: refund — pending' })).toBeVisible();
   expect(reads).toBe(1);
+  await expect(panel.getByText('Current-only', { exact: true })).toHaveCount(0);
   await expect(panel.getByText(/9007199254740993123 ETH~USDC/)).toBeVisible();
   await expect(panel.getByText(/0 ETH.ETH — raw Midgard/)).toBeVisible();
   await expect(panel.getByRole('heading', { name: 'Source-chain confirmation: unknown' })).toBeVisible();
   await expect(panel.getByRole('heading', { name: 'Destination settlement: unknown' })).toBeVisible();
   await expect(panel.getByText('=:BTC.BTC:destination:0/1/0', { exact: true })).toBeVisible();
+  await panel.getByText('Parsed memo interpretation (decoded)', { exact: true }).click();
+  await expect(panel.getByText(/Syntax interpreted as swap intent only/)).toBeVisible();
   await expect(panel.getByText(/2026-10-03T06:16:38.434Z/)).toBeVisible();
   await expect(panel.getByText(/present controls cannot explain an earlier/)).toBeVisible();
   const rawSource = panel.getByRole('link').filter({ hasText: /Liquify Midgard/ });

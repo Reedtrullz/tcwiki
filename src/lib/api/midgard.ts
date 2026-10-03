@@ -658,13 +658,12 @@ export class MidgardAPI {
     const attempted: SourceMeta[] = [];
     for (const endpoint of MIDGARD_ENDPOINTS) {
       if (signal?.aborted) return liveDegraded('Lookup cancelled; transaction evidence remains unknown.', attempted);
-      const checkedAt = new Date().toISOString();
       attempted.push(sourceForPath(endpoint, path));
       try {
         const raw = await requestFromEndpoint<unknown>(endpoint, path, signal);
         const data = normalizeTransactionEvidence(raw, hash);
         if (signal?.aborted) return liveDegraded('Lookup cancelled; transaction evidence remains unknown.', attempted);
-        return liveOk(data, sourceForPath(endpoint, path), checkedAt);
+        return liveOk(data, sourceForPath(endpoint, path), new Date().toISOString());
       } catch {
         // Failed or malformed indexer evidence does not establish transaction absence.
         continue;

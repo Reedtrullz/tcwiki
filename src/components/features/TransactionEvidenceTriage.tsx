@@ -2,9 +2,10 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import MidgardAPI, { MIDGARD_ENDPOINTS } from '@/lib/api/midgard';
+import { decodeMemo } from '@/lib/memo-decoder';
 import { transactionHash } from '@/lib/transaction-evidence';
 import type { LiveDataResult, NetworkStatus, TransactionEvidence, TransactionEvidenceTransfer, TransactionEvidenceCoin } from '@/lib/types';
-import { LiveSourceMeta } from '@/components/ui/LiveSourceMeta';
+import { SourceMetaLink, SourceMetaDetails } from '@/components/ui/SourceMetaDisclosure';
 
 function Coins({ rows }: { rows: TransactionEvidenceCoin[] | null }) {
   if (!rows) return <p>Amounts unavailable.</p>;
@@ -15,6 +16,11 @@ function Transfers({ rows }: { rows: TransactionEvidenceTransfer[] | null }) {
   if (!rows) return <p>Transfer list unavailable.</p>;
   if (!rows.length) return <p>No transfers reported in this response.</p>;
   return <ol className="list-decimal space-y-2 pl-5">{rows.map((row, i) => <li key={i}><p>Indexed transaction ID: <code>{row.txID ?? 'Unavailable'}</code></p><p>THORChain outbound index height: {row.height ?? 'Not supplied'}. This is not a destination-chain block confirmation.</p><Coins rows={row.coins} /></li>)}</ol>;
+}
+function MemoInterpretation({ memo }: { memo: string | null }) {
+  if (memo === null) return <p>Parsed interpretation unavailable because this action did not supply a memo.</p>;
+  const decoded = decodeMemo(memo);
+  return <details className="mt-2 rounded border border-border p-2"><summary className="cursor-pointer">Parsed memo interpretation ({decoded.status})</summary><p>{decoded.message}</p><dl>{decoded.fields.map(field => <div key={field.id} className="mt-2"><dt className="font-semibold">{field.label}</dt><dd><code>{field.raw || '(omitted)'}</code> — {field.interpretation}</dd></div>)}</dl><p>Rules reviewed against THORNode v3.20.3. No current or historical keeper state, name resolution or dynamic-fee validation is performed.</p></details>;
 }
 export function TransactionEvidenceTriage({ current }: { current?: LiveDataResult<NetworkStatus> }) {
   const [input, setInput] = useState('');
@@ -44,7 +50,8 @@ export function TransactionEvidenceTriage({ current }: { current?: LiveDataResul
     </form>
     <p role="status" className="mt-2 text-sm">{notice}</p>
     {result && <div className="mt-4 space-y-3 text-sm">
-      <LiveSourceMeta result={result} />
+      <p className="text-slate-300">Recorded indexer check time: {result.checkedAt ?? 'Unavailable'}. Source status: {result.status === 'ok' ? 'Response received; indexed evidence only' : 'Unavailable'}.</p>
+      <ul>{(result.sources ?? (result.source ? [result.source] : [])).map(source => <li key={source.url}><SourceMetaLink source={source}>{source.label}</SourceMetaLink> <SourceMetaDetails source={source} /></li>)}</ul>
       <p>This is a retained indexer response, not an automatically refreshed transaction state. Look up again for a new read.</p>
       {result.data && <>
         <p>Lookup hash: <code>{result.data.hash}</code>. Up to five related indexed actions; this is not a complete history.</p>
@@ -60,7 +67,7 @@ export function TransactionEvidenceTriage({ current }: { current?: LiveDataResul
           <h4 className="mt-2 font-semibold">Indexed outbound observations</h4><Transfers rows={action.outputs} />
           <h4 className="mt-2 font-semibold">Destination settlement: unknown</h4><p>An indexed outbound ID, success status or zero-value native/internal ID does not independently establish destination-chain inclusion or recipient receipt.</p>
           <h4 className="mt-2 font-semibold">Raw memo</h4><p><code>{action.memo ?? 'Memo unavailable in this action metadata.'}</code></p>
-          <p>Parsed interpretation is separate from the provider record; a memo does not establish execution.</p>
+          <p>Parsed interpretation is separate from the provider record; a memo does not establish execution.</p><MemoInterpretation memo={action.memo} />
           {action.reason && <p>Provider reason: {action.reason}. This is the recorded reason, not a diagnosis from today’s halt flags.</p>}
           <h4 className="mt-2 font-semibold">Reported network fees</h4><Coins rows={action.fees} />
           <p>Other fee fields are not normalized by this pilot; their units and completeness are not inferred.</p>
