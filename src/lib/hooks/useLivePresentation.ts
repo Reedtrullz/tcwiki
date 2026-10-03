@@ -4,11 +4,11 @@ import type { LiveDataResult } from '@/lib/types';
 import { assessLivePresentation, type LivePresentationPolicy } from '@/lib/live-presentation';
 import { liveResultIsDegraded } from '@/lib/live-result';
 
-export function useLivePresentation<T>(result: LiveDataResult<T> | undefined, error: unknown, isLoading: boolean, isValidating: boolean, policy: LivePresentationPolicy<T>, refresh: () => unknown) {
+export function useLivePresentation<T>(result: LiveDataResult<T> | undefined, error: unknown, isLoading: boolean, isValidating: boolean, policy: LivePresentationPolicy<T>, refresh: () => unknown, initialNow?: number) {
   // Node/Worker navigator may exist without onLine. Initial markup is shared;
   // browser connectivity is observed only after hydration.
   const [online, setOnline] = useState(true);
-  const [now, setNow] = useState(() => Date.now());
+  const [now, setNow] = useState(() => initialNow ?? Date.now());
   const interval = policy.kind === 'operational' ? 1000 : policy.kind === 'aggregate' ? 10000 : 0;
   useEffect(() => {
     const update = () => { setNow(Date.now()); setOnline(navigator.onLine); };

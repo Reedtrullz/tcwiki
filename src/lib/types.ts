@@ -37,7 +37,22 @@ export interface FreshnessMeta {
   nextReviewDue?: string;
 }
 
+export interface ClaimEvidence {
+  id: string;
+  summary: string;
+  source: SourceMeta;
+  observedAt: string;
+  versionScope: string;
+  scope: 'current-only' | 'historical' | 'design';
+  reviewedAt: string;
+  nextReviewDue: string;
+  decision: 'supported' | 'needs-review' | 'needs-live-evidence' | 'superseded';
+  limitation: string;
+  supersedes?: string;
+}
+
 export interface SourcedRecord<T> {
+  claims?: ClaimEvidence[];
   data: T;
   sources: SourceMeta[];
   freshness: FreshnessMeta;
@@ -854,8 +869,53 @@ export interface NetworkStatus {
   sourceWarningDetails?: NetworkStatusSourceWarning[];
 }
 
-export interface ExecutionEvidenceMap {
-  id: string;
-  limitation: string;
-  stages: Array<{ id: string; label: string; evidence: string; boundary: string; href: string }>;
 }
+
+export interface WikiChangeRecord {
+  id: string;
+  title: string;
+  summary: string;
+  href: string;
+  sourceDate: string;
+  reviewedAt: string;
+}
+
+export interface DiagnosticEvidenceExport {
+  format: 'tcwiki-network-controls';
+  schemaVersion: 1;
+  exportedAt: string;
+  scope: 'already-collected-network-controls';
+  limitation: string;
+  status: LiveDataStatus | 'unavailable';
+  checkedAt: string | null;
+  assessedAt: string | null;
+  presentation: LiveDataResult<NetworkStatus>['presentation'] | null;
+  collection: LiveCollectionTiming | null;
+  runtime: { version: string | null; commit: string | null; image: string | null };
+  height: { observed: number | null; snapshotPinned: boolean | null; blockTime: string | null };
+  sources: Array<{ label: string; url: string; retrievedAt: string | null; heightPinning: { requestedHeight: number; observedHeight: number | null; verification: 'verified' | 'unverified' } | null }>;
+  summary: string | null;
+  error: string | null;
+  warnings: string[];
+  invalidMimirKeys: string[];
+  controls: Array<{ key: string; label: string; state: OperationalControlState; active: boolean }>;
+  rawMimir: { available: boolean; unit: string; values: Record<string, string | number | { unavailable: string }>; omitted: number };
+  omitted: { sources: number; warnings: number; controls: number; invalidMimirKeys: number };
+}
+
+export interface MimirProviderCell {
+  state: 'valid' | 'missing' | 'malformed' | 'alias-conflict';
+  raw: string | number | null;
+  normalized: string | null;
+}
+
+export interface MimirProviderSample {
+  status: 'observed' | 'unavailable';
+  source: SourceMeta;
+  checkedAt: string;
+  collection: LiveCollectionTiming;
+  requestedHeight: number | null;
+  observedHeight: number | null;
+  verification: 'verified' | 'unverified' | 'mismatch';
+  error: string | null;
+  values: Record<string, MimirProviderCell>;

@@ -12,9 +12,11 @@ import {
   SwapQuoteProbeResult,
   SwapQuoteRequest,
 } from '@/lib/types';
+import { formatEvidenceTimestamp } from '@/lib/utils';
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import { ResponsiveVisibility } from '@/components/ui/ResponsiveVisibility';
+import { ProviderRequestDisclosure } from '@/components/features/ProviderRequestDisclosure';
 import { LiveSourceMeta } from '@/components/ui/LiveSourceMeta';
 import { usePools, useSwapQuoteProbe } from '@/lib/hooks/useMidgard';
 import { hasUnreviewedControlSemantics } from '@/lib/source-warnings';
@@ -1327,7 +1329,9 @@ function RouteQuoteChecker({ status, statusLoading, operationsResult }: { status
         </div>
       </div>
 
-      <form className="mt-3 grid gap-2 lg:grid-cols-[1fr_1fr_0.8fr_auto]" onSubmit={handleSubmit}>
+      <ProviderRequestDisclosure variant="quote" />
+
+      <form aria-describedby="quote-request-disclosure" className="mt-3 grid gap-2 lg:grid-cols-[1fr_1fr_0.8fr_auto]" onSubmit={handleSubmit}>
         <label className="text-xs text-slate-300">
           <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-slate-500">From asset</span>
           <select
@@ -1706,7 +1710,7 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
             <p className="mt-1 text-[11px] text-slate-400">
               THORChain height {status.thorchainHeight}
               {status.thorchainSnapshotPinned === false ? ' / snapshot unpinned' : ''}
-              {status.thorchainBlockTime ? ` / block time ${new Date(status.thorchainBlockTime).toLocaleTimeString()}` : ''}
+              {status.thorchainBlockTime ? ` / block time ${formatEvidenceTimestamp(status.thorchainBlockTime)}` : ''}
               {status.thorchainBlockAgeSeconds !== undefined ? ` / Block age ${formatBlockAge(status.thorchainBlockAgeSeconds)}` : ''}
               {status.thorchainLastblockSpread !== undefined && status.thorchainLastblockSpread > 0 ? ` / lastblock spread ${status.thorchainLastblockSpread} blocks` : ''}
             </p>
@@ -1762,9 +1766,9 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
             </span>
           </div>
           {nodeOperationRows.length > 0 ? (
-            <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
               {nodeOperationRows.map((operation) => (
-                <div key={operation.id} className={`rounded-md border p-3 ${nodeOperationCardClassName(operation.cell)}`}>
+                <div key={operation.id} className={`min-w-0 rounded-md border p-3 [overflow-wrap:anywhere] ${nodeOperationCardClassName(operation.cell)}`}>
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="text-sm font-semibold text-slate-200">{operation.label}</span>
                     {renderStatusCell(operation.cell)}
@@ -1924,7 +1928,7 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
               </div>
             ))}
           </ResponsiveVisibility>
-          <ResponsiveVisibility desktop className="overflow-x-auto rounded-md border border-border">
+          <ResponsiveVisibility desktop className="overflow-x-auto rounded-md border border-border focus-visible:outline-accent" role="region" aria-label="Per-chain operation table" tabIndex={0}>
             <table className="min-w-[1040px] w-full text-left text-[11px]">
               <caption className="sr-only">Per-chain live operation state</caption>
               <thead className="bg-slate-950/30 text-slate-400">
@@ -1959,6 +1963,8 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
       {!compact && showQuoteChecker && (
         <RouteQuoteChecker status={status} statusLoading={isLoading} operationsResult={result} />
       )}
+
+      {!compact && <ProviderRequestDisclosure variant="diagnostic" />}
 
       {!compact && (evidenceRows.length > 0 || (unreviewedControls && status?.observedMimir)) && (
         <details className="mt-4 rounded-md border border-border bg-surface/50">
@@ -1996,7 +2002,7 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
                 </div>
               ))}
             </div>
-            <div className="mt-3 hidden overflow-x-auto sm:block">
+            <div className="mt-3 hidden overflow-x-auto sm:block focus-visible:outline-accent" role="region" aria-label="Source evidence table" tabIndex={0}>
               <table className="min-w-[720px] text-left text-[11px]">
                 <caption className="sr-only">Active source evidence for network operation state</caption>
                 <thead className="text-slate-400">

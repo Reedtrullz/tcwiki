@@ -15,6 +15,9 @@ const jiti = createJiti(import.meta.url, {
   moduleCache: false,
 });
 const { SEARCH_DOCUMENTS: actualSearchDocuments } = await jiti.import(join(root, 'src/lib/search/registry.ts'));
+const { buildClaimReviewItems } = await jiti.import(join(root, 'src/lib/claim-evidence.ts'));
+const { SECURITY_INCIDENT_RECORDS: actualIncidentRecords } = await jiti.import(join(root, 'src/lib/data/static.ts'));
+buildClaimReviewItems(actualIncidentRecords); // Validate only consumed pilot claim fields; record dates stay independent.
 const sharedSources = await jiti.import(join(root, 'src/lib/sources.ts'));
 const {
   DEEP_DIVE_READER_PATHS: actualDeepDiveReaderPaths,
@@ -2087,6 +2090,7 @@ const collections = {
   PROTOCOL_MILESTONE_RECORDS: readRecordArray('PROTOCOL_MILESTONE_RECORDS', scope),
   TOKENOMICS_RECORDS: readRecordArray('TOKENOMICS_RECORDS', scope),
   SOURCE_MAP_SECTION_RECORDS: readRecordArray('SOURCE_MAP_SECTION_RECORDS', scope),
+  WIKI_CHANGE_RECORDS: readRecordArray('WIKI_CHANGE_RECORDS', scope),
 };
 
 if (!isIsoDate(staticDataLastUpdated)) {

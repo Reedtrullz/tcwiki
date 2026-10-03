@@ -1,6 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
+import type { LiveDataResult, NetworkStatus } from '@/lib/types';
 import Link from 'next/link';
 import { ChevronDown } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
@@ -11,6 +12,8 @@ import { useMidgardHealth, useNetworkData, useNetworkStatus } from '@/lib/hooks/
 import { MayaNodePanel } from '@/components/features/MayaNodePanel';
 import { ThorNodePanel } from '@/components/features/ThorNodePanel';
 import { NetworkStatusBanner } from '@/components/features/NetworkStatusBanner';
+import { DiagnosticEvidenceExport } from '@/components/features/DiagnosticEvidenceExport';
+import { MimirProviderComparison } from '@/components/features/MimirProviderComparison';
 import { PageTableOfContents } from '@/components/layout/PageTableOfContents';
 import { LiveSourceMeta } from '@/components/ui/LiveSourceMeta';
 import { getNetworkCurrentOnlyStateLabel, getSecuredAssetsSummaryPaused } from '@/lib/network-status-summary';
@@ -72,6 +75,7 @@ const securityFeatures = [
 
 interface NetworkPageClientProps {
   children?: ReactNode;
+  initialStatusResult?: LiveDataResult<NetworkStatus>;
 }
 
 interface CurrentOperationRow {
@@ -108,10 +112,10 @@ function operationBadgeVariant(value: CurrentOperationRow['value']) {
   return 'info';
 }
 
-export default function NetworkPageClient({ children }: NetworkPageClientProps) {
+export default function NetworkPageClient({ children, initialStatusResult }: NetworkPageClientProps) {
   const { data: networkData, result: networkResult, refresh: refreshNetwork } = useNetworkData();
   const { result: midgardHealthResult } = useMidgardHealth();
-  const { result: statusResult, isLoading: statusLoading, refresh: refreshStatus } = useNetworkStatus();
+  const { result: statusResult, isLoading: statusLoading, refresh: refreshStatus } = useNetworkStatus(initialStatusResult);
   const networkStatus = statusResult?.data;
 
   const liveStateValue = (
@@ -381,6 +385,8 @@ export default function NetworkPageClient({ children }: NetworkPageClientProps) 
 
       <div id="network-diagnostics" className="scroll-mt-24 mb-12">
         <NetworkStatusBanner onRefresh={refreshStatus} result={statusResult} isLoading={statusLoading} variant="diagnostic" showQuoteChecker />
+        <DiagnosticEvidenceExport result={statusResult} />
+        <MimirProviderComparison />
       </div>
 
       {currentOperationSnapshot}

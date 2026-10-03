@@ -328,6 +328,7 @@ export const SEARCH_DOCUMENTS: SearchDoc[] = [
         `Type: ${record.data.type}.`,
         record.data.description,
         `Impact: ${record.data.impact}.`,
+        ...(record.claims ?? []).map(claim => `${claim.id} ${claim.summary} ${claim.scope} ${claim.decision} ${claim.versionScope} ${claim.limitation}`),
         `Resolved: ${record.data.resolved ? 'yes' : 'no'}.`,
         record.data.resolutionDate ? `Resolution date: ${record.data.resolutionDate}.` : '',
         `Lessons: ${record.data.lessons.join('; ')}.`,
