@@ -23,7 +23,7 @@ function earningsInterval(index: number) {
 }
 
 async function mockStatsMidgard(page: Page) {
-  await page.route(/(?:gateway\.liquify\.com\/chain\/thorchain_midgard|midgard\.thorchain\.network)\/v2\/pools\?status=available$/, async (route) => {
+  await page.route(/(?:gateway\.liquify\.com\/chain\/thorchain_midgard|midgard\.thorchain\.network)\/v2\/pools\?status=available&period=(?:1h|24h|7d|14d|30d|90d|100d|180d|365d)$/, async (route) => {
     await fulfillJson(route, [
       {
         asset: 'BTC.BTC',
@@ -88,7 +88,7 @@ async function mockStatsMidgard(page: Page) {
 
 async function mockStatsMidgardPoolFailure(page: Page) {
   await mockStatsMidgard(page);
-  await page.route(/(?:gateway\.liquify\.com\/chain\/thorchain_midgard|midgard\.thorchain\.network)\/v2\/pools\?status=available$/, async (route) => {
+  await page.route(/(?:gateway\.liquify\.com\/chain\/thorchain_midgard|midgard\.thorchain\.network)\/v2\/pools\?status=available&period=(?:1h|24h|7d|14d|30d|90d|100d|180d|365d)$/, async (route) => {
     await route.fulfill({
       status: 503,
       contentType: 'application/json',
@@ -215,10 +215,17 @@ test.describe('THORChain Wiki Stats Smoke Tests', () => {
     await expect(pools.getByRole('searchbox', { name: /Filter Midgard available-pool rows/i })).toHaveValue('eth');
     await expect(pools.getByLabel(/Pool chain/i)).toHaveValue('ETH');
     await expect(pools.getByLabel(/Pool sort/i)).toHaveValue('volume24hRune');
+    await expect(pools.getByLabel(/Pool return period/i)).toHaveValue('14d');
     await expect(pools.getByText('Search: eth')).toBeVisible();
     await expect(pools.getByText('Chain: ETH')).toBeVisible();
     await expect(pools.getByText('Sort: 24h volume (RUNE)')).toBeVisible();
     await expect(pools.getByText(/Showing 2 of 4 pool rows after filters/i)).toBeVisible();
+    await pools.getByLabel(/Pool return period/i).selectOption('30d');
+    await expect(page).toHaveURL(/pool_period=30d/);
+    await expect(page).toHaveURL(/pool_q=eth/);
+    await expect(page).toHaveURL(/pool_sort=volume/);
+    await expect(pools.getByText('Period: 30d')).toBeVisible();
+    await expect(pools.getByLabel('Live data sources').locator('a').first()).toHaveAttribute('href', /period=30d$/);
     if (isMobile) {
       await expect(pools.getByRole('listitem').filter({ hasText: 'ETH.ETH' })).toBeVisible();
       await expect(pools.getByRole('listitem').filter({ hasText: 'ETH.USDC-0XA0B86991C6218B36C1D19D4A2E9EB0CE3606EB48' })).toBeVisible();
@@ -233,7 +240,7 @@ test.describe('THORChain Wiki Stats Smoke Tests', () => {
     await expect(pools.getByText(/No pools match "atom" on ETH/i)).toBeVisible();
 
     await pools.getByRole('button', { name: /Reset pool filters/i }).click();
-    await expect(page).toHaveURL(/\/stats#available-pools$/);
+    await expect(page).toHaveURL(/\/stats\?pool_period=30d#available-pools$/);
     await expect(pools.getByRole('searchbox', { name: /Filter Midgard available-pool rows/i })).toHaveValue('');
     await expect(pools.getByText('BTC.BTC').first()).toBeVisible();
   });

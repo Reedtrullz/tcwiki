@@ -38,7 +38,7 @@
     "deploy:vinext": "vinext-cloudflare deploy --config dist/server/wrangler.json",
     "build:cloudflare": "npm run build:vinext && cp cloudflare/do-entry.mjs dist/server/do-entry.mjs && node scripts/cloudflare-artifact.mjs --write",
     "deploy:cloudflare": "wrangler deploy --config wrangler.do.jsonc",
-    "test:e2e:cloudflare": "node scripts/require-node22.mjs && CSP_ENFORCE=1 PLAYWRIGHT_RUNTIME=cloudflare playwright test tests/runtime.spec.ts tests/routes.spec.ts tests/deep-dives.spec.ts tests/search.spec.ts tests/network.spec.ts tests/dynamic-fees.spec.ts tests/stats.spec.ts tests/economics.spec.ts --project=chromium"
+    "test:e2e:cloudflare": "node scripts/require-node22.mjs && CSP_ENFORCE=1 PLAYWRIGHT_RUNTIME=cloudflare playwright test tests/runtime.spec.ts tests/routes.spec.ts tests/deep-dives.spec.ts tests/search.spec.ts tests/network.spec.ts tests/dynamic-fees.spec.ts tests/stats.spec.ts tests/economics.spec.ts tests/explorer-url.spec.ts --project=chromium"
   },
   "dependencies": {
     "@mdx-js/loader": "^3.1.1",

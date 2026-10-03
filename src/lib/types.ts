@@ -57,6 +57,10 @@ export interface LiveDataResult<T> {
   error?: string;
 }
 
+export const MIDGARD_POOL_PERIODS = ['1h', '24h', '7d', '14d', '30d', '90d', '100d', '180d', '365d'] as const;
+export type MidgardPoolPeriod = (typeof MIDGARD_POOL_PERIODS)[number];
+export const DEFAULT_MIDGARD_POOL_PERIOD: MidgardPoolPeriod = '14d';
+
 export interface MidgardHealth {
   provider?: string;
   database?: boolean;
@@ -223,7 +227,6 @@ export interface Pool {
   annualPercentageRate?: string;
   poolAPY?: string;
   apy?: number;
-  apyPercent?: number;
   assetPrice?: string;
   assetPriceUSD?: string;
   runePriceUSD?: string;

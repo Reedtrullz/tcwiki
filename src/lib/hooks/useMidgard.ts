@@ -5,9 +5,11 @@ import MidgardAPI from '@/lib/api/midgard';
 import ThornodeAPI, { reassessThornodeResult } from '@/lib/api/thornode';
 import {
   DynamicL1FeeStatus,
+  DEFAULT_MIDGARD_POOL_PERIOD,
   HistoryItem,
   LiveDataResult,
   MidgardHealth,
+  MidgardPoolPeriod,
   NetworkStats,
   NetworkStatus,
   Pool,
@@ -38,10 +40,10 @@ export function useNetworkData() {
   return useLivePresentation(data, error, isLoading, isValidating, { kind: 'aggregate' }, () => mutate(current => current, { revalidate: true, throwOnError: false }));
 }
 
-export function usePools() {
+export function usePools(period: MidgardPoolPeriod = DEFAULT_MIDGARD_POOL_PERIOD) {
   const { data, error, isLoading, isValidating, mutate } = useSWR<LiveDataResult<Pool[]>>(
-    'midgard:pools',
-    () => requireLiveData(() => MidgardAPI.getPools()),
+    ['midgard:pools', period],
+    () => requireLiveData(() => MidgardAPI.getPools('available', period)),
     SWR_OPTIONS
   );
   return useLivePresentation(data, error, isLoading, isValidating, { kind: 'aggregate' }, () => mutate(current => current, { revalidate: true, throwOnError: false }));

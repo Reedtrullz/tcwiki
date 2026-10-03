@@ -1,4 +1,14 @@
-import type { HistoryItem, LiveDataResult, MidgardHealth, NetworkStats, NetworkStatus, Pool } from '@/lib/types';
+import {
+  DEFAULT_MIDGARD_POOL_PERIOD,
+  MIDGARD_POOL_PERIODS,
+  type HistoryItem,
+  type LiveDataResult,
+  type MidgardHealth,
+  type MidgardPoolPeriod,
+  type NetworkStats,
+  type NetworkStatus,
+  type Pool,
+} from '@/lib/types';
 import { liveResultIsDegraded } from '@/lib/live-result';
 import { formatPercent, formatRuneFromBaseUnits, normalizeApyToPercent, parseFiniteDecimal, runeBaseUnitsToNumber } from '@/lib/trust';
 
@@ -67,11 +77,13 @@ export interface StatsPoolRow {
   runeDepth: number | null;
   liquidityUsd: number | null;
   volume24hRune: number | null;
-  apyPercent: number | null;
+  annualPercentageRatePercent: number | null;
+  poolAPYPercent: number | null;
   runeDepthLabel: string;
   liquidityUsdLabel: string;
   volume24hRuneLabel: string;
-  apyLabel: string;
+  annualPercentageRateLabel: string;
+  poolAPYLabel: string;
 }
 
 export interface StatsPoolSnapshot {
@@ -85,7 +97,13 @@ export interface StatsPoolSnapshot {
   summary: string;
 }
 
-export type StatsPoolSortKey = 'runeDepth' | 'volume24hRune' | 'liquidityUsd' | 'apyPercent' | 'asset';
+export type StatsPoolSortKey =
+  | 'runeDepth'
+  | 'volume24hRune'
+  | 'liquidityUsd'
+  | 'annualPercentageRatePercent'
+  | 'poolAPYPercent'
+  | 'asset';
 
 export interface StatsPoolExplorerFilters {
   query: string;
@@ -107,6 +125,10 @@ export interface StatsPoolExplorer {
 
 function liveResultHasWarning(result?: LiveDataResult<unknown>) {
   return liveResultIsDegraded(result);
+}
+
+export function normalizeStatsPoolPeriod(value: string | null): MidgardPoolPeriod {
+  return MIDGARD_POOL_PERIODS.find((period) => period === value) ?? DEFAULT_MIDGARD_POOL_PERIOD;
 }
 
 function historyTimestamp(value: string): number | null {
@@ -575,8 +597,10 @@ function poolSortLabel(sort: StatsPoolSortKey) {
       return '24h volume (RUNE)';
     case 'liquidityUsd':
       return 'Liquidity';
-    case 'apyPercent':
-      return 'APY';
+    case 'annualPercentageRatePercent':
+      return 'annualPercentageRate';
+    case 'poolAPYPercent':
+      return 'poolAPY';
     case 'asset':
       return 'Asset';
   }
@@ -599,7 +623,8 @@ function poolMatchesQuery(row: StatsPoolRow, query: string) {
     row.runeDepthLabel,
     row.liquidityUsdLabel,
     row.volume24hRuneLabel,
-    row.apyLabel,
+    row.annualPercentageRateLabel,
+    row.poolAPYLabel,
   ].join(' '));
 
   return words.every((word) => haystack.includes(word));
@@ -625,7 +650,8 @@ export function deriveStatsPoolRows(pools: Pool[] | undefined): StatsPoolRow[] {
     const runeDepth = runeBaseUnitsToNumber(pool.runeDepth);
     const liquidityUsd = parseFiniteDecimal(pool.liquidityInUSD);
     const volume24hRune = runeBaseUnitsToNumber(pool.volume24h);
-    const apyPercent = pool.apyPercent ?? normalizeApyToPercent(pool.poolAPY ?? pool.annualPercentageRate, 'decimal');
+    const annualPercentageRatePercent = normalizeApyToPercent(pool.annualPercentageRate, 'decimal');
+    const poolAPYPercent = normalizeApyToPercent(pool.poolAPY, 'decimal');
 
     return {
       id: pool.asset,
@@ -635,11 +661,13 @@ export function deriveStatsPoolRows(pools: Pool[] | undefined): StatsPoolRow[] {
       runeDepth,
       liquidityUsd,
       volume24hRune,
-      apyPercent,
+      annualPercentageRatePercent,
+      poolAPYPercent,
       runeDepthLabel: formatRuneDepth(runeDepth),
       liquidityUsdLabel: formatUsd(liquidityUsd),
       volume24hRuneLabel: formatRuneDepth(volume24hRune),
-      apyLabel: formatPercent(apyPercent),
+      annualPercentageRateLabel: formatPercent(annualPercentageRatePercent),
+      poolAPYLabel: formatPercent(poolAPYPercent),
     };
   }).sort((left, right) => {
     const depthOrder = compareNullableNumber(left.runeDepth, right.runeDepth);

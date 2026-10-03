@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useMemo } from 'react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { Activity, TrendingUp, TrendingDown, Zap } from 'lucide-react';
 import { useNetworkData, useEarningsHistory, useNetworkStatus, useMidgardHealth, usePools } from '@/lib/hooks/useMidgard';
 import { NetworkStatusBanner } from '@/components/features/NetworkStatusBanner';
@@ -18,6 +18,7 @@ import {
   deriveStatsPoolExplorer,
   deriveStatsPoolSnapshot,
   midgardSourceIssueIsVisible,
+  normalizeStatsPoolPeriod,
   type StatsDecisionFact,
   type StatsMetricCard,
 } from '@/lib/stats-dashboard';
@@ -155,10 +156,10 @@ function StatsSourceIssueNotice({
 }
 
 export default function StatsPage() {
-  const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const searchParamString = searchParams.toString();
+  const selectedPoolPeriod = normalizeStatsPoolPeriod(searchParams.get('pool_period'));
   const {
     data: networkData,
     result: networkResult,
@@ -179,7 +180,7 @@ export default function StatsPage() {
     error: poolsError,
     isLoading: poolsLoading,
     isDegraded: poolsDegraded,
-  } = usePools();
+  } = usePools(selectedPoolPeriod);
   const { result: midgardHealthResult } = useMidgardHealth();
   const { result: statusResult, isLoading: statusLoading, refresh: refreshStatus } = useNetworkStatus();
 
@@ -202,8 +203,9 @@ export default function StatsPage() {
     poolFilters,
     updatePoolFilters,
     replacePoolFiltersInUrl,
+    poolPeriod,
+    updatePoolPeriod,
   } = usePoolExplorerFilters({
-    router,
     pathname,
     searchParamString,
     poolAvailableChains,
@@ -355,6 +357,10 @@ export default function StatsPage() {
         poolAvailableChains={poolAvailableChains}
         poolAvailableStatuses={poolAvailableStatuses}
         poolsLoading={poolsLoading}
+        poolPeriod={poolPeriod}
+        updatePoolPeriod={updatePoolPeriod}
+        poolsResult={poolsResult}
+        midgardHealthResult={midgardHealthResult}
       />
 
       <StatsEarningsTable

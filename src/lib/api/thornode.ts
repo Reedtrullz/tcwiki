@@ -1365,6 +1365,13 @@ function getDynamicL1FeeMimirStatus(mimir: Record<string, unknown>, sourceWarnin
   const deadbandBps = dynamicConfigFlag(mimir, 'L1DynamicFeeDeadbandBPS', 1000, sourceWarningDetails, invalidKeys);
   const windowEpochs = dynamicConfigFlag(mimir, 'L1DynamicFeeWindowEpochs', 3, sourceWarningDetails, invalidKeys, { min: 1, max: 30 });
 
+  if (typeof floorBps.effectiveValue === 'number' && typeof ceilingBps.effectiveValue === 'number' && floorBps.effectiveValue > ceilingBps.effectiveValue) {
+    addSourceWarning(sourceWarningDetails, { severity: 'warning', category: 'mimir-parse', message: `Dynamic fee bounds are inverted: floor ${floorBps.effectiveValue} exceeds ceiling ${ceilingBps.effectiveValue}; raw values are retained.`, action: 'Review configuration before interpreting records as inside a coherent bounds interval.', keys: [floorBps.key, ceilingBps.key] });
+  }
+  if (enabled.effectiveValue === 1 && epochBlocks.effectiveValue === 0) {
+    addSourceWarning(sourceWarningDetails, { severity: 'warning', category: 'mimir-parse', message: `${epochBlocks.key}=0: epoch sealing is paused despite enabled fee attribution.`, action: 'Do not infer an active sealing cadence from enabled attribution; review the epoch-block configuration.', keys: [epochBlocks.key] });
+  }
+
   if (slipMinBps.state === 'unparseable') {
     invalidKeys.push(slipMinBps.key);
     addSourceWarning(sourceWarningDetails, { severity: 'warning', category: 'mimir-parse', message: `${slipMinBps.key} is unparseable; base L1 minimum bps is unknown.`, action: 'Review the exact dynamic-fee Mimir values before treating controller state or configured bounds as clean.', keys: [slipMinBps.key] });

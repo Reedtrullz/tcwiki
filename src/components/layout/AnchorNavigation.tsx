@@ -10,8 +10,10 @@ export function AnchorNavigation() {
   useEffect(() => {
     let pending: number | undefined;
     let observer: MutationObserver | undefined;
+    let destination = `${window.location.pathname}${window.location.hash}`;
     const stop = () => { window.clearTimeout(pending); observer?.disconnect(); observer = undefined; };
     const navigate = () => {
+      destination = `${window.location.pathname}${window.location.hash}`;
       stop();
       setUnavailable(false);
       if (!window.location.hash || window.location.pathname !== pathname) return;
@@ -47,10 +49,14 @@ export function AnchorNavigation() {
         stop(); pending = window.setTimeout(navigate, 0);
       }
     };
+    // Query writers emit synthetic popstate for URL readers. Keep editing focus.
+    const onHistory = (event: PopStateEvent) => {
+      if (event.isTrusted && `${window.location.pathname}${window.location.hash}` !== destination) navigate();
+    };
     const onManualScroll = () => stop();
     const onKeyDown = (event: KeyboardEvent) => { if (event.key !== 'Enter') stop(); };
     window.addEventListener('hashchange', navigate);
-    window.addEventListener('popstate', navigate);
+    window.addEventListener('popstate', onHistory);
     document.addEventListener('click', onClick);
     document.addEventListener('pointerdown', onManualScroll);
     document.addEventListener('keydown', onKeyDown);
@@ -60,7 +66,7 @@ export function AnchorNavigation() {
     return () => {
       stop();
       window.removeEventListener('hashchange', navigate);
-      window.removeEventListener('popstate', navigate);
+      window.removeEventListener('popstate', onHistory);
       document.removeEventListener('click', onClick);
       document.removeEventListener('pointerdown', onManualScroll);
       document.removeEventListener('keydown', onKeyDown);

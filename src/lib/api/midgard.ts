@@ -5,13 +5,16 @@ import {
   HistoryItem,
   LiveDataResult,
   MidgardHealth,
+  DEFAULT_MIDGARD_POOL_PERIOD,
+  MIDGARD_POOL_PERIODS,
+  MidgardPoolPeriod,
   NetworkStats,
   Node,
   Pool,
   SourceMeta,
   Swap,
 } from '@/lib/types';
-import { liveDegraded, liveOk, normalizeApyToPercent } from '@/lib/trust';
+import { liveDegraded, liveOk } from '@/lib/trust';
 import { DAILY_VOLUME_POOLS } from '@/lib/daily-volume';
 
 const MIDGARD_ENDPOINTS = [
@@ -438,7 +441,6 @@ function normalizePool(raw: RawPool): Pool {
     annualPercentageRate,
     poolAPY,
     apy: numericApy,
-    apyPercent: normalizeApyToPercent(poolAPY ?? annualPercentageRate ?? numericApy, 'decimal') ?? undefined,
     assetPrice: asString(raw.assetPrice),
     assetPriceUSD: asString(raw.assetPriceUSD),
     runePriceUSD: asString(raw.runePriceUSD),
@@ -588,8 +590,17 @@ function normalizeHistoryItem(value: unknown, index: number): HistoryItem {
 }
 
 export class MidgardAPI {
-  static async getPools(status = 'available'): Promise<LiveDataResult<Pool[]>> {
-    const query = status ? `?status=${encodeURIComponent(status)}` : '';
+  static async getPools(
+    status = 'available',
+    period: MidgardPoolPeriod = DEFAULT_MIDGARD_POOL_PERIOD
+  ): Promise<LiveDataResult<Pool[]>> {
+    if (!MIDGARD_POOL_PERIODS.includes(period)) return liveDegraded<Pool[]>('Unsupported pool return period; select a bounded duration.');
+    const params = new URLSearchParams();
+    if (status) {
+      params.set('status', status);
+    }
+    params.set('period', period);
+    const query = `?${params.toString()}`;
     return requestNormalized<RawPool[], Pool[]>(`/pools${query}`, normalizePools);
   }
 
