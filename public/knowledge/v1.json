@@ -1,0 +1,238 @@
+{
+  "schemaVersion": 1,
+  "package": {
+    "name": "thorchain-wiki",
+    "version": "0.1.0"
+  },
+  "generator": {
+    "id": "thorchain-wiki-knowledge-export",
+    "version": 1,
+    "sha256": "9dddbe67e5faf62f27860f40dc1d8d2413beb2074b8369dfdf7169e770f5253a"
+  },
+  "identity": {
+    "authoredInputs": {
+      "src/lib/data/static.ts": "8838ee2cb843c30cd927c51deeb72545bfff80994ddbd76f5b788c771a14620c",
+      "src/lib/content/registry.ts": "4fbd8e079d342585d034936c15e9bbe31587324de3c8f508332d0b3042b5e3e4",
+      "src/lib/sources.ts": "7be253d5ba906765a0fcc7bdebe12f8fd42afe56e23764762c6df1e0fbd26e52",
+      "src/lib/types.ts": "7ce679173123360384f57985d5980e1307ab7649a0c3439a68de413527f0e10c",
+      "src/lib/site.ts": "e79a4609bcf097347fe1660252b7d4db81ae149520cca0b27c7059fd24a07f6d",
+      "content/deep-dives/build-query-data.mdx": "d63a031b796c07eac8b50975c4358dc3b599c1455c2813ac9db08a54492b9e83",
+      "scripts/lib/knowledge-links.mjs": "1d2c3fbafd6d754696a1824cf1f50f7c9a574aaaaf4aae832d131d9de3825316",
+      "scripts/lib/deep-dive-toc.mjs": "73458b1084d09f2c9c46e54b0ac287a640d4d822435d3440388639b832c536e3",
+      "src/lib/deep-dive-heading-id.mjs": "9ecba84bf8d1f47133c0ab6c08e2bd05edb5c4fc828c0e25474aafba3f0c52b6"
+    }
+  },
+  "entities": [
+    {
+      "id": "claim:memoless-august-cycle",
+      "type": "claim",
+      "summary": "The authored August incident describes a halt, re-enable and spam-driven re-halt cycle.",
+      "scope": "historical",
+      "decision": "needs-review",
+      "recordConfidence": "curated",
+      "observedAt": "2026-08-26",
+      "versionScope": "Authored August 2026 cohort; not current operations",
+      "reviewedAt": "2026-08-26",
+      "nextReviewDue": "2026-09-25",
+      "limitation": "The linked release describes implementation work, not the complete historical halt sequence. The original community/snapshot chronology still needs retained dated evidence; this pilot does not certify it.",
+      "route": "/governance#claim-memoless-august-cycle",
+      "source": {
+        "id": "source:899b2c44707cf2cc",
+        "label": "THORNode v3.20.0 Release Notes (GitLab)",
+        "url": "https://gitlab.com/thorchain/thornode/-/releases/v3.20.0",
+        "retrievedAt": "2026-08-26",
+        "notes": "Official v3.20.0 release notes plus blog recap: proposed block 27580000 on 25-Aug-2026, private binary, TSS/Bifrost hardening, memoless ERC20 work, XMR/ZEC chain clients, churn resumption prep, operational POL Mimirs, and the Stable Reserve experiment (ships disabled)."
+      }
+    },
+    {
+      "id": "claim:memoless-v320-handler-work",
+      "type": "claim",
+      "summary": "The v3.20.0 release lists memoless ERC20 handler, refund-simulation and inbound-observation changes.",
+      "scope": "historical",
+      "decision": "supported",
+      "recordConfidence": "curated",
+      "observedAt": "2026-10-03",
+      "versionScope": "THORNode v3.20.0",
+      "reviewedAt": "2026-10-03",
+      "nextReviewDue": "2026-11-03",
+      "limitation": "Support is for the listed release work only. Release creation, proposed upgrade date, implementation and successful current execution are separate facts.",
+      "route": "/governance#claim-memoless-v320-handler-work",
+      "source": {
+        "id": "source:899b2c44707cf2cc",
+        "label": "THORNode v3.20.0 Release Notes (GitLab)",
+        "url": "https://gitlab.com/thorchain/thornode/-/releases/v3.20.0",
+        "retrievedAt": "2026-08-26",
+        "notes": "Official v3.20.0 release notes plus blog recap: proposed block 27580000 on 25-Aug-2026, private binary, TSS/Bifrost hardening, memoless ERC20 work, XMR/ZEC chain clients, churn resumption prep, operational POL Mimirs, and the Stable Reserve experiment (ships disabled)."
+      }
+    },
+    {
+      "id": "claim:memoless-current-availability",
+      "type": "claim",
+      "summary": "Present memoless availability requires a fresh, source-qualified operational assessment.",
+      "scope": "current-only",
+      "decision": "needs-live-evidence",
+      "recordConfidence": "curated",
+      "observedAt": "2026-08-26",
+      "versionScope": "Current provider result must be obtained separately",
+      "reviewedAt": "2026-10-03",
+      "nextReviewDue": "2026-11-03",
+      "limitation": "Supersedes using the August claim to answer a present-tense question; it does not erase the historical record. No current Mimir value or successful route is asserted by this citation.",
+      "route": "/governance#claim-memoless-current-availability",
+      "source": {
+        "id": "source:82a091f779046648",
+        "label": "Liquify THORNode Mimir endpoint",
+        "url": "https://gateway.liquify.com/chain/thorchain_api/thorchain/mimir",
+        "retrievedAt": "2026-07-13",
+        "notes": "Current-only Liquify operational controls; malformed or regionally stale values must not be treated as inactive."
+      },
+      "supersedes": "claim:memoless-august-cycle"
+    }
+  ],
+  "routes": [
+    {
+      "id": "route:governance",
+      "registryId": "governance",
+      "title": "Governance",
+      "href": "/governance",
+      "confidence": "curated",
+      "reviewedAt": "2026-07-13",
+      "nextReviewDue": "2026-11-17",
+      "sources": [
+        {
+          "label": "THORChain Docs",
+          "url": "https://docs.thorchain.org",
+          "retrievedAt": "2026-07-05",
+          "notes": "Official documentation root used for curated protocol background; it still describes GG20 at review time, but current safety and migration state require dated incident and release sources."
+        },
+        {
+          "label": "THORChain Network Halts",
+          "url": "https://dev.thorchain.org/concepts/network-halts.html",
+          "retrievedAt": "2026-07-05",
+          "notes": "Official halt-control reference; live Mimir and inbound-address reads still own current availability."
+        },
+        {
+          "label": "THORChain Exploit Report #2",
+          "url": "https://blog.thorchain.org/thorchain-exploit-report-2",
+          "retrievedAt": "2026-07-04",
+          "notes": "Official root-cause report for the May 2026 GG20/TSS vault exploit, patched v3.19.1 recovery, and still-planned migration away from GG20."
+        },
+        {
+          "label": "Protocol Upgrade v3.19.0",
+          "url": "https://blog.thorchain.org/protocol-upgrade-v3-19-0",
+          "retrievedAt": "2026-07-04",
+          "notes": "Official v3.19.0 release summary for post-exploit restart controls, including TSS patches, compromised-vault exclusion, temporary KeyVerify, and pause safety."
+        },
+        {
+          "label": "THORChain Is Back: Security Update",
+          "url": "https://blog.thorchain.org/thorchain-is-back-monero-nears-mainnet-and-pol-takes-center-stage",
+          "retrievedAt": "2026-07-13",
+          "notes": "Official 2026-06-25 post-restart update confirming trading resumed while DKLS/FROST migration and TSS-library publication remained future work."
+        },
+        {
+          "label": "ADR-028 Exploit Conciliation (v3.19.0)",
+          "url": "https://gitlab.com/thorchain/thornode/-/blob/v3.19.0/docs/architecture/adr-028-exploit-conciliation.md",
+          "retrievedAt": "2026-07-13",
+          "notes": "Immutable v3.19.0 source marking ADR-028 Accepted and specifying the one-time Migrate15to16 conciliation waterfall; not proof that every affected user recovered every loss."
+        },
+        {
+          "label": "THORChain Exploit Report #1",
+          "url": "https://blog.thorchain.org/thorchain-exploit-report-1",
+          "retrievedAt": "2026-07-05",
+          "notes": "Official initial May 2026 exploit timeline and then-pending ADR-028 recovery framing; use Report #2 and the accepted ADR for later root-cause and conciliation status."
+        }
+      ]
+    },
+    {
+      "id": "route:deep-dive-build-query-data",
+      "registryId": "deep-dive-build-query-data",
+      "title": "Build And Query THORChain Data",
+      "href": "/deep-dives/build-query-data",
+      "confidence": "curated",
+      "reviewedAt": "2026-07-14",
+      "nextReviewDue": "2026-11-17",
+      "sources": [
+        {
+          "label": "Connecting to THORChain",
+          "url": "https://dev.thorchain.org/concepts/connecting-to-thorchain.html",
+          "retrievedAt": "2026-07-14",
+          "notes": "Official source-family guide for Midgard, THORNode, Cosmos RPC, Tendermint RPC, gRPC, hard-fork routing, rate limits, x-client-id, and production node guidance."
+        },
+        {
+          "label": "Querying THORChain",
+          "url": "https://dev.thorchain.org/concepts/querying-thorchain.html",
+          "retrievedAt": "2026-07-14",
+          "notes": "Official inbound-address, pool-list, supported-address, halt, gas-rate, dust-threshold, base-unit, and router guidance."
+        },
+        {
+          "label": "THORChain Swap Guide",
+          "url": "https://dev.thorchain.org/swap-guide/quickstart-guide.html",
+          "retrievedAt": "2026-07-14",
+          "notes": "Official quote response, quote expiry, quote rate-limit, recommended minimum input, fees, warning, memo, and timing guidance."
+        },
+        {
+          "label": "THORChain transaction memos",
+          "url": "https://dev.thorchain.org/concepts/memos.html",
+          "retrievedAt": "2026-07-14",
+          "notes": "Official memo format, memo-size, dust-threshold, function, refund-address, affiliate, and transaction-intent guidance."
+        },
+        {
+          "label": "THORChain fees developer docs",
+          "url": "https://dev.thorchain.org/concepts/fees.html",
+          "retrievedAt": "2026-07-14",
+          "notes": "Official fee categories, fee ordering, gas-rate source, affiliate-fee, liquidity-fee, outbound-fee, and refund-risk guidance."
+        },
+        {
+          "label": "Asset Notation",
+          "url": "https://dev.thorchain.org/concepts/asset-notation.html",
+          "retrievedAt": "2026-07-14",
+          "notes": "Official asset-notation reference for chain.asset and token identifiers used in quotes, pools, and memos."
+        },
+        {
+          "label": "Midgard v2 Pools",
+          "url": "https://midgard.thorchain.network/v2/pools?status=available",
+          "retrievedAt": "2026-07-05",
+          "notes": "Current-only available-pool snapshot; not durable pool uptime proof."
+        },
+        {
+          "label": "THORNode Mimir endpoint",
+          "url": "https://thornode.thorchain.network/thorchain/mimir",
+          "retrievedAt": "2026-07-05",
+          "notes": "Current-only operational controls; malformed values must not be treated as inactive."
+        },
+        {
+          "label": "THORNode inbound_addresses",
+          "url": "https://thornode.thorchain.network/thorchain/inbound_addresses",
+          "retrievedAt": "2026-07-05",
+          "notes": "Current-only chain availability, router, halt, and inbound-address snapshot; not durable uptime proof."
+        }
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "type": "supersedes",
+      "from": "claim:memoless-current-availability",
+      "to": "claim:memoless-august-cycle"
+    },
+    {
+      "type": "read-alongside",
+      "from": "claim:memoless-august-cycle",
+      "to": "route:deep-dive-build-query-data"
+    },
+    {
+      "type": "governed-by",
+      "from": "claim:memoless-august-cycle",
+      "to": "route:governance"
+    }
+  ],
+  "limitations": [
+    "Metadata-only pilot; no article text, private Discord text, or copied external content is included.",
+    "The historical August halt sequence remains needs-review because the cited release does not establish its chronology.",
+    "Current memoless availability is not asserted; obtain fresh source-qualified operational evidence.",
+    "Source and review dates are the authored claim metadata; absent dates remain unknown."
+  ],
+  "checksum": {
+    "algorithm": "sha256",
+    "value": "da3c067767794b80a0fc020ed447491c34eb146a7d611f7bda0267c4f10f2687"
+  }
+}

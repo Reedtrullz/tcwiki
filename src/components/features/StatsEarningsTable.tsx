@@ -63,6 +63,9 @@ export function StatsEarningsTable({
   earningsCoverage,
 }: StatsEarningsTableProps) {
   const {
+    completedIntervals,
+    missingPeriods,
+    periodWarnings,
     availableIntervals,
     unavailableIntervals,
     totalEarnings,
@@ -79,8 +82,8 @@ export function StatsEarningsTable({
       ? recentAvailableIntervals + '/' + recentIntervalCount + ' intervals with values; ' + recentUnavailableIntervals + ' unavailable'
       : recentAvailableIntervals + '/' + recentIntervalCount + ' intervals with values'
     : earningsLoading ? 'Loading intervals' : 'No intervals loaded';
-  const earningsCoverageIsPartial = unavailableIntervals > 0;
-  const recentWindowIsPartial = recentUnavailableIntervals > 0;
+  const earningsCoverageIsPartial = unavailableIntervals > 0 || missingPeriods > 0;
+  const recentWindowIsPartial = recentUnavailableIntervals > 0 || (recentIntervalCount > 0 && recentIntervalCount < 7);
   const loadedIntervalTotalDetail = earningsChart.length > 0
     ? earningsCoverageIsPartial
       ? availableIntervals + '/' + earningsChart.length + ' loaded intervals with totals; ' + unavailableIntervals + ' unavailable'
@@ -93,10 +96,12 @@ export function StatsEarningsTable({
       <p id="earnings-history-summary" className="mb-3 text-sm text-slate-400">
         {earningsSummary}
       </p>
+      {periodWarnings.length > 0 && <p role="status" className="mb-3 text-xs text-amber-300">{periodWarnings.join(' · ')}</p>}
       <div className="mb-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
         <Card padding="sm">
           <p className="text-[11px] uppercase tracking-wider text-slate-400">Usable intervals</p>
           <p className="mt-1 text-sm font-semibold text-slate-200">{availableIntervals}/{earningsChart.length}</p>
+          <p className="mt-1 text-[11px] text-slate-500">{completedIntervals} completed periods · {missingPeriods} missing days</p>
         </Card>
         <Card padding="sm">
           <p className="text-[11px] uppercase tracking-wider text-slate-400">Unavailable intervals</p>
@@ -131,7 +136,7 @@ export function StatsEarningsTable({
           <>
             <div className="h-[300px] md:h-[400px]">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={earningsChart} margin={{ top: 8, right: 12, bottom: 8, left: 0 }}>
+                <LineChart data={[...earningsChart].reverse()} margin={{ top: 8, right: 12, bottom: 8, left: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.20 0.01 250)" />
                   <XAxis dataKey="name" tick={chartAxisTick} tickLine={false} axisLine={{ stroke: 'oklch(0.25 0.01 250)' }} />
                   <YAxis
@@ -143,12 +148,13 @@ export function StatsEarningsTable({
                   <Tooltip
                     contentStyle={chartTooltipContentStyle}
                     labelStyle={chartTooltipLabelStyle}
+                    labelFormatter={(label, payload) => payload[0]?.payload?.periodLabel ?? label}
                     formatter={(value, name) => [formatRuneAmount(chartNumber(value)), name]}
                   />
                   <Legend wrapperStyle={{ color: 'oklch(0.78 0.01 250)', fontSize: 12 }} />
-                  <Line type="monotone" dataKey="earnings" stroke="oklch(0.7 0.18 190)" strokeWidth={2} dot={false} name="Total Earnings (RUNE)" />
-                  <Line type="monotone" dataKey="nodeOps" stroke="oklch(0.65 0.15 290)" strokeWidth={2} dot={false} name="Node Operator Earnings" />
-                  <Line type="monotone" dataKey="lps" stroke="oklch(0.75 0.15 160)" strokeWidth={2} dot={false} name="LP Earnings" />
+                  <Line isAnimationActive={false} type="monotone" dataKey="earnings" stroke="oklch(0.7 0.18 190)" strokeWidth={2} dot={false} name="Total Earnings (RUNE)" />
+                  <Line isAnimationActive={false} type="monotone" dataKey="nodeOps" stroke="oklch(0.65 0.15 290)" strokeWidth={2} dot={false} name="Node Operator Earnings" />
+                  <Line isAnimationActive={false} type="monotone" dataKey="lps" stroke="oklch(0.75 0.15 160)" strokeWidth={2} dot={false} name="LP Earnings" />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -160,7 +166,7 @@ export function StatsEarningsTable({
                 {recentRows.map((row) => (
                   <div role="listitem" key={row.id} className="py-3">
                     <div className="flex items-start justify-between gap-3">
-                      <p className="text-sm font-semibold text-slate-200">{row.name}</p>
+                      <p className="text-sm font-semibold text-slate-200" title={row.periodLabel}>{row.name}</p>
                       <p className="text-right text-sm font-semibold text-slate-100">{formatRuneAmount(row.earnings)}</p>
                     </div>
                     <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-slate-400">
@@ -177,7 +183,7 @@ export function StatsEarningsTable({
                 ))}
               </div>
             </div>
-            <div className="mt-6 hidden overflow-x-auto md:block">
+            <div className="mt-6 hidden overflow-x-auto md:block focus-visible:outline-accent" role="region" aria-label="Earnings history table" tabIndex={0}>
               <table className="w-full min-w-[520px] text-left text-xs text-slate-400">
                 <caption className="sr-only">Loaded Midgard daily earnings intervals</caption>
                 <thead className="text-[11px] uppercase tracking-wider text-slate-400">
@@ -191,7 +197,7 @@ export function StatsEarningsTable({
                 <tbody>
                   {earningsChart.map((row) => (
                     <tr key={row.id} className="border-t border-border">
-                      <td className="py-2 pr-4">{row.name}</td>
+                      <td className="py-2 pr-4" title={row.periodLabel}>{row.name}</td>
                       <td className="py-2 pr-4">{row.earnings?.toLocaleString() ?? 'Unavailable'}</td>
                       <td className="py-2 pr-4">{row.nodeOps?.toLocaleString() ?? 'Unavailable'}</td>
                       <td className="py-2 pr-4">{row.lps?.toLocaleString() ?? 'Unavailable'}</td>

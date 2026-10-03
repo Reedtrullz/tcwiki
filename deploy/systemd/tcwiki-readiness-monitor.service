@@ -7,6 +7,7 @@ After=network-online.target
 Type=oneshot
 User=tcwiki-readiness
 Group=tcwiki-readiness
+Environment=TCWIKI_READINESS_CONTRACT_DIR=/usr/local/libexec/tcwiki-readiness-monitor-lib
 Environment=TCWIKI_READINESS_BASE_URL=https://wiki.thorchain.no
 ExecStart=/usr/local/libexec/tcwiki-readiness-monitor
 NoNewPrivileges=true

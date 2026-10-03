@@ -66,7 +66,7 @@ import {
   thornodeVaultBehaviorsSource,
   tokenomicsSource,
 } from '@/lib/sources';
-import { slugifyFragment } from '@/lib/utils';
+import { slugifyDeepDiveHeading } from '@/lib/deep-dive-heading-id.mjs';
 
 export interface ContentEntry {
   id: string;
@@ -89,7 +89,7 @@ export interface ContentEntry {
    * right-rail PageTableOfContents using these items instead of the top-of-page
    * chip strip. Use only for long deep-dives where readers need scroll-spy to
    * find their place. Each id must match the auto-generated slug of the
-   * matching h2/h3 in the MDX body (see slugifyFragment in src/lib/utils.ts).
+   * matching h2/h3 in the MDX body (see deep-dive-heading-id.mjs).
    */
   onPageNav?: ReadonlyArray<{ id: string; label: string; level?: 1 | 2 }>;
 }
@@ -204,6 +204,24 @@ export const SEARCH_PAGE_ENTRY: ContentEntry = {
   footer: true,
 };
 
+export const UPDATES_PAGE_ENTRY: ContentEntry = {
+  id: 'updates',
+  title: 'Wiki updates',
+  footerLabel: 'Updates',
+  href: '/updates',
+  category: 'resource',
+  confidence: 'curated',
+  description: 'Source-backed editorial updates to THORChain Wiki content, with separate source observation and review dates.',
+  tags: ['updates', 'editorial history', 'sources'],
+  reviewedAt: '2026-10-03',
+  nextReviewDue: '2026-11-03',
+  sources: [
+    { ...continuousLiquidityPoolsSource, retrievedAt: '2026-10-02' },
+    { label: 'THORNode v3.20.0 release', url: 'https://gitlab.com/thorchain/thornode/-/releases/v3.20.0', retrievedAt: '2026-10-03' },
+  ],
+  footer: true,
+};
+
 const connectingThorchainSource: SourceMeta = {
   ...baseConnectingThorchainSource,
   retrievedAt: '2026-07-05',
@@ -313,6 +331,7 @@ const ecosystemPageSource: SourceMeta = { ...ecosystemSource, retrievedAt: PAGE_
 export const CONTENT_ENTRIES: ContentEntry[] = [
   HOME_PAGE_ENTRY,
   SEARCH_PAGE_ENTRY,
+  UPDATES_PAGE_ENTRY,
   {
     id: 'protocol',
     title: 'Protocol',
@@ -1992,7 +2011,7 @@ export const TASK_GUIDE_GROUPED = groupedTaskGuides(TASK_INTENT_GUIDES);
 function tocItem(title: string): DeepDiveTocItem {
   return {
     title,
-    href: `#${slugifyFragment(title)}`,
+    href: `#${slugifyDeepDiveHeading(title)}`,
   };
 }
 
@@ -2023,6 +2042,7 @@ export const DEEP_DIVE_TOC: Record<string, DeepDiveTocItem[]> = {
     tocItem('Amounts, Assets, And Units'),
     tocItem('Error Handling And Provider Posture'),
     tocItem('Shipping Boundary'),
+    tocItem('Local Memo Decoder'),
   ],
   'deep-dive-app-layer': [
     tocItem('App Layer Claim Checks'),

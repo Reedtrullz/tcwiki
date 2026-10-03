@@ -7,7 +7,7 @@ import remarkGfm from "remark-gfm";
 export default defineConfig({
   plugins: [
     vinext(),
-    mdx({ remarkPlugins: [remarkGfm] }),
+    mdx({ providerImportSource: "@/mdx-components", remarkPlugins: [remarkGfm] }),
     cloudflare({
       viteEnvironment: {
         name: "rsc",

@@ -337,6 +337,17 @@ describe('/api/ready', () => {
     expect(ThornodeAPI.getDynamicL1FeeStatus).toHaveBeenCalledTimes(2);
   });
 
+  it('expires cached evidence on the monotonic clock after a wall-clock rollback', async () => {
+    const monotonic = vi.spyOn(performance, 'now').mockReturnValue(0);
+    try {
+      await GET();
+      vi.setSystemTime(Date.now() - 60_000 + READINESS_SNAPSHOT_TTL_MS);
+      monotonic.mockReturnValue(READINESS_SNAPSHOT_TTL_MS);
+      await GET();
+      expect(ThornodeAPI.getNetworkStatus).toHaveBeenCalledTimes(2);
+    } finally { monotonic.mockRestore(); }
+  });
+
   it('refreshes a cached snapshot before its block crosses the freshness limit', async () => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(new Date('2026-07-02T00:00:10.000Z'));
@@ -1299,6 +1310,15 @@ describe('/api/ready', () => {
       },
     ]);
     expect(body.reasons).toEqual(['Midgard latest height is 50 blocks behind THORNode lastblock.']);
+  });
+
+  it('passes the same request-scoped THORNode context to all feature checks', async () => {
+    await GET();
+    const [context] = vi.mocked(ThornodeAPI.getNetworkStatus).mock.calls[0];
+    expect(context).toBeDefined();
+    expect(vi.mocked(ThornodeAPI.getDynamicL1FeeStatus).mock.calls[0][0]).toBe(context);
+    expect(vi.mocked(ThornodeAPI.getDynamicL1FeeStatus).mock.calls[0][1]).toEqual({ includeHistory: false });
+    expect(vi.mocked(ThornodeAPI.getRunePoolPolStatus).mock.calls[0][0]).toBe(context);
   });
 
   it('returns degraded when Midgard health and visible datasets use different providers', async () => {

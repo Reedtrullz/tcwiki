@@ -12,7 +12,7 @@ Thank you for helping make THORChain more accessible! This guide explains how to
 
 ```bash
 nvm use
-df -h /System/Volumes/Data # stop if free space is below 50 GiB
+df -h /System/Volumes/Data # inspect available capacity before substantial builds
 npm run check:release-tracked # fails if release proof commands point at local-only proof files
 npm run check:content
 npm run check:live-snapshot
@@ -34,13 +34,13 @@ CHECK_BASE_URL=https://wiki.thorchain.no REQUIRE_RUNTIME_METADATA=1 CSP_ENFORCE=
 IMAGE_REF=ghcr.io/example/tcwiki@sha256:1111111111111111111111111111111111111111111111111111111111111111 APP_VERSION=1111111111111111111111111111111111111111 ansible-playbook -i inventory/hosts.yml ansible-playbook.yml --syntax-check
 ```
 
-`npm run test:e2e` starts a fresh standalone server by default and fails closed when source files are newer than `.next/standalone/server.js`. Run `npm run build` first for standalone proof, or use `PLAYWRIGHT_WEB_SERVER_COMMAND='npm run dev' npm run test:e2e -- <spec>` for source-mode browser checks while iterating. Set `PLAYWRIGHT_BASE_URL` only when you intentionally want to test an existing local standalone server or a remote deployment. The focused visual lane uses `tests/visual-safety.spec.ts` plus deep-dive visual checks. The focused rendered-link lane uses `tests/link-integrity.spec.ts` to crawl public sitemap routes, verify same-origin links and anchors, and catch hydration/framework console errors. Page-specific browser journeys should live in page-named specs.
+`npm run test:e2e` starts a fresh standalone server by default and fails closed when relevant input contents or the server artifact differ from the build receipt, including preserved-mtime changes and deleted inputs. Run `npm run build` first for standalone proof, or use `PLAYWRIGHT_WEB_SERVER_COMMAND='npm run dev' npm run test:e2e -- <spec>` for source-mode browser checks while iterating. Set `PLAYWRIGHT_BASE_URL` only when you intentionally want to test an existing local standalone server or a remote deployment. The focused visual lane uses `tests/visual-safety.spec.ts` plus deep-dive visual checks. The focused rendered-link lane uses `tests/link-integrity.spec.ts` to crawl public sitemap routes, verify same-origin links and anchors, and catch hydration/framework console errors. Page-specific browser journeys should live in page-named specs.
 
 Most app and release-proof npm scripts start with the Node 22 guard. If a command reports `THORChain Wiki requires Node.js 22.x`, run `nvm use` from the repository root and rerun the command instead of treating the failed proof as an application result.
 
 Before opening or shipping a PR that changes release scripts, CI wiring, browser specs, or proof docs, run `npm run check:release-tracked`. It fails when package scripts, CI, release docs, or their local script/spec dependencies reference local-only proof files that have not been tracked by git. CI runs the same trackedness audit before the rest of the release-shaped app gate.
 
-CI will run audits, content checks, lint, typecheck, unit tests, build, standalone smoke in report-only and enforced CSP modes, Playwright, enforced CSP browser smoke, PR-only Docker image build/scan/runtime plus Ansible syntax checks, and a main-push published-digest Docker smoke before deploy. The deploy playbook probes the candidate's strict readiness contract at `/api/ready?contract=strict` before replacing the live container. Scheduled/manual drift checks also verify live-source snapshots, upload a bounded JSON drift-evidence artifact, and check public runtime headers with enforced CSP expected for production.
+CI will run audits, content checks, lint, typecheck, unit tests, both target builds, artifact-bound Cloudflare browser proof, standalone smoke in report-only and enforced CSP modes, Playwright, enforced CSP browser smoke, PR-only Docker image build/scan/runtime plus Ansible syntax checks, and a main-push published-digest Docker smoke before deploy. The deploy playbook probes the candidate's strict readiness contract at `/api/ready?contract=strict` before replacing the live container. Scheduled/manual drift checks also verify live-source snapshots, upload a bounded JSON drift-evidence artifact, and check public runtime headers with enforced CSP expected for production.
 
 For PRs, CI builds and scans the candidate Docker image, then runs the same `npm run smoke:docker` helper in prebuilt-image mode against the scanned tag on `http://127.0.0.1:3011`. For pushes to `main`, CI publishes the scanned digest, pulls that immutable digest in a fresh `Smoke published image` job, and runs the same Docker runtime smoke before the deploy job is allowed to start. Locally, `npm run smoke:docker` performs the same shape of proof by building an image, running it on a free localhost port with strict runtime metadata and enforced CSP, probing health/version/ready/security headers, and then running the narrow browser lane. The Docker smoke covers health/version/ready metadata, the shared readiness contract including `sources.thornode.runePoolPol` RUNEPool/POL status and RUNEPool/POL source posture, security headers, the Home first-screen render, and one mocked loaded-state smoke each for Network, Dynamic Fees, Economics RUNEPool/POL, and Stats; it is intentionally small and does not replace the full standalone Playwright suite.
 
@@ -66,6 +66,32 @@ The wiki now treats source posture, search journeys, and deep-dive paths as part
 - Keep ecosystem `useFor` and `verifyBeforeUse` fields specific; this directory is a source-listed pointer list, not an endorsement or safety review.
 - Run `npm run check:content` after registry, source-map, glossary, deep-dive, task-guide, or route-anchor changes.
 - Add focused unit or Playwright coverage when a visible journey, anchor, source label, or search result path changes.
+
+## A focused correction and review example
+
+Use the [source correction template](.github/ISSUE_TEMPLATE/source-correction.md) for editorial changes and the [runtime defect template](.github/ISSUE_TEMPLATE/runtime-defect.md) for a visible failure. The [PR template](.github/PULL_REQUEST_TEMPLATE.md) separates source evidence, artifact proof and acceptance. Choose the checks that exercise the change; a spelling correction does not need a live financial inquiry. CI remains the complete repository gate.
+
+For example, a hypothetical correction to the Mimir halt guide would record:
+
+- Record: `deep-dive-mimir-halt-controls`, `/deep-dives/mimir-halt-controls#what-mimirs-can-prove`, `content/deep-dives/mimir-halt-controls.mdx`.
+- Claim: distinguish raw halt values from a route executing successfully. Proposed wording preserves the current-only limitation and existing anchor.
+- Evidence: link the relevant primary THORNode control implementation at an immutable revision and its exact section. Record when that source was observed and when the claim was reviewed; neither is the event date or build date.
+- Decision: state whether the cited revision supports the wording, which versions it covers and which execution evidence is absent. Keep conflicting evidence explicit. Update only the reviewed record/claim date; a fetch does not review the whole article.
+- Implementation: edit the MDX and relevant source/registry metadata. Run `npm run generate:search` and `npm run check:content`, then the source-label/anchor tests that cover the claim. Test the rendered guide and search destination on the serving runtime if a reader path changes. Record exact commands and failures, rather than copying a generic list as completed proof.
+
+This is a workflow example, not a newly approved protocol claim. A reviewer should be able to open the stated record and primary evidence, reproduce the changed reader path, and identify any remaining content acceptance.
+
+For a new article, add `content/deep-dives/<slug>.mdx`, its thin `src/app/deep-dives/<slug>/page.tsx` wrapper through `DeepDiveShell`, and a content-registry entry with source/review metadata. Update the relevant reader path; regenerate search and check content so navigation, search, public anchors and sitemap stay aligned. Reuse the existing pattern instead of a scaffolding generator.
+
+For application behavior, run focused units, typecheck and lint, then build and exercise the affected visible states on the named runtime. Next proof uses `npm run build`, `npm run smoke:standalone` and the default standalone browser lane. Cloudflare proof uses `npm run build:cloudflare`, the manifest-validating `node scripts/start-cloudflare-candidate.mjs` launcher and an explicit `PLAYWRIGHT_BASE_URL=http://127.0.0.1:3015 PLAYWRIGHT_RUNTIME=cloudflare CSP_ENFORCE=1 npm run test:e2e -- <affected-spec> --project=chromium --workers=1`. Dry-run uploads do not prove hydration. Separate production readback and owner release approval from either local lane.
+
+Preserve author/source attribution and identify externally quoted material. The [rights inventory](docs/rights-and-attribution.md) and owner licensing decision must govern redistribution; this guide grants no additional rights to third-party material.
+
+## Working through the editorial queue
+
+`npm run report:content-reviews` writes JSON plus a linked Markdown queue and the CI step summary. Follow its exact record/source links, record the supporting source revision and decision, then update only reviewed fields. A source change or successful fetch does not complete a review. `--allow-overdue` is explicitly evidence-only.
+
+For a selected item, add `--issue-draft COLLECTION:ID`; this exports a local prefilled issue draft without publishing. Supply `--existing-issues <body-url-array.json>` to detect tasks with its stable marker; search for older unmarked issues before opening the draft URL. Optional `--source-drift <canonical-report.json>` adds changed/blocked source context without resetting dates. See the [editorial queue review](docs/reviews/2026-10-03-pr29-editorial-queue.md) for the complete example and limits.
 
 ## Common Contribution Tasks
 

@@ -1,7 +1,10 @@
 import type {
   Chain,
+  ClpLearningModel,
+  ClaimEvidence,
   DataConfidence,
   EcosystemProject,
+  ExecutionEvidenceMap,
   GovernanceProposal,
   ResearchReport,
   SecurityIncident,
@@ -9,8 +12,23 @@ import type {
   SourceMeta,
   SourcedRecord,
   TokenomicsSnapshot,
+  WikiChangeRecord,
+  TransactionExample,
 } from '@/lib/types';
 import {
+  bitcoinBlock969681Source,
+  bitcoinOutboundTransactionSource,
+  bitcoinSwapTransactionSource,
+  ethereumMigrationBlockSource,
+  ethereumMigrationTransactionSource,
+  midgardBitcoinSwapActionSource,
+  midgardBitcoinTradeActionSource,
+  midgardEthereumMigrationLookupSource,
+  midgardPendingRefundSource,
+  opReturnBitcoinMemoSource,
+  transactionExampleMemoDocsSource,
+  transactionExampleMemoMapV3203Source,
+  transactionMemoParserV3203Source,
   adr026DynamicFeesSource,
   adr028ExploitConciliationSource,
   archivedLendingSource,
@@ -18,7 +36,10 @@ import {
   archivedSaversSource,
   assetNotationSource,
   chainClientsSource,
+  clpLearningEquationsSource,
+  clpLearningVersionSource,
   connectingThorchainSource,
+  continuousLiquidityPoolsSource,
   cosmWasmSource as cosmwasmSource,
   dynamicL1FeesCurrentSource,
   dynamicL1FeesSource,
@@ -62,11 +83,13 @@ import {
   thornodeMimirSource,
   thornodeV300TagSource,
   tokenomicsSource,
+  transactionQueryExamplesSource,
   xchainJsSource,
 } from '@/lib/sources';
 import { withFreshness } from '@/lib/trust';
 
 export const STATIC_DATA_LAST_UPDATED = '2026-06-18';
+
 
 const ethRouterExploitSource: SourceMeta = {
   label: 'ETH Router exploit post-mortem',
@@ -267,6 +290,37 @@ const record = <T>(
   }
 );
 
+export const CLP_LEARNING_MODEL_RECORD: SourcedRecord<ClpLearningModel> = record({
+  id: 'single-leg-clp-model',
+  title: 'Explore input, depth and slip',
+  assumptions: 'Change one hypothetical input or depth to see the single-leg CLP equations. No live pool balances or prices are loaded.',
+  ruleScope: 'Official CLP equations 4–6, reviewed 3 October 2026 alongside THORNode v3.20.3. This algebraic model does not reproduce exact protocol execution.',
+}, [clpLearningEquationsSource, clpLearningVersionSource], 'curated', { checkedAt: '2026-10-03', nextReviewDue: '2026-11-03' });
+export const WIKI_CHANGE_RECORDS: SourcedRecord<WikiChangeRecord>[] = [
+  record({
+    id: 'ilp-history-boundary-2026-10-02',
+    title: 'Clarified that impermanent loss protection is historical',
+    summary: 'The liquidity guide now distinguishes impermanent loss from protection against it. Official documentation and the amended ADR describe ILP as removed; this review does not imply current coverage.',
+    href: '/deep-dives/clp',
+    sourceDate: '2026-10-02',
+    reviewedAt: '2026-10-02',
+  }, [{ ...continuousLiquidityPoolsSource, retrievedAt: '2026-10-02' }, { label: 'ADR-005 amendment', url: 'https://dev.thorchain.org/architecture/adr-005-deprecate-ilp.html#amendment-1-nov-23-permanently-sunset-ilp', retrievedAt: '2026-10-02' }], 'curated', {
+    checkedAt: '2026-10-02',
+    nextReviewDue: '2026-11-02',
+  }),
+  record({
+    id: 'memoless-claim-evidence-2026-10-03',
+    title: 'Separated memoless release evidence from incident history',
+    summary: 'The v3.20.0 release supports the listed memoless ERC20 handler, refund-simulation and inbound-observation work. It does not establish the historical halt sequence or present availability; those remain separate evidence questions.',
+    href: '/governance#incident-memoless-spam-2026-08',
+    sourceDate: '2026-10-03',
+    reviewedAt: '2026-10-03',
+  }, [{ ...protocolUpgradeV320Source, retrievedAt: '2026-10-03' }], 'curated', {
+    checkedAt: '2026-10-03',
+    nextReviewDue: '2026-11-03',
+  }),
+];
+
 const sourceMapLiveInboundSource: SourceMeta = {
   ...liveInboundSource,
   retrievedAt: '2026-07-04',
@@ -337,6 +391,18 @@ const supportedChainSolSources = [
   chainClientsSource,
   exploitReport2Source,
 ];
+
+export const SWAP_EVIDENCE_MAP_RECORD: SourcedRecord<ExecutionEvidenceMap> = record({
+  id: 'swap-execution-evidence-map',
+  limitation: 'External-asset swap teaching sequence, not a live transaction or promise of completion. Stages may wait, fail or refund; omitted evidence remains unknown. Internal transfers can omit an external outbound; do not invent a transaction hash for them.',
+  stages: [
+    { id: 'source-chain', label: '1. Source-chain inclusion', evidence: 'Inspect the exact inbound transaction and source-chain block.', boundary: 'Recorded memo bytes do not prove THORChain accepted or processed them.', href: '/deep-dives/streaming-swaps-refunds#evidence-ladder' },
+    { id: 'observation', label: '2. THORChain observation', evidence: 'Inspect inbound observation and confirmation stage fields for the same hash.', boundary: 'A source block alone is not a completed protocol observation; missing stage evidence stays unknown.', href: '/deep-dives/streaming-swaps-refunds#swap-lifecycle' },
+    { id: 'processing', label: '3. Protocol processing', evidence: 'Inspect swap stage and pending/scheduled action records with their amount units.', boundary: 'A quote is a prior check. Processing may wait, fail or schedule a refund; present-day halt values do not explain a past cause.', href: '/deep-dives/streaming-swaps-refunds#why-refunds-happen' },
+    { id: 'outbound', label: '4. Outbound or refund evidence', evidence: 'Inspect scheduled outbounds and link each recorded outbound hash, including multiple outputs.', boundary: 'Scheduling or signing progress alone does not prove destination inclusion. A refund branch must be checked against its own transaction evidence.', href: '/deep-dives/streaming-swaps-refunds#swap-lifecycle' },
+    { id: 'destination-chain', label: '5. Destination-chain inclusion', evidence: 'Check each output hash and destination-chain block independently.', boundary: 'Provider completion is scoped to that provider. Independently verify destination inclusion; recipient ownership and finality policy are separate questions.', href: '/deep-dives/build-query-data#shipping-boundary' },
+  ],
+}, [transactionQueryExamplesSource, swapGuideSource, networkHaltsSource], 'curated', { checkedAt: '2026-10-03', nextReviewDue: '2026-11-03' });
 
 export const CHAIN_RECORDS: SourcedRecord<Chain>[] = [
   record({
@@ -445,7 +511,200 @@ const developerIntegrationLiveInboundSource: SourceMeta = {
   notes: 'Current-only endpoint for chain presence, current vault addresses, routers, gas rates, dust thresholds, and halt fields; never a static transaction template.',
 };
 
+const memoSyntaxSources = [transactionExampleMemoMapV3203Source, transactionExampleMemoDocsSource];
+
+export const LOCAL_MEMO_DECODER_REVIEW = record({
+  id: 'local-memo-decoder',
+  supportedActions: ['=', 's', 'SWAP', 'OUT', 'REFUND', 'MIGRATE'],
+  boundaries: [
+    'This is an educational syntax subset pinned to the reviewed THORNode v3.20.3 sources; it is not a protocol validator.',
+    'The 250-byte limit and eight-affiliate limit are local tool bounds, not claims about protocol limits.',
+    'Affiliate tokens remain literal; current documentation, parser basis-point constants, configured affiliate caps, and dynamic-fee rules are not reconciled or validated.',
+    'Asset shorthand, historical aliases, destination/refund addresses, THORNames, chain ownership, and current-version applicability remain unresolved.',
+    'A decoded memo does not prove feature availability, quote validity, transaction execution, refund completion, or settlement.',
+  ],
+}, [...memoSyntaxSources, transactionMemoParserV3203Source], 'curated', {
+  checkedAt: '2026-10-03',
+  nextReviewDue: '2026-11-03',
+});
+
+export const TRANSACTION_EXAMPLE_RECORDS: SourcedRecord<TransactionExample>[] = [
+  record({
+    id: 'btc-tron-swap',
+    guide: 'streaming-swaps-refunds',
+    title: 'Bitcoin inbound with a Midgard-reported TRON swap output',
+    summary: 'A confirmed Bitcoin inbound is paired with a successful Midgard swap action. The destination output remains provider-reported evidence.',
+    memo: {
+      sourceLabel: 'Bitcoin OP_RETURN payload',
+      value: '=:tr:TMMcoyunsxpMad5BbbT6BodSDBMw4Pfzya:0/1/0',
+      interpretation: 'The pinned THORNode memo map treats = as swap. The original string, shorthand, destination and trailing tuple are preserved without expanding the tuple into extra claims.',
+    },
+    reports: [
+      {
+        layer: 'source-chain',
+        label: 'Bitcoin transaction',
+        status: 'confirmed',
+        observedAt: '2026-10-03T05:38:13Z',
+        blockHeight: '969681',
+        blockHash: '0000000000000000000117ce66fe52ea9dcd22d47f2b7ff905b21f79a567ab56',
+        blockTime: '2026-10-03T05:38:13Z',
+        transactionId: 'd9e6621125467b58b6ebe424cd83a179d78f4c6e5fac16e17f39c1516cb0322f',
+        source: bitcoinSwapTransactionSource,
+        blockSource: bitcoinBlock969681Source,
+      },
+      {
+        layer: 'thorchain-indexer',
+        label: 'Midgard action',
+        actionType: 'swap',
+        status: 'success',
+        observedAt: '2026-10-03T05:39:15Z',
+        height: '28081155',
+        transactionId: 'D9E6621125467B58B6EBE424CD83A179D78F4C6E5FAC16E17F39C1516CB0322F',
+        outputHeight: '28081160',
+        outputTransactionId: 'C9B90A7C09BAA06E3CED8F17EE39A19A4D1F97399811D6908AA3956C7C65444A',
+        inputs: [{ amount: '10180', asset: 'BTC.BTC', unit: 'raw THORChain base units (1e8)' }],
+        outputs: [{ amount: '2422777500', asset: 'TRON.TRX', unit: 'raw THORChain base units (1e8)' }],
+        source: midgardBitcoinSwapActionSource,
+      },
+    ],
+    unknowns: [
+      'TRON destination-chain inclusion was not independently verified; recipient ownership and user receipt are unknown.',
+      'Midgard status=success is that provider record, not independent settlement proof.',
+    ],
+  }, [bitcoinSwapTransactionSource, bitcoinBlock969681Source, midgardBitcoinSwapActionSource, ...memoSyntaxSources], 'historical', { checkedAt: '2026-10-03', nextReviewDue: '2026-11-03' }),
+
+  record({
+    id: 'pending-usdc-refund',
+    guide: 'streaming-swaps-refunds',
+    title: 'Pending refund record with no refund outbound',
+    summary: 'Midgard records a pending refund action for a token-asset input. The captured response contains no outbound entry.',
+    memo: {
+      sourceLabel: 'Original swap memo retained in Midgard refund metadata',
+      value: '=:TRON~USDT-TR7NHQJEKQXGTCI8Q8ZY4PL8OTSZGJLJ6T:thor17hwqt302e5f2xm4h95ma8wuggqkvfzgvsnh5z9:4575592086/1/1',
+      interpretation: 'This is the swap intent associated with the refund record, not a source-chain refund transaction. ETH~USDC uses THORChain Trade-asset notation (~); it is not native ETH.',
+    },
+    reports: [{
+      layer: 'thorchain-indexer',
+      label: 'Midgard refund action',
+      actionType: 'refund',
+      status: 'pending',
+      observedAt: '2026-10-03T06:16:38Z',
+      height: '28081517',
+      transactionId: 'C573218772AAA37B72F45C220B874BDDED6ED755250596307C28C08E80D10F91',
+      inputs: [{ amount: '4571427086', asset: 'ETH~USDC-0XA0B86991C6218B36C1D19D4A2E9EB0CE3606EB48', kind: 'trade asset', unit: 'raw THORChain base units (1e8)' }],
+      outputs: [],
+      facts: [{ label: 'Midgard reason (provider-reported)', value: 'emit asset 4573885300 less than price limit 4575592086; this is not a current halt cause' }],
+      source: midgardPendingRefundSource,
+    }],
+    unknowns: [
+      'The source-chain block, refund outbound transaction, destination-chain inclusion, and refund settlement are unknown.',
+    ],
+  }, [midgardPendingRefundSource, ...memoSyntaxSources], 'historical', { checkedAt: '2026-10-03', nextReviewDue: '2026-11-03' }),
+
+  record({
+    id: 'bitcoin-outbound',
+    guide: 'build-query-data',
+    title: 'Bitcoin OUT payload inside a Midgard trade action',
+    summary: 'The Bitcoin transaction carries an OUT memo payload, while Midgard returns it as an output in a successful trade action.',
+    memo: {
+      sourceLabel: 'Bitcoin OP_RETURN payload',
+      value: 'OUT:00000650D568062B71D1BF4F0F4EEFED44C3F6FB7ED3F6DBB08E962F492107C6',
+      interpretation: 'THORNode v3.20.3 maps OUT to outbound. Midgard trade labels the encompassing action, while Bitcoin OUT labels this transaction role; these are complementary layers.',
+    },
+    reports: [
+      {
+        layer: 'source-chain',
+        label: 'Bitcoin transaction role',
+        actionType: 'outbound',
+        status: 'confirmed',
+        observedAt: '2026-10-03T05:38:13Z',
+        blockHeight: '969681',
+        blockHash: '0000000000000000000117ce66fe52ea9dcd22d47f2b7ff905b21f79a567ab56',
+        blockTime: '2026-10-03T05:38:13Z',
+        transactionId: '7062ec072b05066dd1c6b2cf259b1275ec40e4c188ff55a4ceef94100b70de3c',
+        outputs: [{ amount: '35663524', asset: 'BTC', unit: 'satoshis reported by Bitcoin transaction data' }],
+        source: bitcoinOutboundTransactionSource,
+        blockSource: bitcoinBlock969681Source,
+      },
+      {
+        layer: 'thorchain-indexer',
+        label: 'Midgard encompassing action',
+        actionType: 'trade',
+        status: 'success',
+        observedAt: '2026-10-03T05:28:44Z',
+        height: '28081053',
+        transactionId: '00000650D568062B71D1BF4F0F4EEFED44C3F6FB7ED3F6DBB08E962F492107C6',
+        outputHeight: '28081065',
+        outputTransactionId: '7062EC072B05066DD1C6B2CF259B1275EC40E4C188FF55A4CEEF94100B70DE3C',
+        destination: '13i9ZaXBYJ74qPuK7JrJ6Znws5uTa37vQt',
+        outputs: [{ amount: '35663524', asset: 'BTC.BTC', unit: 'raw THORChain base units (1e8)' }],
+        source: midgardBitcoinTradeActionSource,
+      },
+    ],
+    unknowns: ['The OUT payload does not by itself prove what the referenced hash represents.'],
+  }, [bitcoinOutboundTransactionSource, bitcoinBlock969681Source, midgardBitcoinTradeActionSource, ...memoSyntaxSources], 'historical', { checkedAt: '2026-10-03', nextReviewDue: '2026-11-03' }),
+
+  record({
+    id: 'ethereum-vault-migration',
+    guide: 'churning',
+    title: 'Ethereum router call carrying a MIGRATE memo',
+    summary: 'Blockscout reports a 2024 Ethereum transferAllowance call with a decoded MIGRATE memo. The exact Midgard transaction lookup returned no actions, so the THORChain lifecycle remains unmatched.',
+    memo: {
+      sourceLabel: 'Blockscout-decoded transferAllowance calldata',
+      value: 'MIGRATE:17894403',
+      interpretation: 'THORNode v3.20.3 maps MIGRATE to migrate. This decoded EVM call is source-chain evidence; it does not establish a matched or completed vault migration.',
+      parameters: [
+        { label: 'THORChain memo height', value: '17894403' },
+        { label: 'Router', value: '0xD37BbE5744D730a1d98d8DC97c42F0Ca46aD7146' },
+        { label: 'New vault', value: '0xcbF8EC65CA8D01bE30669FC22eAA2f1504ED6C07' },
+        { label: 'Asset contract', value: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48' },
+      ],
+    },
+    reports: [
+      {
+        layer: 'source-chain',
+        label: 'Ethereum transaction (Blockscout report)',
+        actionType: 'transferAllowance',
+        status: 'Blockscout reports status ok; EVM result success',
+        observedAt: '2024-09-27T19:59:59Z',
+        blockHeight: '20844210',
+        transactionId: '0x5d8d1807308d7018e49eefb07dcd4613b6b6a174daa7c5906e22f7479d505586',
+        facts: [
+          { label: 'Decoded method', value: 'transferAllowance(address router,address newVault,address asset,uint256 amount,string memo)' },
+          { label: 'Decoded amount parameter', value: '544915588553 USDC raw Ethereum token uint256; not THORChain 1e8 units' },
+          { label: 'Ethereum block field', value: 'block_number=20844210; the response block field is null' },
+        ],
+        source: ethereumMigrationTransactionSource,
+        blockSource: ethereumMigrationBlockSource,
+      },
+      {
+        layer: 'thorchain-indexer',
+        label: 'Midgard exact transaction lookup',
+        actionType: 'exact transaction lookup',
+        status: '0 actions returned for exact transaction lookup',
+        transactionId: '0x5d8d1807308d7018e49eefb07dcd4613b6b6a174daa7c5906e22f7479d505586',
+        source: midgardEthereumMigrationLookupSource,
+      },
+    ],
+    unknowns: [
+      'A matched THORChain migration lifecycle, observed vault move, and migration completion are unknown.',
+      'The developer-docs transaction 8330CAC064370F86352D247DE3046C9AA8C3E53C78760E5D35CFC7CAA3068DC6 is excluded here because the captured Midgard record classifies it as a swap.',
+    ],
+  }, [ethereumMigrationTransactionSource, ethereumMigrationBlockSource, midgardEthereumMigrationLookupSource, ...memoSyntaxSources], 'historical', { checkedAt: '2026-10-03', nextReviewDue: '2026-11-03' }),
+];
+
 export const SOURCE_MAP_SECTION_RECORDS: SourcedRecord<SourceMapSection>[] = [
+  record({
+    id: 'bitcoin-memo-archive',
+    title: 'Bitcoin Memo Archive',
+    decision: 'Do you need to inspect recorded Bitcoin memo bytes and transaction references?',
+    use: 'OP_RETURN offers a third-party Bitcoin memo archive with payload bytes, transaction/block links and Bitcoin-side history. Start from the recorded bytes and independently check the chain evidence.',
+    caveat: 'Bitcoin-only and third-party. Archive classification, address grouping and confirmation labels are its own observations; Bitcoin confirmation is separate from THORChain processing and destination settlement.',
+    claimExamples: ['A pointer to a recorded Bitcoin OP_RETURN payload.', 'Bitcoin transaction and block references to investigate independently.'],
+    nonClaims: ['Complete THORChain history or all-chain coverage.', 'Validated memo interpretation, ticker counts or address ownership.', 'Successful cross-chain execution, THORChain validation or destination settlement.', 'Official endorsement, safe execution instructions or a current route quote.'],
+    links: [opReturnBitcoinMemoSource],
+  }, [opReturnBitcoinMemoSource], 'curated', { checkedAt: '2026-10-03', nextReviewDue: '2026-11-03' }),
+
   record({
     id: 'current-protocol-state',
     title: 'Current Protocol State',
@@ -1034,6 +1293,34 @@ export const RESEARCH_REPORT_RECORDS: SourcedRecord<ResearchReport>[] = [
 ];
 
 
+const memolessPilotClaims: ClaimEvidence[] = [
+  {
+    id: 'memoless-august-cycle',
+    summary: 'The authored August incident describes a halt, re-enable and spam-driven re-halt cycle.',
+    source: protocolUpgradeV320Source,
+    observedAt: '2026-08-26', versionScope: 'Authored August 2026 cohort; not current operations',
+    scope: 'historical', reviewedAt: '2026-08-26', nextReviewDue: '2026-09-25', decision: 'needs-review',
+    limitation: 'The linked release describes implementation work, not the complete historical halt sequence. The original community/snapshot chronology still needs retained dated evidence; this pilot does not certify it.',
+  },
+  {
+    id: 'memoless-v320-handler-work',
+    summary: 'The v3.20.0 release lists memoless ERC20 handler, refund-simulation and inbound-observation changes.',
+    source: protocolUpgradeV320Source,
+    observedAt: '2026-10-03', versionScope: 'THORNode v3.20.0',
+    scope: 'historical', reviewedAt: '2026-10-03', nextReviewDue: '2026-11-03', decision: 'supported',
+    limitation: 'Support is for the listed release work only. Release creation, proposed upgrade date, implementation and successful current execution are separate facts.',
+  },
+  {
+    id: 'memoless-current-availability',
+    summary: 'Present memoless availability requires a fresh, source-qualified operational assessment.',
+    source: liquifyThornodeMimirSource,
+    observedAt: '2026-08-26', versionScope: 'Current provider result must be obtained separately',
+    scope: 'current-only', reviewedAt: '2026-10-03', nextReviewDue: '2026-11-03', decision: 'needs-live-evidence',
+    supersedes: 'memoless-august-cycle',
+    limitation: 'Supersedes using the August claim to answer a present-tense question; it does not erase the historical record. No current Mimir value or successful route is asserted by this citation.',
+  },
+];
+
 export const SECURITY_INCIDENT_RECORDS: SourcedRecord<SecurityIncident>[] = [
   record({
     id: 'eth-router-1',
@@ -1140,6 +1427,10 @@ export const SECURITY_INCIDENT_RECORDS: SourcedRecord<SecurityIncident>[] = [
     nextReviewDue: '2026-09-25',
   }),
 ];
+const memolessPilotRecord = SECURITY_INCIDENT_RECORDS.find(record => record.data.id === 'memoless-spam-2026-08');
+if (!memolessPilotRecord) throw new Error('Missing memoless claim pilot record');
+memolessPilotRecord.claims = memolessPilotClaims;
+
 
 
 export const GOVERNANCE_PROPOSAL_RECORDS: SourcedRecord<GovernanceProposal>[] = [

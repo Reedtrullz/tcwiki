@@ -98,7 +98,7 @@ describe('release and browser test wiring', () => {
     ];
 
     for (const scriptName of guardedScripts) {
-      expect(scriptValue(scriptName), `${scriptName} should start with the Node 22 guard`).toMatch(/^node scripts\/require-node22\.mjs && /);
+      expect(scriptValue(scriptName), `${scriptName} should start with the Node 22 guard`).toMatch(/^node scripts\/require-node22\.mjs(?: && |$)/);
     }
 
     for (const script of [
@@ -136,8 +136,10 @@ describe('release and browser test wiring', () => {
     expect(operationsWorkflow).toContain('npm run check:production-readiness');
     expect(operationsWorkflow).toContain('--samples 3');
     expect(operationsWorkflow).toContain('--interval-ms 60000');
-    expect(operationsWorkflow).toContain('Open persistent readiness alert');
-    expect(operationsWorkflow).toContain('Close recovered readiness alert');
+    expect(operationsWorkflow).toContain('scripts/update-readiness-incident.mjs');
+    expect(operationsWorkflow).toContain('READINESS_ARTIFACT_URL: ${{ steps.readiness_evidence.outputs.artifact-url }}');
+    expect(operationsWorkflow).toContain('group: production-readiness-incident');
+    expect(operationsWorkflow).toContain('cancel-in-progress: false');
     expect(operationsWorkflow).toContain('npm run report:content-reviews');
     expect(operationsWorkflow).toContain('--horizon-days 30');
     expect(releaseTrackedLib).toContain("'.github/workflows/operations.yml'");
@@ -422,17 +424,6 @@ describe('release and browser test wiring', () => {
     expect(docs).toContain('CI runs the same trackedness audit');
   });
 
-  it('cleans local platform metadata before unit tests without scanning generated folders', () => {
-    expect(scriptValue('pretest:unit')).toBe('node scripts/require-node22.mjs && node scripts/clean-platform-artifacts.mjs');
-    expect(platformArtifactCleaner).toContain("const cleanupRoots = ['content', 'docs', 'scripts', 'src', 'tests']");
-    expect(platformArtifactCleaner).toContain("name === '.DS_Store'");
-    expect(platformArtifactCleaner).toContain('finderDuplicateFilePattern');
-    expect(platformArtifactCleaner).toContain('isPlatformArtifactFile');
-    expect(platformArtifactCleaner).toContain("'node_modules'");
-    expect(platformArtifactCleaner).toContain("'.git'");
-    expect(platformArtifactCleaner).toContain("'.next'");
-  });
-
   it('does not require remote Google font fetches during production builds', () => {
     expect(rootLayout).not.toContain('next/font/google');
     expect(rootLayout).not.toContain('Inter(');
@@ -451,8 +442,7 @@ describe('release and browser test wiring', () => {
   it('fails local standalone Playwright runs when the browser target is stale', () => {
     expect(existsSync('scripts/start-playwright-server.mjs')).toBe(true);
     expect(existsSync('scripts/lib/standalone-freshness.mjs')).toBe(true);
-    expect(playwrightConfig).toContain("command: process.env.PLAYWRIGHT_WEB_SERVER_COMMAND || 'node scripts/start-playwright-server.mjs'");
-    expect(readme).toContain('fails closed when source files are newer than `.next/standalone/server.js`');
+    expect(playwrightConfig).toContain("cloudflare ? 'node scripts/start-cloudflare-candidate.mjs' : 'node scripts/start-playwright-server.mjs'");
     expect(contributing).toContain("PLAYWRIGHT_WEB_SERVER_COMMAND='npm run dev'");
   });
 

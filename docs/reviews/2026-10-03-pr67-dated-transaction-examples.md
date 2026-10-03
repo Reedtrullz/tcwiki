@@ -1,0 +1,9 @@
+# PR-67: four dated transaction evidence examples
+
+Three existing guides now show centralized, source-cited swap, pending refund, Bitcoin outbound and Ethereum migration-memo examples. Each separates original memo text, interpretation, source-chain blocks, THORChain indexer records, raw units and unknown lifecycle evidence. The new cohort was reviewed on 3 October, due 3 November; parent article review dates remain unchanged.
+
+The research receipt records bounded public-source captures and complete response hashes. An official migration example linked a transaction which Midgard instead classified as a swap; it was excluded from the migration fixture. The replacement Ethereum router call has source-chain inclusion but no matched THORChain lifecycle. Provider success never establishes recipient ownership or settlement. Trade-asset notation and native Ethereum uint256 units remain distinct from THORChain 1e8 units. OUT direction and the encompassing Midgard trade category are complementary evidence layers.
+
+Validation: six source-backed unit cases and all 691 units across 61 files, types, lint and content checks passed. Both final builds and standalone smoke passed. Each actual built Next and WikiDO runtime passed 14 desktop/mobile guide, exact-heading, internal-link and transaction-evidence checks. A first browser run found an ambiguous unknown-text selector; semantic section scoping corrected it. The next run found real 320px overflow from an unbroken excluded transaction hash. A DOM geometry probe identified the list item; wrapping the evidence card fixed the product before both final builds and runs. Generic content validation now includes this cohort and bounded array-spread evaluation for reused source lists.
+
+Base PR259. No lookup service, main merge or deployment. Commits are unsigned because the interactive signer is unavailable.

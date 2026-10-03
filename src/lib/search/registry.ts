@@ -16,7 +16,10 @@ import {
   UNKNOWN_OPERATION_REVIEW_MIMIR_PREFIXES,
   operationalControlPrefixSearchKey,
 } from '@/lib/operational-controls';
-import { MDX_SEARCH_DOCUMENTS } from '@/lib/search/mdx-documents.generated';
+import {
+  MDX_DEEP_DIVE_SECTION_DOCUMENTS,
+  MDX_SEARCH_DOCUMENTS,
+} from '@/lib/search/mdx-documents.generated';
 import { networkHaltsSource } from '@/lib/sources';
 import type { DataConfidence, SourceMeta, SourcedRecord } from '@/lib/types';
 import { getConfidenceLabel } from '@/lib/trust';
@@ -26,6 +29,7 @@ import { ecosystemDirectoryPosture, ecosystemDirectoryPostureLabel } from '@/lib
 export type SearchDocType =
   | 'section'
   | 'deep-dive'
+  | 'deep-dive-section'
   | 'resource'
   | 'incident'
   | 'ecosystem'
@@ -54,6 +58,8 @@ export interface SearchDoc {
   sources: SourceMeta[];
   description: string;
 }
+
+export type MdxSectionSearchDocument = Omit<SearchDoc, 'confidence' | 'reviewedAt' | 'nextReviewDue' | 'sources'>;
 
 const CHAIN_SCOPED_OPERATIONAL_SEARCH_CONTENT = CHAIN_RECORDS.flatMap((record) => {
   const chain = record.data.chain.toUpperCase();
@@ -90,6 +96,10 @@ const OPERATIONAL_CONTROL_SEARCH_CONTENT = [
     control.label,
     control.area,
     control.description,
+    `Activation mode ${control.activationMode}`,
+    `Scope ${control.scope}`,
+    control.absenceMeaning,
+    `Reviewed THORNode ${control.reviewedSource.versionRange} at ${control.reviewedSource.commit}`,
     ...control.searchTerms,
   ]),
   ...REVIEWED_OPERATIONAL_SUPPORT_MIMIR_PREFIXES.flatMap((prefix) => [
@@ -151,6 +161,19 @@ function searchMeta<T>(record: SourcedRecord<T>) {
 
 export const SEARCH_DOCUMENTS: SearchDoc[] = [
   ...OPERATIONAL_HALT_SEARCH_DOCUMENTS,
+  ...MDX_DEEP_DIVE_SECTION_DOCUMENTS.map((section) => {
+    const article = mdxBySlug.get(section.slug);
+    if (!article) {
+      throw new Error(`Deep-dive section has no article metadata: ${section.slug}`);
+    }
+    return {
+      ...section,
+      confidence: article.confidence,
+      reviewedAt: article.reviewedAt,
+      nextReviewDue: article.nextReviewDue,
+      sources: article.sources,
+    };
+  }),
   ...CONTENT_ENTRIES.map((entry) => ({
     id: entry.id,
     slug: entry.href,
@@ -305,6 +328,7 @@ export const SEARCH_DOCUMENTS: SearchDoc[] = [
         `Type: ${record.data.type}.`,
         record.data.description,
         `Impact: ${record.data.impact}.`,
+        ...(record.claims ?? []).map(claim => `${claim.id} ${claim.summary} ${claim.scope} ${claim.decision} ${claim.versionScope} ${claim.limitation}`),
         `Resolved: ${record.data.resolved ? 'yes' : 'no'}.`,
         record.data.resolutionDate ? `Resolution date: ${record.data.resolutionDate}.` : '',
         `Lessons: ${record.data.lessons.join('; ')}.`,

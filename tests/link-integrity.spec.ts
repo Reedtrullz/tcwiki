@@ -18,8 +18,9 @@ interface ConsoleProblem {
   type: string;
 }
 
-const LOCAL_ORIGIN = 'http://localhost:3000';
+const LOCAL_ORIGIN = new URL(process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:3000').origin;
 const PRODUCTION_ORIGIN = 'https://wiki.thorchain.no';
+const PUBLIC_DATA_ROUTES = new Map([['/updates/feed.xml', 'application/rss+xml']]);
 const RENDERED_CONSOLE_PROBLEM_PATTERN = /Application error|Unhandled Runtime Error|Hydration failed|hydration error|cannot be a child of|validateDOMNesting|Minified React error|ReferenceError|TypeError/i;
 
 function normalizePath(pathname: string) {
@@ -116,7 +117,18 @@ test.describe('THORChain Wiki rendered link integrity', () => {
 
     const failures: string[] = [];
 
+    const checkedDataRoutes = new Set<string>();
     for (const link of renderedLinks) {
+      const mediaType = PUBLIC_DATA_ROUTES.get(link.path);
+      if (mediaType && !link.hash) {
+        if (!checkedDataRoutes.has(link.path)) {
+          const response = await page.request.get(link.path);
+          expect(response.ok(), link.path).toBe(true);
+          expect(response.headers()['content-type'], link.path).toContain(mediaType);
+          checkedDataRoutes.add(link.path);
+        }
+        continue;
+      }
       if (!publicRouteSet.has(link.path)) {
         failures.push(`${link.sourceRoute}: ${linkLabel(link)} -> ${link.rawHref} resolves to non-public route ${link.path}`);
         continue;

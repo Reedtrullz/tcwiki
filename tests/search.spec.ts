@@ -31,7 +31,7 @@ test.describe('THORChain Wiki Search Smoke Tests', () => {
     await expect(exampleQueries.getByRole('link', { name: 'recommended_min_amount_in' })).toHaveAttribute('href', '/search?q=recommended_min_amount_in');
     await expect(page.getByRole('heading', { name: 'Guided Answers', exact: true })).toBeVisible();
     await expect(page.getByRole('region', { name: 'Source and freshness' })).toBeVisible();
-    await expect(page.getByText(/Reader paths and task guides/i)).toBeVisible();
+    await expect(page.locator('main').getByText(/Reader paths and task guides/i)).toBeVisible();
     // High-ranked result text is in a hidden list item within the source posture disclosure; skipped
     const searchForm = page.getByRole('search', { name: /Search wiki content/i });
     await expect(searchForm).toBeVisible();
@@ -40,32 +40,33 @@ test.describe('THORChain Wiki Search Smoke Tests', () => {
     await expect(searchInput).toHaveValue('universal settlement asset');
     await searchInput.press('Enter');
     await expect(page).toHaveURL(/\/search\?q=universal(\+|%20)settlement(\+|%20)asset/);
-    await expect(page.getByText(/result/i).first()).toBeVisible();
-    await expect(page.getByText(/RUNE as the Universal Settlement Asset/i).first()).toBeVisible();
+    await expect(page.locator('main').getByText(/result/i).first()).toBeVisible();
+    await expect(page.locator('main').getByText(/RUNE as the Universal Settlement Asset/i).first()).toBeVisible();
 
     await searchInput.fill('traditional multisig');
     await expect(searchInput).toHaveValue('traditional multisig');
     await searchInput.press('Enter');
     await expect(page).toHaveURL(/\/search\?q=traditional(\+|%20)multisig/);
-    await expect(page.getByText(/Threshold Signatures/i).first()).toBeVisible();
+    await expect(page.locator('main').getByText(/Threshold Signatures/i).first()).toBeVisible();
 
     await page.goBack();
     await expect(page).toHaveURL(/\/search\?q=universal(\+|%20)settlement(\+|%20)asset/);
-    await expect(page.getByText(/RUNE as the Universal Settlement Asset/i).first()).toBeVisible();
-    await expect(page.getByText(/Tip: Press|⌘K|Ctrl\+K/i)).toHaveCount(0);
-    await expect(page.getByText(/Relevance:/i)).toHaveCount(0);
+    await expect(page.locator('main').getByText(/RUNE as the Universal Settlement Asset/i).first()).toBeVisible();
+
+    await expect(page.locator('main').getByText(/Tip: Press|⌘K|Ctrl\+K/i)).toHaveCount(0);
+    await expect(page.locator('main').getByText(/Relevance:/i)).toHaveCount(0);
 
     await page.goto('/search?q=rune%3A');
     await expect(page.getByRole('heading', { level: 1, name: 'Search And Guided Answers' })).toBeVisible();
-    await expect(page.getByText(/result/i).first()).toBeVisible();
-    await expect(page.getByText(/Application error|Unhandled Runtime Error/i)).toHaveCount(0);
+    await expect(page.locator('main').getByText(/result/i).first()).toBeVisible();
+    await expect(page.locator('main').getByText(/Application error|Unhandled Runtime Error/i)).toHaveCount(0);
 
     await page.goto('/search?q=current-only%20snapshots');
-    await expect(page.getByText(/Ranking is a starting point, not proof/i)).toBeVisible();
+    await expect(page.locator('main').getByText(/Ranking is a starting point, not proof/i)).toBeVisible();
     await expect(page.locator('main article').first().locator('a[href="/docs#current-protocol-state"]')).toBeVisible();
-    await expect(page.getByText(/Next wiki review/i).first()).toBeVisible();
-    await expect(page.getByText(/Source retrieved/i).first()).toBeVisible();
-    await expect(page.getByText(/\+4 sources/i).first()).toBeVisible();
+    await expect(page.locator('main').getByText(/Next wiki review/i).first()).toBeVisible();
+    await expect(page.locator('main').getByText(/Source retrieved/i).first()).toBeVisible();
+    await expect(page.locator('main').getByText(/\+4 sources/i).first()).toBeVisible();
     await page.locator('main article').first().getByText('+4 sources', { exact: true }).click();
     const boundaryLayout = await readLayoutSafety(page);
     expect(
@@ -74,9 +75,12 @@ test.describe('THORChain Wiki Search Smoke Tests', () => {
     ).toEqual([]);
 
     await page.goto('/search?q=which%20source%20should%20i%20trust');
-    const sourceChoiceResult = page.locator('main article').first().locator('a[href="/docs#source-map-chooser"]');
+    const sourceChoiceResultCard = page.locator('main article').filter({
+      has: page.locator('a[href="/docs#source-map-chooser"]'),
+    }).first();
+    const sourceChoiceResult = sourceChoiceResultCard.locator('a[href="/docs#source-map-chooser"]');
     await expect(sourceChoiceResult).toBeVisible();
-    await expect(page.getByText(/Which source should I trust/i).first()).toBeVisible();
+    await expect(sourceChoiceResultCard.getByRole('heading', { name: 'Which source should I trust?', exact: true })).toBeVisible();
     await Promise.all([
       page.waitForURL(/\/docs#source-map-chooser$/, { timeout: 15_000 }),
       sourceChoiceResult.click(),
@@ -108,19 +112,19 @@ test.describe('THORChain Wiki Search Smoke Tests', () => {
 
     await page.goto('/search?q=source%20freshness');
     await expect(page.locator('main article').first().locator('a[href="/docs#source-map-chooser"]')).toBeVisible();
-    await expect(page.getByText(/Which source should I trust/i).first()).toBeVisible();
+    await expect(page.locator('main article').first().getByRole('heading', { name: 'Which source should I trust?', exact: true })).toBeVisible();
 
     await page.goto('/search?q=where%20did%20this%20number%20come%20from');
     await expect(page.locator('main article').first().locator('a[href="/docs#source-map-chooser"]')).toBeVisible();
-    await expect(page.getByText(/Which source should I trust/i).first()).toBeVisible();
+    await expect(page.locator('main article').first().getByRole('heading', { name: 'Which source should I trust?', exact: true })).toBeVisible();
 
     await page.goto('/search?q=provider%20mismatch');
     await expect(page.locator('main article').first().locator('a[href="/docs#runtime-live-data-failover"]')).toBeVisible();
-    await expect(page.getByText(/Runtime Live-Data Failover/i).first()).toBeVisible();
+    await expect(page.locator('main article').first().getByRole('heading', { name: 'Runtime Live-Data Failover', exact: true })).toBeVisible();
 
     await page.goto('/search?q=current%20protocol%20source');
     await expect(page.locator('main article').first().locator('a[href="/docs#current-protocol-state"]')).toBeVisible();
-    await expect(page.getByText(/Current Protocol State/i).first()).toBeVisible();
+    await expect(page.locator('main article').first().getByRole('heading', { name: 'Current Protocol State', exact: true })).toBeVisible();
 
     await page.goto('/search?q=is%20ShapeShift%20safe');
     await expect(page.locator('main article').first().locator('a[href="/ecosystem#interface-use-checklist"]')).toBeVisible();
@@ -157,12 +161,12 @@ test.describe('THORChain Wiki Search Smoke Tests', () => {
     await expect(dynamicFilterNav.getByRole('link', { name: /Source Map/i })).toBeVisible();
     await expect(page.locator('main a[href="/dynamic-fees#dynamic-fees-live"]').first()).toBeVisible();
     await expect(page.locator('main article').first().locator('a[href="/dynamic-fees#dynamic-fees-live"]')).toBeVisible();
-    await expect(page.getByText(/ADR-026 dynamic L1 fee/i).first()).toBeVisible();
+    await expect(page.locator('main').getByText(/ADR-026 dynamic L1 fee/i).first()).toBeVisible();
     await Promise.all([
       page.waitForURL(/\/search\?q=dynamic(\+|%20)L1(\+|%20)fee&filter=source-map/),
       dynamicFilterNav.getByRole('link', { name: /Source Map/i }).click(),
     ]);
-    await expect(page.getByText(/of .* results/i).first()).toBeVisible();
+    await expect(page.locator('main').getByText(/of .* results/i).first()).toBeVisible();
     await expect(page.locator('main article').first().locator('span').filter({ hasText: /^Source Map$/ })).toBeVisible();
 
     await page.goto('/search?q=Symbiosis%20dynamic%20fee');
@@ -170,43 +174,43 @@ test.describe('THORChain Wiki Search Smoke Tests', () => {
 
     await page.goto('/search?q=pending%20outbound');
     await expect(page.locator('main article').first().locator('a[href="/deep-dives/streaming-swaps-refunds#what-to-check-first"]')).toBeVisible();
-    await expect(page.getByText(/Why did my swap refund/i).first()).toBeVisible();
+    await expect(page.locator('main').getByText(/Why did my swap refund/i).first()).toBeVisible();
 
     await page.goto('/search?q=outbound%20sent%20but%20not%20received');
     await expect(page.locator('main article').first().locator('a[href="/deep-dives/streaming-swaps-refunds#what-to-check-first"]')).toBeVisible();
-    await expect(page.getByText(/Why did my swap refund/i).first()).toBeVisible();
+    await expect(page.locator('main').getByText(/Why did my swap refund/i).first()).toBeVisible();
 
     await page.goto('/search?q=why%20are%20fees%20high');
     await expect(page.locator('main article').first().locator('a[href="/deep-dives/streaming-swaps-refunds#what-to-check-first"]')).toBeVisible();
-    await expect(page.getByText(/Fee and quote mechanics/i).first()).toBeVisible();
+    await expect(page.locator('main').getByText(/Fee and quote mechanics/i).first()).toBeVisible();
 
     await page.goto('/search?q=outbound%20gas%20fee');
     await expect(page.locator('main article').first().locator('a[href="/deep-dives/streaming-swaps-refunds#what-to-check-first"]')).toBeVisible();
-    await expect(page.getByText(/Fee and quote mechanics/i).first()).toBeVisible();
+    await expect(page.locator('main').getByText(/Fee and quote mechanics/i).first()).toBeVisible();
 
     await page.goto('/search?q=minimum%20receive');
     await expect(page.locator('main article').first().locator('a[href="/deep-dives/streaming-swaps-refunds#what-to-check-first"]')).toBeVisible();
-    await expect(page.getByText(/Why did my swap refund/i).first()).toBeVisible();
+    await expect(page.locator('main').getByText(/Why did my swap refund/i).first()).toBeVisible();
 
     await page.goto('/search?q=memo%20too%20long');
     await expect(page.locator('main article').first().locator('a[href="/deep-dives/streaming-swaps-refunds#what-to-check-first"]')).toBeVisible();
-    await expect(page.getByText(/Why did my swap refund/i).first()).toBeVisible();
+    await expect(page.locator('main').getByText(/Why did my swap refund/i).first()).toBeVisible();
 
     await page.goto('/search?q=quote%20warning');
     await expect(page.locator('main article').first().locator('a[href="/deep-dives/build-query-data#query-plan"]')).toBeVisible();
-    await expect(page.getByText(/Build or query data/i).first()).toBeVisible();
+    await expect(page.locator('main').getByText(/Build or query data/i).first()).toBeVisible();
 
     await page.goto('/search?q=what%20is%20thorname');
     await expect(page.locator('main article').first().locator('a[href="/glossary#term-thorname"]')).toBeVisible();
-    await expect(page.getByText(/THORName/i).first()).toBeVisible();
+    await expect(page.locator('main').getByText(/THORName/i).first()).toBeVisible();
 
     await page.goto('/search?q=dynamic%20fee%20thorname');
     await expect(page.locator('main article').first().locator('a[href="/dynamic-fees#dynamic-fees-live"]')).toBeVisible();
-    await expect(page.getByText(/ADR-026 dynamic fees/i).first()).toBeVisible();
+    await expect(page.locator('main').getByText(/ADR-026 dynamic fees/i).first()).toBeVisible();
 
     await page.goto('/search?q=withdraw%20bond');
     await expect(page.locator('main article').first().locator('a[href="/network#node-operator-actions"]')).toBeVisible();
-    await expect(page.getByText(/Node operator actions/i).first()).toBeVisible();
+    await expect(page.locator('main').getByText(/Node operator actions/i).first()).toBeVisible();
 
     await page.goto('/search?q=node%20operator%20guide');
     const nodeOperatorGuideResult = page.locator('main article').first();
@@ -250,61 +254,61 @@ test.describe('THORChain Wiki Search Smoke Tests', () => {
 
     await page.goto('/search?q=vote%20proposal');
     await expect(page.locator('main article').first().locator('a[href="/governance#governance-proposal-status"]')).toBeVisible();
-    await expect(page.getByText(/Governance and proposals/i).first()).toBeVisible();
+    await expect(page.locator('main').getByText(/Governance and proposals/i).first()).toBeVisible();
 
     await page.goto('/search?q=dynamic%20fee%20source%20map');
     const dynamicFeeSourceMapLink = page.locator('main article').first().locator('a[href="/docs#dynamic-fee-experiment"]');
     await expect(dynamicFeeSourceMapLink).toBeVisible();
-    await expect(page.getByText(/Dynamic Fee Experiment/i).first()).toBeVisible();
+    await expect(page.locator('main').getByText(/Dynamic Fee Experiment/i).first()).toBeVisible();
 
     await page.goto('/search?q=Midgard%20API');
     await expect(page.locator('main article').first().locator('a[href="/deep-dives/build-query-data#query-plan"]')).toBeVisible();
-    await expect(page.getByText(/Build or query data/i).first()).toBeVisible();
+    await expect(page.locator('main').getByText(/Build or query data/i).first()).toBeVisible();
 
     await page.goto('/search?q=Midgard%20vs%20THORNode');
     await expect(page.getByTestId('search-results-list').locator('article').first().locator('a[href="/deep-dives/midgard-thornode-data"]')).toBeVisible();
-    await expect(page.getByText(/Midgard And THORNode Data/i).first()).toBeVisible();
+    await expect(page.locator('main').getByText(/Midgard And THORNode Data/i).first()).toBeVisible();
 
     await page.goto('/search?q=can%20i%20swap%20right%20now');
     await expect(page.locator('main a[href="/network#check-a-route"]').first()).toBeVisible();
     await expect(page.locator('main article').first().locator('a[href="/network#check-a-route"]')).toBeVisible();
-    await expect(page.getByText(/Can I swap right now/i).first()).toBeVisible();
+    await expect(page.locator('main').getByText(/Can I swap right now/i).first()).toBeVisible();
 
     await page.goto('/search?q=is%20swapping%20enabled');
     await expect(page.locator('main article').first().locator('a[href="/network#check-a-route"]')).toBeVisible();
-    await expect(page.getByText(/Can I swap right now/i).first()).toBeVisible();
+    await expect(page.locator('main').getByText(/Can I swap right now/i).first()).toBeVisible();
 
     await page.goto('/search?q=route%20available');
     await expect(page.locator('main article').first().locator('a[href="/network#check-a-route"]')).toBeVisible();
-    await expect(page.getByText(/Can I swap right now/i).first()).toBeVisible();
+    await expect(page.locator('main').getByText(/Can I swap right now/i).first()).toBeVisible();
 
     await page.goto('/search?q=current%20quote');
     await expect(page.locator('main article').first().locator('a[href="/network#check-a-route"]')).toBeVisible();
-    await expect(page.getByText(/Can I swap right now/i).first()).toBeVisible();
+    await expect(page.locator('main').getByText(/Can I swap right now/i).first()).toBeVisible();
 
     await page.goto('/search?q=ETH%20to%20BTC%20swap');
     await expect(page.locator('main article').first().locator('a[href="/network#check-a-route"]')).toBeVisible();
-    await expect(page.getByText(/Can I swap right now/i).first()).toBeVisible();
+    await expect(page.locator('main').getByText(/Can I swap right now/i).first()).toBeVisible();
 
     await page.goto('/search?q=is%20THORChain%20down');
     await expect(page.locator('main article').first().locator('a[href="/network#network-diagnostics"]')).toBeVisible();
-    await expect(page.getByText(/Why is something paused/i).first()).toBeVisible();
+    await expect(page.locator('main').getByText(/Why is something paused/i).first()).toBeVisible();
 
     await page.goto('/search?q=is%20pool%20open');
     await expect(page.locator('main article').first().locator('a[href="/deep-dives/liquidity-actions#what-to-check-first"]')).toBeVisible();
-    await expect(page.getByText(/Add or withdraw liquidity/i).first()).toBeVisible();
+    await expect(page.locator('main').getByText(/Add or withdraw liquidity/i).first()).toBeVisible();
 
     await page.goto('/search?q=missing%20outbound');
     await expect(page.locator('main article').first().locator('a[href="/deep-dives/streaming-swaps-refunds#what-to-check-first"]')).toBeVisible();
-    await expect(page.getByText(/Why did my swap refund/i).first()).toBeVisible();
+    await expect(page.locator('main').getByText(/Why did my swap refund/i).first()).toBeVisible();
 
     await page.goto('/search?q=current%20protocol%20state');
     await expect(page.locator('main article').first().locator('a[href="/docs#current-protocol-state"]')).toBeVisible();
-    await expect(page.getByText(/Current Protocol State/i).first()).toBeVisible();
+    await expect(page.locator('main').getByText(/Current Protocol State/i).first()).toBeVisible();
 
     await page.goto('/search?q=current%20protocol%20state&filter=live');
     await expect(page.locator('main article').first().locator('a[href="/docs#current-protocol-state"]')).toBeVisible();
-    await expect(page.getByText(/Current Protocol State/i).first()).toBeVisible();
+    await expect(page.locator('main').getByText(/Current Protocol State/i).first()).toBeVisible();
 
     await page.goto('/search?q=HaltWasmContract');
     const mimirControlResult = page.locator('main article').filter({ hasText: 'Mimir halt and enablement controls (current diagnostics)' });
@@ -341,76 +345,76 @@ test.describe('THORChain Wiki Search Smoke Tests', () => {
 
     await page.goto('/search?q=start%20with%20the%20claim');
     await expect(page.locator('main a[href="/"]').filter({ hasText: /THORChain Wiki Home/i }).first()).toBeVisible();
-    await expect(page.getByText(/THORChain Wiki Home/i).first()).toBeVisible();
+    await expect(page.locator('main').getByText(/THORChain Wiki Home/i).first()).toBeVisible();
 
     await page.goto('/search?q=quote%20expiry');
     const quoteExpiryResult = page.locator('main article').first().locator('a[href="/glossary#term-quote-expiry"]');
     await expect(quoteExpiryResult).toBeVisible();
-    await expect(page.getByText(/valid for only ten minutes/i).first()).toBeVisible();
+    await expect(page.locator('main').getByText(/valid for only ten minutes/i).first()).toBeVisible();
 
     await page.goto('/search?q=wallet%20safety');
     await expect(page.locator('main article').first().locator('a[href="/ecosystem#interface-use-checklist"]')).toBeVisible();
-    await expect(page.getByText(/Choose an interface/i).first()).toBeVisible();
+    await expect(page.locator('main').getByText(/Choose an interface/i).first()).toBeVisible();
 
     await page.goto('/search?q=current%20TCY%20controls');
     await expect(page.locator('main article').first().locator('a[href="/tcy#tcy-current-controls"]')).toBeVisible();
-    await expect(page.getByText(/Current TCY controls/i).first()).toBeVisible();
+    await expect(page.locator('main').getByText(/Current TCY controls/i).first()).toBeVisible();
     await expect(page.locator('main a[href="/deep-dives/tcy-recovery-timeline#what-to-check-now"]').first()).toBeVisible();
     await expect(page.locator('main a[href="/tcy"]').first()).toBeVisible();
 
     await page.goto('/search?q=TCY%20distribution%20now');
     await expect(page.locator('main article').first().locator('a[href="/tcy#tcy-current-controls"]')).toBeVisible();
-    await expect(page.getByText(/Current TCY controls/i).first()).toBeVisible();
+    await expect(page.locator('main').getByText(/Current TCY controls/i).first()).toBeVisible();
 
     await page.goto('/search?q=TCY%20trading%20halted');
     await expect(page.locator('main article').first().locator('a[href="/tcy#tcy-current-controls"]')).toBeVisible();
-    await expect(page.getByText(/Current TCY controls/i).first()).toBeVisible();
+    await expect(page.locator('main').getByText(/Current TCY controls/i).first()).toBeVisible();
 
     await page.goto('/search?q=RUNEPool%20live&filter=live');
     await expect(page.locator('main article').first().locator('a[href="/economics#runepool-pol-live"]')).toBeVisible();
-    await expect(page.getByText(/RUNEPool and POL evidence/i).first()).toBeVisible();
+    await expect(page.locator('main').getByText(/RUNEPool and POL evidence/i).first()).toBeVisible();
 
     await page.goto('/search?q=current%20TCY%20controls&filter=live');
     await expect(page.locator('main article').first().locator('a[href="/tcy#tcy-current-controls"]')).toBeVisible();
-    await expect(page.getByText(/Current TCY controls/i).first()).toBeVisible();
+    await expect(page.locator('main').getByText(/Current TCY controls/i).first()).toBeVisible();
 
     await page.goto('/search?q=App%20Layer%20claim%20checks');
     await expect(page.locator('main article').first().locator('a[href="/deep-dives/app-layer#evidence-ladder"]')).toBeVisible();
-    await expect(page.getByText(/App Layer and secured assets/i).first()).toBeVisible();
+    await expect(page.locator('main').getByText(/App Layer and secured assets/i).first()).toBeVisible();
     await expect(page.locator('main a[href="/docs#source-map-chooser"]').first()).toBeVisible();
 
     await page.goto('/search?q=secured%20asset%20deposit%20available');
     await expect(page.locator('main article').first().locator('a[href="/deep-dives/app-layer#evidence-ladder"]')).toBeVisible();
-    await expect(page.getByText(/App Layer and secured assets/i).first()).toBeVisible();
+    await expect(page.locator('main').getByText(/App Layer and secured assets/i).first()).toBeVisible();
 
     await page.goto('/search?q=trade%20account%20deposit%20halted');
     await expect(page.locator('main article').first().locator('a[href="/deep-dives/app-layer#evidence-ladder"]')).toBeVisible();
-    await expect(page.getByText(/App Layer and secured assets/i).first()).toBeVisible();
+    await expect(page.locator('main').getByText(/App Layer and secured assets/i).first()).toBeVisible();
 
     await page.goto('/search?q=app%20layer%20route%20available');
     await expect(page.locator('main article').first().locator('a[href="/deep-dives/app-layer#evidence-ladder"]')).toBeVisible();
-    await expect(page.getByText(/App Layer and secured assets/i).first()).toBeVisible();
+    await expect(page.locator('main').getByText(/App Layer and secured assets/i).first()).toBeVisible();
 
     await page.goto('/search?q=HaltWasmContract');
     await expect(page.locator('main article').first().locator('a[href="/network#network-diagnostics"]')).toBeVisible();
     await expect(page.locator('main article').first().getByText(/Mimir halt and enablement controls/i)).toBeVisible();
 
     await page.goto('/search?q=totallynotawikithing');
-    await expect(page.getByText(/No results for/i)).toBeVisible();
+    await expect(page.locator('main').getByText(/No results for/i)).toBeVisible();
 
     await page.goto('/search?q=RUNE%20fair%20value');
     await expect(page.locator('main article').first().locator('a[href="/rune#rune-number-router"]')).toBeVisible();
-    await expect(page.getByText(/RUNE and tokenomics claims/i).first()).toBeVisible();
+    await expect(page.locator('main').getByText(/RUNE and tokenomics claims/i).first()).toBeVisible();
     await expect(page.locator('main a[href="/docs#rune-tokenomics-and-value"]').first()).toBeVisible();
-    await expect(page.getByText(/RUNE Tokenomics And Value/i).first()).toBeVisible();
+    await expect(page.locator('main').getByText(/RUNE Tokenomics And Value/i).first()).toBeVisible();
 
     await page.goto('/search?q=which%20RUNE%20number');
     await expect(page.locator('main a[href="/rune"]').first()).toBeVisible();
-    await expect(page.getByText(/RUNE number router/i).first()).toBeVisible();
+    await expect(page.locator('main').getByText(/RUNE number router/i).first()).toBeVisible();
 
     await page.goto('/search?q=which%20RUNE%20number&filter=live');
     await expect(page.locator('main article').first().locator('a[href="/rune#rune-number-router"]')).toBeVisible();
-    await expect(page.getByText(/RUNE and tokenomics claims/i).first()).toBeVisible();
+    await expect(page.locator('main').getByText(/RUNE and tokenomics claims/i).first()).toBeVisible();
 
     await page.goto('/search?q=rune%20staking');
     const runeActionStartHere = page.locator('section[aria-labelledby="search-start-here"] article').first();
@@ -426,7 +430,7 @@ test.describe('THORChain Wiki Search Smoke Tests', () => {
     const pathStartHere = page.locator('section[aria-labelledby="search-start-here"]');
     await expect(pathStartHere.getByText(/reader-path matches/i)).toBeVisible();
     await expect(pathStartHere.locator('article').first().locator('span').filter({ hasText: /^Reader Path$/ })).toBeVisible();
-    await expect(page.getByText(/deep dive-path/i)).toHaveCount(0);
+    await expect(page.locator('main').getByText(/deep dive-path/i)).toHaveCount(0);
     const networkSecurityPathLink = pathStartHere.getByRole('link', { name: /Network Security/i }).first();
     await expect(networkSecurityPathLink).toHaveAttribute('href', '/deep-dives#deep-dive-path-network-security');
     await Promise.all([
@@ -469,4 +473,32 @@ test.describe('THORChain Wiki Search Smoke Tests', () => {
     await tokenomicsLink.click();
     await expect(page).toHaveURL(/\/rune#tokenomics-rune-supply-framing$/);
   });
+});
+
+test('search submits the visible form value when browser input differs from React state', async ({ page }) => {
+  await page.goto('/search');
+  await expect(page.getByRole('button', { name: 'Open search', exact: true })).toBeEnabled();
+  const form = page.getByRole('search', { name: 'Search wiki content' });
+  const input = form.getByLabel('Search the wiki', { exact: true });
+  await expect(input).toBeEnabled();
+  await input.fill('universal settlement asset');
+  await form.getByRole('button', { name: 'Submit search page query' }).click();
+  await expect(page).toHaveURL(/q=universal/);
+  // Browser autofill can change a form value without a React onChange update.
+  await input.evaluate((element: HTMLInputElement) => { element.value = 'quote expiry'; });
+  await expect(input).toHaveValue('quote expiry');
+  await form.getByRole('button', { name: 'Submit search page query' }).click();
+  await expect(page).toHaveURL(/q=quote(\+|%20)expiry/);
+});
+
+test('section search result lands on its matching heading', async ({ page }) => {
+  await page.goto('/search?q=current%20and%20historical%20endpoint%20routing');
+  const main = page.locator('main');
+  const endpointRoutingResult = main.locator('a[href="/deep-dives/build-query-data#current-and-historical-endpoint-routing"]');
+  await expect(endpointRoutingResult).toBeVisible();
+  await Promise.all([
+    page.waitForURL(/\/deep-dives\/build-query-data#current-and-historical-endpoint-routing$/),
+    endpointRoutingResult.click(),
+  ]);
+  await expect(main.locator('#current-and-historical-endpoint-routing')).toBeVisible();
 });

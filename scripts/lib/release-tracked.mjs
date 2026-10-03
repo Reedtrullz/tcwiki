@@ -4,6 +4,7 @@ import { dirname, join } from 'node:path';
 
 export const RELEASE_TRACKED_SOURCE_FILES = [
   'package.json',
+  'scripts/lib/readiness-contract.jq',
   '.github/workflows/ci.yml',
   '.github/workflows/operations.yml',
   'README.md',
@@ -13,6 +14,11 @@ export const RELEASE_TRACKED_SOURCE_FILES = [
   'ansible-playbook.yml',
   'Dockerfile',
   'playwright.config.ts',
+  'package-lock.json',
+  'next.config.ts',
+  'vite.config.ts',
+  'wrangler.do.jsonc',
+  'cloudflare/do-entry.mjs',
 ];
 
 const releaseFilePattern = /\b(?:scripts\/[A-Za-z0-9._/-]+\.(?:mjs|sh)|tests\/[A-Za-z0-9._/-]+\.spec\.ts|deploy\/systemd\/[A-Za-z0-9._-]+\.(?:service|timer))\b/g;
@@ -77,7 +83,7 @@ export function collectLocalProofImportsFromText(text, importerPath, root) {
 }
 
 export function collectReleaseReferencedFiles(root, sourceFiles = RELEASE_TRACKED_SOURCE_FILES) {
-  const files = new Set();
+  const files = new Set(sourceFiles);
 
   for (const sourceFile of sourceFiles) {
     const sourcePath = join(root, sourceFile);

@@ -1,3 +1,4 @@
+import { readyResponse } from '../helpers/readiness-contract-fixture';
 import { spawnSync } from 'node:child_process';
 import {
   chmodSync,
@@ -34,30 +35,15 @@ function executable(path: string, source: string) {
 }
 
 function readiness(ready: boolean) {
-  return JSON.stringify({
-    status: ready ? 'ready' : 'degraded',
-    ready,
-    checkedAt: '2026-07-13T12:00:00.000Z',
-    version: 'a65c870925585bfa755c16777b7ff05528d278a8',
-    commit: 'a65c870925585bfa755c16777b7ff05528d278a8',
-    image: 'ghcr.io/reedtrullz/tcwiki@sha256:df0b1daed24b5e28bbf9cc24260d68ca2d867264046747d427dd928796357547',
-    reasons: ready ? [] : ['THORNode is stale.'],
-    sources: {
-      midgard: { status: 'ok' },
-      thornode: {
-        status: ready ? 'ok' : 'degraded',
-        source: {
-          label: 'Liquify',
-          url: 'https://gateway.liquify.com/chain/thorchain_api/thorchain',
-        },
-        thorchainHeight: 26990000,
-        thorchainBlockTime: '2026-07-13T11:58:00.000Z',
-        thorchainBlockAgeSeconds: ready ? 5 : 120,
-        heightLagBlocks: ready ? 0 : 20,
-        sourceWarningDetails: ready ? [] : [{ category: 'freshness' }],
-      },
-    },
-  });
+  const response = readyResponse();
+  response.status = ready ? 'ready' : 'degraded';
+  response.ready = ready;
+  response.version = response.commit = 'a65c870925585bfa755c16777b7ff05528d278a8';
+  response.image = 'ghcr.io/reedtrullz/tcwiki@sha256:df0b1daed24b5e28bbf9cc24260d68ca2d867264046747d427dd928796357547';
+  response.runtime = { version: response.version, commit: response.commit, image: response.image, strict: true, verified: true, warnings: [] };
+  response.reasons = ready ? [] : ['THORNode is stale.'];
+  response.sources.thornode.status = ready ? 'ok' : 'degraded';
+  return JSON.stringify(response);
 }
 
 function run(path: string, responses: Response[], extra: Partial<NodeJS.ProcessEnv> = {}) {
@@ -125,10 +111,9 @@ function evidence(path: string) {
   };
 }
 
+afterEach(() => { roots.splice(0).forEach((path) => rmSync(path, { recursive: true, force: true })); });
+
 describe('host readiness monitor', () => {
-  afterEach(() => {
-    roots.splice(0).forEach((path) => rmSync(path, { recursive: true, force: true }));
-  });
 
   it('has valid syntax and bounded defaults', () => {
     expect(spawnSync('sh', ['-n', scriptPath]).status).toBe(0);
@@ -259,3 +244,39 @@ describe('host readiness monitor', () => {
     expect(() => readFileSync(join(path, 'state/latest.json'))).toThrow();
   });
 });
+
+
+it('rejects the same missing identity, runtime and contradictory source fixtures as the shared validator', async () => {
+  const { assertReadinessContract } = await import('../../scripts/lib/readiness-contract.mjs');
+  for (const ready of [true, false]) {
+    const body = JSON.parse(readiness(ready));
+    expect(() => assertReadinessContract(body)).not.toThrow();
+    const path = root();
+    expect(run(path, [1, 2, 3].map(() => ({ body: JSON.stringify(body), status: ready ? 200 : 503 }))).status).toBe(ready ? 0 : 1);
+    expect(evidence(path).counts.errors).toBe(0);
+  }
+  for (const category of ['mimir-support', 'unknown-chain'] as const) {
+    const body = JSON.parse(readiness(true)) as ReturnType<typeof readyResponse>;
+    body.warnings = body.sources.thornode.sourceWarnings = ['review context'];
+    body.sources.thornode.sourceWarningDetails = [{ severity: 'review', category, message: 'review context', action: 'review source' }];
+    expect(() => assertReadinessContract(body)).not.toThrow();
+    expect(run(root(), [1, 2, 3].map(() => ({ body: JSON.stringify(body), status: 200 }))).status).toBe(0);
+  }
+  for (const mutate of [
+    (body: ReturnType<typeof readyResponse>) => { body.commit = 'unknown'; },
+    (body: ReturnType<typeof readyResponse>) => { delete (body as Partial<typeof body>).runtime; },
+    (body: ReturnType<typeof readyResponse>) => { body.runtime.image = 'different'; },
+    (body: ReturnType<typeof readyResponse>) => { body.reasons = ['blocked']; },
+    (body: ReturnType<typeof readyResponse>) => { body.sources.midgard.visibleData.network.status = 'degraded'; },
+    (body: ReturnType<typeof readyResponse>) => { body.sources.thornode.dynamicFees.status = 'degraded'; },
+    (body: ReturnType<typeof readyResponse>) => { body.sources.thornode.runePoolPol.sources = []; },
+    (body: ReturnType<typeof readyResponse>) => { body.sources.thornode.sourceWarningDetails = [{ severity: 'critical', category: 'freshness', message: 'stale', action: 'refresh' }]; },
+  ]) {
+    const body = JSON.parse(readiness(true)) as ReturnType<typeof readyResponse>;
+    mutate(body);
+    expect(() => assertReadinessContract(body)).toThrow();
+    const path = root();
+    expect(run(path, [1, 2, 3].map(() => ({ body: JSON.stringify(body), status: 200 }))).status).toBe(1);
+    expect(evidence(path).counts).toEqual({ total: 3, ready: 0, degraded: 0, errors: 3 });
+  }
+}, 20000);

@@ -27,3 +27,30 @@ body {
   background: oklch(0.7 0.18 190 / 0.3);
   color: oklch(0.95 0.01 250);
 }
+
+/* Respect the reader's motion preference without changing content or focus. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0s !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media print {
+  @page { margin: 16mm; }
+  html, body, main { background: white !important; color: black !important; }
+  body > header, body > footer, main ~ footer, .article-citation-tools,
+  .printable-article nav, .printable-article aside,
+  .printable-article > div:first-child, .printable-article > details { display: none !important; }
+  .printable-article { padding: 0 !important; max-width: none !important; }
+  .printable-article * { color: black !important; background: transparent !important; box-shadow: none !important; }
+  .article-print-reference { display: block !important; margin-bottom: 8mm; font-size: 9pt; overflow-wrap: anywhere; }
+  .printable-article h1, .printable-article h2, .printable-article h3 { break-after: avoid; }
+  .printable-article tr, .printable-article img { break-inside: avoid; }
+  .printable-article table { width: 100% !important; min-width: 0 !important; table-layout: fixed; font-size: 9pt; }
+  .printable-article td, .printable-article th { overflow-wrap: anywhere; white-space: normal !important; }
+  .printable-article pre { white-space: pre-wrap !important; overflow-wrap: anywhere; }
+  .printable-article [class*="overflow"] { overflow: visible !important; }
+}

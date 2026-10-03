@@ -94,6 +94,24 @@
         group: root
         mode: "0755"
 
+    - name: Ensure readiness contract library directory exists
+      become: true
+      ansible.builtin.file:
+        path: /usr/local/libexec/tcwiki-readiness-monitor-lib
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Install strict jq readiness contract
+      become: true
+      ansible.builtin.copy:
+        src: scripts/lib/readiness-contract.jq
+        dest: /usr/local/libexec/tcwiki-readiness-monitor-lib/readiness-contract.jq
+        owner: root
+        group: root
+        mode: "0644"
+
     - name: Install tcwiki readiness monitor service
       become: true
       ansible.builtin.copy:

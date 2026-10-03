@@ -70,7 +70,7 @@ npm run check:production-readiness -- --samples 1 --interval-ms 0 --artifact .ar
 
 ### Independent VPS readiness timer
 
-The VPS also runs `tcwiki-readiness-monitor.timer` at minutes 08 and 38 with up to two minutes of randomized delay. It uses the same three-observation rule: the window passes when at least one valid sample is ready and fails when no sample is ready. The host monitor validates monitor-critical fields; GitHub Actions retains full JavaScript contract validation, direct-provider comparison, and issue lifecycle.
+The VPS also runs `tcwiki-readiness-monitor.timer` at minutes 08 and 38 with up to two minutes of randomized delay. It uses the same three-observation rule: the window passes when at least one valid sample is ready and fails when no sample is ready. The host monitor uses a jq counterpart of the required JavaScript identity/source contract because Node is absent on the host (read-only checked2026-10-03). Shared positive/negative fixtures cover parity; GitHub Actions retains direct-provider comparison and issue lifecycle. The service loads the root-owned `/usr/local/libexec/tcwiki-readiness-monitor-lib/readiness-contract.jq`; installation is supplied by Ansible, and missing/invalid library state fails closed. Neither validator independently enforces a timestamp calendar/age policy merely by requiring nonempty checkedAt; the application supplies the delivery age assessment. Candidate changes need owner merge/deploy before host behavior changes.
 
 The service runs as non-login account `tcwiki-readiness` with no Docker access or GitHub credential. It writes only latest bounded evidence and transition state. It does not open or close GitHub issues.
 
@@ -134,3 +134,36 @@ The production deploy path is configured for a nonce-based enforced CSP by defau
 ```bash
 CHECK_BASE_URL=https://wiki.thorchain.no REQUIRE_RUNTIME_METADATA=1 CSP_ENFORCE=1 npm run check:runtime-url
 ```
+
+
+## Cloudflare candidate promotion and rollback
+
+CI builds one WikiDO candidate, writes `.artifacts/cloudflare-manifest.json`, exercises that exact module/asset/config tree with local Wrangler and enforced CSP, and retains both under `cloudflare-candidate-<commit>`. Production downloads that artifact and checks its complete digest; it does not rebuild it. Both production target flags must be explicit 0/1 and cannot both be 1. The public domain and workers.dev URL must return the expected commit/digest, strict metadata contract and enforced CSP after propagation. Metadata `verified` validates self-reported identity fields; it is not independent attestation or live-source readiness.
+
+Before an authorized production release, record the current Worker version ID, public `/api/version` identity and previous retained artifact. Keep the SQLite WikiDO migration/binding compatible with that version. Run `wrangler versions list --config wrangler.do.jsonc --name thorchain-wiki` to identify the previous version; after owner authorization, use `wrangler rollback <previous-version-id> --config wrangler.do.jsonc --name thorchain-wiki`, then run `check:runtime-url` against both public URLs with that previous commit/digest and enforced CSP. Record previous, candidate and restored version IDs plus readbacks. Never assume code rollback restores Durable Object data or migrations. Re-deploying a retained artifact is a separate fallback if version rollback is incompatible.
+
+The workplan's local manifest tests rehearse detecting tampered/added/deleted modules, assets and policy. They do not constitute a production rollback rehearsal. Actual Worker rollback/readbacks require a separately authorized release window; the current implementation run creates PRs without merging or deploying. Retired VPS markers, backups, timers and tagged rollback images remain intact.
+
+The Vite MDX build uses the same `src/mdx-components.tsx` provider as Next so heading anchors and contained GFM tables agree. Reference: https://mdxjs.com/packages/mdx/#providerimportsource.
+
+### Browser sample age and recovery
+
+Browser live data uses the existing SWR60s fetch cadence with no focus polling. A presentation clock reassesses operation block age every second and on tab resume/online/offline; it does not fetch. Existing12s warning/30s degraded block rules remain authoritative. Aggregate samples become stale context after missing two configured refresh opportunities (120s receipt age); this is a browser sampling policy, not a provider/chain freshness guarantee. Historical intervals retain their period meaning regardless of receipt age.
+
+Failed refreshes keep the prior successful payload, provider and checkedAt and label it Last good sample; first-load failure is Unavailable. Dated operation cells require review rather than implying availability, while observed blockers remain visible. Each source exposes a manual refresh; SWR reconnect recovery remains enabled and automatic error retries are disabled, leaving scheduled/manual recovery. Quote input/expiry policy remains separate and never gains an automatic probe. There is no global store or interval-invalidating universal TTL.
+
+### Named THORNode data policies (proposal PR-52)
+
+`app-operations` collects same-provider operational, fee and RUNEPool inputs. Its receipt is `LiveDataResult.dataPolicy`, also copied into the three THORNode `/api/ready` source checks. The lag is captured once at collection start: a validated `THORNODE_SNAPSHOT_LAG_BLOCKS` from 1 to 20, default 1. A change during collection cannot change the requested snapshot or its receipt. The actual WikiDO configuration requests lag10; the fetch-handler config without that override and the default Next runtime use1. The receipt reports the applied configuration, not an inferred deployment target. Height echoes are verified separately; a configured lag never proves response pinning.
+
+`independent-chain-set` is the scheduled/manual live-chain checker. Its `sourcePolicy` receipt always reports lag1; it requires agreement among usable provider chain sets and checks curated/live membership. It does not interpret the operational-control catalog. The app can fail over to usable same-provider input without requiring all providers to agree. These different purposes justify independent selection policies.
+
+The small shared `scripts/lib/thornode-data-policy.mjs` contains only the common provider defaults, symmetric12s warning/30s degraded age limits, the fixed checker profile and the app lag validation. Bounded collection/request deadlines, payload validation and failure behavior stay with each caller. Freshness warnings remain evidence requiring review; this does not relax deployment or readiness gates. Unit fixtures demonstrate fixed1 versus app10 and collection-start retention; actual runtime configuration defaults are checked narrowly.
+
+### Readiness incident evidence (proposal PR-16)
+
+The GitHub monitor separately probes origin liveness and validated runtime identity, strict source readiness and direct THORNode block context. Alert artifacts identify source families, affected features, warning categories and distinct source receipt sets; repeated cached receipts are counted separately. Three HTTP requests do not imply three independent upstream collections. The window still requires an actually ready strict response with a healthy, matching origin; warning policy is unchanged. Request deadlines cover response bodies and each body is capped at1MiB.
+
+Readiness requests use the required current dynamic-fee endpoints and explicitly return `historyPolicy: not-requested`; optional per-thorname history is queried by the dashboard rather than delaying deployment readiness. Current endpoint warnings remain blocking under the existing contract.
+
+The serialized workflow updates one owned incident with a stable cause fingerprint and the latest linked artifact, preserves first observation/initial evidence, records prior windows when classification changes, and closes recovered incidents with a dated sampling caveat. `scripts/update-readiness-incident.mjs` owns this lifecycle. Local fake-GitHub fixtures verify creation, repeat update, changed-cause chronology and recovery; no real incident was posted during candidate validation. Artifact download links require GitHub access and expire with the existing30-day retention ([upload-artifact documentation](https://github.com/actions/upload-artifact#outputs)).

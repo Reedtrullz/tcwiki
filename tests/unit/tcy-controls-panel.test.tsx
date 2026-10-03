@@ -148,3 +148,11 @@ describe('TcyControlsView', () => {
     expect(html).toContain('PRIVATE-KEY-B');
   });
 });
+
+it('withdraws clear TCY decisions while retained block evidence is stale', () => {
+  const stale: NetworkStatus = { ...status, tcyClaimingSwapPaused: false, tcyTradingPaused: false, tcyStakeDistributionPaused: false, sourceWarnings: ['stale block'], sourceWarningDetails: [{ severity: 'critical', category: 'freshness', message: 'stale block', action: 'refresh' }] };
+  const html = renderToStaticMarkup(<TcyControlsView result={{ ...result, data: stale }} status={stale} />);
+  expect(html).toContain('Dated context');
+  expect(html).not.toContain('No tracked claim halt');
+  expect(html).not.toContain('No tracked staking halt');
+});

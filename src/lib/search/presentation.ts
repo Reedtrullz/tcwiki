@@ -105,6 +105,7 @@ const queryStopwords = new Set(['a', 'an', 'and', 'are', 'can', 'do', 'does', 'f
 const searchTypeLabels: Record<SearchDoc['type'], string> = {
   section: 'Page',
   'deep-dive': 'Deep Dive',
+  'deep-dive-section': 'Deep Dive Section',
   resource: 'Resource',
   incident: 'Incident',
   ecosystem: 'Ecosystem',

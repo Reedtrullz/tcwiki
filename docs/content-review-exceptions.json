@@ -1,0 +1,18 @@
+[
+  {
+    "collection": "SECURITY_INCIDENT_RECORDS",
+    "id": "memoless-spam-2026-08",
+    "owner": "Reidar",
+    "reason": "Proposed for owner review at merge: preserve the August incident and pending authored editorial WIP while its dated evidence is rechecked. This exception does not certify current memoless availability or reset the review date. No automatic renewal.",
+    "expiresOn": "2026-10-09",
+    "followUp": "https://github.com/Reedtrullz/tcwiki/issues/193"
+  },
+  {
+    "collection": "SEARCH_DOCUMENTS",
+    "id": "incident:memoless-spam-2026-08",
+    "owner": "Reidar",
+    "reason": "Proposed for owner review at merge: preserve the August incident and pending authored editorial WIP while its dated evidence is rechecked. This exception does not certify current memoless availability or reset the review date. No automatic renewal.",
+    "expiresOn": "2026-10-09",
+    "followUp": "https://github.com/Reedtrullz/tcwiki/issues/193"
+  }
+]

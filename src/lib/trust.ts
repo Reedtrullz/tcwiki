@@ -30,7 +30,11 @@ export function isDataConfidence(value: unknown): value is DataConfidence {
   return typeof value === 'string' && DATA_CONFIDENCES.includes(value as DataConfidence);
 }
 
-function strictDecimalNumber(value: string): number | null {
+export function parseFiniteDecimal(value: string | undefined): number | null {
+  if (value === undefined) {
+    return null;
+  }
+
   if (!DECIMAL_NUMBER_PATTERN.test(value)) {
     return null;
   }
@@ -39,7 +43,7 @@ function strictDecimalNumber(value: string): number | null {
   return Number.isFinite(numeric) ? numeric : null;
 }
 
-function runeBaseUnitsToBigInt(baseUnits: string | number | bigint | undefined): bigint | null {
+function runeBaseUnitsToBigInt(baseUnits: string | number | bigint | null | undefined): bigint | null {
   if (baseUnits === undefined || baseUnits === null || baseUnits === '') {
     return null;
   }
@@ -61,17 +65,18 @@ function runeBaseUnitsToBigInt(baseUnits: string | number | bigint | undefined):
   return baseUnits;
 }
 
-export function runeBaseUnitsToNumber(baseUnits: string | number | bigint | undefined): number | null {
+export function runeBaseUnitsToNumber(baseUnits: string | number | bigint | null | undefined): number | null {
   const units = runeBaseUnitsToBigInt(baseUnits);
   if (units === null) {
     return null;
   }
 
-  const whole = units / RUNE_BASE_UNITS;
-  if (whole > MAX_SAFE_INTEGER_BIGINT) {
+  const maxUnits = MAX_SAFE_INTEGER_BIGINT * RUNE_BASE_UNITS;
+  if (units > maxUnits || units < -maxUnits) {
     return null;
   }
 
+  const whole = units / RUNE_BASE_UNITS;
   const fractional = units % RUNE_BASE_UNITS;
   return Number(whole) + Number(fractional) / Number(RUNE_BASE_UNITS);
 }
@@ -98,12 +103,13 @@ export function normalizeApyToPercent(
     return null;
   }
 
-  const numeric = typeof value === 'number' ? value : strictDecimalNumber(value);
+  const numeric = typeof value === 'number' ? value : parseFiniteDecimal(value);
   if (numeric === null || !Number.isFinite(numeric)) {
     return null;
   }
 
-  return inputScale === 'decimal' ? numeric * 100 : numeric;
+  const percent = inputScale === 'decimal' ? numeric * 100 : numeric;
+  return Number.isFinite(percent) ? percent : null;
 }
 
 export function formatPercent(value: number | null | undefined, digits = 2): string {

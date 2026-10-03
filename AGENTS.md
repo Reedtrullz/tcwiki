@@ -5,7 +5,7 @@
 
 ## OVERVIEW
 
-Community wiki for THORChain protocol. Next.js 16 App Router + React 19 + Tailwind v4. Dark-only design system. Self-hosted Docker + Ansible. No CMS — all content is curated React/MDX.
+Community wiki for THORChain protocol. Next.js 16 App Router + React 19 + Tailwind v4. Dark-only design system. Cloudflare forwarding Worker + SQLite WikiDO/vinext; supported Next standalone/Docker verification and guarded Ansible rollback. No CMS — all content is curated React/MDX.
 
 ## STRUCTURE
 

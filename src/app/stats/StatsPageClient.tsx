@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useMemo } from 'react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { Activity, TrendingUp, TrendingDown, Zap } from 'lucide-react';
 import { useNetworkData, useEarningsHistory, useNetworkStatus, useMidgardHealth, usePools } from '@/lib/hooks/useMidgard';
 import { NetworkStatusBanner } from '@/components/features/NetworkStatusBanner';
@@ -18,6 +18,7 @@ import {
   deriveStatsPoolExplorer,
   deriveStatsPoolSnapshot,
   midgardSourceIssueIsVisible,
+  normalizeStatsPoolPeriod,
   type StatsDecisionFact,
   type StatsMetricCard,
 } from '@/lib/stats-dashboard';
@@ -27,6 +28,7 @@ import { usePoolExplorerFilters } from '@/hooks/usePoolExplorerFilters';
 import { StatsPoolExplorer } from '@/components/features/StatsPoolExplorer';
 import { StatsEarningsTable } from '@/components/features/StatsEarningsTable';
 import { DailyVolumeLeaderboard } from '@/components/features/DailyVolumeLeaderboard';
+import { PoolComparison } from '@/components/features/PoolComparison';
 
 const statsRelatedChecks: RelatedCheck[] = [
   {
@@ -155,10 +157,10 @@ function StatsSourceIssueNotice({
 }
 
 export default function StatsPage() {
-  const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const searchParamString = searchParams.toString();
+  const selectedPoolPeriod = normalizeStatsPoolPeriod(searchParams.get('pool_period'));
   const {
     data: networkData,
     result: networkResult,
@@ -179,9 +181,9 @@ export default function StatsPage() {
     error: poolsError,
     isLoading: poolsLoading,
     isDegraded: poolsDegraded,
-  } = usePools();
+  } = usePools(selectedPoolPeriod);
   const { result: midgardHealthResult } = useMidgardHealth();
-  const { result: statusResult, isLoading: statusLoading } = useNetworkStatus();
+  const { result: statusResult, isLoading: statusLoading, refresh: refreshStatus } = useNetworkStatus();
 
   const networkHasError = !networkLoading && (networkError || networkDegraded || !networkData);
   const earningsHasError = !earningsLoading && (earningsError || earningsDegraded);
@@ -202,8 +204,9 @@ export default function StatsPage() {
     poolFilters,
     updatePoolFilters,
     replacePoolFiltersInUrl,
+    poolPeriod,
+    updatePoolPeriod,
   } = usePoolExplorerFilters({
-    router,
     pathname,
     searchParamString,
     poolAvailableChains,
@@ -276,7 +279,7 @@ export default function StatsPage() {
         <p className="mb-3 max-w-3xl text-sm leading-relaxed text-slate-400">
           Check network status before treating loaded metrics as route-ready. A healthy-looking Midgard number does not override a current THORNode pause or source warning.
         </p>
-        <NetworkStatusBanner result={statusResult} isLoading={statusLoading} variant="compact" />
+        <NetworkStatusBanner onRefresh={refreshStatus} result={statusResult} isLoading={statusLoading} variant="compact" />
       </section>
 
       <section id="stats-which-numbers-matter" aria-labelledby="stats-number-guide-heading" className="mb-8">
@@ -355,7 +358,13 @@ export default function StatsPage() {
         poolAvailableChains={poolAvailableChains}
         poolAvailableStatuses={poolAvailableStatuses}
         poolsLoading={poolsLoading}
+        poolPeriod={poolPeriod}
+        updatePoolPeriod={updatePoolPeriod}
+        poolsResult={poolsResult}
+        midgardHealthResult={midgardHealthResult}
       />
+
+      <PoolComparison rows={poolSnapshot.rows} period={poolPeriod} result={poolsResult} health={midgardHealthResult} />
 
       <StatsEarningsTable
         earningsChart={earningsChart}

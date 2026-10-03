@@ -9,6 +9,7 @@ JQ_BIN=${TCWIKI_READINESS_JQ_BIN:-jq}
 SLEEP_BIN=${TCWIKI_READINESS_SLEEP_BIN:-sleep}
 FLOCK_BIN=${TCWIKI_READINESS_FLOCK_BIN:-flock}
 MV_BIN=${TCWIKI_READINESS_MV_BIN:-mv}
+CONTRACT_DIR=${TCWIKI_READINESS_CONTRACT_DIR:-$(dirname "$0")/lib}
 SAMPLE_COUNT=3
 INTERVAL_SECONDS=60
 ENDPOINT=${BASE_URL%/}/api/ready?contract=strict
@@ -79,27 +80,13 @@ while [ "$index" -le "$SAMPLE_COUNT" ]; do
     --output "$body" \
     --write-out '%{http_code}' \
     "$ENDPOINT" 2>"$error_file"); then
-    if ! "$JQ_BIN" \
+    if ! "$JQ_BIN" -L "$CONTRACT_DIR" \
       --arg observedAt "$observed_at" \
       --argjson httpStatus "$http_status" \
       '
-        def nonempty: type == "string" and length > 0;
+        include "readiness-contract";
         def bounded: gsub("\\s+"; " ") | if length > 500 then .[0:497] + "..." else . end;
-        def valid:
-          (.status == "ready" or .status == "degraded") and
-          (.ready | type == "boolean") and
-          ((.status == "ready") == .ready) and
-          (.checkedAt | nonempty) and
-          (.version | nonempty) and
-          (.commit | nonempty) and
-          (.image | nonempty) and
-          (.reasons | type == "array") and
-          ([.reasons[] | select(type != "string")] | length == 0) and
-          (.sources | type == "object") and
-          (.sources.midgard | type == "object") and
-          (.sources.thornode | type == "object") and
-          (($httpStatus == 200 and .ready) or ($httpStatus == 503 and (.ready | not)));
-        if valid then
+        if readiness_valid and (($httpStatus == 200 and .ready) or ($httpStatus == 503 and (.ready | not))) then
           {
             observedAt: $observedAt,
             readiness: {

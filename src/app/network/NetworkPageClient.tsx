@@ -1,6 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
+import type { LiveDataResult, NetworkStatus } from '@/lib/types';
 import Link from 'next/link';
 import { ChevronDown } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
@@ -9,7 +10,11 @@ import { SectionHeader } from '@/components/ui/SectionHeader';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { useMidgardHealth, useNetworkData, useNetworkStatus } from '@/lib/hooks/useMidgard';
 import { MayaNodePanel } from '@/components/features/MayaNodePanel';
+import { ThorNodePanel } from '@/components/features/ThorNodePanel';
+import { TransactionEvidenceTriage } from '@/components/features/TransactionEvidenceTriage';
 import { NetworkStatusBanner } from '@/components/features/NetworkStatusBanner';
+import { DiagnosticEvidenceExport } from '@/components/features/DiagnosticEvidenceExport';
+import { MimirProviderComparison } from '@/components/features/MimirProviderComparison';
 import { PageTableOfContents } from '@/components/layout/PageTableOfContents';
 import { LiveSourceMeta } from '@/components/ui/LiveSourceMeta';
 import { getNetworkCurrentOnlyStateLabel, getSecuredAssetsSummaryPaused } from '@/lib/network-status-summary';
@@ -19,6 +24,7 @@ const networkToc = [
   { id: 'current-operation-snapshot-heading', label: 'Operation snapshot' },
   { id: 'node-operator-guide', label: 'Node operator guide' },
   { id: 'node-types', label: 'Node types' },
+  { id: 'thorchain-node-coverage', label: 'THORChain node coverage' },
   { id: 'security-architecture', label: 'Security architecture' },
 ];
 
@@ -70,6 +76,7 @@ const securityFeatures = [
 
 interface NetworkPageClientProps {
   children?: ReactNode;
+  initialStatusResult?: LiveDataResult<NetworkStatus>;
 }
 
 interface CurrentOperationRow {
@@ -106,10 +113,10 @@ function operationBadgeVariant(value: CurrentOperationRow['value']) {
   return 'info';
 }
 
-export default function NetworkPageClient({ children }: NetworkPageClientProps) {
-  const { data: networkData, result: networkResult } = useNetworkData();
+export default function NetworkPageClient({ children, initialStatusResult }: NetworkPageClientProps) {
+  const { data: networkData, result: networkResult, refresh: refreshNetwork } = useNetworkData();
   const { result: midgardHealthResult } = useMidgardHealth();
-  const { result: statusResult, isLoading: statusLoading } = useNetworkStatus();
+  const { result: statusResult, isLoading: statusLoading, refresh: refreshStatus } = useNetworkStatus(initialStatusResult);
   const networkStatus = statusResult?.data;
 
   const liveStateValue = (
@@ -281,7 +288,7 @@ export default function NetworkPageClient({ children }: NetworkPageClientProps) 
         <div className="grid gap-3 lg:grid-cols-2">
           <div>
             <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Midgard node-count source</p>
-            <LiveSourceMeta result={networkResult} healthResult={midgardHealthResult} />
+            <LiveSourceMeta result={networkResult} onRefresh={refreshNetwork} healthResult={midgardHealthResult} />
           </div>
           <div>
             <p className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">THORNode operation-state source</p>
@@ -378,8 +385,12 @@ export default function NetworkPageClient({ children }: NetworkPageClientProps) 
         <div className="min-w-0">
 
       <div id="network-diagnostics" className="scroll-mt-24 mb-12">
-        <NetworkStatusBanner result={statusResult} isLoading={statusLoading} variant="diagnostic" showQuoteChecker />
+        <NetworkStatusBanner onRefresh={refreshStatus} result={statusResult} isLoading={statusLoading} variant="diagnostic" showQuoteChecker />
+        <DiagnosticEvidenceExport result={statusResult} />
+        <MimirProviderComparison />
       </div>
+
+      <TransactionEvidenceTriage current={statusResult} />
 
       {currentOperationSnapshot}
 
@@ -411,6 +422,7 @@ export default function NetworkPageClient({ children }: NetworkPageClientProps) 
         ))}
       </div>
 
+      <ThorNodePanel midgardNetwork={networkData} midgardResult={networkResult} />
       <MayaNodePanel />
 
         </div>
@@ -424,4 +436,3 @@ export default function NetworkPageClient({ children }: NetworkPageClientProps) 
     </PageContainer>
   );
 }
-

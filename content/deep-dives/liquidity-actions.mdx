@@ -15,7 +15,7 @@ Start with the action, then choose the source:
 
 If any source is stale, degraded, warning-backed, or missing the relevant field, say that the LP claim needs review instead of rendering zero or healthy.
 
-Official LP overview pages describe permissionless deposits and withdrawals as the product model. They do not override live `PAUSELP`, chain/pool controls, `LiquidityLockUpBlocks`, pending-liquidity rules, outbound signing state, or interface-specific transaction requirements. Likewise, the CLP page's impermanent-loss-protection section is historical: the same page explicitly says IL protection was removed.
+Official LP overview pages describe permissionless deposits and withdrawals as the product model. They do not override live `PAUSELP`, chain/pool controls, `LiquidityLockUpBlocks`, pending-liquidity rules, outbound signing state, or interface-specific transaction requirements. Likewise, the CLP page's impermanent-loss-protection section is historical: the same page explicitly says IL protection was removed for all liquidity providers. [ADR-005, amended 7 November 2023](https://dev.thorchain.org/architecture/adr-005-deprecate-ilp.html#amendment-1-nov-23-permanently-sunset-ilp), describes the permanent sunset. Impermanent loss remains a risk and can exceed swap-fee income; historical ILP formulas do not promise current coverage. This specific removal claim was source-checked on 2 October 2026; this article retains its existing overall review date.
 
 ## LP Actions Versus Swaps
 

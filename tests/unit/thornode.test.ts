@@ -1,12 +1,21 @@
+import { partitionReadinessWarnings } from '../../scripts/lib/readiness-warning-policy.mjs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import ThornodeAPI, { deriveDynamicL1FeeStatus, deriveNetworkStatus, deriveRunePoolPolStatus, resetThornodeEndpointForTests } from '@/lib/api/thornode';
+import ThornodeAPI, { createThornodeCollectionContext, reassessThornodeResult, deriveDynamicL1FeeStatus, deriveNetworkStatus, deriveRunePoolPolStatus, resetThornodeEndpointForTests } from '@/lib/api/thornode';
 import type { DynamicL1FeeSourceFreshness, RunePoolSourceFreshness, ThornodeInboundAddress } from '@/lib/types';
+import { OPERATIONAL_CONTROL_CATALOG, REVIEWED_OPERATIONAL_CONTROL_SOURCE } from '@/lib/operational-controls';
 
-const makeResponse = (ok: boolean, data: unknown, status = 200, statusText = 'OK') => ({
-  ok,
-  status,
-  statusText,
-  json: vi.fn().mockResolvedValue(data),
+const makeResponse = (ok: boolean, data: unknown, status = 200, statusText = 'OK') => new Response(JSON.stringify(data), { status: !ok && status === 200 ? 500 : status, statusText });
+
+it('retains inverted fee bounds and a non-sealing epoch value with explicit configuration warnings', () => {
+  const status = deriveDynamicL1FeeStatus(
+    { L1DynamicFeeEnabled: 1, L1DynamicFeeFloorBPS: 20, L1DynamicFeeCeilingBPS: 1, L1DynamicFeeEpochBlocks: 0 },
+    dynamicFeeFixture().dynamicFees, dynamicFeeFixture().currentDynamicFees, dynamicFreshness,
+  );
+  expect(status.mimir.floorBps).toMatchObject({ value: 20, effectiveValue: 20 });
+  expect(status.mimir.ceilingBps).toMatchObject({ value: 1, effectiveValue: 1 });
+  expect(status.mimir.epochBlocks).toMatchObject({ value: 0, effectiveValue: 0 });
+  expect(status.sourceWarningDetails).toContainEqual(expect.objectContaining({ category: 'mimir-parse', message: expect.stringContaining('inverted') }));
+  expect(status.sourceWarnings).toContainEqual(expect.stringContaining('epoch sealing is paused'));
 });
 
 interface SnapshotFixture {
@@ -40,7 +49,7 @@ function snapshotFixture(overrides: Partial<SnapshotFixture> = {}): SnapshotFixt
   return {
     mimir: { HALTTRADING: 0 },
     inbound: [completeInbound('BTC')],
-    version: { current: '3.19.2' },
+    version: { current: '3.20.3' },
     lastBlock: [{ chain: 'BTC', thorchain: 100, last_observed_in: 1000, last_signed_out: 99 }],
     latestBlock: { block: { header: { height: '101', time: new Date().toISOString() } } },
     ...overrides,
@@ -254,7 +263,7 @@ describe('deriveNetworkStatus', () => {
     const status = deriveNetworkStatus(
       { HALTTRADING: 1, HALTSIGNING: '1', PAUSELP: 1, PAUSELOANS: 0 },
       [completeInbound('BTC')],
-      '3.19.1'
+      '3.20.3'
     );
 
     expect(status.state).toBe('paused');
@@ -266,7 +275,7 @@ describe('deriveNetworkStatus', () => {
     expect(status.activeEvidenceKeys).toEqual([]);
     expect(status.activePauseKeys).toEqual(['HALTTRADING', 'HALTSIGNING', 'PAUSELP']);
     expect(status.chainStatuses[0]?.inheritedMimirKeys).toEqual(['HALTTRADING', 'HALTSIGNING', 'PAUSELP']);
-    expect(status.thorNodeVersion).toBe('3.19.1');
+    expect(status.thorNodeVersion).toBe('3.20.3');
   });
 
   it('tracks newer Mimir controls and marks missing optional controls as not monitored', () => {
@@ -283,7 +292,7 @@ describe('deriveNetworkStatus', () => {
         MANUALSWAPSTOSYNTHDISABLED: 1,
         RUNEPOOLENABLED: 1,
       },
-      [completeInbound('BTC')]
+      [completeInbound('BTC')], '3.20.3'
     );
 
     expect(status.state).toBe('paused');
@@ -324,7 +333,7 @@ describe('deriveNetworkStatus', () => {
           chain_trading_paused: true,
           chain_lp_actions_paused: true,
         },
-      ]
+      ], '3.20.3'
     );
 
     expect(status.state).toBe('paused');
@@ -363,7 +372,7 @@ describe('deriveNetworkStatus', () => {
         completeInbound('BSC'),
         completeInbound('SOL'),
         completeInbound('ETH'),
-      ]
+      ], '3.20.3'
     );
 
     expect(status.state).toBe('paused');
@@ -432,7 +441,7 @@ describe('deriveNetworkStatus', () => {
       [
         completeInbound('BTC'),
         completeInbound('ETH'),
-      ]
+      ], '3.20.3'
     );
 
     expect(status.chainStatuses.map((chain) => [chain.chain, chain.tradingPaused])).toEqual([
@@ -450,7 +459,7 @@ describe('deriveNetworkStatus', () => {
         HALTBSCTRADING: 1,
         'PAUSELPDEPOSIT-SOL-SOL': 1,
       },
-      []
+      [], '3.20.3'
     );
 
     expect(status.chainStatuses).toEqual([
@@ -503,7 +512,7 @@ describe('deriveNetworkStatus', () => {
         'HaltWasmCs-abc123': 1,
         'HaltWasmContract-thor1contract': 1,
       },
-      [completeInbound('BTC'), completeInbound('ETH')]
+      [completeInbound('BTC'), completeInbound('ETH')], '3.20.3'
     );
 
     expect(status.state).toBe('paused');
@@ -515,7 +524,9 @@ describe('deriveNetworkStatus', () => {
     expect(status.unbondPaused).toBe(true);
     expect(status.rebondHalted).toBe(true);
     expect(status.operatorRotateHalted).toBe(true);
-    expect(status.oracleHalted).toBe(true);
+    expect(status.oracleHalted).toBeNull();
+    expect(status.observedMimir?.HaltOracle).toBe(1);
+    expect(status.monitoredControls.find((control) => control.key === 'HaltOracle')?.state).toBe('unsupported');
     expect(status.securedAssetDepositPauseKeys).toEqual(['HaltSecuredDeposit-ETH-ETH']);
     expect(status.securedAssetWithdrawPauseKeys).toEqual(['HaltSecuredWithdraw-BTC-BTC']);
     expect(status.wasmDeployerHaltKeys).toEqual(['HaltWasmDeployer-thor1deployer']);
@@ -535,7 +546,6 @@ describe('deriveNetworkStatus', () => {
       'PauseUnbond',
       'HaltRebond',
       'HaltOperatorRotate',
-      'HaltOracle',
       'HaltSecuredDeposit-*',
       'HaltSecuredWithdraw-*',
       'HaltWasmDeployer-*',
@@ -558,7 +568,6 @@ describe('deriveNetworkStatus', () => {
       'PauseUnbond',
       'HaltRebond',
       'HaltOperatorRotate',
-      'HaltOracle',
       'HaltSecuredDeposit-*',
       'HaltSecuredWithdraw-*',
       'HaltWasmDeployer-*',
@@ -575,7 +584,7 @@ describe('deriveNetworkStatus', () => {
   it('classifies NODEPAUSECHAINGLOBAL as both node pause control and source evidence', () => {
     const status = deriveNetworkStatus(
       { NODEPAUSECHAINGLOBAL: 1 },
-      [completeInbound('BTC')]
+      [completeInbound('BTC')], '3.20.3'
     );
 
     expect(status.state).toBe('paused');
@@ -593,7 +602,7 @@ describe('deriveNetworkStatus', () => {
         'EVMALLOWANCECHECK-AVAX': 1,
         'DYNAMICFEE-WHITELIST-SYMBIOSIS': 1,
       },
-      [completeInbound('AVAX')]
+      [completeInbound('AVAX')], '3.20.3'
     );
 
     expect(status.state).toBe('operational');
@@ -611,7 +620,7 @@ describe('deriveNetworkStatus', () => {
         HALTWASMGLOBAL: 100,
       },
       [completeInbound('BTC')],
-      '3.19.2',
+      '3.20.3',
       100
     );
 
@@ -652,13 +661,13 @@ describe('deriveNetworkStatus', () => {
     const active = deriveNetworkStatus(
       { NODEPAUSECHAINGLOBAL: 150 },
       [completeInbound('BTC')],
-      '3.19.2',
+      '3.20.3',
       100
     );
     const expired = deriveNetworkStatus(
       { NODEPAUSECHAINGLOBAL: 50 },
       [completeInbound('BTC')],
-      '3.19.2',
+      '3.20.3',
       100
     );
 
@@ -682,7 +691,7 @@ describe('deriveNetworkStatus', () => {
         BANKSENDENABLED: 0,
       },
       [],
-      '3.19.2',
+      '3.20.3',
       100
     );
 
@@ -714,7 +723,7 @@ describe('deriveNetworkStatus', () => {
         'HaltWasmContract-thor1contract': 100,
       },
       [completeInbound('BTC'), completeInbound('ETH')],
-      '3.19.2',
+      '3.20.3',
       100
     );
 
@@ -763,7 +772,7 @@ describe('deriveNetworkStatus', () => {
         'HaltTradeDeposit-ETH': 0,
       },
       [completeInbound('BASE'), completeInbound('BSC'), completeInbound('ETH')],
-      '3.19.3',
+      '3.20.3',
       100
     );
 
@@ -784,7 +793,7 @@ describe('deriveNetworkStatus', () => {
     const scheduled = deriveNetworkStatus(
       { 'HaltTradeDeposit-BSC': 200 },
       [completeInbound('BSC')],
-      '3.19.3',
+      '3.20.3',
       100
     );
     expect(scheduled.state).toBe('operational');
@@ -795,7 +804,7 @@ describe('deriveNetworkStatus', () => {
     const malformed = deriveNetworkStatus(
       { 'HaltTradeWithdraw-BASE': 'not-a-height' },
       [completeInbound('BASE')],
-      '3.19.3',
+      '3.20.3',
       100
     );
     expect(malformed.state).toBe('degraded');
@@ -811,7 +820,7 @@ describe('deriveNetworkStatus', () => {
         'HaltTradeWithdraw-FOO': 1,
       },
       [completeInbound('BASE'), completeInbound('TRON')],
-      '3.19.3',
+      '3.20.3',
       100
     );
     expect(nearMiss.state).toBe('degraded');
@@ -835,7 +844,7 @@ describe('deriveNetworkStatus', () => {
         HALTTRRONTRADING: 1,
       },
       [completeInbound('TRON')],
-      '3.20.0',
+      '3.20.3',
       100
     );
 
@@ -864,7 +873,7 @@ describe('deriveNetworkStatus', () => {
   it('marks per-chain signing halts as paused even when global signing is open', () => {
     const status = deriveNetworkStatus(
       { HALTSIGNING: 0, HALTSIGNINGBTC: 1 },
-      [completeInbound('BTC')]
+      [completeInbound('BTC')], '3.20.3'
     );
 
     expect(status.state).toBe('paused');
@@ -891,7 +900,7 @@ describe('deriveNetworkStatus', () => {
         HALTETHSIGNING: 1,
         SOLVENCYHALTBTCCHAIN: '1',
       },
-      []
+      [], '3.20.3'
     );
 
     expect(status.state).toBe('paused');
@@ -934,7 +943,7 @@ describe('deriveNetworkStatus', () => {
         HALTBTCCHAIN: '',
         PAUSELPBTC: ' ',
       },
-      []
+      [], '3.20.3'
     );
 
     expect(status.state).toBe('degraded');
@@ -975,7 +984,7 @@ describe('deriveNetworkStatus', () => {
         HALTETHSIGNING: 'paused',
         SOLVENCYHALTBTCCHAIN: 'halted',
       },
-      []
+      [], '3.20.3'
     );
 
     expect(status.state).toBe('degraded');
@@ -1015,7 +1024,7 @@ describe('deriveNetworkStatus', () => {
   it('marks clean state operational', () => {
     const status = deriveNetworkStatus(
       { HALTTRADING: 0, HALTSIGNING: 0, PAUSELP: 0 },
-      [completeInbound('BTC')]
+      [completeInbound('BTC')], '3.20.3'
     );
 
     expect(status.state).toBe('operational');
@@ -1027,11 +1036,125 @@ describe('deriveNetworkStatus', () => {
     expect(status.sourceWarnings).toEqual([]);
   });
 
+  it('uses reviewed activation boundaries for catalog controls', () => {
+    const cases = [
+      { key: 'HALTTRADING', mode: 'at-or-after-height', heights: [[99, 'scheduled'], [100, 'active'], [101, 'active']] },
+      { key: 'HALTWASMGLOBAL', mode: 'after-height', heights: [[99, 'scheduled'], [100, 'scheduled'], [101, 'active']] },
+      { key: 'NODEPAUSECHAINGLOBAL', mode: 'until-height', heights: [[99, 'active'], [100, 'active'], [101, 'inactive']] },
+    ] as const;
+
+    for (const testCase of cases) {
+      const definition = OPERATIONAL_CONTROL_CATALOG.find((control) => control.key === testCase.key);
+      expect(definition?.activationMode).toBe(testCase.mode);
+      expect(definition?.reviewedSource).toEqual(REVIEWED_OPERATIONAL_CONTROL_SOURCE);
+      for (const [height, expectedState] of testCase.heights) {
+        const status = deriveNetworkStatus({ [testCase.key]: 100 }, [], '3.20.3', height);
+        expect(status.monitoredControls.find((control) => control.key === testCase.key)?.state)
+          .toBe(expectedState);
+      }
+    }
+
+    const disabledAtZero = deriveNetworkStatus({ BANKSENDENABLED: 0 }, [], '3.20.3', 100);
+    const enabledAtOne = deriveNetworkStatus({ BANKSENDENABLED: 1 }, [], '3.20.3', 100);
+    expect(disabledAtZero.monitoredControls.find((control) => control.key === 'BANKSENDENABLED'))
+      .toMatchObject({ state: 'disabled', active: true });
+    expect(enabledAtOne.monitoredControls.find((control) => control.key === 'BANKSENDENABLED'))
+      .toMatchObject({ state: 'inactive', active: false });
+  });
+
+  it('keeps absent and invalid values distinct and warns on unreviewed versions', () => {
+    const absent = deriveNetworkStatus({}, [], '3.20.3', 100);
+    const absentControl = absent.monitoredControls.find((control) => control.key === 'HALTTRADING');
+    expect(absentControl?.state).toBe('not-monitored');
+    expect(absentControl?.description).toContain('no Mimir override was returned');
+    expect(absentControl?.description).toContain('effective protocol default is not inferred');
+    expect(absent.monitoredControls.find((control) => control.key === 'HaltTradeDeposit-*')?.description)
+      .toContain('effective protocol default is not inferred');
+
+    const invalid = deriveNetworkStatus({ HALTTRADING: 'invalid' }, [], '3.20.3', 100);
+    expect(invalid.monitoredControls.find((control) => control.key === 'HALTTRADING')?.state).toBe('unparseable');
+
+    const unsupported = deriveNetworkStatus({ HALTTRADING: 1 }, [], '3.19.2', 100);
+    expect(unsupported.monitoredControls.find((control) => control.key === 'HALTTRADING')?.state).toBe('unsupported');
+    expect(unsupported.sourceWarningDetails).toContainEqual(expect.objectContaining({
+      category: 'control-applicability',
+      severity: 'review',
+      keys: OPERATIONAL_CONTROL_CATALOG.map((control) => control.key),
+    }));
+    expect(unsupported.activeControlKeys).toEqual([]);
+  });
+
+  it('applies each reviewed height-control boundary, including scoped controls', () => {
+    const inclusive = [
+      ['HALTTRADING', 'HALTTRADING'], ['HALTSIGNING', 'HALTSIGNING'], ['PAUSELP', 'PAUSELP'],
+      ['RUNEPoolHaltDeposit', 'RUNEPoolHaltDeposit'], ['RUNEPoolHaltWithdraw', 'RUNEPoolHaltWithdraw'],
+      ['HALTCHAINGLOBAL', 'HALTCHAINGLOBAL'], ['HALTCHURNING', 'HALTCHURNING'],
+      ['HALTSECUREDGLOBAL', 'HALTSECUREDGLOBAL'], ['HALTTCYTRADING', 'HALTTCYTRADING'],
+      ['HaltSecuredDeposit-*', 'HaltSecuredDeposit-BTC'], ['HaltSecuredWithdraw-*', 'HaltSecuredWithdraw-BTC'],
+      ['HaltTradeDeposit-*', 'HaltTradeDeposit-BTC'], ['HaltTradeWithdraw-*', 'HaltTradeWithdraw-BTC'],
+    ];
+    const exclusive = [
+      ['HALTWASMGLOBAL', 'HALTWASMGLOBAL'], ['HaltWasmDeployer-*', 'HaltWasmDeployer-thor1actor'],
+      ['HaltWasmCs-*', 'HaltWasmCs-ABC234'], ['HaltWasmContract-*', 'HaltWasmContract-abc123'],
+    ];
+    for (const [rows, states] of [
+      [inclusive, ['scheduled', 'active', 'active']],
+      [exclusive, ['scheduled', 'scheduled', 'active']],
+    ] as const) {
+      for (const [catalogKey, observedKey] of rows) {
+        for (const [index, height] of [99, 100, 101].entries()) {
+          const status = deriveNetworkStatus({ [observedKey]: 100 }, [completeInbound('BTC')], '3.20.3', height);
+          expect(status.monitoredControls.find((control) => control.key === catalogKey)?.state, `${catalogKey} at ${height}`)
+            .toBe(states[index]);
+        }
+      }
+    }
+    expect(deriveNetworkStatus({ NODEPAUSECHAINGLOBAL: 0 }, [], '3.20.3', 0)
+      .monitoredControls.find((control) => control.key === 'NODEPAUSECHAINGLOBAL')?.state).toBe('active');
+  });
+
+  it.each(['PAUSELOANS', 'HaltOracle'])('preserves %s without assigning an unverified activation rule', (key) => {
+    for (const value of [0, 1]) {
+      const status = deriveNetworkStatus({ [key]: value }, [], '3.20.3', 100);
+      expect(status.monitoredControls.find((control) => control.key === key))
+        .toMatchObject({ state: 'unsupported', active: false });
+      expect(status.observedMimir?.[key]).toBe(value);
+      expect(status.activeControlKeys).not.toContain(key);
+      expect(status.sourceWarningDetails).toContainEqual(expect.objectContaining({ category: 'control-applicability', keys: [key] }));
+    }
+  });
+
+  it.each([
+    ['HALTTRADING', 'HALTTRADING'],
+    ['TRADEACCOUNTSDEPOSITENABLED', 'TRADEACCOUNTSDEPOSITENABLED'],
+    ['HaltSecuredDeposit-BTC', 'HaltSecuredDeposit-*'],
+  ])('rejects a returned negative sentinel for %s instead of inferring a default', (key, catalogKey) => {
+    const status = deriveNetworkStatus({ [key]: -1 }, [completeInbound('BTC')], '3.20.3', 100);
+    expect(status.monitoredControls.find((control) => control.key === catalogKey)?.state).toBe('unparseable');
+    expect(status.invalidMimirKeys).toContain(key);
+    expect(status.observedMimir?.[key]).toBe(-1);
+    expect(status.sourceWarningDetails?.some((detail) => detail.category === 'mimir-parse')).toBe(true);
+  });
+
+  it.each([undefined, '', '3.19.2', '3.20.4'])('withdraws interpreted control flags for unreviewed version %s', (version) => {
+    const mimir = { HALTTRADING: 0, PauseBond: 1, TRADEACCOUNTSENABLED: 1 };
+    const status = deriveNetworkStatus(mimir, [completeInbound('BTC')], version, 100);
+    expect(status.state).toBe('degraded');
+    expect(status.tradingPaused).toBeNull();
+    expect(status.bondPaused).toBeNull();
+    expect(status.tradeAccountsEnabled).toBeNull();
+    expect(status.observedMimir).toEqual(mimir);
+    expect(status.monitoredControls.find((control) => control.key === 'PauseBond')?.state).toBe('unsupported');
+    expect(status.sourceWarningDetails).toContainEqual(expect.objectContaining({ category: 'control-applicability' }));
+    expect(partitionReadinessWarnings(status.sourceWarnings, status.sourceWarningDetails ?? []).blocking.length).toBeGreaterThan(0);
+    expect(status.summary).not.toContain('do not show active halt');
+  });
+
   it('degrades when inbound_addresses omits operation fields needed to prove chains open', () => {
     const status = deriveNetworkStatus(
       { HALTTRADING: 0, HALTSIGNING: 0, PAUSELP: 0 },
       [{ chain: 'BTC' }],
-      '3.19.2',
+      '3.20.3',
       100
     );
 
@@ -1041,6 +1164,16 @@ describe('deriveNetworkStatus', () => {
     expect(status.activeEvidenceKeys).toEqual([]);
     expect(status.invalidMimirKeys).toEqual([]);
     expect(status.sourceWarnings).toEqual([warning]);
+    expect(status.chainStatuses[0]?.sourceWarningDetails).toEqual([
+      {
+        severity: 'warning',
+        category: 'source-shape',
+        message: warning,
+        action: 'Treat the affected chain operation fields as partial until inbound_addresses returns them.',
+        scopes: ['BTC'],
+      },
+    ]);
+    expect(status.sourceWarnings).toEqual(status.sourceWarningDetails?.map((detail) => detail.message));
     expect(status.summary).toBe('Current-only live sources do not show active halt flags, but source warnings need review.');
     expect(status.chainStatuses[0]).toEqual({
       chain: 'BTC',
@@ -1052,6 +1185,15 @@ describe('deriveNetworkStatus', () => {
       activeMimirKeys: [],
       lpDepositPauseKeys: [],
       sourceWarnings: [warning],
+      sourceWarningDetails: [
+        {
+          severity: 'warning',
+          category: 'source-shape',
+          message: warning,
+          action: 'Treat the affected chain operation fields as partial until inbound_addresses returns them.',
+          scopes: ['BTC'],
+        },
+      ],
     });
   });
 
@@ -1068,7 +1210,7 @@ describe('deriveNetworkStatus', () => {
         TRADEACCOUNTSENABLED: 'maybe',
         RUNEPOOLENABLED: ' ',
       },
-      [completeInbound('BTC'), completeInbound('ETH')]
+      [completeInbound('BTC'), completeInbound('ETH')], '3.20.3'
     );
 
     expect(status.state).toBe('degraded');
@@ -1122,7 +1264,7 @@ describe('deriveNetworkStatus', () => {
         'HaltSecuredWithdraw-BTC': 1.5,
       },
       [completeInbound('BTC'), completeInbound('ETH')],
-      '3.19.2',
+      '3.20.3',
       100
     );
 
@@ -1149,7 +1291,7 @@ describe('deriveNetworkStatus', () => {
         HALTFOOTRADING: 'bad',
         PAUSELPFOO: ' ',
       },
-      [completeInbound('BTC')]
+      [completeInbound('BTC')], '3.20.3'
     );
 
     expect(status.state).toBe('degraded');
@@ -1171,7 +1313,7 @@ describe('deriveNetworkStatus', () => {
         OtherFeatureDisabled: 1,
         BenignLimit: 1,
       },
-      [completeInbound('BTC')]
+      [completeInbound('BTC')], '3.20.3'
     );
 
     expect(status.state).toBe('degraded');
@@ -1189,6 +1331,7 @@ describe('deriveNetworkStatus', () => {
         keys: ['NewFeatureEnabled', 'OtherFeatureDisabled'],
       },
     ]);
+    expect(status.sourceWarnings).toEqual(status.sourceWarningDetails?.map((detail) => detail.message));
   });
 
   it('splits reviewed operational-support Mimir families from unknown high-impact keys', () => {
@@ -1207,7 +1350,7 @@ describe('deriveNetworkStatus', () => {
         'DYNAMICFEE-WHITELIST-SS': 1,
         'EVMALLOWANCECHECK-AVAX': 1,
       },
-      [completeInbound('BTC'), completeInbound('AVAX')]
+      [completeInbound('BTC'), completeInbound('AVAX')], '3.20.3'
     );
 
 	    expect(status.state).toBe('degraded');
@@ -1249,7 +1392,7 @@ describe('deriveNetworkStatus', () => {
           chain_lp_actions_paused: true,
         }),
       ],
-      '3.19.2',
+      '3.20.3',
       100
     );
 
@@ -1269,13 +1412,13 @@ describe('deriveNetworkStatus', () => {
       snapshotFixture({
         mimir: [],
         inbound: [completeInbound('ETH', { halted: true })],
-        version: { current: 'first-provider' },
+        version: { current: '3.20.3' },
         lastBlock: [{ chain: 'BTC', thorchain: 100, last_observed_in: 1000, last_signed_out: 99 }],
       }),
       snapshotFixture({
         mimir: { HALTTRADING: 0 },
         inbound: [completeInbound('BTC')],
-        version: { current: 'second-provider' },
+        version: { current: '3.20.3' },
         lastBlock: [{ chain: 'BTC', thorchain: 100, last_observed_in: 1000, last_signed_out: 99 }],
       })
     );
@@ -1285,7 +1428,7 @@ describe('deriveNetworkStatus', () => {
     expect(result.status).toBe('ok');
     expect(result.source?.label).toBe('THORChain THORNode');
     expect(result.data?.state).toBe('operational');
-    expect(result.data?.thorNodeVersion).toBe('second-provider');
+    expect(result.data?.thorNodeVersion).toBe('3.20.3');
     expect(result.data?.thorchainHeight).toBe(100);
     expect(result.data?.chainStatuses.map((chain) => chain.chain)).toEqual(['BTC']);
   });
@@ -1308,7 +1451,7 @@ describe('deriveNetworkStatus', () => {
         return makeResponse(true, [completeInbound('BTC')]);
       }
       if (pathname.endsWith('/version')) {
-        return makeResponse(true, { current: '3.19.2' });
+        return makeResponse(true, { current: '3.20.3' });
       }
       if (pathname.endsWith('/lastblock')) {
         return makeResponse(true, [{ chain: 'BTC', thorchain: 99, last_observed_in: 1000, last_signed_out: 99 }]);
@@ -1351,9 +1494,16 @@ describe('deriveNetworkStatus', () => {
         latestBlock: { block: { header: { height: '110', time: new Date().toISOString() } } },
       });
       stubNetworkStatusSnapshots(fixture, fixture);
-      const result = await ThornodeAPI.getNetworkStatus();
+      const context = createThornodeCollectionContext();
+      process.env.THORNODE_SNAPSHOT_LAG_BLOCKS = '1';
+      const result = await ThornodeAPI.getNetworkStatus(context);
       expect(result.status).toBe('ok');
       expect(result.data?.thorchainHeight).toBe(100);
+      expect(result).toMatchObject({ dataPolicy: {
+        profile: 'app-operations', snapshotLagBlocks: 10,
+        blockAgeWarningSeconds: 12, blockAgeDegradedSeconds: 30,
+        futureWarningSeconds: 12, futureDegradedSeconds: 30,
+      } });
       expect(result.sources?.filter((source) => source.url.includes('?height='))
         .every((source) => source.url.endsWith('?height=100'))).toBe(true);
     } finally {
@@ -1367,13 +1517,13 @@ describe('deriveNetworkStatus', () => {
       snapshotFixture({
         mimir: { HALTTRADING: 1 },
         inbound: [completeInbound('BTC', { halted: true })],
-        version: { current: 'first-provider' },
+        version: { current: '3.20.3' },
         lastBlock: [{ chain: 'THOR' }],
       }),
       snapshotFixture({
         mimir: { HALTTRADING: 0 },
         inbound: [completeInbound('BTC')],
-        version: { current: 'second-provider' },
+        version: { current: '3.20.3' },
         lastBlock: [{ chain: 'BTC', thorchain: 100, last_observed_in: 1000, last_signed_out: 99 }],
       })
     );
@@ -1385,7 +1535,7 @@ describe('deriveNetworkStatus', () => {
     expect(result.data?.state).toBe('operational');
     expect(result.data?.tradingPaused).toBe(false);
     expect(result.data?.chainStatuses[0]?.halted).toBe(false);
-    expect(result.data?.thorNodeVersion).toBe('second-provider');
+    expect(result.data?.thorNodeVersion).toBe('3.20.3');
   });
 
   it('falls back when a THORNode provider returns an unusable version shape', async () => {
@@ -1395,7 +1545,7 @@ describe('deriveNetworkStatus', () => {
         lastBlock: [{ chain: 'BTC', thorchain: 100, last_observed_in: 1000, last_signed_out: 99 }],
       }),
       snapshotFixture({
-        version: { current: 'second-provider' },
+        version: { current: '3.20.3' },
         lastBlock: [{ chain: 'BTC', thorchain: 100, last_observed_in: 1000, last_signed_out: 99 }],
       })
     );
@@ -1404,7 +1554,7 @@ describe('deriveNetworkStatus', () => {
 
     expect(result.status).toBe('ok');
     expect(result.source?.label).toBe('THORChain THORNode');
-    expect(result.data?.thorNodeVersion).toBe('second-provider');
+    expect(result.data?.thorNodeVersion).toBe('3.20.3');
     expect(result.data?.thorchainHeight).toBe(100);
   });
 
@@ -1412,12 +1562,12 @@ describe('deriveNetworkStatus', () => {
     stubNetworkStatusSnapshots(
       snapshotFixture({
         inbound: [],
-        version: { current: 'first-provider' },
+        version: { current: '3.20.3' },
         lastBlock: [{ chain: 'BTC', thorchain: 100, last_observed_in: 1000, last_signed_out: 99 }],
       }),
       snapshotFixture({
         inbound: [completeInbound('BTC')],
-        version: { current: 'second-provider' },
+        version: { current: '3.20.3' },
         lastBlock: [{ chain: 'BTC', thorchain: 100, last_observed_in: 1000, last_signed_out: 99 }],
       })
     );
@@ -1427,7 +1577,7 @@ describe('deriveNetworkStatus', () => {
     expect(result.status).toBe('ok');
     expect(result.source?.label).toBe('THORChain THORNode');
     expect(result.data?.chainStatuses.map((chain) => chain.chain)).toEqual(['BTC']);
-    expect(result.data?.thorNodeVersion).toBe('second-provider');
+    expect(result.data?.thorNodeVersion).toBe('3.20.3');
   });
 
   it('degrades when every THORNode endpoint returns an empty inbound address list', async () => {
@@ -1459,7 +1609,7 @@ describe('deriveNetworkStatus', () => {
         lastBlock: [{ chain: 'BTC', thorchain: 99, last_observed_in: 1000, last_signed_out: 98 }],
       }),
       snapshotFixture({
-        version: { current: 'second-provider' },
+        version: { current: '3.20.3' },
         inbound: [completeInbound('BTC')],
       })
     );
@@ -1469,7 +1619,7 @@ describe('deriveNetworkStatus', () => {
     expect(result.status).toBe('ok');
     expect(result.source?.label).toBe('THORChain THORNode');
     expect(result.data?.state).toBe('operational');
-    expect(result.data?.thorNodeVersion).toBe('second-provider');
+    expect(result.data?.thorNodeVersion).toBe('3.20.3');
     expect(result.data?.sourceWarnings).toEqual([]);
   });
 
@@ -1494,7 +1644,7 @@ describe('deriveNetworkStatus', () => {
       }),
       snapshotFixture({
         mimir: unknownOperationMimir,
-        version: { current: 'less-degraded-provider' },
+        version: { current: '3.20.3' },
         latestBlock: {
           block: {
             header: {
@@ -1511,7 +1661,7 @@ describe('deriveNetworkStatus', () => {
 
     expect(result.status).toBe('ok');
     expect(result.source?.label).toBe('THORChain THORNode');
-    expect(result.data?.thorNodeVersion).toBe('less-degraded-provider');
+    expect(result.data?.thorNodeVersion).toBe('3.20.3');
     expect(result.data?.sourceWarnings).toEqual([
       'Known operational-support Mimir key present: BURNSYNTHS.',
     ]);
@@ -1528,22 +1678,22 @@ describe('deriveNetworkStatus', () => {
     async (kind) => {
       vi.useFakeTimers({ toFake: ['Date'] });
       vi.setSystemTime(new Date('2026-07-03T12:00:00.000Z'));
-      const latestBlock = { block: { header: { height: '101', time: '2026-07-03T12:00:15.000Z' } } };
+      const latestBlock = { block: { header: { height: '101', time: '2026-07-03T11:59:49.000Z' } } };
       if (kind === 'network') stubNetworkStatusSnapshots(snapshotFixture({ latestBlock }), snapshotFixture({ latestBlock }));
       else if (kind === 'dynamic fees') stubDynamicFeeSnapshots(dynamicFeeFixture({ latestBlock }), dynamicFeeFixture({ latestBlock }));
       else stubRunePoolSnapshots(runePoolFixture({ latestBlock }), runePoolFixture({ latestBlock }));
       const retrieve = vi.mocked(fetch).getMockImplementation()!;
       vi.mocked(fetch).mockImplementation(async (...args) => {
-        vi.setSystemTime(new Date('2026-07-03T12:00:20.000Z'));
+        vi.setSystemTime(new Date('2026-07-03T12:00:02.000Z'));
         return retrieve(...args);
       });
       const result = kind === 'network' ? await ThornodeAPI.getNetworkStatus()
         : kind === 'dynamic fees' ? await ThornodeAPI.getDynamicL1FeeStatus()
           : await ThornodeAPI.getRunePoolPolStatus();
       expect(result.status).toBe('ok');
-      expect(result.data?.sourceWarnings).toEqual([]);
+      expect(result.data?.sourceWarnings.some((message) => message.includes('13 seconds old'))).toBe(true);
       const data = result.data!;
-      expect('sourceFreshness' in data ? data.sourceFreshness.thorchainBlockAgeSeconds : data.thorchainBlockAgeSeconds).toBe(5);
+      expect('sourceFreshness' in data ? data.sourceFreshness.thorchainBlockAgeSeconds : data.thorchainBlockAgeSeconds).toBe(13);
     }
   );
 
@@ -1621,7 +1771,7 @@ describe('deriveNetworkStatus', () => {
         ],
         latestBlock: { block: { header: { height: '110', time: new Date().toISOString() } } },
       }),
-      snapshotFixture({ version: { current: 'second-provider' } })
+      snapshotFixture({ version: { current: '3.20.3' } })
     );
 
     const result = await ThornodeAPI.getNetworkStatus();
@@ -1629,7 +1779,7 @@ describe('deriveNetworkStatus', () => {
     expect(result.status).toBe('ok');
     expect(result.source?.label).toBe('THORChain THORNode');
     expect(result.data?.state).toBe('operational');
-    expect(result.data?.thorNodeVersion).toBe('second-provider');
+    expect(result.data?.thorNodeVersion).toBe('3.20.3');
   });
 
   it('surfaces missing per-chain lastblock evidence as a chain source warning', async () => {
@@ -1659,11 +1809,11 @@ describe('deriveNetworkStatus', () => {
     stubNetworkStatusSnapshots(
       snapshotFixture({
         inbound: [completeInbound('BTC'), completeInbound('btc')],
-        version: { current: 'first-provider' },
+        version: { current: '3.20.3' },
       }),
       snapshotFixture({
         inbound: [completeInbound('ETH')],
-        version: { current: 'second-provider' },
+        version: { current: '3.20.3' },
       })
     );
 
@@ -1671,7 +1821,7 @@ describe('deriveNetworkStatus', () => {
 
     expect(result.status).toBe('ok');
     expect(result.source?.label).toBe('THORChain THORNode');
-    expect(result.data?.thorNodeVersion).toBe('second-provider');
+    expect(result.data?.thorNodeVersion).toBe('3.20.3');
     expect(result.data?.chainStatuses.map((chain) => chain.chain)).toEqual(['ETH']);
   });
 
@@ -1692,10 +1842,10 @@ describe('deriveNetworkStatus', () => {
     stubNetworkStatusSnapshots(
       snapshotFixture({
         latestBlock: { block: { header: { height: '100' } } },
-        version: { current: 'first-provider' },
+        version: { current: '3.20.3' },
       }),
       snapshotFixture({
-        version: { current: 'second-provider' },
+        version: { current: '3.20.3' },
       })
     );
 
@@ -1703,7 +1853,7 @@ describe('deriveNetworkStatus', () => {
 
     expect(result.status).toBe('ok');
     expect(result.source?.label).toBe('THORChain THORNode');
-    expect(result.data?.thorNodeVersion).toBe('second-provider');
+    expect(result.data?.thorNodeVersion).toBe('3.20.3');
   });
 
   it('degrades network status when every THORNode endpoint has an unusable snapshot', async () => {
@@ -2383,6 +2533,13 @@ describe('deriveNetworkStatus', () => {
     ]));
     expect(status.sourceWarningDetails.some((detail) => detail.category === 'source-shape')).toBe(true);
     expect(status.sourceWarningDetails.some((detail) => detail.category === 'mimir-parse')).toBe(true);
+    expect(status.sourceWarnings).toEqual(status.sourceWarningDetails.map((detail) => detail.message));
+    expect(status.sourceWarningDetails.find((detail) => detail.keys?.includes('POL-BTC'))).toMatchObject({
+      severity: 'review',
+      category: 'mimir-parse',
+      keys: ['POL-BTC'],
+      action: 'Review the exact POL Mimir key before treating the POL-enabled pool set as clean.',
+    });
   });
 
   it('fetches RUNEPool accounting and Mimir from the same pinned provider', async () => {
@@ -2691,4 +2848,262 @@ describe('deriveNetworkStatus', () => {
     expect(result.error).toContain('two different assets');
     expect(fetchMock).not.toHaveBeenCalled();
   });
+});
+
+describe('Mimir canonical alias boundary', () => {
+  afterEach(() => { vi.unstubAllGlobals(); resetThornodeEndpointForTests(); });
+  it.each([
+    { HALTTRADING: 0, HaltTrading: 1 },
+    { HaltTrading: 1, HALTTRADING: 0 },
+    { HALTTRADING: 0, HaltTrading: 0 },
+  ])('rejects duplicate canonical spellings irrespective of order or values: %j', mimir => {
+    expect(() => deriveNetworkStatus(mimir, [completeInbound('BTC')], '3.19.2', 100)).toThrow(/Mimir.*aliases.*HALTTRADING.*HaltTrading/);
+    expect(() => deriveDynamicL1FeeStatus(mimir, dynamicFeeFixture().dynamicFees, dynamicFeeFixture().currentDynamicFees, dynamicFreshness)).toThrow(/aliases/);
+    expect(() => deriveRunePoolPolStatus(mimir, runePoolFixture().runepool, runePoolFreshness)).toThrow(/aliases/);
+  });
+  it('falls back from a conflicting provider instead of accepting a clean decision', async () => {
+    stubNetworkStatusSnapshots(snapshotFixture({ mimir: { HALTTRADING: 0, HaltTrading: 1 } }), snapshotFixture());
+    const result = await ThornodeAPI.getNetworkStatus();
+    expect(result.status).toBe('ok');
+    expect(result.source?.url).toContain('thornode.thorchain.network');
+  });
+  it('retains actionable provenance when every provider has conflicting aliases', async () => {
+    const fixture = snapshotFixture({ mimir: { HALTTRADING: 0, HaltTrading: 1 } });
+    stubNetworkStatusSnapshots(fixture, fixture);
+    const result = await ThornodeAPI.getNetworkStatus();
+    expect(result.status).toBe('degraded'); expect(result.data).toBeUndefined();
+    expect(result.error).toMatch(/Mimir.*aliases.*HALTTRADING.*HaltTrading/);
+  });
+});
+
+it('keeps explicit warning policy stable when compatibility wording changes', () => {
+  for (const message of ['An operational-support detail was renamed.', 'Unknown words still carry the explicit policy.']) {
+    const detail = { severity: 'review' as const, category: 'mimir-support' as const, message, action: 'Review the documented operational-support key.', keys: ['MaximumPriceAge'] };
+    const status = deriveNetworkStatus({}, [], '3.20.3', undefined, { sourceWarnings: [message], sourceWarningDetails: [detail] });
+    expect(status.sourceWarningDetails).toEqual([detail]);
+    expect(partitionReadinessWarnings(status.sourceWarnings, status.sourceWarningDetails ?? []).blocking).toEqual([]);
+  }
+});
+
+function stubCollectionCycle(networkFallback = false) {
+  const pool = runePoolFixture();
+  const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+    const url = new URL(String(input));
+    const secondary = !url.hostname.includes('liquify');
+    const height = secondary ? 200 : 100;
+    if (url.pathname.endsWith('/blocks/latest')) return makeResponse(true, { block: { header: { height: String(height + 1), time: new Date().toISOString() } } });
+    if (url.pathname.endsWith('/mimir')) return makeResponse(true, pool.mimir);
+    if (url.pathname.endsWith('/inbound_addresses')) return makeResponse(true, networkFallback && !secondary ? {} : [completeInbound('BTC')]);
+    if (url.pathname.endsWith('/version')) return makeResponse(true, { current: '3.20.3' });
+    if (url.pathname.endsWith('/lastblock')) return makeResponse(true, [{ chain: 'BTC', thorchain: height, last_observed_in: 1000, last_signed_out: 99 }]);
+    if (url.pathname.endsWith('/runepool')) return makeResponse(true, pool.runepool);
+    if (url.pathname.endsWith('/dynamic_l1_fees')) return makeResponse(true, { entries: [] });
+    if (url.pathname.endsWith('/dynamic_l1_fees_current')) return makeResponse(true, { epoch: '1', entries: [] });
+    return makeResponse(false, {}, 404, 'Not Found');
+  });
+  vi.stubGlobal('fetch', fetchMock);
+  return fetchMock;
+}
+
+it('shares one provider block and pinned Mimir read within a collection cycle only', async () => {
+  resetThornodeEndpointForTests();
+  const fetchMock = stubCollectionCycle();
+  const context = createThornodeCollectionContext();
+  const results = await Promise.all([ThornodeAPI.getNetworkStatus(context), ThornodeAPI.getDynamicL1FeeStatus(context), ThornodeAPI.getRunePoolPolStatus(context)]);
+  expect(results.every((result) => result.status === 'ok')).toBe(true);
+  expect(fetchMock).toHaveBeenCalledTimes(8);
+  expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/mimir?height=100'))).toHaveLength(1);
+  expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/blocks/latest'))).toHaveLength(1);
+  await ThornodeAPI.getNetworkStatus(createThornodeCollectionContext());
+  expect(fetchMock).toHaveBeenCalledTimes(13);
+  vi.unstubAllGlobals();
+});
+
+it('namespaces fallback reads by provider and height while preserving independent feature evidence', async () => {
+  resetThornodeEndpointForTests();
+  const fetchMock = stubCollectionCycle(true);
+  const context = createThornodeCollectionContext();
+  const [network, fees, pol] = await Promise.all([ThornodeAPI.getNetworkStatus(context), ThornodeAPI.getDynamicL1FeeStatus(context), ThornodeAPI.getRunePoolPolStatus(context)]);
+  expect(network.data?.thorchainHeight).toBe(200);
+  expect(network.source?.url).toContain('thornode.thorchain.network');
+  expect(fees.data?.sourceFreshness.thorchainHeight).toBe(100);
+  expect(pol.data?.sourceFreshness.thorchainHeight).toBe(100);
+  expect(pol.source?.url).toContain('liquify');
+  expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('liquify') && String(url).includes('/mimir?height=100'))).toHaveLength(1);
+  expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('thornode.thorchain.network') && String(url).includes('/mimir?height=200'))).toHaveLength(1);
+  expect(network.sources?.filter((source) => source.url.includes('?height=')).every((source) => source.url.includes('height=200'))).toBe(true);
+  vi.unstubAllGlobals();
+});
+
+it('keeps usable network and POL evidence independent of a slow optional fee history', async () => {
+  resetThornodeEndpointForTests();
+  const fetchMock = stubCollectionCycle();
+  const original = fetchMock.getMockImplementation()!;
+  const history = Promise.withResolvers<ReturnType<typeof makeResponse>>();
+  fetchMock.mockImplementation(async (input) => {
+    const pathname = new URL(String(input)).pathname;
+    if (pathname.endsWith('/mimir')) return makeResponse(true, { ...(runePoolFixture().mimir as Record<string, unknown>), 'DYNAMICFEE-WHITELIST-SS': 1 });
+    if (pathname.endsWith('/dynamic_l1_fees/ss')) return history.promise;
+    return original(input);
+  });
+  const context = createThornodeCollectionContext();
+  let feeCompleted = false;
+  const feeResult = ThornodeAPI.getDynamicL1FeeStatus(context).then((result) => { feeCompleted = true; return result; });
+  const [network, pol] = await Promise.all([ThornodeAPI.getNetworkStatus(context), ThornodeAPI.getRunePoolPolStatus(context)]);
+  expect(network.data?.thorchainHeight).toBe(100);
+  expect(pol.data?.sourceFreshness.thorchainHeight).toBe(100);
+  expect(feeCompleted).toBe(false);
+  history.resolve(makeResponse(false, {}, 503, 'Unavailable'));
+  expect((await feeResult).data?.sourceWarnings.some((message) => message.includes('history') && message.includes('unavailable'))).toBe(true);
+  vi.unstubAllGlobals();
+});
+
+it('bounds stalled body parsing and fallback by the remaining collection deadline', async () => {
+  vi.useFakeTimers();
+  resetThornodeEndpointForTests();
+  const signals: AbortSignal[] = [];
+  vi.stubGlobal('fetch', vi.fn(async (_url, init) => { signals.push(init.signal); return new Response(new ReadableStream()); }));
+  const context = createThornodeCollectionContext();
+  Object.assign(context, { deadlineAtMs: Date.now() + 7000 });
+  let result: Awaited<ReturnType<typeof ThornodeAPI.getNetworkStatus>> | undefined;
+  void ThornodeAPI.getNetworkStatus(context).then((value) => { result = value; });
+  await vi.advanceTimersByTimeAsync(7000);
+  expect(result?.status).toBe('degraded');
+  expect(signals).toHaveLength(2);
+  expect(signals.every((signal) => signal.aborted)).toBe(true);
+  expect(vi.getTimerCount()).toBe(0);
+  vi.useRealTimers(); vi.unstubAllGlobals();
+});
+
+it('propagates owner cancellation across an in-flight collection without starting fallback requests', async () => {
+  vi.useFakeTimers();
+  resetThornodeEndpointForTests();
+  const owner = new AbortController();
+  const fetchMock = vi.fn(async () => (new Response(new ReadableStream())));
+  vi.stubGlobal('fetch', fetchMock);
+  const context = createThornodeCollectionContext(owner.signal);
+  let result: Awaited<ReturnType<typeof ThornodeAPI.getNetworkStatus>> | undefined;
+  void ThornodeAPI.getNetworkStatus(context).then((value) => { result = value; });
+  await vi.advanceTimersByTimeAsync(0);
+  owner.abort(new Error('Collection cancelled'));
+  await vi.advanceTimersByTimeAsync(0);
+  expect(result?.status).toBe('degraded');
+  expect(fetchMock).toHaveBeenCalledTimes(1);
+  expect(vi.getTimerCount()).toBe(0);
+  vi.useRealTimers(); vi.unstubAllGlobals();
+});
+
+it('honors bounded Retry-After without automatically repeating quote inputs', async () => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  const start = Date.parse('2026-10-03T00:00:00Z');
+  vi.setSystemTime(start); resetThornodeEndpointForTests();
+  const fetchMock = vi.fn(async () => new Response(JSON.stringify({ code: 429, message: 'too many requests' }), { status: 429, headers: { 'Retry-After': '2' } }));
+  vi.stubGlobal('fetch', fetchMock);
+  const request = { fromAsset: 'BTC.BTC', toAsset: 'ETH.ETH', amountBaseUnits: '100000000' };
+  const first = await ThornodeAPI.getSwapQuoteProbe(request);
+  expect(first.data?.failure?.kind).toBe('rate-limit');
+  expect(first.data?.failure?.retryAt).toBe(new Date(start + 2000).toISOString());
+  await ThornodeAPI.getSwapQuoteProbe(request);
+  expect(fetchMock).toHaveBeenCalledTimes(2);
+  vi.setSystemTime(start + 2000);
+  expect(fetchMock).toHaveBeenCalledTimes(2);
+  await ThornodeAPI.getSwapQuoteProbe(request);
+  expect(fetchMock).toHaveBeenCalledTimes(4);
+  vi.useRealTimers(); vi.unstubAllGlobals();
+});
+
+it.each([
+  ['Sat, 03 Oct 2026 00:00:03 GMT', 3000],
+  ['not-a-date', 60000],
+  ['999999999999999999999999999', 300000],
+] as const)('bounds Retry-After %s while retaining a manual retry time', async (header, delay) => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  const start = Date.parse('2026-10-03T00:00:00Z');
+  vi.setSystemTime(start); resetThornodeEndpointForTests();
+  vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ message: 'rate limited' }), { status: 429, headers: { 'Retry-After': header } })));
+  const result = await ThornodeAPI.getSwapQuoteProbe({ fromAsset: 'BTC.BTC', toAsset: 'ETH.ETH', amountBaseUnits: '100000000' });
+  expect(result.data?.failure?.retryAt).toBe(new Date(start + delay).toISOString());
+  vi.useRealTimers(); vi.unstubAllGlobals();
+});
+
+it('records collection start, body observation and completion separately', async () => {
+  vi.useFakeTimers(); resetThornodeEndpointForTests();
+  const start = Date.parse('2026-10-03T00:00:00Z'); vi.setSystemTime(start);
+  const mock = stubCollectionCycle(); const original = mock.getMockImplementation()!;
+  mock.mockImplementation(async (input) => { await new Promise((resolve) => setTimeout(resolve, 1000)); return original(input); });
+  const pending = ThornodeAPI.getNetworkStatus();
+  await vi.advanceTimersByTimeAsync(2000);
+  const result = await pending;
+  expect(result.checkedAt).toBe(new Date(start + 2000).toISOString());
+  expect(result.collection).toEqual({ startedAt: new Date(start).toISOString(), completedAt: new Date(start + 2000).toISOString(), durationMs: 2000, blockObservedAt: new Date(start + 1000).toISOString() });
+  expect(result.assessedAt).toBe(result.checkedAt);
+  vi.useRealTimers(); vi.unstubAllGlobals();
+});
+
+it('reassesses retained evidence at delivery without rewriting its observation receipt', async () => {
+  resetThornodeEndpointForTests(); stubCollectionCycle();
+  const original = await ThornodeAPI.getNetworkStatus();
+  const observed = Date.parse(original.data!.thorchainBlockTime!);
+  const delivered = reassessThornodeResult(original, observed + 31000);
+  expect(delivered.data?.thorchainBlockAgeSeconds).toBe(31);
+  expect(delivered.data?.sourceWarningDetails?.some((detail) => detail.category === 'freshness' && detail.severity === 'critical')).toBe(true);
+  expect(delivered.data?.state).toBe('degraded');
+  expect(delivered.checkedAt).toBe(original.checkedAt);
+  expect(delivered.collection).toEqual(original.collection);
+  expect(delivered.assessedAt).toBe(new Date(observed + 31000).toISOString());
+  expect(original.data?.sourceWarnings).toEqual([]);
+  const future = reassessThornodeResult(original, observed - 31000);
+  expect(future.data?.sourceWarningDetails?.some((detail) => detail.message.includes('in the future') && detail.severity === 'critical')).toBe(true);
+  vi.unstubAllGlobals();
+});
+
+it('preserves unrecognized timing diagnostics for strict validation instead of normalizing them clean', async () => {
+  resetThornodeEndpointForTests(); stubCollectionCycle();
+  const original = await ThornodeAPI.getNetworkStatus();
+  const malformed = JSON.parse(JSON.stringify(original));
+  malformed.data.sourceWarningDetails = [{ severity: 'review', category: 'unexpected-category', message: 'Unknown', action: 'Review' }];
+  expect(reassessThornodeResult(malformed).data?.sourceWarningDetails).toEqual(malformed.data.sourceWarningDetails);
+  const unknownFreshness = { severity: 'warning' as const, category: 'freshness' as const, message: 'Another freshness concern', action: 'Review', keys: ['another.source'] };
+  const retained = reassessThornodeResult({ ...original, data: { ...original.data!, sourceWarnings: [unknownFreshness.message], sourceWarningDetails: [unknownFreshness] } });
+  expect(retained.data?.sourceWarningDetails).toContainEqual(unknownFreshness);
+  vi.unstubAllGlobals();
+});
+
+it.each([null, '100', '101', 'bogus'])('reports response height separately from the requested pin (%s)', async (echo) => {
+  resetThornodeEndpointForTests();
+  const fixture = runePoolFixture();
+  vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+    const url = new URL(String(input));
+    const raw = url.pathname.endsWith('/latest') ? fixture.latestBlock : url.pathname.endsWith('/mimir') ? fixture.mimir : fixture.runepool;
+    return new Response(JSON.stringify(raw), { headers: echo && url.searchParams.has('height') ? { 'grpc-metadata-x-cosmos-block-height': echo } : {} });
+  }));
+  const result = await ThornodeAPI.getRunePoolPolStatus();
+  if (echo === '101' || echo === 'bogus') {
+    expect(result.status).toBe('degraded');
+    expect(result.data).toBeUndefined();
+    expect(result.error).toMatch(/response height/i);
+  } else {
+    const pinned = result.sources?.filter((source) => new URL(source.url).searchParams.has('height'));
+    expect(pinned?.length).toBe(2);
+    expect(pinned?.map((source) => source.heightPinning)).toEqual(Array.from({ length: 2 }, () => ({ requestedHeight: 100, ...(echo ? { observedHeight: 100 } : {}), verification: echo ? 'verified' : 'unverified' })));
+  }
+  vi.unstubAllGlobals();
+});
+
+it('keeps required dynamic-fee readiness independent of optional history endpoints', async () => {
+  resetThornodeEndpointForTests();
+  const fetchMock = stubCollectionCycle();
+  const original = fetchMock.getMockImplementation()!;
+  fetchMock.mockImplementation(async (input) => {
+    const pathname = new URL(String(input)).pathname;
+    if (pathname.endsWith('/mimir')) return makeResponse(true, { ...(runePoolFixture().mimir as Record<string, unknown>), 'DYNAMICFEE-WHITELIST-SS': 1 });
+    if (pathname.endsWith('/dynamic_l1_fees/ss')) return makeResponse(false, {}, 503, 'History unavailable');
+    return original(input);
+  });
+  const result = await ThornodeAPI.getDynamicL1FeeStatus(createThornodeCollectionContext(), { includeHistory: false });
+  expect(result.status).toBe('ok');
+  expect(result.data?.sourceWarnings).toEqual([]);
+  expect(fetchMock.mock.calls.some(([url]) => String(url).includes('/dynamic_l1_fees/ss'))).toBe(false);
+  expect(result.data?.histories).toEqual([]);
+  vi.unstubAllGlobals();
 });

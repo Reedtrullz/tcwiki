@@ -1,0 +1,9 @@
+# PR-34: one bounded CLP scenario lab
+
+The CLP guide now lets a learner vary hypothetical input and two depths, then distinguish slip ratio, liquidity fee and output. One algebraic leg uses exact BigInt intermediate arithmetic, input limits of19characters/eightdecimals/onebillionmodelunits, positive depths and explicit zero. Invalid or oversized values yield unavailable; earlier valid output is withdrawn. Output is rounded down to eight abstract model decimals. No live balances, price target, quote, returns, streaming or network state is modeled.
+
+Official CLP equations4–6 were read on3October2026. Immutable THORNode3.20.3 swap_current.go at b08d81f79275093b0fcb753e0d68ff1c16c51cb8 was independently fetched bounded to512KiB/15s, SHA25658e6413829ece2e95ef716eab0def293e7e63e789b6159f659d2570931d4cf6e. CalcAssetEmission546–553 and CalcLiquidityFee570–577 match the algebra. CalcSwapSlip594–607 rounds basispoints; GetSwapCalc612–622 can instead apply a minimum slip floor. Thus this toy does not reproduce exact execution. The reviewed source record belongs to the lab, preserving article-wideJulyreviewdates.
+
+TDD: missing-moduleRED, three meaningful unit casesGREEN plus existing trust tests11focused. TypeScript caught BigInt literals under the existing lower compile target; constructors preserve its configuration. All713units63files/types/scopedlint/content, bothbuilds andNextsmoke passed. Four desktop/mobile lab/renderedlink checks passed in each actual built Next andWikiDO runtime: known equations, keyboard calculation, invalid-zero-depth withdrawal/recovery,320pxcontainment,WCAGrules andcurrent-evidence destination.
+
+Human learner explanation/feedback has not been measured. Keep expansion to other protocol mechanisms gated on actual feedback. BasePR261; no mainmerge/deploy. Commits are unsigned because the interactive signer is unavailable.

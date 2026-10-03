@@ -149,4 +149,18 @@ describe('release proof trackedness audit', () => {
 
     expect(result.untrackedFiles).toEqual(['tests/helpers/thornode-mocks.ts']);
   });
+  it('requires both runtime families including Cloudflare copy/config inputs', () => {
+    const root = makeRoot();
+    const files = ['scripts/lib/readiness-contract.jq', 'package.json', 'Dockerfile', 'next.config.ts', 'playwright.config.ts', '.github/workflows/ci.yml', '.github/workflows/operations.yml', 'README.md', 'CONTRIBUTING.md', 'docs/maintenance.md', 'docs/operations.md', 'ansible-playbook.yml', 'package-lock.json', 'vite.config.ts', 'wrangler.do.jsonc', 'cloudflare/do-entry.mjs'];
+    for (const path of files) write(root, path, path.endsWith('.json') ? '{}' : '');
+    const clean = auditReleaseTrackedFiles({ root, trackedFiles: files });
+    expect(clean.missingFiles).toEqual([]);
+    expect(clean.untrackedFiles).toEqual([]);
+    expect(clean.referencedFiles).toEqual(expect.arrayContaining(['Dockerfile', 'vite.config.ts', 'wrangler.do.jsonc', 'cloudflare/do-entry.mjs', 'package-lock.json']));
+    rmSync(join(root, 'cloudflare/do-entry.mjs'));
+    const missing = auditReleaseTrackedFiles({ root, trackedFiles: files.filter(path => path !== 'wrangler.do.jsonc') });
+    expect(missing.missingFiles).toContain('cloudflare/do-entry.mjs');
+    expect(missing.untrackedFiles).toContain('wrangler.do.jsonc');
+  });
+
 });

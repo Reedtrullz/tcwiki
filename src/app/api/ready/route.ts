@@ -566,6 +566,9 @@ export async function GET(request?: Request) {
       thornode: {
         status: thornode.status,
         checkedAt: thornode.checkedAt,
+        collection: thornode.collection,
+        dataPolicy: thornode.dataPolicy,
+        assessedAt: new Date(assessedAt).toISOString(),
         source: thornode.source,
         sources: thornode.sources,
         sourceCount: thornode.sources?.length ?? (thornode.source ? 1 : 0),
@@ -592,6 +595,9 @@ export async function GET(request?: Request) {
         dynamicFees: {
           status: dynamicFees.status,
           checkedAt: dynamicFees.checkedAt,
+          collection: dynamicFees.collection,
+          dataPolicy: dynamicFees.dataPolicy,
+          assessedAt: new Date(assessedAt).toISOString(),
           source: dynamicFees.source,
           sources: dynamicFees.sources,
           error: dynamicFees.error,
@@ -603,6 +609,7 @@ export async function GET(request?: Request) {
           whitelistedThornameCount: dynamicFees.data?.mimir.whitelistedPartners.filter((partner) => partner.whitelisted === true).length,
           historyThornameCount: dynamicFees.data?.histories.length,
           historySampleCount: dynamicFeeHistorySampleCount(dynamicFees.data),
+          historyPolicy: 'not-requested',
           thorchainHeight: dynamicFees.data?.sourceFreshness.thorchainHeight,
           snapshotPinned: dynamicFees.data?.sourceFreshness.snapshotPinned,
           thorchainBlockTime: dynamicFees.data?.sourceFreshness.thorchainBlockTime,
@@ -613,6 +620,9 @@ export async function GET(request?: Request) {
         runePoolPol: {
           status: runePoolPol.status,
           checkedAt: runePoolPol.checkedAt,
+          collection: runePoolPol.collection,
+          dataPolicy: runePoolPol.dataPolicy,
+          assessedAt: new Date(assessedAt).toISOString(),
           source: runePoolPol.source,
           sources: runePoolPol.sources,
           error: runePoolPol.error,

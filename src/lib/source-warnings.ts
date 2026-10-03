@@ -1,4 +1,80 @@
-import type { NetworkStatusSourceWarning } from '@/lib/types';
+import type { NetworkStatus, NetworkStatusSourceWarning } from '@/lib/types';
+
+export function hasUnreviewedControlSemantics(status: NetworkStatus | undefined) {
+  return Boolean(status?.sourceWarningDetails?.some((detail) => detail.category === 'control-applicability') ||
+    status?.monitoredControls.some((control) => control.state === 'unsupported'));
+}
+
+export interface SourceWarningSignals {
+  messages: string[];
+  details: NetworkStatusSourceWarning[];
+}
+
+export function isWarningDetail(value: unknown): value is NetworkStatusSourceWarning {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return false;
+  }
+
+  const detail = value as Record<string, unknown>;
+  return ['critical', 'warning', 'review'].includes(String(detail.severity)) &&
+    ['freshness', 'pinning', 'height-divergence', 'source-shape', 'mimir-parse', 'mimir-support', 'unknown-chain', 'unknown-operation', 'control-applicability', 'other'].includes(String(detail.category)) &&
+    typeof detail.message === 'string' && detail.message.trim().length > 0 &&
+    typeof detail.action === 'string' &&
+    [detail.keys, detail.scopes].every((items) => items === undefined || (Array.isArray(items) && items.every((item) => typeof item === 'string')));
+}
+
+function unique<T>(values: T[]) {
+  return [...new Set(values)];
+}
+
+export function uniqueSourceWarningDetails(details: NetworkStatusSourceWarning[]) {
+  const seen = new Set<string>();
+  return details.filter((detail) => {
+    const key = JSON.stringify([detail.severity, detail.category, detail.message, detail.action, detail.keys ?? [], detail.scopes ?? []]);
+    if (seen.has(key)) {
+      return false;
+    }
+    seen.add(key);
+    return true;
+  });
+}
+
+export function collectSourceWarningSignals(value: unknown, seen = new Set<object>()): SourceWarningSignals {
+  if (!value || typeof value !== 'object' || seen.has(value)) {
+    return { messages: [], details: [] };
+  }
+  seen.add(value);
+
+  const entries = Array.isArray(value)
+    ? value.map((nested): [string, unknown] => ['', nested])
+    : Object.entries(value);
+  const messages: string[] = [];
+  const details: NetworkStatusSourceWarning[] = [];
+
+  for (const [key, nested] of entries) {
+    if (key === 'sourceWarnings' || key === 'sourceWarningDetails') {
+      if (!Array.isArray(nested)) {
+        messages.push('Unrecognized source warning; warning contract needs review.');
+        continue;
+      }
+      for (const warning of nested) {
+        if (key === 'sourceWarnings' && typeof warning === 'string' && warning.trim()) {
+          messages.push(warning);
+        } else if (key === 'sourceWarningDetails' && isWarningDetail(warning)) {
+          details.push(warning);
+        } else {
+          messages.push('Unrecognized source warning; warning contract needs review.');
+        }
+      }
+    } else {
+      const child = collectSourceWarningSignals(nested, seen);
+      messages.push(...child.messages);
+      details.push(...child.details);
+    }
+  }
+
+  return { messages: unique(messages), details: uniqueSourceWarningDetails(details) };
+}
 
 function warningKeyCount(detail: NetworkStatusSourceWarning | undefined, message: string) {
   if (detail?.keys?.length) {
@@ -49,6 +125,10 @@ export function summarizeSourceWarning(
     return count > 0
       ? `${count} operational-support Mimir key${count === 1 ? '' : 's'} need review.`
       : 'Operational-support Mimir keys need review.';
+  }
+
+  if (category === 'control-applicability') {
+    return 'Operational-control applicability needs review for this THORNode version.';
   }
 
   return message.length > 220 ? `${message.slice(0, 217)}...` : message;
