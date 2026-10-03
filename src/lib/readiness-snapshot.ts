@@ -59,7 +59,7 @@ async function computeReadinessUpstreamSnapshot(): Promise<ReadinessUpstreamSnap
     safeLiveCheck('Midgard pools data', checkedAt, () => MidgardAPI.getPools('available')),
     safeLiveCheck('Midgard earnings history', checkedAt, () => MidgardAPI.getHistory('day', 1)),
     safeLiveCheck('THORNode network status', checkedAt, () => ThornodeAPI.getNetworkStatus(thornodeContext)),
-    safeLiveCheck('THORNode dynamic fee status', checkedAt, () => ThornodeAPI.getDynamicL1FeeStatus(thornodeContext)),
+    safeLiveCheck('THORNode dynamic fee status', checkedAt, () => ThornodeAPI.getDynamicL1FeeStatus(thornodeContext, { includeHistory: false })),
     safeLiveCheck('THORNode RUNEPool/POL status', checkedAt, () => ThornodeAPI.getRunePoolPolStatus(thornodeContext)),
   ]);
 

@@ -1317,6 +1317,7 @@ describe('/api/ready', () => {
     const [context] = vi.mocked(ThornodeAPI.getNetworkStatus).mock.calls[0];
     expect(context).toBeDefined();
     expect(vi.mocked(ThornodeAPI.getDynamicL1FeeStatus).mock.calls[0][0]).toBe(context);
+    expect(vi.mocked(ThornodeAPI.getDynamicL1FeeStatus).mock.calls[0][1]).toEqual({ includeHistory: false });
     expect(vi.mocked(ThornodeAPI.getRunePoolPolStatus).mock.calls[0][0]).toBe(context);
   });
 

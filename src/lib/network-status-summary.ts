@@ -1,4 +1,5 @@
 import type { NetworkStatus } from '@/lib/types';
+import { hasUnreviewedControlSemantics } from '@/lib/source-warnings';
 
 interface NetworkCurrentOnlyStateOptions {
   paused: boolean | null | undefined;
@@ -45,6 +46,9 @@ export function getNetworkCurrentOnlyStateLabel({
   }
   if (sourceUnavailable) {
     return 'Unavailable';
+  }
+  if (hasUnreviewedControlSemantics(networkStatus)) {
+    return 'Review applicability';
   }
   if (
     hasUnparseableControl(networkStatus, controlKeys) ||

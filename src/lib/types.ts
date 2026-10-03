@@ -1,3 +1,4 @@
+import type { ThornodeDataPolicy } from '../../scripts/lib/thornode-data-policy.mjs';
 export const DATA_CONFIDENCES = ['official', 'curated', 'historical', 'needs-review'] as const;
 
 export type DataConfidence = (typeof DATA_CONFIDENCES)[number];
@@ -46,6 +47,7 @@ export interface LiveDataResult<T> {
     state: 'current' | 'refreshing' | 'last-good' | 'stale' | 'unavailable' | 'historical';
   };
   collection?: LiveCollectionTiming;
+  dataPolicy?: Readonly<ThornodeDataPolicy>;
   assessedAt?: string;
   status: LiveDataStatus;
   checkedAt: string;
@@ -124,6 +126,7 @@ export interface ReadinessResponse {
       status: LiveDataStatus;
       checkedAt?: string;
       collection?: LiveCollectionTiming;
+      dataPolicy?: Readonly<ThornodeDataPolicy>;
       assessedAt?: string;
       source?: SourceMeta;
       sources?: SourceMeta[];
@@ -152,6 +155,7 @@ export interface ReadinessResponse {
         status: LiveDataStatus;
         checkedAt?: string;
         collection?: LiveCollectionTiming;
+        dataPolicy?: Readonly<ThornodeDataPolicy>;
         assessedAt?: string;
         source?: SourceMeta;
         sources?: SourceMeta[];
@@ -162,6 +166,7 @@ export interface ReadinessResponse {
         trackedRecordCount?: number;
         currentEntryCount?: number;
         whitelistedThornameCount?: number;
+        historyPolicy?: 'not-requested';
         historyThornameCount?: number;
         historySampleCount?: number;
         thorchainHeight?: number;
@@ -175,6 +180,7 @@ export interface ReadinessResponse {
         status: LiveDataStatus;
         checkedAt?: string;
         collection?: LiveCollectionTiming;
+        dataPolicy?: Readonly<ThornodeDataPolicy>;
         assessedAt?: string;
         source?: SourceMeta;
         sources?: SourceMeta[];
@@ -736,7 +742,7 @@ export interface ChainOperationalStatus {
 
 export type NetworkStatusState = 'operational' | 'paused' | 'degraded' | 'unknown';
 
-export type OperationalControlState = 'active' | 'inactive' | 'disabled' | 'scheduled' | 'not-monitored' | 'unparseable';
+export type OperationalControlState = 'active' | 'inactive' | 'disabled' | 'scheduled' | 'not-monitored' | 'unparseable' | 'unsupported';
 
 export type NetworkStatusWarningSeverity = 'critical' | 'warning' | 'review';
 
@@ -749,6 +755,7 @@ export type NetworkStatusWarningCategory =
   | 'mimir-support'
   | 'unknown-chain'
   | 'unknown-operation'
+  | 'control-applicability'
   | 'other';
 
 export interface NetworkStatusSourceWarning {
@@ -771,13 +778,13 @@ export interface OperationalControlStatus {
 export interface NetworkStatus {
   state: NetworkStatusState;
   summary: string;
-  tradingPaused: boolean;
+  tradingPaused: boolean | null;
   streamingSwapsPaused?: boolean | null;
   memolessTransactionsHalted?: boolean | null;
-  signingPaused: boolean;
-  lpPaused: boolean;
-  loansPaused: boolean;
-  observedChainsPaused: boolean;
+  signingPaused: boolean | null;
+  lpPaused: boolean | null;
+  loansPaused: boolean | null;
+  observedChainsPaused: boolean | null;
   nodePauseChainGlobal?: boolean | null;
   bondPaused?: boolean | null;
   unbondPaused?: boolean | null;
@@ -817,6 +824,8 @@ export interface NetworkStatus {
   /** @deprecated Use activeControlKeys and activeEvidenceKeys for new UI. */
   activePauseKeys: string[];
   monitoredControls: OperationalControlStatus[];
+  /** Raw /mimir observations retained independently of reviewed interpretation. */
+  observedMimir?: Record<string, unknown>;
   thorNodeVersion?: string;
   thorchainHeight?: number;
   thorchainSnapshotPinned?: boolean;

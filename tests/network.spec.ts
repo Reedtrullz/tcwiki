@@ -7,6 +7,17 @@ async function checkRoute(quotePanel: Locator) {
 }
 
 test.describe('THORChain Wiki Network Smoke Tests', () => {
+  test('unreviewed protocol versions retain raw controls and require applicability review', async ({ page }) => {
+    await mockSwapperFirstNetwork(page, { version: '3.21.0', mimir: { HALTTRADING: 100 } });
+    await page.goto('/network');
+    await expect(page.getByText('Review applicability', { exact: true }).first()).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText(/raw Mimir observations do not prove swap availability/i).first()).toBeVisible();
+    await expect(page.getByText('No swap blocker', { exact: true })).toHaveCount(0);
+    const evidence = page.locator('details').filter({ has: page.locator('summary').filter({ hasText: 'Operational evidence' }) });
+    await evidence.locator('summary').click();
+    await expect(evidence).toContainText('"HALTTRADING": 100');
+    await expect(evidence).toContainText('"PAUSELP": 1');
+  });
   test('network page uses explicit live-state labels', async ({ page }) => {
     await mockSwapperFirstNetwork(page);
     await page.goto('/network');
@@ -315,4 +326,40 @@ test('provider Retry-After enables a manual quote retry without an automatic req
   expect(probes).toBe(2);
   await panel.getByRole('button', { name: 'Check route', exact: true }).click();
   await expect.poll(() => probes).toBe(4);
+});
+
+test('returned quote retains its body while later controls and diagnostics require explicit recheck', async ({ page }) => {
+  await page.clock.install({ time: Date.now() });
+  const mimir = { BURNSYNTHS: undefined, HALTETHTRADING: 0 };
+  await mockSwapperFirstNetwork(page, { mimir });
+  let quotes = 0;
+  page.on('request', request => { if (request.url().includes('/quote/swap')) quotes += 1; });
+  await page.goto('/network#check-a-route');
+  const checker = page.locator('#check-a-route');
+  const check = checker.getByRole('button', { name: 'Check route', exact: true });
+  await expect(check).toBeEnabled();
+  await check.click();
+  await expect(checker.getByText('Quote returned', { exact: true })).toBeVisible();
+  const refresh = page.getByRole('button', { name: /Refresh .*THORNode.* data/i }).first();
+  mimir.HALTETHTRADING = 1;
+  await page.clock.fastForward(1100);
+  await refresh.click();
+  await expect(checker.getByText('Quote returned; controls limit execution', { exact: true })).toBeVisible();
+  await expect(checker).toContainText('ETH: Trading halted');
+  await expect(checker.getByText('Expected output', { exact: true })).toBeVisible();
+  await expect(checker).toContainText('Quote: Liquify THORNode');
+  await expect(checker).toContainText('Operations: Liquify THORNode');
+  expect(quotes).toBe(1);
+  mimir.HALTETHTRADING = 0;
+  await refresh.click();
+  await expect(checker.getByText('Quote returned; recheck required', { exact: true })).toBeVisible();
+  expect(quotes).toBe(1);
+  await check.click();
+  await expect(checker.getByText('Quote returned', { exact: true })).toBeVisible();
+  expect(quotes).toBe(2);
+  await page.route(/\/base\/tendermint\/v1beta1\/blocks\/latest(?:\?.*)?$/, route => route.fulfill({ status: 503 }));
+  await refresh.click();
+  await expect(checker.getByText('Quote returned; execution unconfirmed', { exact: true })).toBeVisible();
+  await expect(checker.getByText('Expected output', { exact: true })).toBeVisible();
+  expect(quotes).toBe(2);
 });

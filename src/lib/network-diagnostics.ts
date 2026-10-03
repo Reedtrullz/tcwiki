@@ -1,11 +1,15 @@
+import { partitionReadinessWarnings } from '../../scripts/lib/readiness-warning-policy.mjs';
+import { collectSourceWarningSignals } from '@/lib/source-warnings';
 import { operationEvidenceNeedsRefresh } from '@/lib/network-status-summary';
 import type {
+  LiveDataResult,
   ChainOperationalStatus,
   NetworkStatus,
   OperationalControlStatus,
   Pool,
   SwapQuoteProbeResult,
 } from '@/lib/types';
+import { hasUnreviewedControlSemantics } from '@/lib/source-warnings';
 
 export type AvailabilityState = 'available' | 'limited' | 'blocked' | 'needs-review' | 'unknown';
 
@@ -218,6 +222,8 @@ export function deriveNodeOperatorActionControls(status: NetworkStatus | undefin
 }
 
 export function deriveChainAvailability(status: NetworkStatus | undefined): ChainAvailability[] {
+  const unreviewed = hasUnreviewedControlSemantics(status);
+  const applicabilityReason = 'Control applicability is unreviewed; raw observations do not prove operation availability.';
   const stale = operationEvidenceNeedsRefresh(status);
   const assessedCell = (cell: AvailabilityCell): AvailabilityCell => stale && cell.state === 'available'
     ? { state: 'needs-review', label: 'Dated context', reasons: ['Refresh operational evidence before treating this observation as current availability.'] } : cell;
@@ -250,9 +256,9 @@ export function deriveChainAvailability(status: NetworkStatus | undefined): Chai
         ? limitedCell('Limited', reasonGroups.scopedOperations)
         : availableCell('No scoped halt');
       const dataQuality = chainDataQuality(chain);
-      const reasons = evidenceReasons(chain);
-      const swapLimited = swapReasons.length > 0;
-      const operationLimited = directReasons.length > 0 || dataQuality.state === 'needs-review';
+      const reasons = unreviewed ? [applicabilityReason] : evidenceReasons(chain);
+      const swapLimited = !unreviewed && swapReasons.length > 0;
+      const operationLimited = unreviewed || directReasons.length > 0 || dataQuality.state === 'needs-review';
 
       return {
         chain: chain.chain,
@@ -262,6 +268,14 @@ export function deriveChainAvailability(status: NetworkStatus | undefined): Chai
         poolDeposits: assessedCell(poolDeposits),
         scopedOperations: assessedCell(scopedOperations),
         dataQuality,
+        ...(unreviewed ? {
+          swapIn: reviewCell('Review applicability', [applicabilityReason]),
+          swapOut: reviewCell('Review applicability', [applicabilityReason]),
+          lpActions: reviewCell('Review applicability', [applicabilityReason]),
+          poolDeposits: reviewCell('Review applicability', [applicabilityReason]),
+          scopedOperations: reviewCell('Review applicability', [applicabilityReason]),
+          dataQuality: reviewCell('Review applicability', [applicabilityReason]),
+        } : {}),
         reasons: reasons.length > 0 ? reasons : ['No active chain-specific swap blocker observed.'],
         swapReasons,
         rawEvidence: {
@@ -306,13 +320,56 @@ export function quoteProofValidity(quote: SwapQuoteProbeResult['quote'], nowMs =
   return nowMs >= expiry * 1000 ? 'expired' : 'valid';
 }
 
+export interface RouteEvidenceContext {
+  quote?: LiveDataResult<SwapQuoteProbeResult>;
+  operations?: LiveDataResult<NetworkStatus>;
+  operationChanged?: boolean;
+}
+
+function routeOperationEvidence(fromAsset: string, toAsset: string, status: NetworkStatus | undefined) {
+  if (!status) return { blockers: [], uncertainty: ['Operational diagnostics are unavailable.'] };
+  const rows = deriveChainAvailability(status);
+  const selected = [[chainFromAsset(fromAsset), 'swapIn'], [chainFromAsset(toAsset), 'swapOut']] as const;
+  const blockers = selected.flatMap(([chain, direction]) => {
+    const cell = rows.find(row => row.chain === chain)?.[direction];
+    return cell?.state === 'limited' || cell?.state === 'blocked' ? cell.reasons.map(reason => `${chain}: ${reason}`) : [];
+  });
+  // Global controls also apply to native RUNE and absent chain rows.
+  if (status.tradingPaused) blockers.push('Network-wide trading halt');
+  if (status.signingPaused) blockers.push('Network-wide signing halt');
+  if (status.observedChainsPaused || status.nodePauseChainGlobal) blockers.push('Network-wide chain observation halt');
+  const signals = collectSourceWarningSignals(status);
+  const uncertainty = partitionReadinessWarnings(signals.messages, signals.details).blocking;
+  for (const [chain, direction] of selected) {
+    if (chain === 'THOR') continue;
+    const row = rows.find(row => row.chain === chain);
+    if (!row) uncertainty.push(`${chain}: operational diagnostics are missing.`);
+    else if (row.dataQuality.state === 'needs-review' || row[direction].state === 'needs-review') uncertainty.push(`${chain}: operational evidence needs review.`);
+  }
+  if (status.state === 'unknown') uncertainty.push('Operational state is unknown.');
+  return { blockers: unique(blockers), uncertainty: unique(uncertainty) };
+}
+
+// Only pair-relevant operations and evidence quality matter; advancing block
+// heights, LP-only controls and other chains do not invalidate a swap quote.
+export function routeOperationFingerprint(fromAsset: string, toAsset: string, status: NetworkStatus | undefined) {
+  const evidence = routeOperationEvidence(fromAsset, toAsset, status);
+  return JSON.stringify({ blockers: evidence.blockers.sort(), uncertainty: evidence.uncertainty.sort() });
+}
+
+function evidenceReceipt(label: string, result: LiveDataResult<unknown> | undefined) {
+  const date = result?.collection?.completedAt ?? result?.checkedAt;
+  return `${label}: ${result?.source?.label ?? 'provider unavailable'}; checked ${date ?? 'time unavailable'}.`;
+}
+
 export function deriveRouteAvailability(
   fromAsset: string,
   toAsset: string,
   status: NetworkStatus | undefined,
   pools: Pool[] | undefined,
   quoteResult: SwapQuoteProbeResult | undefined,
-  nowMs = Date.now()
+  nowMs = Date.now(),
+  evidence?: RouteEvidenceContext
 ): RouteAvailability {
   if (quoteResult) {
     if (quoteResult.request.fromAsset !== fromAsset || quoteResult.request.toAsset !== toAsset) {
@@ -330,7 +387,18 @@ export function deriveRouteAvailability(
     }
     if (quoteResult.status === 'available') {
       if (!quoteResult.quote) return { status: 'needs-review', label: 'Quote expiry unknown', reasons: ['Usable quote evidence is missing. Check the route again.'] };
-      return { status: 'available', label: 'Quote returned', reasons: [quoteResult.summary] };
+      const operations = routeOperationEvidence(fromAsset, toAsset, status);
+      const receipts = evidence ? [evidenceReceipt('Quote', evidence.quote), evidenceReceipt('Operations', evidence.operations)] : [];
+      const reasons = [quoteResult.summary, ...receipts];
+      if (operations.blockers.length) {
+        const quoteAt = Date.parse(evidence?.quote?.collection?.completedAt ?? evidence?.quote?.checkedAt ?? '');
+        const operationsAt = Date.parse(evidence?.operations?.collection?.completedAt ?? evidence?.operations?.checkedAt ?? '');
+        const order = !Number.isFinite(quoteAt) || !Number.isFinite(operationsAt) ? 'Evidence ordering is unknown.' : operationsAt > quoteAt ? 'The operational check completed later than the quote; collection reads may overlap.' : operationsAt === quoteAt ? 'Providers disagree at the same recorded check time.' : 'The blocker check predates the quote; the disagreement remains unresolved.';
+        return { status: 'limited', label: 'Quote returned; controls limit execution', reasons: [...reasons, ...operations.blockers, ...operations.uncertainty, order, 'Recheck both operation state and the quote explicitly before relying on execution.'] };
+      }
+      if (operations.uncertainty.length || evidence?.operations?.status === 'degraded') return { status: 'needs-review', label: 'Quote returned; execution unconfirmed', reasons: [...reasons, ...operations.uncertainty, evidence?.operations?.error ?? 'Refresh operation diagnostics before relying on execution.'] };
+      if (evidence?.operationChanged) return { status: 'needs-review', label: 'Quote returned; recheck required', reasons: [...reasons, 'Pair-relevant operation evidence changed after this check. Run an explicit new quote check.'] };
+      return { status: 'available', label: 'Quote returned', reasons };
     }
     return {
       status: quoteResult.status === 'limited' || quoteResult.failure?.kind === 'halt' ? 'limited' : 'needs-review',

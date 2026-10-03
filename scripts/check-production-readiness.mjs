@@ -1,14 +1,15 @@
 import './require-node22.mjs';
 import { setTimeout as wait } from 'node:timers/promises';
+import { assertRuntimeMetadataContract } from './lib/runtime-metadata-contract.mjs';
 import { assertReadinessContract } from './lib/readiness-contract.mjs';
 import { DEFAULT_THORNODE_SOURCES, latestBlockRequestUrl, parseLatestBlockInfo } from './lib/live-chain-snapshot.mjs';
 import {
+  fetchMonitorJson,
   buildReadinessMonitorEvidence,
   summarizeReadinessResponse,
   writeReadinessMonitorEvidence,
 } from './lib/readiness-monitor.mjs';
 
-const FETCH_TIMEOUT_MS = 10_000;
 
 function optionValue(args, name, fallback) {
   const index = args.indexOf(name);
@@ -31,24 +32,14 @@ function positiveInteger(value, label, { allowZero = false, maximum }) {
   return parsed;
 }
 
-async function fetchWithTimeout(url) {
-  const controller = new AbortController();
-  const timeoutId = globalThis.setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
-  try {
-    return await fetch(url, { cache: 'no-store', signal: controller.signal });
-  } finally {
-    globalThis.clearTimeout(timeoutId);
-  }
-}
-
 async function probeProvider(source, observedAt) {
   const canonicalUrl = `${source.cosmosUrl}/base/tendermint/v1beta1/blocks/latest`;
   try {
-    const response = await fetchWithTimeout(latestBlockRequestUrl(source.cosmosUrl, Date.parse(observedAt)));
+    const { response, json } = await fetchMonitorJson(latestBlockRequestUrl(source.cosmosUrl, Date.parse(observedAt)));
     if (!response.ok) {
       throw new Error(`${response.status} ${response.statusText}`);
     }
-    const block = parseLatestBlockInfo(await response.json());
+    const block = parseLatestBlockInfo(json);
     return {
       source: { label: source.label, url: canonicalUrl, cosmosUrl: source.cosmosUrl },
       status: 'ok',
@@ -65,21 +56,34 @@ async function probeProvider(source, observedAt) {
   }
 }
 
+async function probeOrigin(baseUrl) {
+  try {
+    const { response, json } = await fetchMonitorJson(`${baseUrl}/api/health`);
+    try { assertRuntimeMetadataContract(json, { requireVerified: true }); }
+    catch (error) { return { reachable: true, healthy: false, identityValid: false, httpStatus: response.status, error: error.message }; }
+    return { reachable: true, healthy: response.ok && json.status === 'healthy', identityValid: true, httpStatus: response.status, version: json.version, commit: json.commit, image: json.image };
+  } catch (error) {
+    return { reachable: false, healthy: false, error: error instanceof Error ? error.message : 'Origin check failed' };
+  }
+}
+
 async function collectSample(baseUrl) {
   const observedAt = new Date().toISOString();
+  const originPromise = probeOrigin(baseUrl);
   const directProvidersPromise = Promise.all(DEFAULT_THORNODE_SOURCES.map((source) => probeProvider(source, observedAt)));
   try {
-    const response = await fetchWithTimeout(`${baseUrl}/api/ready?contract=strict`);
-    const json = await response.json();
+    const { response, json } = await fetchMonitorJson(`${baseUrl}/api/ready?contract=strict`);
     assertReadinessContract(json);
     return {
       observedAt,
+      origin: await originPromise,
       readiness: summarizeReadinessResponse({ observedAt, httpStatus: response.status, json }),
       directProviders: await directProvidersPromise,
     };
   } catch (error) {
     return {
       observedAt,
+      origin: await originPromise,
       error: error instanceof Error ? error.message : 'Unknown readiness monitor error',
       directProviders: await directProvidersPromise,
     };

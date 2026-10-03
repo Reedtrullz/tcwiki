@@ -9,7 +9,7 @@ def warning_details:
   type == "array" and all(.[];
     type == "object" and
     (.severity | IN("critical", "warning", "review")) and
-    (.category | IN("freshness", "pinning", "height-divergence", "source-shape", "mimir-parse", "mimir-support", "unknown-chain", "unknown-operation", "other")) and
+    (.category | IN("freshness", "pinning", "height-divergence", "source-shape", "mimir-parse", "mimir-support", "unknown-chain", "unknown-operation", "control-applicability", "other")) and
     (.message | nonempty) and (.action | nonempty) and
     (if has("keys") then .keys | strings else true end) and
     (if has("scopes") then .scopes | strings else true end));
