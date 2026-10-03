@@ -14,6 +14,7 @@ import {
   RunePoolPolStatus,
   SwapQuoteProbeResult,
   SwapQuoteRequest,
+  ThorchainNodeCoverageRow,
 } from '@/lib/types';
 import { liveDegraded } from '@/lib/trust';
 import { requireLiveData } from '@/lib/live-presentation';
@@ -89,6 +90,15 @@ export function useNetworkStatus() {
     SWR_OPTIONS
   );
   return useLivePresentation(data, error, isLoading, isValidating, { kind: 'operational', reassess: reassessThornodeResult }, () => mutate(current => current, { revalidate: true, throwOnError: false }));
+}
+
+export function useThorchainNodeCoverage() {
+  const { data, error, isLoading, isValidating, mutate } = useSWR<LiveDataResult<ThorchainNodeCoverageRow[]>>(
+    'thornode:node-coverage',
+    () => requireLiveData(() => ThornodeAPI.getNodeCoverage()),
+    SWR_OPTIONS
+  );
+  return useLivePresentation(data, error, isLoading, isValidating, { kind: 'aggregate' }, () => mutate(current => current, { revalidate: true, throwOnError: false }));
 }
 
 export function useDynamicL1FeeStatus() {

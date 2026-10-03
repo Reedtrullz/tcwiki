@@ -313,6 +313,8 @@ export interface Node {
   };
 }
 
+export type ThorchainNodeCoverageRow = Pick<Node, 'status' | 'version'> & { nodeAddress?: string };
+
 export interface MayaNode {
   nodeAddress: string;
   address: string;

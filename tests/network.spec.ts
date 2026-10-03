@@ -46,6 +46,61 @@ test.describe('THORChain Wiki Network Smoke Tests', () => {
     await expect(nodeTypes.locator('[data-node-status="Disabled"]')).toContainText(/cannot rejoin with the same node account/i);
   });
 
+  test('THORNode coverage labels independent samples and supports keyboard table search', async ({ page }) => {
+    const nodeRows = [
+      { node_address: 'thor1active', status: 'Active', version: '3.20.3', ip_address: '198.51.100.8' },
+      { node_address: 'thor1standby', status: 'Standby', version: '3.20.2' },
+      { node_address: 'thor1observer', status: 'Observer', version: 'release-x' },
+      { node_address: 'thor1missing', status: null, version: '' },
+      ...Array.from({ length: 21 }, (_, index) => ({
+        node_address: `thor1extra${index}`,
+        status: 'Active',
+        version: '3.20.3',
+      })),
+    ];
+    await mockSwapperFirstNetwork(page, { nodeRows });
+    await page.goto('/network');
+
+    const coverage = page.getByRole('region', { name: 'THORChain node coverage' });
+    await expect(coverage.getByText('Rows in loaded THORNode /nodes response:', { exact: false })).toBeVisible();
+    await expect(coverage.getByText('Observer', { exact: true })).toBeVisible();
+    await expect(coverage.getByText('release-x', { exact: true })).toBeVisible();
+    await expect(coverage.getByText(/A difference alone does not indicate an outage\./)).toBeVisible();
+    await expect(coverage.getByRole('link', { name: 'Liquify THORNode node set' })).toHaveAttribute(
+      'href',
+      'https://gateway.liquify.com/chain/thorchain_api/thorchain/nodes'
+    );
+    await expect(coverage.getByRole('link', { name: 'THORChain Midgard' })).toHaveAttribute(
+      'href',
+      'https://gateway.liquify.com/chain/thorchain_midgard/v2/network'
+    );
+    await expect(coverage.getByText(/3\.20\.3/).first()).toBeVisible();
+
+    const disclosure = coverage.locator('details > summary');
+    await disclosure.focus();
+    await expect(disclosure).toBeFocused();
+    await page.keyboard.press('Enter');
+    const table = coverage.getByRole('table');
+    await expect(table).toBeVisible();
+    await expect(coverage.getByText('Showing 20 of 25 matching rows (25 loaded).')).toBeVisible();
+
+    const search = coverage.getByRole('searchbox', { name: 'Search address, status, or version' });
+    await search.focus();
+    await search.pressSequentially('thor1observer');
+    await expect(table.getByRole('row').filter({ hasText: 'thor1observer' })).toHaveCount(1);
+    await expect(coverage.getByText('Showing 1 of 1 matching rows (25 loaded).')).toBeVisible();
+
+    await search.press('ControlOrMeta+A');
+    await search.press('Backspace');
+    const rowLimit = coverage.getByLabel('Rows shown');
+    await rowLimit.focus();
+    await rowLimit.press('ArrowDown');
+    await rowLimit.press('Enter');
+    await expect(rowLimit).toHaveValue('50');
+    await expect(coverage.getByText('Showing 25 of 25 matching rows (25 loaded).')).toBeVisible();
+    await expect(coverage).not.toContainText('198.51.100.8');
+  });
+
   test('network status module has compact and diagnostic tiers @docker-smoke', async ({ page, isMobile }) => {
     if (isMobile) {
       await page.setViewportSize({ width: 390, height: 760 });

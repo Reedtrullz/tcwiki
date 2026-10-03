@@ -2,6 +2,8 @@ import type { Page, Route } from '@playwright/test';
 
 interface SwapperFirstNetworkMockOptions {
   mimir?: Record<string, unknown>;
+  nodeRows?: Record<string, unknown>[];
+  networkSummary?: Partial<Record<'activeNodeCount' | 'standbyNodeCount', string | number>>;
   quoteExpiry?: number | null;
   version?: string;
 }
@@ -21,6 +23,27 @@ export async function mockSwapperFirstNetwork(page: Page, options: SwapperFirstN
     { asset: 'BSC.BNB', assetDepth: '100000000', runeDepth: '100000000', status: 'available' },
     { asset: 'SOL.SOL', assetDepth: '100000000', runeDepth: '100000000', status: 'available' },
   ];
+
+  await page.route(/\/v2\/network(?:\?.*)?$/, async (route) => {
+    await fulfillJson(route, {
+      totalPooledRune: '100000000',
+      totalReserve: '200000000',
+      activeNodeCount: options.networkSummary?.activeNodeCount ?? '103',
+      standbyNodeCount: options.networkSummary?.standbyNodeCount ?? '70',
+      bondingAPY: '0.12',
+      liquidityAPY: '0.045',
+      nextChurnHeight: '123456',
+      bondMetrics: {},
+    });
+  });
+  await page.route(/\/thorchain\/nodes(?:\?.*)?$/, async (route) => {
+    await fulfillJson(route, options.nodeRows ?? [
+      { node_address: 'thor1active', status: 'Active', version: '3.20.3' },
+      { node_address: 'thor1standby', status: 'Standby', version: '3.20.3' },
+      { node_address: 'thor1disabled', status: 'Disabled', version: '3.20.2' },
+      { node_address: 'thor1whitelisted', status: 'Whitelisted', version: '3.20.3' },
+    ]);
+  });
 
   await page.route(/\/base\/tendermint\/v1beta1\/blocks\/latest(?:\?.*)?$/, async (route) => {
     await fulfillJson(route, {

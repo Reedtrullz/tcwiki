@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import axe from 'axe-core';
+import { mockSwapperFirstNetwork } from './helpers/thornode-mocks';
 
 const ACCESSIBILITY_ROUTES = [
   '/',
@@ -28,6 +29,7 @@ test.describe('Wiki accessibility smoke tests', () => {
     const failures: Array<{ route: string; violations: unknown }> = [];
 
     for (const route of ACCESSIBILITY_ROUTES) {
+      if (route === '/network') await mockSwapperFirstNetwork(page);
       await page.goto(route, { waitUntil: 'domcontentloaded' });
       await page.waitForTimeout(250);
       const result = await runColorContrastAudit(page);

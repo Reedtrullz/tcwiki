@@ -9,6 +9,7 @@ import { SectionHeader } from '@/components/ui/SectionHeader';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { useMidgardHealth, useNetworkData, useNetworkStatus } from '@/lib/hooks/useMidgard';
 import { MayaNodePanel } from '@/components/features/MayaNodePanel';
+import { ThorNodePanel } from '@/components/features/ThorNodePanel';
 import { NetworkStatusBanner } from '@/components/features/NetworkStatusBanner';
 import { PageTableOfContents } from '@/components/layout/PageTableOfContents';
 import { LiveSourceMeta } from '@/components/ui/LiveSourceMeta';
@@ -19,6 +20,7 @@ const networkToc = [
   { id: 'current-operation-snapshot-heading', label: 'Operation snapshot' },
   { id: 'node-operator-guide', label: 'Node operator guide' },
   { id: 'node-types', label: 'Node types' },
+  { id: 'thorchain-node-coverage', label: 'THORChain node coverage' },
   { id: 'security-architecture', label: 'Security architecture' },
 ];
 
@@ -411,6 +413,7 @@ export default function NetworkPageClient({ children }: NetworkPageClientProps) 
         ))}
       </div>
 
+      <ThorNodePanel midgardNetwork={networkData} midgardResult={networkResult} />
       <MayaNodePanel />
 
         </div>
@@ -424,4 +427,3 @@ export default function NetworkPageClient({ children }: NetworkPageClientProps) 
     </PageContainer>
   );
 }
-

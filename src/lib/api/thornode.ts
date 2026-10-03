@@ -32,6 +32,7 @@ import {
   SwapQuoteSuccess,
   ThornodeInboundAddress,
   ThornodeLastBlock,
+  ThorchainNodeCoverageRow,
 } from '@/lib/types';
 import { CHAIN_RECORDS } from '@/lib/data/static';
 import {
@@ -63,6 +64,8 @@ const THORNODE_LASTBLOCK_SPREAD_WARNING_BLOCKS = 3;
 const THORNODE_LATEST_BLOCK_PATH = '/base/tendermint/v1beta1/blocks/latest';
 const DYNAMIC_L1_FEE_HISTORY_THORNAME_LIMIT = 16;
 const DYNAMIC_L1_FEE_HISTORY_CONCURRENCY = 4;
+const THORCHAIN_NODE_COVERAGE_ROW_LIMIT = 300;
+const THORCHAIN_NODE_COVERAGE_FIELD_LIMIT = 80;
 
 let activeEndpoint = 0;
 const rateLimitedUntil = new Map<string, number>();
@@ -509,6 +512,40 @@ function toMimirNumber(value: unknown): number | null {
 
 function isPlainRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function optionalNodeCoverageField(value: unknown, field: string): string | undefined {
+  if (value === undefined || value === null || value === '') return undefined;
+  if (typeof value !== 'string' || value.length > THORCHAIN_NODE_COVERAGE_FIELD_LIMIT || value !== value.trim()) {
+    throw new Error(`THORNode node response has an invalid ${field}.`);
+  }
+  return value;
+}
+
+function normalizeThorchainNodeCoverage(value: unknown): ThorchainNodeCoverageRow[] {
+  if (!Array.isArray(value) || value.length === 0 || value.length > THORCHAIN_NODE_COVERAGE_ROW_LIMIT) {
+    throw new Error(`THORNode node response must contain 1 to ${THORCHAIN_NODE_COVERAGE_ROW_LIMIT} rows.`);
+  }
+
+  const addresses = new Set<string>();
+  return value.map((entry, index) => {
+    if (!isPlainRecord(entry)) throw new Error(`THORNode node row ${index + 1} was not an object.`);
+    const nodeAddress = entry.node_address;
+    if (nodeAddress !== undefined && (typeof nodeAddress !== 'string' || nodeAddress.length === 0 || nodeAddress.length > 128 || nodeAddress !== nodeAddress.trim())) {
+      throw new Error(`THORNode node row ${index + 1} has an invalid node_address.`);
+    }
+    if (typeof nodeAddress === 'string') {
+      const addressKey = nodeAddress.toLowerCase();
+      if (addresses.has(addressKey)) throw new Error('THORNode node response contains duplicate node addresses.');
+      addresses.add(addressKey);
+    }
+
+    return {
+      ...(typeof nodeAddress === 'string' ? { nodeAddress } : {}),
+      status: optionalNodeCoverageField(entry.status, 'status'),
+      version: optionalNodeCoverageField(entry.version, 'version'),
+    };
+  });
 }
 
 const INBOUND_OPERATION_FIELDS = [
@@ -3104,6 +3141,40 @@ export function deriveNetworkStatus(
 }
 
 export class ThornodeAPI {
+  static async getNodeCoverage(context = createThornodeCollectionContext()): Promise<LiveDataResult<ThorchainNodeCoverageRow[]>> {
+    const errors: string[] = [];
+
+    for (let i = 0; i < THORNODE_ENDPOINTS.length; i += 1) {
+      const endpointIndex = (context.initialEndpoint + i) % THORNODE_ENDPOINTS.length;
+      const endpoint = THORNODE_ENDPOINTS[endpointIndex];
+      const url = thornodePathUrl(endpoint, '/nodes');
+      try {
+        const raw = await requestJson<unknown>(url, context);
+        const data = normalizeThorchainNodeCoverage(raw);
+        const source: SourceMeta = {
+          label: `${endpoint.label} node set`,
+          url,
+          notes: 'Unpinned THORNode node-set response; row totals describe only this retrieved provider sample.',
+        };
+        activeEndpoint = endpointIndex;
+        return liveOk(data, source, new Date().toISOString());
+      } catch (error) {
+        errors.push(`${endpoint.label}: ${error instanceof Error ? error.message : 'Unknown THORNode node-set error'}`);
+      }
+    }
+
+    const checkedAt = new Date().toISOString();
+    const sources = THORNODE_ENDPOINTS.map((endpoint) => ({
+      label: `${endpoint.label} node set`,
+      url: thornodePathUrl(endpoint, '/nodes'),
+    }));
+    return liveDegraded<ThorchainNodeCoverageRow[]>(
+      `THORNode sources did not provide a usable node-set response (${errors.join('; ')})`,
+      sources,
+      checkedAt
+    );
+  }
+
   static async getMimir(): Promise<LiveDataResult<Record<string, unknown>>> {
     return request<Record<string, unknown>>('/mimir');
   }
