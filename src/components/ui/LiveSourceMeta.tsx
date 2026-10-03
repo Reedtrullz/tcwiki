@@ -143,7 +143,7 @@ export function LiveSourceMeta({ result, health, healthResult, onRefresh }: Live
     <div className="space-y-1">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-400">
         <Badge variant={primaryBadge.variant}>{primaryBadge.label}</Badge>
-        <span>Checked {checkedAt}</span>
+        <span className="min-w-0 max-w-full break-words [overflow-wrap:anywhere]">Checked {checkedAt}</span>
         {onRefresh && <button type="button" onClick={() => { void onRefresh(); }} disabled={presentation === 'refreshing'} className="rounded text-accent underline underline-offset-2 disabled:opacity-50" aria-label={`Refresh ${primarySource?.label ?? 'live source'} data`}>Refresh source</button>}
         {primarySource && (
           <div aria-label="Live data sources" className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
