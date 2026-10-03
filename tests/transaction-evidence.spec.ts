@@ -1,0 +1,75 @@
+import { expect, test } from '@playwright/test';
+import axe from 'axe-core';
+import { fulfillJson, mockSwapperFirstNetwork } from './helpers/thornode-mocks';
+const hash = 'A'.repeat(64);
+const action = { date: '1791008198434550653', height: '28081517', type: 'refund', status: 'pending', in: [{ txID: hash, coins: [{ asset: 'ETH~USDC', amount: '9007199254740993123' }] }], out: [], metadata: { refund: { memo: '=:BTC.BTC:destination:0/1/0', networkFees: [{ asset: 'ETH.ETH', amount: '0' }], reason: 'Fixture price limit' } } };
+async function open(page: import('@playwright/test').Page) {
+  await mockSwapperFirstNetwork(page);
+  await page.goto('/network');
+  const panel = page.locator('#transaction-evidence');
+  await panel.locator('summary').click();
+  await expect(panel.getByRole('textbox', { name: 'Public transaction hash' })).toBeEnabled();
+  return panel;
+}
+test('lookup is explicit, preserves raw indexer evidence and separates settlement layers', async ({ page }) => {
+  let reads = 0;
+  await page.route(/\/v2\/actions\?/, route => { reads++; return fulfillJson(route, { actions: [action], count: '1' }); });
+  const panel = await open(page);
+  const input = panel.getByRole('textbox', { name: 'Public transaction hash' });
+  expect(reads).toBe(0);
+  await input.fill('https://example.com'); await panel.getByRole('button', { name: 'Look up transaction' }).click();
+  await expect(panel.getByRole('status')).toContainText('Enter one 32-byte'); expect(reads).toBe(0);
+  await input.fill(hash); expect(reads).toBe(0);
+  await input.press('Tab'); const button = panel.getByRole('button', { name: 'Look up transaction' }); await expect(button).toBeFocused(); await button.press('Enter');
+  await expect(panel.getByRole('heading', { name: 'Indexed action 1: refund — pending' })).toBeVisible();
+  expect(reads).toBe(1);
+  await expect(panel.getByText(/9007199254740993123 ETH~USDC/)).toBeVisible();
+  await expect(panel.getByText(/0 ETH.ETH — raw Midgard/)).toBeVisible();
+  await expect(panel.getByRole('heading', { name: 'Source-chain confirmation: unknown' })).toBeVisible();
+  await expect(panel.getByRole('heading', { name: 'Destination settlement: unknown' })).toBeVisible();
+  await expect(panel.getByText('=:BTC.BTC:destination:0/1/0', { exact: true })).toBeVisible();
+  await expect(panel.getByText(/2026-10-03T06:16:38.434Z/)).toBeVisible();
+  await expect(panel.getByText(/present controls cannot explain an earlier/)).toBeVisible();
+  const rawSource = panel.getByRole('link').filter({ hasText: /Liquify Midgard/ });
+  await expect(rawSource).toHaveAttribute('href', 'https://gateway.liquify.com/chain/thorchain_midgard/v2/actions?txid=' + hash + '&limit=5');
+  expect(page.url()).not.toContain(hash);
+  expect(await page.evaluate(value => Object.values(localStorage).some(item => String(item).includes(value)), hash)).toBe(false);
+  await input.fill('B'.repeat(64)); await expect(panel.getByRole('heading', { name: 'Indexed action 1: refund — pending' })).toHaveCount(0); expect(reads).toBe(1);
+});
+test('no indexed action and unavailable providers keep lifecycle unknown', async ({ page }) => {
+  let fail = false;
+  await page.route(/\/v2\/actions\?/, route => fail ? route.fulfill({ status: 503, body: 'fixture failure' }) : fulfillJson(route, { actions: [], count: '0' }));
+  const panel = await open(page);
+  await panel.getByRole('textbox', { name: 'Public transaction hash' }).fill(hash);
+  await panel.getByRole('button', { name: 'Look up transaction' }).click();
+  await expect(panel.getByText(/No indexed actions in this response/)).toBeVisible();
+  fail = true; await panel.getByRole('button', { name: 'Look up transaction' }).click();
+  await expect(panel.getByRole('status')).toContainText('transaction state remains unknown');
+  await expect(panel.getByText(/No indexed actions in this response/)).toHaveCount(0);
+});
+test('editing cancels an in-flight read and prevents stale response revival', async ({ page }) => {
+  let release!: () => void;
+  const held = new Promise<void>(resolve => { release = resolve; });
+  let started = false;
+  await page.route(/\/v2\/actions\?/, async route => { started = true; await held; await fulfillJson(route, { actions: [action], count: '1' }).catch(() => undefined); });
+  const panel = await open(page);
+  const input = panel.getByRole('textbox', { name: 'Public transaction hash' });
+  await input.fill(hash); await panel.getByRole('button', { name: 'Look up transaction' }).click();
+  await expect.poll(() => started).toBe(true);
+  await input.fill('B'.repeat(64)); release();
+  await expect(panel.getByRole('button', { name: 'Look up transaction' })).toBeEnabled();
+  await expect(panel.getByRole('status')).toHaveText('');
+  await expect(panel.getByText(/Lookup hash:/)).toHaveCount(0);
+});
+test('transaction observations wrap at 320px and satisfy scoped WCAG rules', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 780 });
+  await page.route(/\/v2\/actions\?/, route => fulfillJson(route, { actions: [action], count: '1' }));
+  const panel = await open(page);
+  await panel.getByRole('textbox', { name: 'Public transaction hash' }).fill(hash);
+  await panel.getByRole('button', { name: 'Look up transaction' }).click();
+  await expect(panel.getByRole('heading', { name: 'Destination settlement: unknown' })).toBeVisible();
+  const size = await panel.evaluate(el => ({ width: el.clientWidth, scroll: el.scrollWidth })); expect(size.scroll).toBeLessThanOrEqual(size.width);
+  await page.addScriptTag({ content: axe.source });
+  const failures = await page.evaluate(async () => (await (window as unknown as { axe: typeof import('axe-core') }).axe.run(document.querySelector('#transaction-evidence')!, { runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21aa'] } })).violations);
+  expect(failures, JSON.stringify(failures)).toEqual([]);
+});

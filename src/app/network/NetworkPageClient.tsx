@@ -10,6 +10,7 @@ import { SectionHeader } from '@/components/ui/SectionHeader';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { useMidgardHealth, useNetworkData, useNetworkStatus } from '@/lib/hooks/useMidgard';
 import { MayaNodePanel } from '@/components/features/MayaNodePanel';
+import { TransactionEvidenceTriage } from '@/components/features/TransactionEvidenceTriage';
 import { NetworkStatusBanner } from '@/components/features/NetworkStatusBanner';
 import { PageTableOfContents } from '@/components/layout/PageTableOfContents';
 import { LiveSourceMeta } from '@/components/ui/LiveSourceMeta';
@@ -382,6 +383,8 @@ export default function NetworkPageClient({ children, initialStatusResult }: Net
       <div id="network-diagnostics" className="scroll-mt-24 mb-12">
         <NetworkStatusBanner onRefresh={refreshStatus} result={statusResult} isLoading={statusLoading} variant="diagnostic" showQuoteChecker />
       </div>
+
+      <TransactionEvidenceTriage current={statusResult} />
 
       {currentOperationSnapshot}
 
