@@ -30,7 +30,7 @@
     "smoke:standalone": "node scripts/require-node22.mjs && node scripts/smoke-standalone.mjs",
     "smoke:docker": "node scripts/require-node22.mjs && node scripts/smoke-docker-runtime.mjs",
     "audit:prod": "node scripts/require-node22.mjs && npm audit --omit=dev --audit-level=moderate",
-    "audit:all": "node scripts/require-node22.mjs && npm audit --audit-level=moderate",
+    "audit:all": "node scripts/require-node22.mjs && node scripts/audit-dependencies.mjs",
     "check:runtime-url": "node scripts/require-node22.mjs && node scripts/check-runtime-url.mjs",
     "dev:vinext": "VINEXT_BUILD=1 vite dev --port 3001",
     "build:vinext": "VINEXT_BUILD=1 vite build && next typegen",
