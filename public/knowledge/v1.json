@@ -14,7 +14,7 @@
       "src/lib/data/static.ts": "838dbd37b89670970db27ebbaeee3a29990be830939213fbbe946c1d8097867a",
       "src/lib/content/registry.ts": "106c668ed5cce7e17f4c36fdc698f01980cf853f30314b1ca3a4539df67bd7c7",
       "src/lib/sources.ts": "9f9f5f3ff68c2c30adc6d093c2d728f1f58e1d7cbdd7e382d959f0ae12b93cb4",
-      "src/lib/types.ts": "e08f8b8f9c4b5f95d229f36f6e6b44a3a18aab8084ebd9ec6d1ff9333228bc7c",
+      "src/lib/types.ts": "5204b70f62d170bad8200488d79883cde66a48927b93f606519e0024e77cb543",
       "src/lib/site.ts": "e79a4609bcf097347fe1660252b7d4db81ae149520cca0b27c7059fd24a07f6d",
       "content/deep-dives/build-query-data.mdx": "99879b71f8ea073bc401719888b737590ff7b4307bee0167e4f73da246320140",
       "scripts/lib/knowledge-links.mjs": "1d2c3fbafd6d754696a1824cf1f50f7c9a574aaaaf4aae832d131d9de3825316",
@@ -233,6 +233,6 @@
   ],
   "checksum": {
     "algorithm": "sha256",
-    "value": "5e66ce8ac9aed30b06b6c1a7843fa5a589c8cf0a6c7bdbb10cede8ca996d7183"
+    "value": "9d074076e1bf3ac15bcf9b35af8efc8f5a0d21bfedd292e960e69b0da4407551"
   }
 }

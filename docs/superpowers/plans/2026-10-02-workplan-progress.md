@@ -95,7 +95,7 @@ Execute all accepted work and create/push GitHub PRs; do not merge to main. User
 | PR-60 | queued | issue #159 |
 | PR-68 | queued | issue #203 |
 | PR-34 | queued | issue #199 |
-| PR-36 | queued | issue #201 |
+| PR-36 | verified opt-in local progress; PR publication | Bounded64KiB/100records schema and storage recovery;707units; both builds/smoke and14desktop/mobile reader/heading/link checks each runtime; no accounts or history transmission |
 | PR-22 | queued | issue #187 |
 | PR-48 | queued | issue #147 |
 | PR-47 | queued | issue #146 |

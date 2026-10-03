@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { ArticleCitationTools } from '@/components/features/ArticleCitationTools';
+import { DeepDiveLearningProgress } from '@/components/features/DeepDiveLearningProgress';
 import type { ReactNode } from 'react';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { PageTableOfContents, type TocItem } from '@/components/layout/PageTableOfContents';
@@ -44,6 +45,20 @@ export function DeepDiveShell({ entryId, editPath, children }: DeepDiveShellProp
       nextPathEntry: nextPathEntryId ? getContentEntry(nextPathEntryId) : undefined,
     };
   });
+  const learningProgressPaths = readerPaths.map((path) => ({
+    id: path.id,
+    title: path.title,
+    entries: path.entryIds.map((pathEntryId) => {
+      const pathEntry = getContentEntry(pathEntryId);
+      return {
+        id: pathEntry.id,
+        title: pathEntry.title,
+        href: pathEntry.href,
+        reviewedAt: pathEntry.reviewedAt,
+      };
+    }),
+  }));
+  const learningProgressCatalog = DEEP_DIVE_READER_PATHS.map(({ id, entryIds }) => ({ id, entryIds }));
   const articleUseCase = getDeepDiveArticleUseCase(entryId, entry.title, entry.confidence);
   const articleClaimBoundary = getDeepDiveArticleClaimBoundary(entryId, entry.confidence, readerPaths);
   const verifyNowLinkMap = new Map<string, typeof defaultVerifyNowLink>();
@@ -307,6 +322,10 @@ export function DeepDiveShell({ entryId, editPath, children }: DeepDiveShellProp
 
       <ArticleCitationTools entry={entry} boundary={articleClaimBoundary} />
 
+      {learningProgressPaths.length > 0 && (
+        <DeepDiveLearningProgress entryId={entryId} paths={learningProgressPaths} catalog={learningProgressCatalog} />
+      )}
+
       {toc.length > 0 && (
         <nav aria-label="Table of contents" className="mb-6 rounded-lg border border-border bg-surface-elevated/60 p-4">
           <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Table of Contents</p>
@@ -341,4 +360,3 @@ export function DeepDiveShell({ entryId, editPath, children }: DeepDiveShellProp
     </PageContainer>
   );
 }
-

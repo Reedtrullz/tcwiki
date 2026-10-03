@@ -38,6 +38,30 @@ export interface ClaimEvidence {
   supersedes?: string;
 }
 
+/** Browser-local reading notes; these snapshots describe navigation, not competence. */
+export interface LearningProgressStepSnapshot {
+  entryId: string;
+  reviewedAt: string;
+}
+
+export interface LearningProgressBookmark extends LearningProgressStepSnapshot {
+  savedAt: string;
+}
+
+export interface LearningProgressPathState {
+  pathId: string;
+  /** Derived from the current reader-path registry and validated on import. */
+  pathHref: string;
+  bookmark: LearningProgressBookmark | null;
+  readSteps: LearningProgressStepSnapshot[];
+}
+
+export interface LearningProgressDocument {
+  version: 1;
+  selectedPathId: string | null;
+  paths: LearningProgressPathState[];
+}
+
 export interface SourcedRecord<T> {
   claims?: ClaimEvidence[];
   data: T;
