@@ -52,3 +52,25 @@ it('cancels a stalled body read on the owning deadline', async () => {
   await assertion;
   expect(cancelled).toBe(true);
 });
+
+it('accepts decoded CORS bodies when the browser hides Content-Encoding', async () => {
+  const { readProviderJson } = await import('@/lib/api/bounded-json');
+  const response = new Response('{"pools":["BTC.BTC"]}', { headers: { 'Content-Length': '8' } });
+  Object.defineProperty(response, 'type', { value: 'cors' });
+  await expect(readProviderJson(response)).resolves.toEqual({ pools: ['BTC.BTC'] });
+});
+
+it('retains byte and JSON limits for CORS bodies with hidden encoding', async () => {
+  const { readProviderJson, PROVIDER_MAX_BYTES } = await import('@/lib/api/bounded-json');
+  for (const [body, error] of [
+    ['x'.repeat(PROVIDER_MAX_BYTES + 1), /body exceeds/],
+    ['{"unfinished":', /JSON/],
+  ] as const) {
+    const response = new Response(body, { headers: { 'Content-Length': '1' } });
+    Object.defineProperty(response, 'type', { value: 'cors' });
+    await expect(readProviderJson(response)).rejects.toThrow(error);
+  }
+  const identity = new Response('{}', { headers: { 'Content-Length': '1', 'Content-Encoding': 'identity' } });
+  Object.defineProperty(identity, 'type', { value: 'cors' });
+  await expect(readProviderJson(identity)).rejects.toThrow(/does not match/);
+});

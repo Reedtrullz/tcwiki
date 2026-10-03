@@ -40,8 +40,11 @@ export async function readProviderJson(response: Response, signal?: AbortSignal)
       if (size > PROVIDER_MAX_BYTES) throw new Error('Provider body exceeds 2097152 bytes.');
       text += decoder.decode(value, { stream: true });
     }
-    // Fetch decompresses encoded bodies; their wire length differs from decoded bytes.
-    if (length !== null && !response.headers.get('Content-Encoding') && Number(length) !== size) {
+    // Fetch decodes compressed bodies. CORS may expose their wire Content-Length
+    // while hiding Content-Encoding, so absence of that header proves nothing.
+    const encoding = response.headers.get('Content-Encoding')?.trim().toLowerCase();
+    const lengthIsDecoded = encoding === 'identity' || (!encoding && response.type !== 'cors');
+    if (length !== null && lengthIsDecoded && Number(length) !== size) {
       throw new Error('Provider Content-Length does not match the received body.');
     }
     const data: unknown = JSON.parse(text + decoder.decode());
