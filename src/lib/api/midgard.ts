@@ -17,7 +17,7 @@ import {
 import { liveDegraded, liveOk } from '@/lib/trust';
 import { DAILY_VOLUME_POOLS } from '@/lib/daily-volume';
 
-const MIDGARD_ENDPOINTS = [
+export const MIDGARD_ENDPOINTS = [
   {
     label: 'Liquify Midgard',
     url: 'https://gateway.liquify.com/chain/thorchain_midgard/v2',

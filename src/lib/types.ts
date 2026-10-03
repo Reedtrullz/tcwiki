@@ -24,7 +24,22 @@ export interface FreshnessMeta {
   nextReviewDue?: string;
 }
 
+export interface ClaimEvidence {
+  id: string;
+  summary: string;
+  source: SourceMeta;
+  observedAt: string;
+  versionScope: string;
+  scope: 'current-only' | 'historical' | 'design';
+  reviewedAt: string;
+  nextReviewDue: string;
+  decision: 'supported' | 'needs-review' | 'needs-live-evidence' | 'superseded';
+  limitation: string;
+  supersedes?: string;
+}
+
 export interface SourcedRecord<T> {
+  claims?: ClaimEvidence[];
   data: T;
   sources: SourceMeta[];
   freshness: FreshnessMeta;

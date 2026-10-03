@@ -12,9 +12,11 @@ import {
   SwapQuoteProbeResult,
   SwapQuoteRequest,
 } from '@/lib/types';
+import { formatEvidenceTimestamp } from '@/lib/utils';
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import { ResponsiveVisibility } from '@/components/ui/ResponsiveVisibility';
+import { ProviderRequestDisclosure } from '@/components/features/ProviderRequestDisclosure';
 import { LiveSourceMeta } from '@/components/ui/LiveSourceMeta';
 import { usePools, useSwapQuoteProbe } from '@/lib/hooks/useMidgard';
 import { hasUnreviewedControlSemantics } from '@/lib/source-warnings';
@@ -1327,7 +1329,9 @@ function RouteQuoteChecker({ status, statusLoading, operationsResult }: { status
         </div>
       </div>
 
-      <form className="mt-3 grid gap-2 lg:grid-cols-[1fr_1fr_0.8fr_auto]" onSubmit={handleSubmit}>
+      <ProviderRequestDisclosure variant="quote" />
+
+      <form aria-describedby="quote-request-disclosure" className="mt-3 grid gap-2 lg:grid-cols-[1fr_1fr_0.8fr_auto]" onSubmit={handleSubmit}>
         <label className="text-xs text-slate-300">
           <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-slate-500">From asset</span>
           <select
@@ -1706,7 +1710,7 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
             <p className="mt-1 text-[11px] text-slate-400">
               THORChain height {status.thorchainHeight}
               {status.thorchainSnapshotPinned === false ? ' / snapshot unpinned' : ''}
-              {status.thorchainBlockTime ? ` / block time ${new Date(status.thorchainBlockTime).toLocaleTimeString()}` : ''}
+              {status.thorchainBlockTime ? ` / block time ${formatEvidenceTimestamp(status.thorchainBlockTime)}` : ''}
               {status.thorchainBlockAgeSeconds !== undefined ? ` / Block age ${formatBlockAge(status.thorchainBlockAgeSeconds)}` : ''}
               {status.thorchainLastblockSpread !== undefined && status.thorchainLastblockSpread > 0 ? ` / lastblock spread ${status.thorchainLastblockSpread} blocks` : ''}
             </p>
@@ -1959,6 +1963,8 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
       {!compact && showQuoteChecker && (
         <RouteQuoteChecker status={status} statusLoading={isLoading} operationsResult={result} />
       )}
+
+      {!compact && <ProviderRequestDisclosure variant="diagnostic" />}
 
       {!compact && (evidenceRows.length > 0 || (unreviewedControls && status?.observedMimir)) && (
         <details className="mt-4 rounded-md border border-border bg-surface/50">

@@ -1,10 +1,13 @@
 'use client';
 
+import { replaceExplorerUrl } from '@/lib/explorer-url';
+
 import { useCallback, useEffect, useMemo, useRef, useSyncExternalStore } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { Search, X } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
+import { ClaimCitations } from '@/components/features/ClaimCitations';
 import { FreshnessMeta } from '@/components/ui/FreshnessMeta';
 import { recordAnchor } from '@/lib/utils';
 import type { SecurityIncident, SourcedRecord } from '@/lib/types';
@@ -55,14 +58,6 @@ function getServerHydratedSnapshot() {
   return false;
 }
 
-function replaceUrlFromFilter(nextUrl: string) {
-  if (typeof window === 'undefined') {
-    return;
-  }
-
-  window.history.replaceState(window.history.state, '', nextUrl);
-  window.dispatchEvent(new PopStateEvent('popstate', { state: window.history.state }));
-}
 
 function normalizeText(value: string) {
   return value
@@ -191,7 +186,7 @@ export function GovernanceIncidentArchiveExplorer({
 
   const replaceFiltersInUrl = useCallback((nextFilters: IncidentFilterState) => {
     const nextParams = new URLSearchParams(searchParamString);
-    const normalizedQuery = nextFilters.query.trim();
+    const normalizedQuery = nextFilters.query.slice(0, 256);
 
     if (normalizedQuery) {
       nextParams.set(QUERY_PARAM, normalizedQuery);
@@ -207,7 +202,7 @@ export function GovernanceIncidentArchiveExplorer({
 
     const nextParamString = nextParams.toString();
     const nextUrl = nextParamString ? `${pathname}?${nextParamString}` : pathname;
-    replaceUrlFromFilter(nextUrl);
+    replaceExplorerUrl(nextUrl, [QUERY_PARAM, POSTURE_PARAM]);
   }, [pathname, searchParamString]);
 
   const updateFilters = (patch: Partial<IncidentFilterState>) => {
@@ -325,6 +320,7 @@ export function GovernanceIncidentArchiveExplorer({
                 </div>
                 <div className="space-y-2">
                   <FreshnessMeta freshness={record.freshness} sources={record.sources} />
+                  <ClaimCitations claims={record.claims ?? []} />
                   {incident.url && (
                     <a
                       href={incident.url}

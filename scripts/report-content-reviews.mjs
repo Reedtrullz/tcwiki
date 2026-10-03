@@ -103,6 +103,7 @@ if (evidenceOnly) console.warn('Evidence-only report: --allow-overdue does not a
 
 const staticData = await jiti.import(join(root, 'src/lib/data/static.ts'));
 const contentRegistry = await jiti.import(join(root, 'src/lib/content/registry.ts'));
+const claimEvidence = await jiti.import(join(root, 'src/lib/claim-evidence.ts'));
 const glossary = await jiti.import(join(root, 'src/lib/content/glossary.ts'));
 const items = [];
 
@@ -111,6 +112,7 @@ for (const [name, value] of Object.entries(staticData)) {
     addFreshnessRecords(items, name, value);
   }
 }
+items.push(...claimEvidence.buildClaimReviewItems(staticData.SECURITY_INCIDENT_RECORDS));
 addReviewEntries(items, 'CONTENT_ENTRIES', [contentRegistry.HOME_PAGE_ENTRY, contentRegistry.SEARCH_PAGE_ENTRY, ...contentRegistry.CONTENT_ENTRIES], 'src/lib/content/registry.ts');
 addReviewEntries(items, 'DEEP_DIVE_READER_PATHS', contentRegistry.DEEP_DIVE_READER_PATHS, 'src/lib/content/registry.ts');
 addReviewEntries(items, 'TASK_INTENT_GUIDES', contentRegistry.TASK_INTENT_GUIDES, 'src/lib/content/registry.ts');

@@ -75,6 +75,16 @@ Execute all accepted work and create/push GitHub PRs; do not merge to main. User
 | PR-27 | queued | issue #192 |
 | PR-28 | queued | issue #193 |
 | PR-29 | verified candidate; publishing | issue #194; linked161recordqueue/source/owner/due/reason, optional source-change context; selected local draft/stablemarker/duplicatefixture;8focusedtests/types/lint; no issue publication |
+| PR-20 | PR246 open; local verified | 679units/58files;bothbuilds/Nextsmoke;Cloudflare79/84 with5skips;Next78 plus final30/30 affected journeys eachtarget;owned query keys, rapid edits, fragments, hydration and browser restoration |
+| PR-21 | PR247 open; local verified | 7551177;651units;65browserchecks eachruntime plus5skips;single semantic announcement and stable repeated-refresh text |
+| PR-25 | local verified; PR publishing | 24 offline cases; development14/14 and held-out8/10 at top1/top5; exact/current cases all pass;31focused tests/types/lint; no ranking changes or query tracking |
+| PR-58 | verified candidate; publishing | issue #157; controlled disposable throw/retry each runtime, no shipped trigger; full656units/types/lint/both final builds/smoke,12 route/navigation/runtime checks plus1skip each; unknownURL404/noindex/focus/navigation retained |
+| PR-26 | queued | issue #191 |
+| PR-49 | verified candidate; publishing | issue #148; one existing12s server cycle/SWR fallback with mount revalidation, UTC hydration fix;683units/types/lint/bothbuilds/smoke;20network/noJS/manualrefresh/runtimebrowser checks eachtarget |
+| PR-50 | local verified; PR publishing | 42focusedunits/types/lint;bothbuilds/smoke;30network/docs/glossarychecks eachruntime;manual quote exact3parameters/0requests-before-click;sharedproviderdestinations andURL/referrer disclosures |
+| PR-27 | queued | issue #192 |
+| PR-28 | verified candidate; publishing | issue #193;3claim memolesspilot/releasehash/scope/citations/search/reviewtasks; parentAug26dates/Oct9exceptions preserved;692units/types/lint/content/bothbuilds/smoke;11 browserchecks eachtarget |
+| PR-29 | queued | issue #194 |
 | PR-30 | queued | issue #195 |
 | PR-32 | verified candidate; publishing | issue #197; two issue templates, focused PR template, complete source correction example; front matter/manual links/content/tracked-input verification |
 | PR-31 | queued | issue #196 |

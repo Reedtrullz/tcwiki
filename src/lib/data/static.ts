@@ -1,5 +1,6 @@
 import type {
   Chain,
+  ClaimEvidence,
   DataConfidence,
   EcosystemProject,
   GovernanceProposal,
@@ -1034,6 +1035,34 @@ export const RESEARCH_REPORT_RECORDS: SourcedRecord<ResearchReport>[] = [
 ];
 
 
+const memolessPilotClaims: ClaimEvidence[] = [
+  {
+    id: 'memoless-august-cycle',
+    summary: 'The authored August incident describes a halt, re-enable and spam-driven re-halt cycle.',
+    source: protocolUpgradeV320Source,
+    observedAt: '2026-08-26', versionScope: 'Authored August 2026 cohort; not current operations',
+    scope: 'historical', reviewedAt: '2026-08-26', nextReviewDue: '2026-09-25', decision: 'needs-review',
+    limitation: 'The linked release describes implementation work, not the complete historical halt sequence. The original community/snapshot chronology still needs retained dated evidence; this pilot does not certify it.',
+  },
+  {
+    id: 'memoless-v320-handler-work',
+    summary: 'The v3.20.0 release lists memoless ERC20 handler, refund-simulation and inbound-observation changes.',
+    source: protocolUpgradeV320Source,
+    observedAt: '2026-10-03', versionScope: 'THORNode v3.20.0',
+    scope: 'historical', reviewedAt: '2026-10-03', nextReviewDue: '2026-11-03', decision: 'supported',
+    limitation: 'Support is for the listed release work only. Release creation, proposed upgrade date, implementation and successful current execution are separate facts.',
+  },
+  {
+    id: 'memoless-current-availability',
+    summary: 'Present memoless availability requires a fresh, source-qualified operational assessment.',
+    source: liquifyThornodeMimirSource,
+    observedAt: '2026-08-26', versionScope: 'Current provider result must be obtained separately',
+    scope: 'current-only', reviewedAt: '2026-10-03', nextReviewDue: '2026-11-03', decision: 'needs-live-evidence',
+    supersedes: 'memoless-august-cycle',
+    limitation: 'Supersedes using the August claim to answer a present-tense question; it does not erase the historical record. No current Mimir value or successful route is asserted by this citation.',
+  },
+];
+
 export const SECURITY_INCIDENT_RECORDS: SourcedRecord<SecurityIncident>[] = [
   record({
     id: 'eth-router-1',
@@ -1140,6 +1169,10 @@ export const SECURITY_INCIDENT_RECORDS: SourcedRecord<SecurityIncident>[] = [
     nextReviewDue: '2026-09-25',
   }),
 ];
+const memolessPilotRecord = SECURITY_INCIDENT_RECORDS.find(record => record.data.id === 'memoless-spam-2026-08');
+if (!memolessPilotRecord) throw new Error('Missing memoless claim pilot record');
+memolessPilotRecord.claims = memolessPilotClaims;
+
 
 
 export const GOVERNANCE_PROPOSAL_RECORDS: SourcedRecord<GovernanceProposal>[] = [

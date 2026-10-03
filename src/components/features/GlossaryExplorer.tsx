@@ -1,6 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { replaceExplorerUrl } from '@/lib/explorer-url';
+
+import { useCallback, useEffect, useMemo, useRef, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { Search, X } from 'lucide-react';
@@ -87,14 +89,6 @@ function describeNoResults(query: string, category: string) {
   return 'No glossary terms match the current filters.';
 }
 
-function replaceUrlFromFilter(nextUrl: string) {
-  if (typeof window === 'undefined') {
-    return;
-  }
-
-  window.history.replaceState(window.history.state, '', nextUrl);
-  window.dispatchEvent(new PopStateEvent('popstate', { state: window.history.state }));
-}
 
 function GlossaryTermCard({ term }: { term: GlossaryExplorerTerm }) {
   return (
@@ -129,6 +123,7 @@ function GlossaryTermCard({ term }: { term: GlossaryExplorerTerm }) {
 }
 
 export function GlossaryExplorer({ terms }: { terms: GlossaryExplorerTerm[] }) {
+  const hydrated = useSyncExternalStore(() => () => undefined, () => true, () => false);
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const searchParamString = searchParams.toString();
@@ -175,7 +170,7 @@ export function GlossaryExplorer({ terms }: { terms: GlossaryExplorerTerm[] }) {
 
   const replaceFiltersInUrl = useCallback((nextFilters: GlossaryFilterState) => {
     const nextParams = new URLSearchParams(searchParamString);
-    const normalizedNextQuery = nextFilters.query.trim();
+    const normalizedNextQuery = nextFilters.query.slice(0, 256);
 
     if (normalizedNextQuery) {
       nextParams.set(QUERY_PARAM, normalizedNextQuery);
@@ -190,7 +185,7 @@ export function GlossaryExplorer({ terms }: { terms: GlossaryExplorerTerm[] }) {
     }
 
     const nextParamString = nextParams.toString();
-    replaceUrlFromFilter(nextParamString ? `${pathname}?${nextParamString}` : pathname);
+    replaceExplorerUrl(nextParamString ? `${pathname}?${nextParamString}` : pathname, [QUERY_PARAM, CATEGORY_PARAM]);
   }, [pathname, searchParamString]);
 
   const updateFilters = (patch: Partial<GlossaryFilterState>) => {
@@ -223,7 +218,7 @@ export function GlossaryExplorer({ terms }: { terms: GlossaryExplorerTerm[] }) {
             </p>
           </div>
           {activeFilters && (
-            <button
+            <button disabled={!hydrated}
               type="button"
               onClick={resetFilters}
               className="inline-flex items-center gap-1 self-start rounded-md border border-border px-2.5 py-1.5 text-xs text-slate-400 transition-colors hover:border-accent/30 hover:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 lg:self-auto"
@@ -238,7 +233,7 @@ export function GlossaryExplorer({ terms }: { terms: GlossaryExplorerTerm[] }) {
           <form role="search" aria-label="Filter glossary terms" onSubmit={(event) => event.preventDefault()}>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <input
+              <input disabled={!hydrated}
                 aria-label="Filter glossary terms"
                 type="search"
                 value={query}
@@ -250,7 +245,7 @@ export function GlossaryExplorer({ terms }: { terms: GlossaryExplorerTerm[] }) {
           </form>
 
           <nav aria-label="Glossary categories" className="flex flex-wrap gap-2 lg:max-w-xl lg:justify-end">
-            <button
+            <button disabled={!hydrated}
               type="button"
               onClick={() => updateFilters({ category: ALL_CATEGORIES })}
               aria-pressed={category === ALL_CATEGORIES}
@@ -264,7 +259,7 @@ export function GlossaryExplorer({ terms }: { terms: GlossaryExplorerTerm[] }) {
               <span className="ml-1 text-slate-500">{terms.length}</span>
             </button>
             {categories.map((option) => (
-              <button
+              <button disabled={!hydrated}
                 key={option}
                 type="button"
                 onClick={() => updateFilters({ category: option })}
@@ -310,7 +305,7 @@ export function GlossaryExplorer({ terms }: { terms: GlossaryExplorerTerm[] }) {
           <p className="mt-1">
             Try another term, source label, related page, or proof-link anchor.
           </p>
-          <button
+          <button disabled={!hydrated}
             type="button"
             onClick={resetFilters}
             className="mt-3 text-accent underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"
