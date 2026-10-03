@@ -112,7 +112,7 @@ export async function mockSwapperFirstNetwork(page: Page, options: SwapperFirstN
       ],
     });
   });
-  await page.route(/\/v2\/pools\?status=available$/, async (route) => {
+  await page.route(/\/v2\/pools\?status=available(?:&period=(?:1h|24h|7d|14d|30d|90d|100d|180d|365d))?$/, async (route) => {
     await fulfillJson(route, pools);
   });
   await page.route(/\/thorchain\/quote\/swap\?.*$/, async (route) => {
