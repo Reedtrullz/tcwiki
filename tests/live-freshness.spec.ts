@@ -14,7 +14,7 @@ test('operation evidence retains its receipt through offline failure, ages on re
   let quoteRequests = 0;
   page.on('request', request => { if (request.url().includes('/quote/swap')) quoteRequests += 1; });
   await page.goto('/network');
-  const refresh = page.getByRole('button', { name: /Refresh .*THORNode.* data/i }).first();
+  const refresh = page.locator('#network-diagnostics').getByRole('button', { name: /Refresh .*THORNode.* data/i }).first();
   await expect(refresh).toBeEnabled({ timeout: 15000 });
   const sourceLine = refresh.locator('..');
   const checked = sourceLine.locator('span').filter({ hasText: /^Checked / }).first();
