@@ -76,7 +76,7 @@ Execute all accepted work and create/push GitHub PRs; do not merge to main. User
 | PR-28 | queued | issue #193 |
 | PR-29 | queued | issue #194 |
 | PR-30 | queued | issue #195 |
-| PR-32 | queued | issue #197 |
+| PR-32 | verified candidate; publishing | issue #197; two issue templates, focused PR template, complete source correction example; front matter/manual links/content/tracked-input verification |
 | PR-31 | queued | issue #196 |
 | PR-61 | queued | issue #160 |
 | PR-23 | queued | issue #188 |
