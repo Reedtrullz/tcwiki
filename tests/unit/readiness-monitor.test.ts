@@ -74,3 +74,59 @@ describe('production readiness monitor evidence', () => {
     expect(result.counts).toEqual({ total: 3, ready: 0, degraded: 2, errors: 1 });
   });
 });
+
+describe('incident evidence boundaries', () => {
+  it('counts repeated source receipts as one independent observation', () => {
+    const receipt = readiness(false);
+    const result = evidence([{ observedAt: 'one', readiness: receipt }, { observedAt: 'two', readiness: { ...receipt, observedAt: 'two' } }]);
+    expect(result).toMatchObject({ observations: { independent: 1, repeated: 1 } });
+  });
+  it('separates unreachable origin from healthy origin with degraded sources', () => {
+    const origin = evidence([{ observedAt: 'one', error: 'connection refused', origin: { healthy: false, reachable: false, error: 'connection refused' } }]);
+    const upstream = evidence([{ observedAt: 'one', readiness: readiness(false), origin: { healthy: true, reachable: true, commit: 'abc1234', image: 'ghcr.io/example/tcwiki@sha256:abc' } }]);
+    expect(origin).toMatchObject({ incident: { kind: 'origin-liveness' } });
+    expect(upstream).toMatchObject({ incident: { kind: 'source-readiness', families: ['THORNode'] } });
+  });
+  it('identifies a dynamic-fee-only failure without blaming network operation evidence', () => {
+    const response = summarizeReadinessResponse({ observedAt: 'one', httpStatus: 503, json: { ready: false, status: 'degraded', checkedAt: 'one', sources: { thornode: { status: 'ok', sourceWarningDetails: [], dynamicFees: { status: 'degraded', checkedAt: 'fee-one', sourceWarningDetails: [{ category: 'source-shape', severity: 'warning', message: 'fee record malformed' }] } } } } });
+    expect(evidence([{ readiness: response, origin: { healthy: true } }])).toMatchObject({ incident: { kind: 'feature-degradation', features: ['Dynamic fees'], categories: ['source-shape'] } });
+  });
+  it('keeps incident fingerprint stable when only sample time or block age changes', () => {
+    const first = readiness(false);
+    const later = { ...first, checkedAt: 'later', thornode: { ...(first.thornode as object), blockAgeSeconds: 140 } };
+    const a = evidence([{ readiness: first, origin: { healthy: true } }]);
+    const b = evidence([{ readiness: later, origin: { healthy: true } }]);
+    expect(a).toHaveProperty('incident.fingerprint');
+    expect((a as unknown as { incident: { fingerprint: string } }).incident.fingerprint).toBe((b as unknown as { incident: { fingerprint: string } }).incident.fingerprint);
+  });
+});
+
+it('bounds independent monitor body reads even after headers have arrived', async () => {
+  const { fetchMonitorJson } = await import('../../scripts/lib/readiness-monitor.mjs');
+  let cancelled = false;
+  const stalled = new Response(new ReadableStream({ cancel() { cancelled = true; } }));
+  await expect(fetchMonitorJson('https://monitor.test', { timeoutMs: 20, fetchImpl: async () => stalled })).rejects.toThrow(/deadline/);
+  expect(cancelled).toBe(true);
+});
+
+it('rejects oversized independent monitor bodies', async () => {
+  const { fetchMonitorJson } = await import('../../scripts/lib/readiness-monitor.mjs');
+  await expect(fetchMonitorJson('https://monitor.test', { fetchImpl: async () => new Response(' '.repeat(1048577)) })).rejects.toThrow(/1MiB/);
+});
+
+it('updates one incident without losing its first observation and records recovery', async () => {
+  const { buildReadinessIncidentUpdate } = await import('../../scripts/lib/readiness-monitor.mjs');
+  const failed = evidence([{ readiness: readiness(false), origin: { healthy: true } }]);
+  const first = buildReadinessIncidentUpdate(failed, '', 'https://github.test/evidence/first');
+  expect(first.action).toBe('create');
+  const repeated = buildReadinessIncidentUpdate(failed, first.body, 'https://github.test/evidence/latest');
+  expect(repeated.action).toBe('update');
+  expect(repeated.body).toContain('Initial evidence: https://github.test/evidence/first');
+  expect(repeated.historyComment).toBeUndefined();
+  const origin = evidence([{ error: 'timeout', origin: { healthy: false } }]);
+  const changed = buildReadinessIncidentUpdate(origin, repeated.body, 'https://github.test/evidence/origin');
+  expect(changed.historyComment).toContain(repeated.body);
+  const recovered = buildReadinessIncidentUpdate(evidence([{ readiness: readiness(true), origin: { healthy: true } }]), changed.body, 'https://github.test/evidence/recovered');
+  expect(recovered.action).toBe('recover');
+  expect(recovered.recoveryComment).toContain('not continuous uptime');
+});

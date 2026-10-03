@@ -136,8 +136,10 @@ describe('release and browser test wiring', () => {
     expect(operationsWorkflow).toContain('npm run check:production-readiness');
     expect(operationsWorkflow).toContain('--samples 3');
     expect(operationsWorkflow).toContain('--interval-ms 60000');
-    expect(operationsWorkflow).toContain('Open persistent readiness alert');
-    expect(operationsWorkflow).toContain('Close recovered readiness alert');
+    expect(operationsWorkflow).toContain('scripts/update-readiness-incident.mjs');
+    expect(operationsWorkflow).toContain('READINESS_ARTIFACT_URL: ${{ steps.readiness_evidence.outputs.artifact-url }}');
+    expect(operationsWorkflow).toContain('group: production-readiness-incident');
+    expect(operationsWorkflow).toContain('cancel-in-progress: false');
     expect(operationsWorkflow).toContain('npm run report:content-reviews');
     expect(operationsWorkflow).toContain('--horizon-days 30');
     expect(releaseTrackedLib).toContain("'.github/workflows/operations.yml'");
