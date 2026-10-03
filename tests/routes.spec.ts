@@ -132,6 +132,9 @@ test.describe('THORChain Wiki Public Route Smoke Tests', () => {
     });
 
     await expect(page).toHaveURL(/\/__pr58_unmatched_route__$/);
+    const robots = await page.locator('meta[name=\"robots\"]').evaluateAll(elements => elements.map(element => element.getAttribute('content')));
+    expect(robots.some(value => value?.split(/[,\s]+/).includes('noindex'))).toBe(true);
+    console.log('PR58_UNMATCHED=' + JSON.stringify({ status: response?.status(), robots }));
     await expect(page.getByRole('main')).toBeVisible();
     await expect(page.getByRole('banner')).toBeVisible();
     await expect(page.getByRole('status')).toContainText('That page could not be found');

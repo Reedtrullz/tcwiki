@@ -68,7 +68,7 @@ Execute all accepted work and create/push GitHub PRs; do not merge to main. User
 | PR-20 | queued | issue #185 |
 | PR-21 | PR247 open; local verified | 7551177;651units;65browserchecks eachruntime plus5skips;single semantic announcement and stable repeated-refresh text |
 | PR-25 | local verified; PR publishing | 24 offline cases; development14/14 and held-out8/10 at top1/top5; exact/current cases all pass;31focused tests/types/lint; no ranking changes or query tracking |
-| PR-58 | queued | issue #157 |
+| PR-58 | verified candidate; publishing | issue #157; controlled disposable throw/retry each runtime, no shipped trigger; full656units/types/lint/both final builds/smoke,12 route/navigation/runtime checks plus1skip each; unknownURL404/noindex/focus/navigation retained |
 | PR-26 | queued | issue #191 |
 | PR-49 | queued | issue #148 |
 | PR-50 | queued | issue #149 |
