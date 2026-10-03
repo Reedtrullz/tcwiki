@@ -6,6 +6,7 @@ import {
   getContentEntry,
 } from '../src/lib/content/registry';
 import { getDeepDiveArticleClaimBoundary, getDeepDiveArticleUseCase } from '../src/lib/deep-dive-posture';
+import { MDX_DEEP_DIVE_SECTION_DOCUMENTS } from '../src/lib/search/mdx-documents.generated';
 import { expectAnchorTargetVisualSafety, expectRouteVisualSafety } from './helpers/layout-safety';
 
 function escapeRegExp(value: string) {
@@ -388,6 +389,16 @@ test.describe('THORChain Wiki Deep Dive Smoke Tests', () => {
         ).toBeVisible();
         await expect(page.getByText(/not identical, to the January-February 2025 THORFi unwind/i)).toBeVisible();
         await expect(page.getByText(/acceptance is not universal made-whole proof/i)).toBeVisible();
+      }
+    }
+  });
+
+  test('indexed sections render at the exact heading anchors', async ({ page }) => {
+    for (const entry of DEEP_DIVE_ENTRIES) {
+      await page.goto(entry.href);
+      const main = page.locator('main');
+      for (const section of MDX_DEEP_DIVE_SECTION_DOCUMENTS.filter((doc) => doc.slug === entry.href)) {
+        await expect(main.locator(`[id="${section.anchor}"]`), `${entry.href}#${section.anchor}`).toHaveCount(1);
       }
     }
   });

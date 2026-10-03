@@ -18,7 +18,7 @@ interface ConsoleProblem {
   type: string;
 }
 
-const LOCAL_ORIGIN = 'http://localhost:3000';
+const LOCAL_ORIGIN = new URL(process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:3000').origin;
 const PRODUCTION_ORIGIN = 'https://wiki.thorchain.no';
 const RENDERED_CONSOLE_PROBLEM_PATTERN = /Application error|Unhandled Runtime Error|Hydration failed|hydration error|cannot be a child of|validateDOMNesting|Minified React error|ReferenceError|TypeError/i;
 
