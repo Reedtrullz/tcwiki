@@ -171,9 +171,13 @@ export function DynamicFeeRecordsExplorer({
                   className="mt-2 w-full rounded-md border border-border bg-surface px-3 py-2 text-sm normal-case tracking-normal text-slate-100 outline-none transition focus:border-accent"
                 >
                   <option value="all">All positions</option>
+                  <option value="below">Below floor</option>
                   <option value="floor">At floor</option>
                   <option value="ceiling">At ceiling</option>
                   <option value="inside">Inside bounds</option>
+                  <option value="above">Above ceiling</option>
+                  <option value="equal">At shared bound</option>
+                  <option value="invalid">Invalid bounds</option>
                   <option value="unknown">Bounds unknown</option>
                 </select>
               </label>

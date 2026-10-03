@@ -6,6 +6,18 @@ import { OPERATIONAL_CONTROL_CATALOG, REVIEWED_OPERATIONAL_CONTROL_SOURCE } from
 
 const makeResponse = (ok: boolean, data: unknown, status = 200, statusText = 'OK') => new Response(JSON.stringify(data), { status: !ok && status === 200 ? 500 : status, statusText });
 
+it('retains inverted fee bounds and a non-sealing epoch value with explicit configuration warnings', () => {
+  const status = deriveDynamicL1FeeStatus(
+    { L1DynamicFeeEnabled: 1, L1DynamicFeeFloorBPS: 20, L1DynamicFeeCeilingBPS: 1, L1DynamicFeeEpochBlocks: 0 },
+    dynamicFeeFixture().dynamicFees, dynamicFeeFixture().currentDynamicFees, dynamicFreshness,
+  );
+  expect(status.mimir.floorBps).toMatchObject({ value: 20, effectiveValue: 20 });
+  expect(status.mimir.ceilingBps).toMatchObject({ value: 1, effectiveValue: 1 });
+  expect(status.mimir.epochBlocks).toMatchObject({ value: 0, effectiveValue: 0 });
+  expect(status.sourceWarningDetails).toContainEqual(expect.objectContaining({ category: 'mimir-parse', message: expect.stringContaining('inverted') }));
+  expect(status.sourceWarnings).toContainEqual(expect.stringContaining('epoch sealing is paused'));
+});
+
 interface SnapshotFixture {
   mimir: unknown;
   inbound: unknown;

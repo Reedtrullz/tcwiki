@@ -28,6 +28,8 @@ import {
   bpsMovementLabel,
   bpsMovementVariant,
   bpsPositionLabel,
+  bpsPositionForValue,
+  trustedDynamicConfigValue,
   bpsRange,
   coverageStats,
   formatBlockAge,
@@ -595,8 +597,8 @@ export function PairMovementSnapshot({ status }: { status?: DynamicL1FeeStatus }
 }
 
 export function PairLearningDetails({ status }: { status?: DynamicL1FeeStatus }) {
-  const floorBps = status?.mimir.floorBps.effectiveValue ?? status?.mimir.floorBps.value;
-  const ceilingBps = status?.mimir.ceilingBps.effectiveValue ?? status?.mimir.ceilingBps.value;
+  const floorBps = trustedDynamicConfigValue(status?.mimir.floorBps);
+  const ceilingBps = trustedDynamicConfigValue(status?.mimir.ceilingBps);
   const pairs = (status?.histories ?? []).flatMap((thornameHistory) => thornameHistory.pairs)
     .sort((left, right) => (
       left.thorname.localeCompare(right.thorname) ||
@@ -623,11 +625,7 @@ export function PairLearningDetails({ status }: { status?: DynamicL1FeeStatus })
             : pair.history.length === 1
               ? { label: 'Bootstrap', variant: 'info' as const }
               : { label: 'Learning', variant: 'success' as const };
-          const edgeState = typeof floorBps === 'number' && pair.dynamicBps === floorBps
-            ? 'At floor'
-            : typeof ceilingBps === 'number' && pair.dynamicBps === ceilingBps
-              ? 'At ceiling'
-              : 'Inside bounds';
+          const edgeState = bpsPositionLabel(bpsPositionForValue(pair.dynamicBps, floorBps, ceilingBps));
 
           return (
             <div key={recordKey(pair.thorname, pair.pair)} className="min-w-0 rounded-md border border-border bg-surface-elevated p-3">
@@ -676,7 +674,7 @@ export function PairLearningDetails({ status }: { status?: DynamicL1FeeStatus })
   );
 }
 
-export function BpsDistribution({ records }: { records: DynamicL1FeeRecord[] }) {
+export function BpsDistribution({ records, floorBps, ceilingBps }: { records: DynamicL1FeeRecord[]; floorBps?: number | null; ceilingBps?: number | null }) {
   if (records.length === 0) {
     return <p className="text-sm text-slate-400">No sealed dynamic-fee records are available from THORNode.</p>;
   }
@@ -701,7 +699,7 @@ export function BpsDistribution({ records }: { records: DynamicL1FeeRecord[] }) 
         <div key={recordKey(record.thorname, record.pair)} className="min-w-0">
           <div className="mb-1 flex min-w-0 items-center justify-between gap-3 text-xs">
             <span className="min-w-0 truncate text-slate-300">{record.thorname} / {record.pair}</span>
-            <span className="shrink-0 font-semibold text-accent">{formatBps(record.dynamicBps)}</span>
+            <span className="shrink-0 font-semibold text-accent">{formatBps(record.dynamicBps)} · {bpsPositionLabel(bpsPositionForValue(record.dynamicBps, floorBps, ceilingBps))}</span>
           </div>
           <div className="h-2 rounded bg-slate-800" aria-hidden="true">
             <div

@@ -37,7 +37,7 @@ export function configSuffix(flag: DynamicL1FeeMimirFlag | undefined) {
 }
 
 export function formatConfigInteger(flag: DynamicL1FeeMimirFlag | undefined, unit: string) {
-  const value = flag?.effectiveValue ?? flag?.value;
+  const value = trustedDynamicConfigValue(flag);
   return value === null || value === undefined
     ? 'Unavailable'
     : `${value.toLocaleString()} ${unit}${configSuffix(flag)}`;
@@ -263,7 +263,7 @@ export function whitelistBadge(state: DynamicL1FeeWhitelistState) {
 // --- Filter types and helpers ---
 
 export type DynamicFeeWhitelistFilter = 'all' | DynamicL1FeeWhitelistState;
-export type DynamicFeeBpsFilter = 'all' | 'floor' | 'ceiling' | 'inside' | 'unknown';
+export type DynamicFeeBpsFilter = 'all' | 'below' | 'floor' | 'inside' | 'ceiling' | 'above' | 'equal' | 'unknown' | 'invalid';
 export type DynamicFeeCurrentFilter = 'all' | 'with-current' | 'without-current';
 
 export type DynamicFeeRecordFilterState = {
@@ -310,14 +310,24 @@ export function currentWithoutSealedRecords(status: DynamicL1FeeStatus | undefin
   return (status?.currentEntries ?? []).filter((entry) => !sealedKeys.has(recordKey(entry.thorname, entry.pair)));
 }
 
-function bpsPositionForValue(
+export function trustedDynamicConfigValue(flag: DynamicL1FeeMimirFlag | undefined) {
+  return !flag || flag.state === 'unparseable' || flag.effectiveValue === null
+    ? null : flag.effectiveValue ?? flag.value;
+}
+
+export function bpsPositionForValue(
   dynamicBps: number,
   floorBps: number | null | undefined,
   ceilingBps: number | null | undefined
 ): Exclude<DynamicFeeBpsFilter, 'all'> {
+  if (!Number.isSafeInteger(dynamicBps) || dynamicBps < 0) return 'invalid';
   if (typeof floorBps !== 'number' || typeof ceilingBps !== 'number') {
     return 'unknown';
   }
+  if (!Number.isSafeInteger(floorBps) || !Number.isSafeInteger(ceilingBps) || floorBps < 0 || ceilingBps < 0 || floorBps > ceilingBps) return 'invalid';
+  if (dynamicBps < floorBps) return 'below';
+  if (dynamicBps > ceilingBps) return 'above';
+  if (floorBps === ceilingBps) return 'equal';
   if (dynamicBps === floorBps) {
     return 'floor';
   }
@@ -337,6 +347,10 @@ function dynamicFeeBpsPosition(
 
 export function bpsPositionLabel(position: Exclude<DynamicFeeBpsFilter, 'all'>) {
   switch (position) {
+    case 'below': return 'Below floor';
+    case 'above': return 'Above ceiling';
+    case 'equal': return 'At shared bound';
+    case 'invalid': return 'Invalid bounds';
     case 'floor':
       return 'At floor';
     case 'ceiling':
@@ -383,8 +397,8 @@ function compareNullableBigIntDesc(left: bigint | null, right: bigint | null) {
 
 export function pairMovementRows(status: DynamicL1FeeStatus | undefined): PairMovementRow[] {
   const currentEntries = currentByRecord(status);
-  const floorBps = status?.mimir.floorBps.effectiveValue ?? status?.mimir.floorBps.value;
-  const ceilingBps = status?.mimir.ceilingBps.effectiveValue ?? status?.mimir.ceilingBps.value;
+  const floorBps = trustedDynamicConfigValue(status?.mimir.floorBps);
+  const ceilingBps = trustedDynamicConfigValue(status?.mimir.ceilingBps);
 
   return (status?.histories ?? []).flatMap((thornameHistory) => (
     thornameHistory.pairs.map((pair) => {

@@ -20,7 +20,7 @@ async function fulfillJson(route: Route, value: unknown) {
   });
 }
 
-async function mockDynamicFeesThornode(page: Page) {
+async function mockDynamicFeesThornode(page: Page, mimir: Record<string, unknown> = {}) {
   const currentEpoch = '1867';
   const historyByThorname: Record<string, unknown> = {
     shapeshift: {
@@ -78,6 +78,7 @@ async function mockDynamicFeesThornode(page: Page) {
       L1DynamicFeeEpochBlocks: 14400,
       'DYNAMICFEE-WHITELIST-SHAPESHIFT': 1,
       'DYNAMICFEE-WHITELIST-SYMBIOSIS': 2,
+      ...mimir,
     });
   });
   await page.route(/\/thorchain\/dynamic_l1_fees(?:\?.*)?$/, async (route) => {
@@ -138,6 +139,26 @@ async function mockDynamicFeesThornode(page: Page) {
       contentType: 'application/json',
       body: JSON.stringify({ message: 'not found' }),
     });
+  });
+}
+
+for (const scenario of [
+  { name: 'inverted', floor: 20, ceiling: 1, filter: 'invalid', label: 'Invalid bounds', count: 2 },
+  { name: 'equal', floor: 4, ceiling: 4, filter: 'equal', label: 'At shared bound', count: 1 },
+  { name: 'below', floor: 5, ceiling: 20, filter: 'below', label: 'Below floor', count: 2 },
+  { name: 'above', floor: 0, ceiling: 0, filter: 'above', label: 'Above ceiling', count: 2 },
+]) {
+  test(`fee ${scenario.name} bounds stay consistent in filters and distribution`, async ({ page }) => {
+    await mockDynamicFeesThornode(page, { L1DynamicFeeFloorBPS: scenario.floor, L1DynamicFeeCeilingBPS: scenario.ceiling, L1DynamicFeeEpochBlocks: 0 });
+    await page.goto('/dynamic-fees');
+    await expect(page.getByText(/Epoch sealing paused: epoch length is zero/)).toBeVisible();
+    const distribution = page.locator('#dynamic-fee-bps-distribution');
+    await expect(distribution.getByText(new RegExp(`bps · ${scenario.label}`)).first()).toBeVisible();
+    const explorer = page.locator('#dynamic-fee-records-explorer');
+    await explorer.getByLabel(/Bps position/).selectOption(scenario.filter);
+    await expect(explorer.getByText(`Showing ${scenario.count} of 2`, { exact: true })).toBeVisible();
+    await explorer.getByLabel(/Bps position/).selectOption('inside');
+    await expect(explorer.getByText('Showing 0 of 2', { exact: true })).toBeVisible();
   });
 }
 
