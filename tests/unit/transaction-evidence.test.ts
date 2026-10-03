@@ -38,3 +38,13 @@ describe('transaction evidence boundaries', () => {
     expect(result.actions[0].inputs?.[0].coins?.map(coin => coin.amount)).toEqual([null, null]);
   });
 });
+
+it('rejects out-of-contract Int64 interpretations and warns on omitted bounded fields', () => {
+  const result = normalizeTransactionEvidence({ actions: [action({ date: '10000000000000000000', height: '99999999999999999999', out: [{ txID: 'B'.repeat(64), height: '99999999999999999999', coins: [] }], metadata: { swap: { memo: 'x'.repeat(1025), reason: 'x'.repeat(513) } } })] }, hash);
+  expect(result.actions[0].observedAt).toBeNull();
+  expect(result.actions[0].height).toBeNull();
+  expect(result.actions[0].outputs?.[0].height).toBeNull();
+  expect(result.actions[0].memo).toBeNull();
+  expect(result.actions[0].warnings.join(' ')).toContain('Memo');
+  expect(result.actions[0].warnings.join(' ')).toContain('reason');
+});

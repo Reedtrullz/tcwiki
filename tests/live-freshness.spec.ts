@@ -18,6 +18,12 @@ test('operation evidence retains its receipt through offline failure, ages on re
   await expect(refresh).toBeEnabled({ timeout: 15000 });
   const sourceLine = refresh.locator('..');
   const checked = sourceLine.locator('span').filter({ hasText: /^Checked / }).first();
+  // Wait for the mount revalidation to replace the real server seed with this browser fixture.
+  // Browser revalidation uses the browser's one-block lag in both runtimes;
+  // the Worker's server seed has its separate ten-block policy.
+  const expectedHeight = 100;
+  await expect(page.locator('#network-diagnostics').locator(`a[href*='/mimir?height=${expectedHeight}']`)).toHaveCount(1);
+  await expect(refresh).toBeEnabled();
   const receipt = await checked.innerText();
   const source = await sourceLine.getByRole('link').first().getAttribute('href');
   fail = true;

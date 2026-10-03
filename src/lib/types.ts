@@ -954,10 +954,10 @@ export interface NetworkStatus {
 
 /** Read-only Midgard indexer observations; no independent settlement evidence. */
 export interface TransactionEvidenceCoin { asset: string | null; amount: string | null; }
-export interface TransactionEvidenceTransfer { txID: string | null; height: string | null; coins: TransactionEvidenceCoin[] | null; }
+export interface TransactionEvidenceTransfer { txID: string | null; rawHeight: string | null; height: string | null; coins: TransactionEvidenceCoin[] | null; }
 export interface TransactionEvidenceAction {
   type: string | null; status: string | null; rawDate: string | null; observedAt: string | null;
-  height: string | null; memo: string | null; reason: string | null;
+  height: string | null; rawHeight: string | null; memo: string | null; reason: string | null;
   inputs: TransactionEvidenceTransfer[] | null; outputs: TransactionEvidenceTransfer[] | null;
   fees: TransactionEvidenceCoin[] | null; warnings: string[];
 }

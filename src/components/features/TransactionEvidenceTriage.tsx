@@ -15,15 +15,15 @@ function Coins({ rows }: { rows: TransactionEvidenceCoin[] | null }) {
 function Transfers({ rows }: { rows: TransactionEvidenceTransfer[] | null }) {
   if (!rows) return <p>Transfer list unavailable.</p>;
   if (!rows.length) return <p>No transfers reported in this response.</p>;
-  return <ol className="list-decimal space-y-2 pl-5">{rows.map((row, i) => <li key={i}><p>Indexed transaction ID: <code>{row.txID ?? 'Unavailable'}</code></p><p>THORChain outbound index height: {row.height ?? 'Not supplied'}. This is not a destination-chain block confirmation.</p><Coins rows={row.coins} /></li>)}</ol>;
+  return <ol className="list-decimal space-y-2 pl-5">{rows.map((row, i) => <li key={i}><p>Indexed transaction ID: <code>{row.txID ?? 'Unavailable'}</code></p><p>THORChain outbound index height: {row.height ?? 'Unavailable'}; raw field {row.rawHeight ?? 'not retained'}. This is not a destination-chain block confirmation.</p><Coins rows={row.coins} /></li>)}</ol>;
 }
 function MemoInterpretation({ memo }: { memo: string | null }) {
-  if (memo === null) return <p>Parsed interpretation unavailable because this action did not supply a memo.</p>;
+  if (memo === null) return <p>Parsed interpretation unavailable because its memo is missing or outside the pilot limits; see partial-evidence notes.</p>;
   const decoded = decodeMemo(memo);
   return <details className="mt-2 rounded border border-border p-2"><summary className="cursor-pointer">Parsed memo interpretation ({decoded.status})</summary><p>{decoded.message}</p><dl>{decoded.fields.map(field => <div key={field.id} className="mt-2"><dt className="font-semibold">{field.label}</dt><dd><code>{field.raw || '(omitted)'}</code> — {field.interpretation}</dd></div>)}</dl><p>Rules reviewed against THORNode v3.20.3. No current or historical keeper state, name resolution or dynamic-fee validation is performed.</p></details>;
 }
 export function TransactionEvidenceTriage({ current }: { current?: LiveDataResult<NetworkStatus> }) {
-  const [input, setInput] = useState('');
+  const inputRef = useRef<HTMLInputElement | null>(null);
   const [result, setResult] = useState<LiveDataResult<TransactionEvidence>>();
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
@@ -31,8 +31,8 @@ export function TransactionEvidenceTriage({ current }: { current?: LiveDataResul
   const hydrated = useSyncExternalStore(() => () => undefined, () => true, () => false);
   useEffect(() => () => request.current?.abort(), []);
   function clear() { request.current?.abort(); request.current = null; setResult(undefined); setBusy(false); setNotice(''); }
-  async function lookup() {
-    const hash = transactionHash(input);
+  async function lookup(submitted: string) {
+    const hash = transactionHash(submitted);
     if (!hash) { setNotice('Enter one 32-byte hexadecimal transaction hash, optionally prefixed with 0x. URLs and other hash formats are not supported by this pilot.'); return; }
     clear(); const controller = new AbortController(); request.current = controller; setBusy(true); setNotice('Reading indexer evidence…');
     const next = await MidgardAPI.getTransactionEvidence(hash, controller.signal);
@@ -43,10 +43,10 @@ export function TransactionEvidenceTriage({ current }: { current?: LiveDataResul
     <summary className="cursor-pointer font-semibold">Investigate one transaction</summary>
     <p className="mt-3 text-sm text-slate-300">This read-only pilot sends the public hash you submit to Liquify Midgard, then THORChain Midgard if the first read fails. Those providers receive the hash and your network request. Nothing is submitted before you choose Look up transaction. The wiki does not store the hash in the URL or local storage.</p>
     <ul className="mt-2 text-sm">{MIDGARD_ENDPOINTS.map(source => <li key={source.url}>{source.label}: <a href={source.url + '/actions'} target="_blank" rel="noopener noreferrer" className="text-accent underline">{source.url}/actions</a> (txid filter, limit 5)</li>)}</ul>
-    <form className="mt-3 flex min-w-0 flex-wrap items-end gap-2" onSubmit={event => { event.preventDefault(); void lookup(); }}>
-      <label className="min-w-0 flex-1">Public transaction hash<input value={input} onChange={event => { clear(); setInput(event.target.value); }} maxLength={66} disabled={!hydrated} autoComplete="off" spellCheck={false} className="mt-1 block w-full min-w-0 rounded border border-border bg-surface p-2" /></label>
+    <form className="mt-3 flex min-w-0 flex-wrap items-end gap-2" onSubmit={event => { event.preventDefault(); const submitted = new FormData(event.currentTarget).get('transaction_hash'); void lookup(typeof submitted === 'string' ? submitted : ''); }}>
+      <label className="min-w-0 flex-1">Public transaction hash<input ref={inputRef} name="transaction_hash" onChange={clear} maxLength={66} disabled={!hydrated} autoComplete="off" spellCheck={false} className="mt-1 block w-full min-w-0 rounded border border-border bg-surface p-2" /></label>
       <button type="submit" disabled={!hydrated || busy} className="rounded border border-border px-3 py-2 text-accent disabled:opacity-50">Look up transaction</button>
-      <button type="button" onClick={() => { clear(); setInput(''); }} disabled={!hydrated} className="px-3 py-2 text-accent underline">Clear lookup</button>
+      <button type="button" onClick={() => { clear(); if (inputRef.current) inputRef.current.value = ''; }} disabled={!hydrated} className="px-3 py-2 text-accent underline">Clear lookup</button>
     </form>
     <p role="status" className="mt-2 text-sm">{notice}</p>
     {result && <div className="mt-4 space-y-3 text-sm">
@@ -60,13 +60,13 @@ export function TransactionEvidenceTriage({ current }: { current?: LiveDataResul
         <ol className="space-y-5">{result.data.actions.map((action, i) => <li key={i} className="min-w-0 rounded border border-border p-3">
           <h3 className="font-semibold">Indexed action {i + 1}: {action.type ?? 'type unavailable'} — {action.status ?? 'status unavailable'}</h3>
           <p>Indexer event: {action.observedAt ?? 'Time unavailable'}; raw date {action.rawDate ?? 'unavailable'} nanoseconds since Unix epoch. Sub-millisecond precision remains in the raw field.</p>
-          <p>THORChain index height: {action.height ?? 'Unavailable'}.</p>
+          <p>THORChain index height: {action.height ?? 'Unavailable'}; raw field {action.rawHeight ?? 'not retained'}.</p>
           <h4 className="mt-2 font-semibold">Source-chain confirmation: unknown</h4><p>No independent source-chain receipt is fetched by this pilot.</p>
           <h4 className="mt-2 font-semibold">THORChain processing: provider report</h4><p>Midgard reports {action.status ?? 'unknown'} for this indexed action. It is not an independent consensus or settlement check.</p>
           <h4 className="mt-2 font-semibold">Indexed inbound observations</h4><Transfers rows={action.inputs} />
           <h4 className="mt-2 font-semibold">Indexed outbound observations</h4><Transfers rows={action.outputs} />
           <h4 className="mt-2 font-semibold">Destination settlement: unknown</h4><p>An indexed outbound ID, success status or zero-value native/internal ID does not independently establish destination-chain inclusion or recipient receipt.</p>
-          <h4 className="mt-2 font-semibold">Raw memo</h4><p><code>{action.memo ?? 'Memo unavailable in this action metadata.'}</code></p>
+          <h4 className="mt-2 font-semibold">Raw memo</h4><p><code>{action.memo ?? 'Memo missing or omitted by pilot limits; see partial-evidence notes.'}</code></p>
           <p>Parsed interpretation is separate from the provider record; a memo does not establish execution.</p><MemoInterpretation memo={action.memo} />
           {action.reason && <p>Provider reason: {action.reason}. This is the recorded reason, not a diagnosis from today’s halt flags.</p>}
           <h4 className="mt-2 font-semibold">Reported network fees</h4><Coins rows={action.fees} />

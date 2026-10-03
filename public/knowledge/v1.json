@@ -14,7 +14,7 @@
       "src/lib/data/static.ts": "8ad1f272a8faa3fe142f65bbed877f8898527afb577847e30980b5309da6ed03",
       "src/lib/content/registry.ts": "baec3748c5aa21d6e5493a421191588675c1a064256d2e6ef1d383c796e91be5",
       "src/lib/sources.ts": "14b79fcaa69d40bd1f3c69f9cea5ecb489be17fc67438754260336381278edc5",
-      "src/lib/types.ts": "ff872da6460218e5e2f6a520f5feea3e184e8aef69c1288998804930360ff294",
+      "src/lib/types.ts": "ae5ede4e13fd5b555e9859ea2868f39de1214f3c4781e60e60cf82a12df0590c",
       "src/lib/site.ts": "e79a4609bcf097347fe1660252b7d4db81ae149520cca0b27c7059fd24a07f6d",
       "content/deep-dives/build-query-data.mdx": "6cf9e6af889e93fc7753846742205c940bfda32dd4eb3d8784ad324c22c83686",
       "scripts/lib/knowledge-links.mjs": "1d2c3fbafd6d754696a1824cf1f50f7c9a574aaaaf4aae832d131d9de3825316",
@@ -233,6 +233,6 @@
   ],
   "checksum": {
     "algorithm": "sha256",
-    "value": "60312476a85738362f8e61a46137ea8f6c7752e528efc317cb00b438fdf73d8e"
+    "value": "f1a11bf23c22bcb65c8220146d600e5eef6b3e9dca7e31084d987458f85ef54d"
   }
 }
