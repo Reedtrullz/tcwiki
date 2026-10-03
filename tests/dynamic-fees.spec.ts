@@ -142,6 +142,41 @@ async function mockDynamicFeesThornode(page: Page, mimir: Record<string, unknown
   });
 }
 
+test('fee filters validate URL values and survive copy, reload and history', async ({ page }) => {
+  await mockDynamicFeesThornode(page);
+  await page.goto('/dynamic-fees?keep=proof&fee_whitelist=invalid&fee_bps=bogus&fee_current=invalid#dynamic-fee-records-explorer');
+  const panel = page.locator('#dynamic-fee-records-explorer');
+  await expect(panel.getByRole('combobox', { name: 'Whitelist', exact: true })).toHaveValue('all', { timeout: 15_000 });
+  await expect(panel.getByRole('combobox', { name: 'Bps position', exact: true })).toHaveValue('all');
+  await expect(panel.getByRole('combobox', { name: 'Current epoch', exact: true })).toHaveValue('all');
+  const input = panel.getByRole('searchbox', { name: 'Search tracked records' });
+  const historyLength = await page.evaluate(() => history.length);
+  await input.pressSequentially('BTC.BTC ETH.ETH', { delay: 0 });
+  await expect(input).toHaveValue('BTC.BTC ETH.ETH');
+  await panel.getByRole('combobox', { name: 'Whitelist', exact: true }).selectOption('active');
+  await panel.getByRole('combobox', { name: 'Bps position', exact: true }).selectOption('inside');
+  await expect.poll(() => new URL(page.url()).searchParams.get('fee_q')).toBe('BTC.BTC ETH.ETH');
+  expect(new URL(page.url()).searchParams.get('keep')).toBe('proof');
+  expect(new URL(page.url()).searchParams.get('fee_whitelist')).toBe('active');
+  await expect.poll(() => new URL(page.url()).searchParams.get('fee_bps')).toBe('inside');
+  expect(await page.evaluate(() => history.length)).toBe(historyLength);
+  const copied = page.url();
+  await page.reload();
+  await expect(input).toHaveValue('BTC.BTC ETH.ETH', { timeout: 15_000 });
+  await expect(panel.getByRole('combobox', { name: 'Whitelist', exact: true })).toHaveValue('active');
+  await page.goto('/rune');
+  await page.goBack();
+  await expect(page).toHaveURL(copied);
+  await expect(input).toHaveValue('BTC.BTC ETH.ETH', { timeout: 15_000 });
+  await page.goForward();
+  await expect(page).toHaveURL(/\/rune$/);
+  await page.goBack();
+  await panel.getByRole('button', { name: 'Reset filters', exact: true }).click();
+  await expect(input).toHaveValue('');
+  expect(new URL(page.url()).searchParams.get('fee_q')).toBeNull();
+  expect(new URL(page.url()).searchParams.get('keep')).toBe('proof');
+});
+
 test('stored fee history exposes partial fields and changes to common attribution membership', async ({ page }) => {
   await mockDynamicFeesThornode(page, {}, {
     shapeshift: { thorname: 'shapeshift', whitelist_state: '1', pairs: [{ pair: 'BTC.BTC|ETH.ETH', dynamic_bps: '4', last_active_epoch: '1866', history: [

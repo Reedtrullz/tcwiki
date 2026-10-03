@@ -1,5 +1,7 @@
 'use client';
 
+import { replaceExplorerUrl } from '@/lib/explorer-url';
+
 import { useCallback, useEffect, useMemo, useRef, useSyncExternalStore } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { Search, X } from 'lucide-react';
@@ -55,14 +57,6 @@ function getServerHydratedSnapshot() {
   return false;
 }
 
-function replaceUrlFromFilter(nextUrl: string) {
-  if (typeof window === 'undefined') {
-    return;
-  }
-
-  window.history.replaceState(window.history.state, '', nextUrl);
-  window.dispatchEvent(new PopStateEvent('popstate', { state: window.history.state }));
-}
 
 function normalizeText(value: string) {
   return value
@@ -191,7 +185,7 @@ export function GovernanceIncidentArchiveExplorer({
 
   const replaceFiltersInUrl = useCallback((nextFilters: IncidentFilterState) => {
     const nextParams = new URLSearchParams(searchParamString);
-    const normalizedQuery = nextFilters.query.trim();
+    const normalizedQuery = nextFilters.query.slice(0, 256);
 
     if (normalizedQuery) {
       nextParams.set(QUERY_PARAM, normalizedQuery);
@@ -207,7 +201,7 @@ export function GovernanceIncidentArchiveExplorer({
 
     const nextParamString = nextParams.toString();
     const nextUrl = nextParamString ? `${pathname}?${nextParamString}` : pathname;
-    replaceUrlFromFilter(nextUrl);
+    replaceExplorerUrl(nextUrl, [QUERY_PARAM, POSTURE_PARAM]);
   }, [pathname, searchParamString]);
 
   const updateFilters = (patch: Partial<IncidentFilterState>) => {

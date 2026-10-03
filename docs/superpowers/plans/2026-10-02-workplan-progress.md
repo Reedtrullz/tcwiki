@@ -56,8 +56,8 @@ Execute all accepted work and create/push GitHub PRs; do not merge to main. User
 | PR-05 | PR218 open; CI passed | 6b130055; CI37039713892; seven bounded histories (14 fallback), provider/failed coverage; scoped visible pool-row regression |
 | PR-09 | PR223 open; local verified | c818d47; https://github.com/Reedtrullz/tcwiki/pull/223; full545/types/lint/both builds; 3 economics browser checks each Next/CF; actual price UTC interval/provider/age, degraded price USD withheld; CI pending |
 | PR-40 | verified candidate; publication pending | RED6→GREEN145focused/full639units;reviewedimmutablefee manager/defaults/window30;raw/effective retained;24runtime/feebrowserchecks pertarget |
-| PR-41 | verified candidate; PR publishing | 644units/55files;bothbuilds/Nextsmoke;26fee/runtimechecks eachNext/CF;partial fields, cohort switch, defensive duplicates/conflicts, exact sums and explicit unweighted controller mean |
-| PR-46 | verified candidate; PR publishing | db6d638+integration242;651units;47stats/network/home/runtimechecks eachNext/CF plus1skip;separate reportedAPR/APY identity/decimalscale/same-field ranking, boundedshareableperiod/provenance/cachekey |
+| PR-41 | PR243 open; CI passed | 644units/55files;bothbuilds/Nextsmoke;26fee/runtimechecks eachNext/CF;partial fields, cohort switch, defensive duplicates/conflicts, exact sums and explicit unweighted controller mean |
+| PR-46 | PR244 open; CI passed | db6d638+integration242;651units;47stats/network/home/runtimechecks eachNext/CF plus1skip;separate reportedAPR/APY identity/decimalscale/same-field ranking, boundedshareableperiod/provenance/cachekey |
 | PR-65 | queued | issue #164 |
 | PR-19 | PR228 open; CI passed | 1c93efa; CI37087634182; one active disclosure, hydration gate/native form values, connected empty panels |
 | PR-24 | PR233 open; CI passed | 1ca5fcd; exact-head CI passed;552units;26browser checks each target plus4device skips |
@@ -65,7 +65,7 @@ Execute all accepted work and create/push GitHub PRs; do not merge to main. User
 
 
 
-| PR-20 | queued | issue #185 |
+| PR-20 | verified candidate; PR publishing | 679units/58files;bothbuilds/Nextsmoke;Cloudflare79/84 with5skips;Next78 plus final30/30 affected journeys eachtarget;owned query keys, rapid edits, fragments, hydration and browser restoration |
 | PR-21 | queued | issue #186 |
 | PR-25 | queued | issue #190 |
 | PR-58 | queued | issue #157 |

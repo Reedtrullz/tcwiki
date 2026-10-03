@@ -1,5 +1,7 @@
 'use client';
 
+import { replaceExplorerUrl } from '@/lib/explorer-url';
+
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
@@ -73,14 +75,6 @@ function getServerHydratedSnapshot() {
   return false;
 }
 
-function replaceUrlFromFilter(nextUrl: string) {
-  if (typeof window === 'undefined') {
-    return;
-  }
-
-  window.history.replaceState(window.history.state, '', nextUrl);
-  window.dispatchEvent(new PopStateEvent('popstate', { state: window.history.state }));
-}
 
 function TriageCard({ choice }: { choice: SourceMapExplorerChoice }) {
   return (
@@ -237,7 +231,7 @@ export function SourceMapExplorer({
 
   const replaceFiltersInUrl = useCallback((nextFilters: SourceMapExplorerFilters) => {
     const nextParams = new URLSearchParams(searchParamString);
-    const nextQuery = nextFilters.query.trim();
+    const nextQuery = nextFilters.query.slice(0, 256);
 
     if (nextQuery) {
       nextParams.set(QUERY_PARAM, nextQuery);
@@ -253,7 +247,7 @@ export function SourceMapExplorer({
 
     const nextParamString = nextParams.toString();
     const nextUrl = `${pathname}${nextParamString ? `?${nextParamString}` : ''}#source-map-chooser`;
-    replaceUrlFromFilter(nextUrl);
+    replaceExplorerUrl(nextUrl, [QUERY_PARAM, VIEW_PARAM]);
   }, [pathname, searchParamString]);
 
   const updateFilters = (patch: Partial<SourceMapExplorerFilters>) => {

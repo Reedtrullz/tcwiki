@@ -288,6 +288,16 @@ export const defaultRecordFilters: DynamicFeeRecordFilterState = {
   current: 'all',
 };
 
+export function parseDynamicFeeRecordFilters(params: URLSearchParams): DynamicFeeRecordFilterState {
+  const whitelist = params.get('fee_whitelist'), bps = params.get('fee_bps'), current = params.get('fee_current');
+  return {
+    query: (params.get('fee_q') ?? '').slice(0, 256),
+    whitelist: whitelist === 'active' || whitelist === 'monitor' || whitelist === 'inactive' || whitelist === 'unparseable' ? whitelist : 'all',
+    bps: bps === 'below' || bps === 'floor' || bps === 'inside' || bps === 'ceiling' || bps === 'above' || bps === 'equal' || bps === 'unknown' || bps === 'invalid' ? bps : 'all',
+    current: current === 'with-current' || current === 'without-current' ? current : 'all',
+  };
+}
+
 export type PairMovementRow = {
   thorname: string;
   pair: string;
