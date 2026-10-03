@@ -1,6 +1,6 @@
 'use client';
 
-import { type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import {
   AlertTriangle,
   BarChart3,
@@ -28,6 +28,8 @@ import {
   bpsMovementLabel,
   bpsMovementVariant,
   bpsPositionLabel,
+  bpsPositionForValue,
+  trustedDynamicConfigValue,
   bpsRange,
   coverageStats,
   formatBlockAge,
@@ -135,9 +137,10 @@ export function LookFirstPanel({
 }) {
   const currentFeesBaseUnits = sumTorBaseUnits((status?.currentEntries ?? []).map((entry) => entry.feesTorBaseUnits));
   const currentVolumeBaseUnits = sumTorBaseUnits((status?.currentEntries ?? []).map((entry) => entry.volumeTorBaseUnits));
-  const sealedHistoryFeesBaseUnits = sumTorBaseUnits((status?.histories ?? []).flatMap((thornameHistory) => (
-    thornameHistory.pairs.flatMap((pair) => pair.history.map((entry) => entry.feesTorBaseUnits))
-  )));
+  const historyRows = historyEpochRows(status);
+  const sealedHistoryFeesBaseUnits = sumTorBaseUnits(historyRows.map(row => row.feesTorBaseUnits?.toString() ?? null));
+  const changingCohorts = new Set(historyRows.map(row => JSON.stringify(row.cohort))).size > 1;
+  const partialHistory = historyRows.some(row => row.missingFeesSamples + row.missingVolumeSamples + row.missingBpsSamples + row.duplicateSamples + row.gapBefore > 0);
   const coverage = coverageStats(status);
   const sealedSamples = coverage?.sealedSamples ?? 0;
   const sealedEpochs = coverage?.sealedEpochs ?? 0;
@@ -158,7 +161,7 @@ export function LookFirstPanel({
     : `matching ${missingLabel}`;
   const coverageTone = !coverage
     ? 'default'
-    : coverage.sourceWarningCount > 0 || coverage.orphanCurrentAccumulatorCount > 0 || coverage.sealedSamples < 6 || coverage.sealedEpochs < 3
+    : coverage.sourceWarningCount > 0 || coverage.orphanCurrentAccumulatorCount > 0 || partialHistory || changingCohorts || coverage.sealedSamples < 6 || coverage.sealedEpochs < 3
       ? 'warning'
       : 'success';
   const coverageBadge = !coverage
@@ -203,7 +206,7 @@ export function LookFirstPanel({
           icon={<WalletCards className="h-4 w-4" />}
           title="1. Revenue signal"
           value={revenueLabel}
-          detail={`${currentAccumulatorLabel}; sealed history total ${formatTorCompactFromBaseUnits(sealedHistoryFeesBaseUnits)}`}
+          detail={`${currentAccumulatorLabel}; attributed stored history sum ${formatTorCompactFromBaseUnits(sealedHistoryFeesBaseUnits)}`}
           why="fees_tor is the objective. Without sealed-epoch improvement, lower bps has not shown revenue lift."
         />
         <PriorityMetric
@@ -255,7 +258,7 @@ export function LookFirstPanel({
             label="Sealed history"
             value={coverage ? `${coverage.sealedSamples.toLocaleString()} samples / ${coverage.sealedEpochs.toLocaleString()} epochs` : missingValue}
             detail={coverage
-              ? `${coverage.historyPairCount.toLocaleString()} pair ${pluralize(coverage.historyPairCount, 'history', 'histories')}; ${coverage.sealedSamples < 6 || coverage.sealedEpochs < 3 ? 'too sparse for trend claims.' : 'enough for a first trend read, not causal proof.'}`
+              ? `${coverage.historyPairCount.toLocaleString()} pair ${pluralize(coverage.historyPairCount, 'history', 'histories')}; ${coverage.sealedSamples < 6 || coverage.sealedEpochs < 3 ? 'too sparse for trend claims.' : 'inspect field coverage and compare common membership before reading trends.'}`
               : liveState === 'loading' ? 'Waiting for per-thorname history endpoint reads.' : 'No usable per-thorname history snapshot was returned.'}
             tone={coverage && (coverage.sealedSamples < 6 || coverage.sealedEpochs < 3) ? 'warning' : coverage ? 'success' : 'default'}
           />
@@ -275,8 +278,22 @@ export function LookFirstPanel({
   );
 }
 
+function HistoryCoverage({ row }: { row: HistoryEpochRow }) {
+  return (
+    <details className="mt-2 min-w-0 text-xs text-slate-400">
+      <summary className="cursor-pointer text-accent">Sample coverage and attribution</summary>
+      <p className="mt-2">Fees {row.samples - row.missingFeesSamples}/{row.samples}; volume {row.samples - row.missingVolumeSamples}/{row.samples}; controller floors {row.samples - row.missingBpsSamples}/{row.samples}.</p>
+      {row.missingFeesSamples + row.missingVolumeSamples + row.missingBpsSamples > 0 && <p>Partial fields: these sums contain only the stored values available.</p>}
+      {row.duplicateSamples > 0 && <p>{row.duplicateSamples} duplicate samples; {row.conflictingSamples} conflicting attribution keys excluded.</p>}
+      {row.gapBefore > 0 && <p>{row.gapBefore} epoch IDs are absent before this row; inactivity, retention or partial loading can cause this gap.</p>}
+      {row.samples === 0 ? <p>No common attribution keys in this loaded epoch.</p> : <ul className="mt-2 space-y-1">{row.cohort.map(key => <li key={key} className="break-all"><code>{key}</code></li>)}</ul>}
+    </details>
+  );
+}
+
 export function HistoricalResultsChart({ status }: { status?: DynamicL1FeeStatus }) {
-  const rows = historyEpochRows(status);
+  const [commonCohort, setCommonCohort] = useState(false);
+  const rows = historyEpochRows(status, { commonCohort });
   const chartRows = rows.slice(-16);
   const sealedSamples = historySampleCount(status);
   const pairCount = historyPairCount(status);
@@ -306,6 +323,11 @@ export function HistoricalResultsChart({ status }: { status?: DynamicL1FeeStatus
       return { x, y, row };
     })
     .filter((point): point is { x: number; y: number; row: HistoryEpochRow } => point !== null);
+  const comparableSegments = linePoints.slice(1).flatMap((right, index) => {
+    const left = linePoints[index];
+    return right.row.epoch === left.row.epoch + 1 && left.row.missingBpsSamples === 0 && right.row.missingBpsSamples === 0 && JSON.stringify(left.row.cohort) === JSON.stringify(right.row.cohort)
+      ? [{ left, right }] : [];
+  });
 
   return (
     <Card id="dynamic-fee-historical-results" className="mb-10">
@@ -313,7 +335,7 @@ export function HistoricalResultsChart({ status }: { status?: DynamicL1FeeStatus
         <div>
           <SectionHeader level="primary">Historical Results</SectionHeader>
           <p className="mt-1 max-w-3xl text-sm leading-relaxed text-slate-400">
-            Sealed epoch history from <code className="break-all">/dynamic_l1_fees/&lbrace;thorname&rbrace;</code>. Showing {sealedSamples.toLocaleString()} sample{sealedSamples === 1 ? '' : 's'} across {pairCount.toLocaleString()} pair{pairCount === 1 ? '' : 's'}; this is operational history, not proof of durable revenue lift.
+            Sealed epoch history from <code className="break-all">/dynamic_l1_fees/&lbrace;thorname&rbrace;</code>. Loaded {sealedSamples.toLocaleString()} stored rows across {pairCount.toLocaleString()} pair histories; chart and table deduplicate attribution keys; this is operational history, not proof of durable revenue lift.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -325,6 +347,13 @@ export function HistoricalResultsChart({ status }: { status?: DynamicL1FeeStatus
           </Badge>
         </div>
       </div>
+
+      <p className="mb-3 text-xs leading-relaxed text-slate-400">Stored history attributes eligible swap legs to a dominant affiliate and pair; totals cover the loaded attribution keys and do not establish complete protocol revenue. The mean controller floor is an arithmetic mean of stored bps_at_close, not a volume-weighted effective fee rate. Each attribution retains at most 30 samples; omitted epochs are not filled with zeros.</p>
+      <label className="mb-4 flex cursor-pointer items-center gap-2 text-sm text-slate-200">
+        <input type="checkbox" checked={commonCohort} onChange={event => setCommonCohort(event.currentTarget.checked)} className="accent-accent" />
+        Compare common attribution cohort
+      </label>
+      <p className="mb-4 text-xs text-slate-400">{commonCohort ? 'Only attribution keys present in every loaded epoch are compared; missing fields remain partial.' : 'All loaded attribution keys are shown; membership can change between epochs. Compare common membership before reading trends.'} Lines connect only consecutive epochs with the same cohort and complete controller-floor coverage.</p>
 
       {chartRows.length > 0 ? (
         <>
@@ -338,7 +367,7 @@ export function HistoricalResultsChart({ status }: { status?: DynamicL1FeeStatus
               className="h-64 w-full"
               viewBox="0 0 720 230"
               role="img"
-              aria-label="Sealed dynamic fee history chart showing fees in TOR and average bps at close by epoch"
+              aria-label="Sealed dynamic fee history chart showing attributed stored fees in TOR and mean controller floor at close by epoch"
             >
               <line x1={left} x2={right} y1={baseline} y2={baseline} stroke="rgb(51 65 85)" />
               <line x1={left} x2={left} y1={top} y2={baseline} stroke="rgb(51 65 85)" />
@@ -357,7 +386,7 @@ export function HistoricalResultsChart({ status }: { status?: DynamicL1FeeStatus
                 );
               })}
               <text x="14" y="24" fill="rgb(148 163 184)" fontSize="11">fees_tor</text>
-              <text x="646" y="24" fill="rgb(125 211 252)" fontSize="11">avg bps</text>
+              <text x="646" y="24" fill="rgb(125 211 252)" fontSize="11">floor mean</text>
               {chartRows.map((row, index) => {
                 const x = xForIndex(index);
                 const barWidth = Math.max(10, Math.min(34, 420 / Math.max(chartRows.length, 1)));
@@ -404,25 +433,16 @@ export function HistoricalResultsChart({ status }: { status?: DynamicL1FeeStatus
                   </g>
                 );
               })}
-              {linePoints.length > 1 && (
-                <polyline
-                  points={linePoints.map((point) => `${point.x},${point.y}`).join(' ')}
-                  fill="none"
-                  stroke="rgb(56 189 248)"
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              )}
+              {comparableSegments.map(({ left, right }) => <line key={`${left.row.epoch}-${right.row.epoch}`} x1={left.x} y1={left.y} x2={right.x} y2={right.y} stroke="rgb(56 189 248)" strokeWidth="3" />)}
               {linePoints.map((point) => (
                 <circle key={point.row.epoch} cx={point.x} cy={point.y} r="4" fill="rgb(56 189 248)">
-                  <title>{`Epoch ${point.row.epoch}: ${point.row.averageBps?.toFixed(1) ?? 'Unavailable'} average bps at close`}</title>
+                  <title>{`Epoch ${point.row.epoch}: ${point.row.averageBps?.toFixed(1) ?? 'Unavailable'} arithmetic mean controller floor at close`}</title>
                 </circle>
               ))}
             </svg>
             <div className="mt-2 flex flex-wrap gap-x-5 gap-y-2 text-xs text-slate-400">
               <span><span className="mr-1 inline-block h-2 w-4 rounded-sm bg-emerald-400 align-middle" />fees_tor by sealed epoch</span>
-              <span><span className="mr-1 inline-block h-2 w-4 rounded-sm bg-sky-400 align-middle" />average bps_at_close</span>
+              <span><span className="mr-1 inline-block h-2 w-4 rounded-sm bg-sky-400 align-middle" />Mean controller floor at close</span>
               <span><span className="mr-1 inline-block h-2 w-4 border-b-2 border-dashed border-slate-500 align-middle" />fees_tor unavailable for chart math</span>
             </div>
           </div>
@@ -435,18 +455,19 @@ export function HistoricalResultsChart({ status }: { status?: DynamicL1FeeStatus
                 </div>
                 <dl className="grid grid-cols-2 gap-2">
                   <div>
-                    <dt className="text-slate-400">Sealed fees_tor</dt>
+                    <dt className="text-slate-400">Attributed fees_tor</dt>
                     <dd>{formatTorCompactFromBaseUnits(row.feesTorBaseUnits)}</dd>
                   </div>
                   <div>
-                    <dt className="text-slate-400">Sealed volume_tor</dt>
+                    <dt className="text-slate-400">Attributed volume_tor</dt>
                     <dd>{formatTorCompactFromBaseUnits(row.volumeTorBaseUnits)}</dd>
                   </div>
                   <div>
-                    <dt className="text-slate-400">Avg bps close</dt>
+                    <dt className="text-slate-400">Mean controller floor</dt>
                     <dd>{row.averageBps === null ? 'Unavailable' : `${row.averageBps.toFixed(1)} bps`}</dd>
                   </div>
                 </dl>
+                <HistoryCoverage row={row} />
               </div>
             ))}
           </div>
@@ -456,10 +477,11 @@ export function HistoricalResultsChart({ status }: { status?: DynamicL1FeeStatus
               <thead className="bg-surface text-[11px] uppercase tracking-wider text-slate-400">
                 <tr>
                   <th scope="col" className="px-3 py-2">Epoch</th>
-                  <th scope="col" className="px-3 py-2">Sealed fees_tor</th>
-                  <th scope="col" className="px-3 py-2">Sealed volume_tor</th>
-                  <th scope="col" className="px-3 py-2">Avg bps close</th>
+                  <th scope="col" className="px-3 py-2">Attributed fees_tor</th>
+                  <th scope="col" className="px-3 py-2">Attributed volume_tor</th>
+                  <th scope="col" className="px-3 py-2">Mean controller floor</th>
                   <th scope="col" className="px-3 py-2">Pair samples</th>
+                  <th scope="col" className="px-3 py-2">Coverage and cohort</th>
                 </tr>
               </thead>
               <tbody>
@@ -470,6 +492,7 @@ export function HistoricalResultsChart({ status }: { status?: DynamicL1FeeStatus
                     <td className="px-3 py-2">{formatTorCompactFromBaseUnits(row.volumeTorBaseUnits)}</td>
                     <td className="px-3 py-2">{row.averageBps === null ? 'Unavailable' : `${row.averageBps.toFixed(1)} bps`}</td>
                     <td className="px-3 py-2">{row.samples.toLocaleString()}</td>
+                    <td className="max-w-56 px-3 py-2"><HistoryCoverage row={row} /></td>
                   </tr>
                 ))}
               </tbody>
@@ -595,8 +618,8 @@ export function PairMovementSnapshot({ status }: { status?: DynamicL1FeeStatus }
 }
 
 export function PairLearningDetails({ status }: { status?: DynamicL1FeeStatus }) {
-  const floorBps = status?.mimir.floorBps.effectiveValue ?? status?.mimir.floorBps.value;
-  const ceilingBps = status?.mimir.ceilingBps.effectiveValue ?? status?.mimir.ceilingBps.value;
+  const floorBps = trustedDynamicConfigValue(status?.mimir.floorBps);
+  const ceilingBps = trustedDynamicConfigValue(status?.mimir.ceilingBps);
   const pairs = (status?.histories ?? []).flatMap((thornameHistory) => thornameHistory.pairs)
     .sort((left, right) => (
       left.thorname.localeCompare(right.thorname) ||
@@ -623,11 +646,7 @@ export function PairLearningDetails({ status }: { status?: DynamicL1FeeStatus })
             : pair.history.length === 1
               ? { label: 'Bootstrap', variant: 'info' as const }
               : { label: 'Learning', variant: 'success' as const };
-          const edgeState = typeof floorBps === 'number' && pair.dynamicBps === floorBps
-            ? 'At floor'
-            : typeof ceilingBps === 'number' && pair.dynamicBps === ceilingBps
-              ? 'At ceiling'
-              : 'Inside bounds';
+          const edgeState = bpsPositionLabel(bpsPositionForValue(pair.dynamicBps, floorBps, ceilingBps));
 
           return (
             <div key={recordKey(pair.thorname, pair.pair)} className="min-w-0 rounded-md border border-border bg-surface-elevated p-3">
@@ -676,7 +695,7 @@ export function PairLearningDetails({ status }: { status?: DynamicL1FeeStatus })
   );
 }
 
-export function BpsDistribution({ records }: { records: DynamicL1FeeRecord[] }) {
+export function BpsDistribution({ records, floorBps, ceilingBps }: { records: DynamicL1FeeRecord[]; floorBps?: number | null; ceilingBps?: number | null }) {
   if (records.length === 0) {
     return <p className="text-sm text-slate-400">No sealed dynamic-fee records are available from THORNode.</p>;
   }
@@ -701,7 +720,7 @@ export function BpsDistribution({ records }: { records: DynamicL1FeeRecord[] }) 
         <div key={recordKey(record.thorname, record.pair)} className="min-w-0">
           <div className="mb-1 flex min-w-0 items-center justify-between gap-3 text-xs">
             <span className="min-w-0 truncate text-slate-300">{record.thorname} / {record.pair}</span>
-            <span className="shrink-0 font-semibold text-accent">{formatBps(record.dynamicBps)}</span>
+            <span className="shrink-0 font-semibold text-accent">{formatBps(record.dynamicBps)} · {bpsPositionLabel(bpsPositionForValue(record.dynamicBps, floorBps, ceilingBps))}</span>
           </div>
           <div className="h-2 rounded bg-slate-800" aria-hidden="true">
             <div

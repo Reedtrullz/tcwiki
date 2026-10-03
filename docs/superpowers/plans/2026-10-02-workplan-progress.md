@@ -55,8 +55,8 @@ Execute all accepted work and create/push GitHub PRs; do not merge to main. User
 | PR-38 | PR220 open; CI passed | 0982935; https://github.com/Reedtrullz/tcwiki/pull/220; CI37040858697; full542/types/lint/both builds; UTC chronology/gaps/overlap; 11 checks each Next/CF stats; full32 CF checks, one desktop-only skip |
 | PR-05 | PR218 open; CI passed | 6b130055; CI37039713892; seven bounded histories (14 fallback), provider/failed coverage; scoped visible pool-row regression |
 | PR-09 | PR223 open; local verified | c818d47; https://github.com/Reedtrullz/tcwiki/pull/223; full545/types/lint/both builds; 3 economics browser checks each Next/CF; actual price UTC interval/provider/age, degraded price USD withheld; CI pending |
-| PR-40 | queued | issue #139 |
-| PR-41 | queued | issue #140 |
+| PR-40 | verified candidate; publication pending | RED6→GREEN145focused/full639units;reviewedimmutablefee manager/defaults/window30;raw/effective retained;24runtime/feebrowserchecks pertarget |
+| PR-41 | verified candidate; PR publishing | 644units/55files;bothbuilds/Nextsmoke;26fee/runtimechecks eachNext/CF;partial fields, cohort switch, defensive duplicates/conflicts, exact sums and explicit unweighted controller mean |
 | PR-46 | queued | issue #145 |
 | PR-65 | queued | issue #164 |
 | PR-19 | PR228 open; CI passed | 1c93efa; CI37087634182; one active disclosure, hydration gate/native form values, connected empty panels |
@@ -146,3 +146,5 @@ PR236 exact-head CI37090582106 passed; PR237 CI37090784031 passed. PR16 alert li
 Integration of237/238/240 retains quote reconciliation, nameddatareceipts, strict control-applicability and incident/history boundaries. Only documentation/ledger conflicts needed resolution; productchanges merged automatically. Combined proof is pending.
 
 Combined operation/policy candidate:644units/55files/types/lint/bothbuilds/Nextsmoke and44network/economics/fee/runtimebrowserchecks eachNext/CF passed. Quote body/explicitrecheck, unsupportedversion rawcontrols, offlineaging, sourcepolicy and optionalhistory boundaries coexist. PR238CI37091851223 and239CI37092219298 SUCCESS. PR240CI37092523901 stillpending at05:24. No mainmerge/deploy.
+
+PR41 final:644units/types/lint/content/bothbuilds/Nextsmoke and26fee/runtimebrowserchecks eachNext/CF passed. Initial24pass/2fail pertarget reflected an immediate test count before data load; finaljourney waits for the visible summary. Immutable3.20.3 source selects one dominant affiliate per eligible leg; text explicitly describes loaded attribution totals and does not claim cross-partner duplication or complete protocol revenue. No reconstruction, causal lift claim or main merge/deploy. PR240CI37092523901,241CI37093120589,242CI37093294012 SUCCESS.
