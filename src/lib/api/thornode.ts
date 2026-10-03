@@ -218,6 +218,18 @@ async function requestJson<T>(url: string, context?: ThornodeCollectionContext):
   return pending as Promise<T>;
 }
 
+/** Explicit comparison only: one fixed provider read, no failover or active-provider mutation. */
+export async function readFixedMimirProvider(index: 0 | 1, height?: number, signal?: AbortSignal) {
+  if (index !== 0 && index !== 1) throw new Error('Invalid fixed provider.');
+  if (height !== undefined && (!Number.isSafeInteger(height) || height < 0)) throw new Error('Invalid requested height.');
+  const provider = THORNODE_ENDPOINTS[index];
+  const source = { label: provider.label, url: `${provider.url}${withQueryHeight('/mimir', height)}` };
+  const context = createThornodeCollectionContext(signal);
+  const { response, raw } = await requestResponse(source.url, context);
+  if (!response.ok) throw new Error(`Provider HTTP ${response.status}`);
+  return { source, raw, responseHeight: response.headers.get('grpc-metadata-x-cosmos-block-height') };
+}
+
 function withQueryHeight(path: string, height: number | undefined) {
   if (height === undefined) {
     return path;

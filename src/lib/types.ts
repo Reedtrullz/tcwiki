@@ -885,3 +885,21 @@ export interface DiagnosticEvidenceExport {
   rawMimir: { available: boolean; unit: string; values: Record<string, string | number | { unavailable: string }>; omitted: number };
   omitted: { sources: number; warnings: number; controls: number; invalidMimirKeys: number };
 }
+
+export interface MimirProviderCell {
+  state: 'valid' | 'missing' | 'malformed' | 'alias-conflict';
+  raw: string | number | null;
+  normalized: string | null;
+}
+
+export interface MimirProviderSample {
+  status: 'observed' | 'unavailable';
+  source: SourceMeta;
+  checkedAt: string;
+  collection: LiveCollectionTiming;
+  requestedHeight: number | null;
+  observedHeight: number | null;
+  verification: 'verified' | 'unverified' | 'mismatch';
+  error: string | null;
+  values: Record<string, MimirProviderCell>;
+}

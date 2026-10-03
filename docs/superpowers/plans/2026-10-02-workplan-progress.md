@@ -92,7 +92,7 @@ Execute all accepted work and create/push GitHub PRs; do not merge to main. User
 | PR-62 | queued | issue #161 |
 | PR-33 | queued | issue #198 |
 | PR-63 | queued | issue #162 |
-| PR-64 | queued | issue #163 |
+| PR-64 | verified manual two-provider comparison; PR publication | Six raw controls/two fixed reads; exact normalization, missing/alias/pinning/time limits;703units; both builds/smoke and34desktop/mobile checks each runtime |
 | PR-35 | queued | issue #200 |
 
 Task PR-37: local verified (172f288; seven RED→GREEN file safety checks, full suite482/482, typecheck pass; lint existing warning). PR207 created/attached; not merged.

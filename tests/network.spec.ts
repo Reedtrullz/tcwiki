@@ -8,6 +8,37 @@ async function checkRoute(quotePanel: Locator) {
 }
 
 test.describe('THORChain Wiki Network Smoke Tests', () => {
+  test('manual comparison makes two fixed requests and distinguishes verified field conflict', async ({ page }) => {
+    await mockSwapperFirstNetwork(page, { mimir: { HALTTRADING: 0 } });
+    let comparisons: string[] = [];
+    await page.route(/\/thorchain\/mimir(?:\?.*)?$/, async route => {
+      const url = new URL(route.request().url());
+      const requested = url.searchParams.get('height');
+      if (requested === '777') comparisons.push(url.href);
+      await route.fulfill({ contentType: 'application/json', headers: { 'Access-Control-Allow-Origin': '*', 'Access-Control-Expose-Headers': 'grpc-metadata-x-cosmos-block-height', 'grpc-metadata-x-cosmos-block-height': requested ?? '101' }, body: JSON.stringify({ HALTTRADING: requested === '777' && url.hostname === 'thornode.thorchain.network' ? 1 : 0 }) });
+    });
+    await page.goto('/network');
+    await expect(page.getByRole('button', { name: 'Open search', exact: true })).toBeEnabled();
+    expect(comparisons).toEqual([]);
+    await page.locator('summary').filter({ hasText: 'Compare two control providers manually' }).click();
+    const panel = page.getByRole('region', { name: 'Two-provider control comparison' });
+    await panel.getByLabel('Optional requested THORChain height').fill('777');
+    const submit = panel.getByRole('button', { name: 'Compare control providers now', exact: true });
+    await submit.focus(); await page.keyboard.press('Enter');
+    const row = panel.getByRole('row').filter({ has: page.getByRole('rowheader', { name: 'HALTTRADING', exact: true }) });
+    await expect(row).toContainText('conflict-at-verified-height');
+    expect(comparisons).toHaveLength(2);
+    expect(new Set(comparisons.map(url => new URL(url).hostname))).toEqual(new Set(['gateway.liquify.com', 'thornode.thorchain.network']));
+    await expect(panel.getByText(/pinning verified/)).toHaveCount(2);
+    await page.setViewportSize({ width: 320, height: 844 });
+    const width = await panel.evaluate(node => ({ content: node.scrollWidth, available: node.clientWidth }));
+    expect(width.content).toBeLessThanOrEqual(width.available + 2);
+    await page.clock.install(); await page.clock.fastForward(31000);
+    await expect(panel.getByText(/stale retained receipt/)).toHaveCount(2);
+    await expect(row).toContainText('unavailable');
+    expect(comparisons).toHaveLength(2);
+    comparisons = [];
+  });
   test('observed control exports preserve unsupported proof and offer a clipboard fallback without requests', async ({ page }) => {
     await page.addInitScript(() => { Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: () => Promise.reject(new Error('Clipboard unavailable')) } }); });
     await mockSwapperFirstNetwork(page, { version: '3.21.0', mimir: { HALTTRADING: 100, RAWPRECISION: '9007199254740993' } });

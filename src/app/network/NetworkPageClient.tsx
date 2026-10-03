@@ -12,6 +12,7 @@ import { useMidgardHealth, useNetworkData, useNetworkStatus } from '@/lib/hooks/
 import { MayaNodePanel } from '@/components/features/MayaNodePanel';
 import { NetworkStatusBanner } from '@/components/features/NetworkStatusBanner';
 import { DiagnosticEvidenceExport } from '@/components/features/DiagnosticEvidenceExport';
+import { MimirProviderComparison } from '@/components/features/MimirProviderComparison';
 import { PageTableOfContents } from '@/components/layout/PageTableOfContents';
 import { LiveSourceMeta } from '@/components/ui/LiveSourceMeta';
 import { getNetworkCurrentOnlyStateLabel, getSecuredAssetsSummaryPaused } from '@/lib/network-status-summary';
@@ -383,6 +384,7 @@ export default function NetworkPageClient({ children, initialStatusResult }: Net
       <div id="network-diagnostics" className="scroll-mt-24 mb-12">
         <NetworkStatusBanner onRefresh={refreshStatus} result={statusResult} isLoading={statusLoading} variant="diagnostic" showQuoteChecker />
         <DiagnosticEvidenceExport result={statusResult} />
+        <MimirProviderComparison />
       </div>
 
       {currentOperationSnapshot}
