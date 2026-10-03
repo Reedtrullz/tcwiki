@@ -66,7 +66,7 @@ Execute all accepted work and create/push GitHub PRs; do not merge to main. User
 
 
 | PR-20 | queued | issue #185 |
-| PR-21 | queued | issue #186 |
+| PR-21 | local verified; PR publishing | 651units;bothbuilds/Nextsmoke;65/70 eachNext/actualWikiDO with5skips;loaded/degraded WCAG rules, keyboard/reflow/reducedmotion and single semantic-update/no repeated-poll text mutations |
 | PR-25 | queued | issue #190 |
 | PR-58 | queued | issue #157 |
 | PR-26 | queued | issue #191 |
