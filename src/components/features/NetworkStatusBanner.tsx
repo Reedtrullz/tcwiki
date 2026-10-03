@@ -12,6 +12,7 @@ import {
   SwapQuoteProbeResult,
   SwapQuoteRequest,
 } from '@/lib/types';
+import { formatEvidenceTimestamp } from '@/lib/utils';
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import { ResponsiveVisibility } from '@/components/ui/ResponsiveVisibility';
@@ -1709,7 +1710,7 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
             <p className="mt-1 text-[11px] text-slate-400">
               THORChain height {status.thorchainHeight}
               {status.thorchainSnapshotPinned === false ? ' / snapshot unpinned' : ''}
-              {status.thorchainBlockTime ? ` / block time ${new Date(status.thorchainBlockTime).toLocaleTimeString()}` : ''}
+              {status.thorchainBlockTime ? ` / block time ${formatEvidenceTimestamp(status.thorchainBlockTime)}` : ''}
               {status.thorchainBlockAgeSeconds !== undefined ? ` / Block age ${formatBlockAge(status.thorchainBlockAgeSeconds)}` : ''}
               {status.thorchainLastblockSpread !== undefined && status.thorchainLastblockSpread > 0 ? ` / lastblock spread ${status.thorchainLastblockSpread} blocks` : ''}
             </p>

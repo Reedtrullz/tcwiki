@@ -1,6 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
+import type { LiveDataResult, NetworkStatus } from '@/lib/types';
 import Link from 'next/link';
 import { ChevronDown } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
@@ -70,6 +71,7 @@ const securityFeatures = [
 
 interface NetworkPageClientProps {
   children?: ReactNode;
+  initialStatusResult?: LiveDataResult<NetworkStatus>;
 }
 
 interface CurrentOperationRow {
@@ -106,10 +108,10 @@ function operationBadgeVariant(value: CurrentOperationRow['value']) {
   return 'info';
 }
 
-export default function NetworkPageClient({ children }: NetworkPageClientProps) {
+export default function NetworkPageClient({ children, initialStatusResult }: NetworkPageClientProps) {
   const { data: networkData, result: networkResult, refresh: refreshNetwork } = useNetworkData();
   const { result: midgardHealthResult } = useMidgardHealth();
-  const { result: statusResult, isLoading: statusLoading, refresh: refreshStatus } = useNetworkStatus();
+  const { result: statusResult, isLoading: statusLoading, refresh: refreshStatus } = useNetworkStatus(initialStatusResult);
   const networkStatus = statusResult?.data;
 
   const liveStateValue = (

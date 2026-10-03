@@ -9,7 +9,7 @@ export function ProviderRequestDisclosure({ variant }: { variant: 'quote' | 'dia
       <p id={quote ? 'quote-request-disclosure' : 'diagnostic-request-disclosure'}>
         {quote
           ? 'Clicking Check route sends the selected asset pair and amount to a configured THORNode provider (Liquify or THORChain), with the other as fallback. A quote is requested only when you submit.'
-          : 'Public network reads go directly from your browser to Liquify and THORChain providers on page load, periodic refresh and Refresh source. They do not submit a transaction.'}
+          : 'This network page starts with one public operation sample read by the wiki server. Other live datasets and subsequent refreshes go directly from your browser to Liquify and THORChain providers. These reads do not submit a transaction.'}
       </p>
       <details className="mt-2">
         <summary className="cursor-pointer text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60">
@@ -30,7 +30,7 @@ export function ProviderRequestDisclosure({ variant }: { variant: 'quote' | 'dia
               <li key={provider.url} className="break-all"><a href={provider.url} target="_blank" rel="noopener noreferrer" className="text-accent underline">{provider.label}</a>: {provider.url}</li>
             ))}
           </ul>
-          <p>Providers receive your browser&apos;s network address and ordinary request metadata. The cross-origin referrer policy sends the wiki origin rather than this page&apos;s query or fragment.</p>
+          <p>Browser requests share your browser&apos;s network address and ordinary request metadata; the initial server operation read shares the wiki server&apos;s address. The cross-origin referrer policy sends the wiki origin rather than this page&apos;s query or fragment.</p>
           <p>Your pair and amount also appear in this page&apos;s shareable URL; copying it shares those values. Search and filter text is processed locally, and opening a copied wiki URL sends its query to the wiki host. Source-map evidence packets contain the displayed source links and claim guidance; raw quote details contain the provider response. Review either before sharing.</p>
           <Link href="/docs#runtime-live-data-failover" className="inline-block text-accent underline">Source choices and failover boundaries</Link>
         </div>
