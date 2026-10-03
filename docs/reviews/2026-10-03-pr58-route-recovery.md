@@ -19,7 +19,7 @@ The panel accepts the documented Next `retry()` callback and the installed vinex
 
 The committed route smoke test checks unmatched-route content, focus, URL retention, root header, and navigation, and records the navigation response status as a Playwright annotation. To prove that a rendering error can recover without adding a production trigger, apply this temporary overlay only in a disposable copy of the candidate checkout:
 
-1. Add `src/app/__pr58_recovery_probe/page.tsx`:
+1. Add `src/app/pr58-recovery-probe/page.tsx`:
 
    ```tsx
    import RecoveryProbe from './RecoveryProbe';
@@ -29,7 +29,7 @@ The committed route smoke test checks unmatched-route content, focus, URL retent
    }
    ```
 
-2. Add `src/app/__pr58_recovery_probe/RecoveryProbe.tsx`:
+2. Add `src/app/pr58-recovery-probe/RecoveryProbe.tsx`:
 
    ```tsx
    'use client';
@@ -56,7 +56,7 @@ The committed route smoke test checks unmatched-route content, focus, URL retent
 
    ```ts
    test('PR-58 route render errors recover in place', async ({ page }) => {
-     const response = await page.goto('/__pr58_recovery_probe');
+     const response = await page.goto('/pr58-recovery-probe');
      await expect(page.getByRole('status')).toContainText('This page hit a problem');
      await expect(page.getByRole('banner')).toBeVisible();
      await page.getByRole('button', { name: 'Try again' }).click();

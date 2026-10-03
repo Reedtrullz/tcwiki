@@ -1924,7 +1924,7 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
               </div>
             ))}
           </ResponsiveVisibility>
-          <ResponsiveVisibility desktop className="overflow-x-auto rounded-md border border-border">
+          <ResponsiveVisibility desktop className="overflow-x-auto rounded-md border border-border focus-visible:outline-accent" role="region" aria-label="Per-chain operation table" tabIndex={0}>
             <table className="min-w-[1040px] w-full text-left text-[11px]">
               <caption className="sr-only">Per-chain live operation state</caption>
               <thead className="bg-slate-950/30 text-slate-400">
@@ -1996,7 +1996,7 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
                 </div>
               ))}
             </div>
-            <div className="mt-3 hidden overflow-x-auto sm:block">
+            <div className="mt-3 hidden overflow-x-auto sm:block focus-visible:outline-accent" role="region" aria-label="Source evidence table" tabIndex={0}>
               <table className="min-w-[720px] text-left text-[11px]">
                 <caption className="sr-only">Active source evidence for network operation state</caption>
                 <thead className="text-slate-400">

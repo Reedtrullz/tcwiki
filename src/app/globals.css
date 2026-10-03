@@ -27,3 +27,13 @@ body {
   background: oklch(0.7 0.18 190 / 0.3);
   color: oklch(0.95 0.01 250);
 }
+
+/* Respect the reader's motion preference without changing content or focus. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0s !important;
+    scroll-behavior: auto !important;
+  }
+}

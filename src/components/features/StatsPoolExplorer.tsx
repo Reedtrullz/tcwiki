@@ -304,7 +304,7 @@ export function StatsPoolExplorer({
                           labelStyle={chartTooltipLabelStyle}
                           formatter={(value) => [formatRuneAmount(chartNumber(value)), 'RUNE depth']}
                         />
-                        <Bar dataKey="runeDepth" fill="oklch(0.75 0.15 85)" radius={[0, 4, 4, 0]} name="RUNE depth" />
+                        <Bar isAnimationActive={false} dataKey="runeDepth" fill="oklch(0.75 0.15 85)" radius={[0, 4, 4, 0]} name="RUNE depth" />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -359,7 +359,7 @@ export function StatsPoolExplorer({
                       ))}
                       </div>
                     </ResponsiveVisibility>
-                    <ResponsiveVisibility desktop className="mt-3 overflow-x-auto">
+                    <ResponsiveVisibility desktop className="mt-3 overflow-x-auto focus-visible:outline-accent" role="region" aria-label="Available pool table" tabIndex={0}>
                       <table className="w-full min-w-[820px] text-left text-xs text-slate-400">
                         <caption className="sr-only">Midgard available-pool rows snapshot</caption>
                         <thead className="text-[11px] uppercase tracking-wider text-slate-400">

@@ -152,9 +152,9 @@ export function StatsEarningsTable({
                     formatter={(value, name) => [formatRuneAmount(chartNumber(value)), name]}
                   />
                   <Legend wrapperStyle={{ color: 'oklch(0.78 0.01 250)', fontSize: 12 }} />
-                  <Line type="monotone" dataKey="earnings" stroke="oklch(0.7 0.18 190)" strokeWidth={2} dot={false} name="Total Earnings (RUNE)" />
-                  <Line type="monotone" dataKey="nodeOps" stroke="oklch(0.65 0.15 290)" strokeWidth={2} dot={false} name="Node Operator Earnings" />
-                  <Line type="monotone" dataKey="lps" stroke="oklch(0.75 0.15 160)" strokeWidth={2} dot={false} name="LP Earnings" />
+                  <Line isAnimationActive={false} type="monotone" dataKey="earnings" stroke="oklch(0.7 0.18 190)" strokeWidth={2} dot={false} name="Total Earnings (RUNE)" />
+                  <Line isAnimationActive={false} type="monotone" dataKey="nodeOps" stroke="oklch(0.65 0.15 290)" strokeWidth={2} dot={false} name="Node Operator Earnings" />
+                  <Line isAnimationActive={false} type="monotone" dataKey="lps" stroke="oklch(0.75 0.15 160)" strokeWidth={2} dot={false} name="LP Earnings" />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -183,7 +183,7 @@ export function StatsEarningsTable({
                 ))}
               </div>
             </div>
-            <div className="mt-6 hidden overflow-x-auto md:block">
+            <div className="mt-6 hidden overflow-x-auto md:block focus-visible:outline-accent" role="region" aria-label="Earnings history table" tabIndex={0}>
               <table className="w-full min-w-[520px] text-left text-xs text-slate-400">
                 <caption className="sr-only">Loaded Midgard daily earnings intervals</caption>
                 <thead className="text-[11px] uppercase tracking-wider text-slate-400">
