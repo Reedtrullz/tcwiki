@@ -1,5 +1,6 @@
 import type {
   DynamicL1FeeCurrentAccumulator,
+  DynamicL1FeeHistoryEntry,
   DynamicL1FeeMimirFlag,
   DynamicL1FeeRecord,
   DynamicL1FeeStatus,
@@ -168,6 +169,13 @@ export type HistoryEpochRow = {
   volumeTor: number | null;
   averageBps: number | null;
   samples: number;
+  cohort: string[];
+  missingFeesSamples: number;
+  missingVolumeSamples: number;
+  missingBpsSamples: number;
+  duplicateSamples: number;
+  conflictingSamples: number;
+  gapBefore: number;
 };
 
 export function historySampleCount(status: DynamicL1FeeStatus | undefined) {
@@ -184,55 +192,55 @@ export function historyPairCount(status: DynamicL1FeeStatus | undefined) {
   return (status?.histories ?? []).reduce((total, item) => total + item.pairs.length, 0);
 }
 
-export function historyEpochRows(status: DynamicL1FeeStatus | undefined): HistoryEpochRow[] {
-  const byEpoch = new Map<number, {
-    feesTorBaseUnits: bigint;
-    hasFees: boolean;
-    volumeTorBaseUnits: bigint;
-    hasVolume: boolean;
-    bpsTotal: number;
-    samples: number;
-  }>();
-
-  for (const thornameHistory of status?.histories ?? []) {
-    for (const pairHistory of thornameHistory.pairs) {
-      for (const entry of pairHistory.history) {
-        const row = byEpoch.get(entry.epoch) ?? {
-          feesTorBaseUnits: ZERO_BIGINT,
-          hasFees: false,
-          volumeTorBaseUnits: ZERO_BIGINT,
-          hasVolume: false,
-          bpsTotal: 0,
-          samples: 0,
-        };
-        const feeUnits = torBaseUnitsToBigInt(entry.feesTorBaseUnits);
-        const volumeUnits = torBaseUnitsToBigInt(entry.volumeTorBaseUnits);
-        if (feeUnits !== null) {
-          row.feesTorBaseUnits += feeUnits;
-          row.hasFees = true;
-        }
-        if (volumeUnits !== null) {
-          row.volumeTorBaseUnits += volumeUnits;
-          row.hasVolume = true;
-        }
-        row.bpsTotal += entry.bpsAtClose;
-        row.samples += 1;
-        byEpoch.set(entry.epoch, row);
+export function historyEpochRows(status: DynamicL1FeeStatus | undefined, { commonCohort = false } = {}): HistoryEpochRow[] {
+  // One stored sample per epoch/attribution key. Conflicting copies contribute no value.
+  type StoredAttribution = { entry: DynamicL1FeeHistoryEntry | null; fingerprint: string; duplicates: number };
+  const byEpoch = new Map<number, Map<string, StoredAttribution>>();
+  for (const history of status?.histories ?? []) {
+    for (const pair of history.pairs) {
+      const key = recordKey(pair.thorname, pair.pair);
+      for (const entry of pair.history) {
+        const samples = byEpoch.get(entry.epoch) ?? new Map<string, StoredAttribution>();
+        const fingerprint = JSON.stringify([entry.feesTorBaseUnits, entry.volumeTorBaseUnits, entry.bpsAtClose]);
+        const prior = samples.get(key);
+        if (prior) {
+          prior.duplicates += 1;
+          if (prior.fingerprint !== fingerprint) prior.entry = null;
+        } else samples.set(key, { entry, fingerprint, duplicates: 0 });
+        byEpoch.set(entry.epoch, samples);
       }
     }
   }
-
-  return [...byEpoch.entries()]
-    .map(([epoch, row]) => ({
-      epoch,
-      feesTorBaseUnits: row.hasFees ? row.feesTorBaseUnits : null,
-      feesTor: row.hasFees ? torBaseUnitsToNumber(row.feesTorBaseUnits) : null,
-      volumeTorBaseUnits: row.hasVolume ? row.volumeTorBaseUnits : null,
-      volumeTor: row.hasVolume ? torBaseUnitsToNumber(row.volumeTorBaseUnits) : null,
-      averageBps: row.samples > 0 ? row.bpsTotal / row.samples : null,
-      samples: row.samples,
-    }))
-    .sort((left, right) => left.epoch - right.epoch);
+  const commonKeys = [...(byEpoch.values().next().value?.keys() ?? [])]
+    .filter(key => [...byEpoch.values()].every(samples => samples.has(key)));
+  const common = new Set(commonKeys);
+  const rows = [...byEpoch.entries()].map(([epoch, samples]) => {
+    const selected = [...samples.entries()].filter(([key]) => !commonCohort || common.has(key));
+    let fees = ZERO_BIGINT, volume = ZERO_BIGINT, bps = ZERO_BIGINT;
+    let missingFeesSamples = 0, missingVolumeSamples = 0, missingBpsSamples = 0, duplicateSamples = 0, conflictingSamples = 0;
+    for (const [, sample] of selected) {
+      duplicateSamples += sample.duplicates;
+      if (!sample.entry) conflictingSamples += 1;
+      const feeValue = torBaseUnitsToBigInt(sample.entry?.feesTorBaseUnits);
+      const volumeValue = torBaseUnitsToBigInt(sample.entry?.volumeTorBaseUnits);
+      if (feeValue === null) missingFeesSamples += 1; else fees += feeValue;
+      if (volumeValue === null) missingVolumeSamples += 1; else volume += volumeValue;
+      const close = sample.entry?.bpsAtClose;
+      if (close === undefined || !Number.isSafeInteger(close) || close < 0) missingBpsSamples += 1; else bps += BigInt(close);
+    }
+    const count = selected.length, bpsCount = count - missingBpsSamples;
+    // Exact integer sum before the explicitly arithmetic, unweighted mean.
+    const averageBps = bpsCount ? Number(bps / BigInt(bpsCount)) + Number(bps % BigInt(bpsCount)) / bpsCount : null;
+    return { epoch, samples: count, cohort: selected.map(([key]) => key).sort(),
+      missingFeesSamples, missingVolumeSamples, missingBpsSamples, duplicateSamples, conflictingSamples,
+      feesTorBaseUnits: count > missingFeesSamples ? fees : null,
+      feesTor: count > missingFeesSamples ? torBaseUnitsToNumber(fees) : null,
+      volumeTorBaseUnits: count > missingVolumeSamples ? volume : null,
+      volumeTor: count > missingVolumeSamples ? torBaseUnitsToNumber(volume) : null,
+      averageBps, gapBefore: 0,
+    };
+  }).sort((left, right) => left.epoch - right.epoch);
+  return rows.map((row, index) => ({ ...row, gapBefore: index ? Math.max(0, row.epoch - rows[index - 1].epoch - 1) : 0 }));
 }
 
 // --- Bps helpers ---

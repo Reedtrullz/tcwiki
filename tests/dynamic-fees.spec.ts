@@ -20,7 +20,7 @@ async function fulfillJson(route: Route, value: unknown) {
   });
 }
 
-async function mockDynamicFeesThornode(page: Page, mimir: Record<string, unknown> = {}) {
+async function mockDynamicFeesThornode(page: Page, mimir: Record<string, unknown> = {}, historyOverrides: Record<string, unknown> = {}) {
   const currentEpoch = '1867';
   const historyByThorname: Record<string, unknown> = {
     shapeshift: {
@@ -127,7 +127,7 @@ async function mockDynamicFeesThornode(page: Page, mimir: Record<string, unknown
   await page.route(/\/thorchain\/dynamic_l1_fees\/([^/?]+)(?:\?.*)?$/, async (route) => {
     const url = new URL(route.request().url());
     const thorname = decodeURIComponent(url.pathname.split('/').at(-1) ?? '').toLowerCase();
-    const history = historyByThorname[thorname];
+    const history = historyOverrides[thorname] ?? historyByThorname[thorname];
 
     if (history) {
       await fulfillJson(route, history);
@@ -141,6 +141,31 @@ async function mockDynamicFeesThornode(page: Page, mimir: Record<string, unknown
     });
   });
 }
+
+test('stored fee history exposes partial fields and changes to common attribution membership', async ({ page }) => {
+  await mockDynamicFeesThornode(page, {}, {
+    shapeshift: { thorname: 'shapeshift', whitelist_state: '1', pairs: [{ pair: 'BTC.BTC|ETH.ETH', dynamic_bps: '4', last_active_epoch: '1866', history: [
+      { epoch: '1864', volume_tor: '10000000000', fees_tor: '', bps_at_close: '2' },
+      { epoch: '1866', volume_tor: '10000000000', fees_tor: '100000000', bps_at_close: '4' },
+    ] }] },
+    symbiosis: { thorname: 'symbiosis', whitelist_state: '2', pairs: [{ pair: 'BTC.BTC|THOR.RUNE', dynamic_bps: '1', last_active_epoch: '1864', history: [
+      { epoch: '1864', volume_tor: '100000000', fees_tor: '200000000', bps_at_close: '10' },
+    ] }] },
+  });
+  await page.goto('/dynamic-fees');
+  const history = page.locator('#dynamic-fee-historical-results');
+  await expect(history.getByText(/Stored history attributes eligible swap legs/)).toBeVisible();
+  const summary = history.locator('summary:visible').filter({ hasText: 'Sample coverage and attribution' }).first();
+  await expect(summary).toBeVisible();
+  await summary.click();
+  await expectAnyVisible(history.getByText('Fees 1/2; volume 2/2; controller floors 2/2.', { exact: true }));
+  await expectAnyVisible(history.getByText('symbiosis|BTC.BTC|THOR.RUNE', { exact: true }));
+  await history.getByRole('checkbox', { name: 'Compare common attribution cohort' }).check();
+  await expect(history.getByText(/Only attribution keys present in every loaded epoch/)).toBeVisible();
+  await expectAnyVisible(history.getByText('Fees 0/1; volume 1/1; controller floors 1/1.', { exact: true }));
+  await expect(history.getByText('symbiosis|BTC.BTC|THOR.RUNE', { exact: true })).toHaveCount(0);
+  await expectAnyVisible(history.getByText('Partial fields: these sums contain only the stored values available.', { exact: true }));
+});
 
 for (const scenario of [
   { name: 'inverted', floor: 20, ceiling: 1, filter: 'invalid', label: 'Invalid bounds', count: 2 },
