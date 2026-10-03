@@ -79,16 +79,27 @@ for (const state of ['loaded', 'degraded'] as const) {
   test(`WCAG rules cover deterministic ${state} dashboards, search and deep-dive tables`, async ({ page }) => {
     test.slow();
     await mockAccessibleLoadedState(page);
+    let browserRequestsFail = false;
     if (state === 'degraded') {
-      await page.route(/\/v2\/pools\?/, route => route.fulfill({ status: 503, body: 'Fixture unavailable' }));
-      await page.route(/\/thorchain\/inbound_addresses(?:\?.*)?$/, route => route.fulfill({ status: 503, body: 'Fixture unavailable' }));
+      await page.route(/\/v2\/pools\?/, route => browserRequestsFail
+        ? route.fulfill({ status: 503, body: 'Accessibility fixture browser failure' })
+        : route.fallback());
+      await page.route(/\/thorchain\/inbound_addresses(?:\?.*)?$/, route => browserRequestsFail
+        ? route.fulfill({ status: 503, body: 'Accessibility fixture browser failure' })
+        : route.fallback());
     }
     const failures = [];
     for (const route of ['/network', '/stats', '/search?q=quote+expiry', '/deep-dives/build-query-data']) {
       await page.goto(route);
       if (route === '/network') {
         if (state === 'loaded') await expect(page.locator('#check-a-route').getByLabel('From asset')).toBeEnabled({ timeout: 15_000 });
-        else await expect(page.getByRole('heading', { name: 'Network status unavailable', exact: true })).toBeVisible({ timeout: 15_000 });
+        else {
+          await expect(page.locator('#check-a-route').getByLabel('From asset')).toBeEnabled({ timeout: 15_000 });
+          browserRequestsFail = true;
+          await page.getByRole('button', { name: /Refresh .* data/i }).first().click();
+          await expect(page.getByText('Browser refresh failed; retained operation values are dated context until a new read succeeds.', { exact: true }).first()).toBeVisible({ timeout: 15_000 });
+          await expect(page.getByText(/^Checked /).first()).toBeVisible();
+        }
       }
       if (route === '/stats') {
         if (state === 'loaded') await expect(page.locator('#available-pools').getByLabel('Pool sort')).toBeEnabled({ timeout: 15_000 });
@@ -188,6 +199,7 @@ test('operation announcements change once for a meaningful update and stay quiet
   page.on('request', request => { if (request.url().includes('/thorchain/mimir')) reads += 1; });
   await page.goto('/network');
   await expect(page.locator('#check-a-route').getByLabel('Amount')).toBeEnabled({ timeout: 15_000 });
+  await expect(page.getByText('BSC and SOL are swap-limited.', { exact: true })).toBeVisible();
   const announcement = page.getByRole('status').filter({ has: page.getByRole('heading', { level: 2 }) }).first();
   await expect(announcement).toBeVisible();
   await announcement.evaluate(element => {

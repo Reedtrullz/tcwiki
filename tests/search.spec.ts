@@ -477,8 +477,10 @@ test.describe('THORChain Wiki Search Smoke Tests', () => {
 
 test('search submits the visible form value when browser input differs from React state', async ({ page }) => {
   await page.goto('/search');
+  await expect(page.getByRole('button', { name: 'Open search', exact: true })).toBeEnabled();
   const form = page.getByRole('search', { name: 'Search wiki content' });
   const input = form.getByLabel('Search the wiki', { exact: true });
+  await expect(input).toBeEnabled();
   await input.fill('universal settlement asset');
   await form.getByRole('button', { name: 'Submit search page query' }).click();
   await expect(page).toHaveURL(/q=universal/);
