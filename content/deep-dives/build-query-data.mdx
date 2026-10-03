@@ -1,4 +1,5 @@
 import { TransactionExamples } from '@/components/features/TransactionExamples';
+import { MemoDecoderSection } from '@/components/features/MemoDecoderSection';
 
 # Build And Query THORChain Data
 
@@ -111,6 +112,10 @@ Builder-specific guidance for upstream failure:
 ## Shipping Boundary
 
 Before release, confirm source ownership, provider mixing, quote throttling and expiry, fresh inbound/route state at signing time, Midgard labeling, safe unit/error handling, and integration-specific tests. Public endpoints can be unavailable, rate-limited, or inconsistent; copied operational values and third-party SDKs still need their own checks.
+
+## Local Memo Decoder
+
+<MemoDecoderSection />
 
 ## Bitcoin Memo Archive Pointer
 

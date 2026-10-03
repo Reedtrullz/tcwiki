@@ -3,6 +3,35 @@ export const DATA_CONFIDENCES = ['official', 'curated', 'historical', 'needs-rev
 
 export type DataConfidence = (typeof DATA_CONFIDENCES)[number];
 
+export type MemoDecoderAction = 'swap' | 'outbound' | 'refund' | 'migrate';
+export type MemoDecoderStatus = 'decoded' | 'empty' | 'too-long' | 'unsupported' | 'malformed';
+
+export interface MemoDecoderField {
+  id: string;
+  label: string;
+  raw: string;
+  interpretation: string;
+}
+
+export type MemoDecodeResult =
+  | {
+      status: 'decoded';
+      original: string;
+      /** Exact for in-bound inputs; oversized inputs use the configured bound plus one as a sentinel. */
+      byteLength: number;
+      action: MemoDecoderAction;
+      fields: MemoDecoderField[];
+      message: string;
+    }
+  | {
+      status: Exclude<MemoDecoderStatus, 'decoded'>;
+      original: string;
+      /** Exact for in-bound inputs; oversized inputs use the configured bound plus one as a sentinel. */
+      byteLength: number;
+      fields: MemoDecoderField[];
+      message: string;
+    };
+
 export interface ResponseHeightEvidence {
   requestedHeight: number;
   observedHeight?: number;

@@ -2023,6 +2023,7 @@ export const DEEP_DIVE_TOC: Record<string, DeepDiveTocItem[]> = {
     tocItem('Amounts, Assets, And Units'),
     tocItem('Error Handling And Provider Posture'),
     tocItem('Shipping Boundary'),
+    tocItem('Local Memo Decoder'),
   ],
   'deep-dive-app-layer': [
     tocItem('App Layer Claim Checks'),

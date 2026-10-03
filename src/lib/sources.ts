@@ -581,6 +581,13 @@ export const transactionExampleMemoMapV3203Source: SourceMeta = {
   notes: 'Pinned official source for memo action interpretation: = and s map to swap, OUT maps to outbound, refund maps to refund, and MIGRATE maps to migrate. The original memo text remains separate from this interpretation.',
 };
 
+export const transactionMemoParserV3203Source: SourceMeta = {
+  label: 'THORNode v3.20.3 memo parser source',
+  url: 'https://gitlab.com/thorchain/thornode/-/blob/b08d81f79275093b0fcb753e0d68ff1c16c51cb8/x/thorchain/memo/memo_parser.go',
+  retrievedAt: '2026-10-03',
+  notes: 'Pinned parser source used to derive the bounded educational subset. The local decoder does not reproduce keeper, chain, address, fee-cap, or current-version validation.',
+};
+
 export const transactionExampleMemoDocsSource: SourceMeta = {
   label: 'THORChain developer memo documentation',
   url: 'https://dev.thorchain.org/concepts/memos.html',
