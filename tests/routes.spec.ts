@@ -112,7 +112,7 @@ test.describe('THORChain Wiki Public Route Smoke Tests', () => {
       }));
 
       expect(headMetadata).toEqual({
-        alternates: [],
+        alternates: path === '/updates' ? [{ href: routeUrl('/updates/feed.xml'), hrefLang: null }] : [],
         canonical: [canonical],
         description: [description],
         openGraphDescription: [description],

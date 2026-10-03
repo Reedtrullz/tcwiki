@@ -77,7 +77,7 @@ Execute all accepted work and create/push GitHub PRs; do not merge to main. User
 | PR-29 | queued | issue #194 |
 | PR-30 | verified candidate; publishing | issue #195; one explicit dated editorialcohortfixture, safety/source/unit/current-historical assertions retained;16focusedtests/types/contentchecks |
 | PR-32 | queued | issue #197 |
-| PR-31 | queued | issue #196 |
+| PR-31 | verified candidate; PR publication | 695 units/63 files; two dated authored records, RSS/canonical/metadata/content; both builds/smoke and 16 desktop/mobile checks per runtime |
 | PR-61 | queued | issue #160 |
 | PR-23 | queued | issue #188 |
 | PR-69 | queued | issue #204 |
@@ -148,3 +148,5 @@ Integration of237/238/240 retains quote reconciliation, nameddatareceipts, stric
 Combined operation/policy candidate:644units/55files/types/lint/bothbuilds/Nextsmoke and44network/economics/fee/runtimebrowserchecks eachNext/CF passed. Quote body/explicitrecheck, unsupportedversion rawcontrols, offlineaging, sourcepolicy and optionalhistory boundaries coexist. PR238CI37091851223 and239CI37092219298 SUCCESS. PR240CI37092523901 stillpending at05:24. No mainmerge/deploy.
 
 PR46 final:parent matched pinned sourcehash; unsupportedperiodRED→GREEN nofetch;651units/types/lint/content/trackedchecks/bothbuilds/Nextsmoke;47browserchecks eachNext/Worker plus1desktop-onlyskip. APR/APY retain provideridentity and neither compounding nor distinctformulas inferred. Base242CI37093294012 SUCCESS. PR243fee-cohorts open8e1308c,26checks perruntime; its integration is partofPR20 baseline, not this PR46 productdiff.
+
+PR31 final: curated updates/RSS derive from two authored source-qualified records, with historical protocol events separate from wiki review dates. 695 units, both final builds/Next smoke and16desktop/mobile browserchecks each runtime passed. Shared seed/a11y/grid followup committed separately for PR255/256. No main merge/deploy.

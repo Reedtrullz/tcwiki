@@ -2090,6 +2090,7 @@ const collections = {
   PROTOCOL_MILESTONE_RECORDS: readRecordArray('PROTOCOL_MILESTONE_RECORDS', scope),
   TOKENOMICS_RECORDS: readRecordArray('TOKENOMICS_RECORDS', scope),
   SOURCE_MAP_SECTION_RECORDS: readRecordArray('SOURCE_MAP_SECTION_RECORDS', scope),
+  WIKI_CHANGE_RECORDS: readRecordArray('WIKI_CHANGE_RECORDS', scope),
 };
 
 if (!isIsoDate(staticDataLastUpdated)) {

@@ -853,3 +853,12 @@ export interface NetworkStatus {
   sourceWarnings: string[];
   sourceWarningDetails?: NetworkStatusSourceWarning[];
 }
+
+export interface WikiChangeRecord {
+  id: string;
+  title: string;
+  summary: string;
+  href: string;
+  sourceDate: string;
+  reviewedAt: string;
+}

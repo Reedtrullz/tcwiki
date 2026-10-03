@@ -204,6 +204,24 @@ export const SEARCH_PAGE_ENTRY: ContentEntry = {
   footer: true,
 };
 
+export const UPDATES_PAGE_ENTRY: ContentEntry = {
+  id: 'updates',
+  title: 'Wiki updates',
+  footerLabel: 'Updates',
+  href: '/updates',
+  category: 'resource',
+  confidence: 'curated',
+  description: 'Source-backed editorial updates to THORChain Wiki content, with separate source observation and review dates.',
+  tags: ['updates', 'editorial history', 'sources'],
+  reviewedAt: '2026-10-03',
+  nextReviewDue: '2026-11-03',
+  sources: [
+    { ...continuousLiquidityPoolsSource, retrievedAt: '2026-10-02' },
+    { label: 'THORNode v3.20.0 release', url: 'https://gitlab.com/thorchain/thornode/-/releases/v3.20.0', retrievedAt: '2026-10-03' },
+  ],
+  footer: true,
+};
+
 const connectingThorchainSource: SourceMeta = {
   ...baseConnectingThorchainSource,
   retrievedAt: '2026-07-05',
@@ -313,6 +331,7 @@ const ecosystemPageSource: SourceMeta = { ...ecosystemSource, retrievedAt: PAGE_
 export const CONTENT_ENTRIES: ContentEntry[] = [
   HOME_PAGE_ENTRY,
   SEARCH_PAGE_ENTRY,
+  UPDATES_PAGE_ENTRY,
   {
     id: 'protocol',
     title: 'Protocol',
