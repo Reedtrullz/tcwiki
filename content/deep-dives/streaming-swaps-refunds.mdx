@@ -18,6 +18,8 @@ When a user asks "why did my swap refund?", start with the most current evidence
 
 The Network diagnostics route checker now includes a refund/failed-swap triage panel that separates current quote evidence from missing transaction evidence. Use it as a checklist, not as a wallet instruction or support verdict.
 
+The [one-hash transaction lookup](/network#transaction-evidence) can explicitly read up to five related Midgard actions. It keeps the raw memo separate from a bounded local syntax interpretation and shows indexer time, THORChain index height, inputs, outbounds and reported network fees with their units. Provider status remains a processing report: source-chain confirmation and destination settlement are unknown without independent receipts. The request disclosure names both fixed providers before a hash is sent; the wiki does not retain a lookup history.
+
 If those pieces are missing, the honest answer is "insufficient evidence", not a guessed refund cause.
 
 ## Swap Lifecycle

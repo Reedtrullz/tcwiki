@@ -11,6 +11,7 @@ import { PageContainer } from '@/components/layout/PageContainer';
 import { useMidgardHealth, useNetworkData, useNetworkStatus } from '@/lib/hooks/useMidgard';
 import { MayaNodePanel } from '@/components/features/MayaNodePanel';
 import { ThorNodePanel } from '@/components/features/ThorNodePanel';
+import { TransactionEvidenceTriage } from '@/components/features/TransactionEvidenceTriage';
 import { NetworkStatusBanner } from '@/components/features/NetworkStatusBanner';
 import { DiagnosticEvidenceExport } from '@/components/features/DiagnosticEvidenceExport';
 import { MimirProviderComparison } from '@/components/features/MimirProviderComparison';
@@ -388,6 +389,8 @@ export default function NetworkPageClient({ children, initialStatusResult }: Net
         <DiagnosticEvidenceExport result={statusResult} />
         <MimirProviderComparison />
       </div>
+
+      <TransactionEvidenceTriage current={statusResult} />
 
       {currentOperationSnapshot}
 

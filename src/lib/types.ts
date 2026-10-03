@@ -1022,3 +1022,13 @@ export interface MimirProviderSample {
   error: string | null;
   values: Record<string, MimirProviderCell>;
 }
+/** Read-only Midgard indexer observations; no independent settlement evidence. */
+export interface TransactionEvidenceCoin { asset: string | null; amount: string | null; }
+export interface TransactionEvidenceTransfer { txID: string | null; height: string | null; coins: TransactionEvidenceCoin[] | null; }
+export interface TransactionEvidenceAction {
+  type: string | null; status: string | null; rawDate: string | null; observedAt: string | null;
+  height: string | null; memo: string | null; reason: string | null;
+  inputs: TransactionEvidenceTransfer[] | null; outputs: TransactionEvidenceTransfer[] | null;
+  fees: TransactionEvidenceCoin[] | null; warnings: string[];
+}
+export interface TransactionEvidence { hash: string; actions: TransactionEvidenceAction[]; count: string | null; warnings: string[]; }

@@ -1,4 +1,6 @@
 import { readProviderJson } from './bounded-json';
+import { normalizeTransactionEvidence, transactionHash } from '@/lib/transaction-evidence';
+import type { TransactionEvidence } from '@/lib/types';
 import {
   AssetPrice,
   ChainData,
@@ -78,9 +80,12 @@ async function request<T>(path: string): Promise<LiveDataResult<T>> {
   return liveDegraded<T>(`Midgard source did not respond (${errors.join('; ')})`);
 }
 
-async function requestFromEndpoint<T>(endpoint: SourceMeta, path: string): Promise<T> {
+async function requestFromEndpoint<T>(endpoint: SourceMeta, path: string, signal?: AbortSignal): Promise<T> {
   const controller = new AbortController();
   const timeoutId = globalThis.setTimeout(() => controller.abort(), 5000);
+  const abort = () => controller.abort();
+  signal?.addEventListener('abort', abort, { once: true });
+  if (signal?.aborted) controller.abort();
 
   try {
     const response = await fetch(joinEndpointPath(endpoint.url, path), {
@@ -95,6 +100,7 @@ async function requestFromEndpoint<T>(endpoint: SourceMeta, path: string): Promi
     return await readProviderJson(response, controller.signal) as T;
   } finally {
     globalThis.clearTimeout(timeoutId);
+    signal?.removeEventListener('abort', abort);
   }
 }
 
@@ -643,6 +649,27 @@ export class MidgardAPI {
 
   static async getChains(): Promise<LiveDataResult<ChainData[]>> {
     return requestNormalized<RawChain[], ChainData[]>('/chains', normalizeChains);
+  }
+
+  /** Explicit one-hash pilot. Fixed providers, five actions, existing bounded body/deadline. */
+  static async getTransactionEvidence(hash: string, signal?: AbortSignal): Promise<LiveDataResult<TransactionEvidence>> {
+    if (!transactionHash(hash)) return liveDegraded('Enter one 32-byte hexadecimal transaction hash (optional 0x prefix).');
+    const path = `/actions?txid=${encodeURIComponent(hash)}&limit=5`;
+    const attempted: SourceMeta[] = [];
+    for (const endpoint of MIDGARD_ENDPOINTS) {
+      if (signal?.aborted) return liveDegraded('Lookup cancelled; transaction evidence remains unknown.', attempted);
+      attempted.push(sourceForPath(endpoint, path));
+      try {
+        const raw = await requestFromEndpoint<unknown>(endpoint, path, signal);
+        const data = normalizeTransactionEvidence(raw, hash);
+        if (signal?.aborted) return liveDegraded('Lookup cancelled; transaction evidence remains unknown.', attempted);
+        return liveOk(data, sourceForPath(endpoint, path), new Date().toISOString());
+      } catch {
+        // Failed or malformed indexer evidence does not establish transaction absence.
+        continue;
+      }
+    }
+    return liveDegraded('The indexers did not provide usable evidence. Transaction state remains unknown.', attempted);
   }
 
   static async getActions(): Promise<LiveDataResult<Record<string, unknown>[]>> {
