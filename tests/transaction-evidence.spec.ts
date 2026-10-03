@@ -13,31 +13,17 @@ async function open(page: import('@playwright/test').Page) {
 }
 test('lookup is explicit, preserves raw indexer evidence and separates settlement layers', async ({ page }) => {
   let reads = 0;
-  await page.addInitScript(() => {
-    const events: unknown[] = [];
-    Object.assign(window, { transactionFixtureEvents: events });
-    for (const type of ['input', 'change', 'keydown', 'keyup', 'click', 'submit', 'focusin', 'focusout']) {
-      document.addEventListener(type, event => {
-        const target = event.target;
-        if (!(target instanceof HTMLElement) || !target.closest('#transaction-evidence')) return;
-        events.push({ type, key: event instanceof KeyboardEvent ? event.key : undefined, tag: target.tagName, value: target instanceof HTMLInputElement ? target.value : undefined, prevented: event.defaultPrevented });
-      });
-    }
-  });
   await page.route(/\/v2\/actions\?/, route => { reads++; return fulfillJson(route, { actions: [action], count: '1' }); });
   const panel = await open(page);
   const input = panel.getByRole('textbox', { name: 'Public transaction hash' });
   expect(reads).toBe(0);
   await input.fill('https://example.com'); await panel.getByRole('button', { name: 'Look up transaction' }).click();
   await expect(panel.getByRole('status')).toContainText('Enter one 32-byte'); expect(reads).toBe(0);
-  await input.fill(hash); expect(reads).toBe(0);
+  // Mobile Chromium insertText can truncate replacement text against maxlength
+  // using the old value's length. Clear first and verify the actual fixture value.
+  await input.fill(''); await input.fill(hash); await expect(input).toHaveValue(hash); expect(reads).toBe(0);
   await input.press('Tab'); const button = panel.getByRole('button', { name: 'Look up transaction' }); await expect(button).toBeFocused(); await button.press('Enter');
-  try {
-    await expect(panel.getByRole('heading', { name: 'Indexed action 1: refund — pending' })).toBeVisible();
-  } catch (error) {
-    console.error('Transaction fixture diagnostics:', JSON.stringify({ reads, value: await input.inputValue(), notice: await panel.getByRole('status').innerText(), url: page.url(), events: await page.evaluate(() => (window as unknown as { transactionFixtureEvents: unknown[] }).transactionFixtureEvents) }));
-    throw error;
-  }
+  await expect(panel.getByRole('heading', { name: 'Indexed action 1: refund — pending' })).toBeVisible();
   expect(reads).toBe(1);
   await expect(panel.getByText('Current-only', { exact: true })).toHaveCount(0);
   await expect(panel.getByText(/9007199254740993123 ETH~USDC/)).toBeVisible();
