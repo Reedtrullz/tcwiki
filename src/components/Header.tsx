@@ -2,9 +2,16 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useSyncExternalStore } from 'react';
 import { Search, Menu, X, ChevronDown } from 'lucide-react';
 import { JOURNEY_LINKS, NAV_GROUPS, TASK_GUIDE_GROUPED } from '@/lib/content/registry';
+
+function subscribeToHydration(onStoreChange: () => void) {
+  const timer = window.setTimeout(onStoreChange, 0);
+  return () => window.clearTimeout(timer);
+}
+const getHydratedSnapshot = () => true;
+const getServerHydratedSnapshot = () => false;
 
 export default function Header() {
   const pathname = usePathname();
@@ -13,6 +20,7 @@ export default function Header() {
 
 function HeaderContent({ pathname }: { pathname: string }) {
   const router = useRouter();
+  const hydrated = useSyncExternalStore(subscribeToHydration, getHydratedSnapshot, getServerHydratedSnapshot);
   const [openPanel, setOpenPanel] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const headerRef = useRef<HTMLElement>(null);
@@ -103,9 +111,9 @@ function HeaderContent({ pathname }: { pathname: string }) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [activePanel, closePanels]);
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const trimmedQuery = searchQuery.trim();
+    const trimmedQuery = String(new FormData(e.currentTarget).get('q') ?? '').trim();
     if (trimmedQuery) {
       closePanels(false);
       setSearchQuery('');
@@ -133,6 +141,7 @@ function HeaderContent({ pathname }: { pathname: string }) {
                 <div key={group.id} className="relative">
                   <button
                     type="button"
+                    disabled={!hydrated}
                     onClick={(event) => togglePanel(`nav:${group.id}`, event.currentTarget)}
                     aria-expanded={activePanel === `nav:${group.id}`}
                     aria-controls={`nav-panel-${group.id}`}
@@ -142,7 +151,7 @@ function HeaderContent({ pathname }: { pathname: string }) {
                     <ChevronDown className={`ml-1 inline h-3 w-3 transition-transform ${activePanel === `nav:${group.id}` ? 'rotate-180' : ''}`} />
                   </button>
                   <div id={`nav-panel-${group.id}`} hidden={activePanel !== `nav:${group.id}`} className="absolute left-0 top-full z-10 mt-1 min-w-[180px] rounded-lg border border-border bg-surface-elevated p-1 shadow-lg">
-                    {group.items.map((item) => (
+                    {activePanel === `nav:${group.id}` && group.items.map((item) => (
                       <Link
                         key={item.href}
                         href={item.href}
@@ -159,6 +168,7 @@ function HeaderContent({ pathname }: { pathname: string }) {
             })}
             <button
               type="button"
+              disabled={!hydrated}
               onClick={(event) => togglePanel('guides', event.currentTarget)}
               aria-expanded={showGuidesForPath}
               aria-controls="desktop-guides-panel"
@@ -178,6 +188,7 @@ function HeaderContent({ pathname }: { pathname: string }) {
             <button
               ref={searchButtonRef}
               type="button"
+              disabled={!hydrated}
               onClick={() => {
                 if (searchButtonRef.current) togglePanel('search', searchButtonRef.current);
               }}
@@ -192,6 +203,7 @@ function HeaderContent({ pathname }: { pathname: string }) {
             <button
               ref={menuButtonRef}
               type="button"
+              disabled={!hydrated}
               onClick={() => {
                 if (menuButtonRef.current) togglePanel('mobile', menuButtonRef.current);
               }}
@@ -207,13 +219,14 @@ function HeaderContent({ pathname }: { pathname: string }) {
       </div>
 
       <div id="site-search-panel" hidden={!showSearchForPath} className="border-t border-border px-6 py-3 bg-surface-elevated">
-          <form role="search" aria-label="Site search" onSubmit={handleSearch} className="max-w-2xl mx-auto">
+          {showSearchForPath && <form action="/search" method="get" role="search" aria-label="Site search" onSubmit={handleSearch} className="max-w-2xl mx-auto">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <label htmlFor="site-search" className="sr-only">Search the wiki</label>
               <input
                 ref={searchInputRef}
                 id="site-search"
+                name="q"
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -237,11 +250,11 @@ function HeaderContent({ pathname }: { pathname: string }) {
                 Browse guided answers →
               </Link>
             </div>
-          </form>
+          </form>}
       </div>
 
       <div id="desktop-guides-panel" hidden={!showGuidesForPath} className={`hidden ${showGuidesForPath ? 'xl:block' : ''} max-h-[calc(100vh-52px)] overflow-y-auto border-t border-border bg-surface-elevated px-6 py-3`}>
-          <nav aria-label="Guide links" className="mx-auto grid max-w-7xl gap-4 xl:grid-cols-[0.95fr_1.35fr]">
+          {showGuidesForPath && <nav aria-label="Guide links" className="mx-auto grid max-w-7xl gap-4 xl:grid-cols-[0.95fr_1.35fr]">
             <section aria-labelledby="desktop-reader-paths">
               <p id="desktop-reader-paths" className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
                 Reader Paths
@@ -298,11 +311,11 @@ function HeaderContent({ pathname }: { pathname: string }) {
                 ))}
               </div>
             </section>
-          </nav>
+          </nav>}
       </div>
 
       <div id="mobile-navigation" hidden={!isOpenForPath} className="max-h-[calc(100vh-52px)] overflow-y-auto overscroll-contain border-t border-border bg-surface-elevated xl:hidden">
-          <nav aria-label="Mobile navigation" className="px-4 py-2 space-y-0.5">
+          {isOpenForPath && <nav aria-label="Mobile navigation" className="px-4 py-2 space-y-0.5">
             <p className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
               Sections
             </p>
@@ -369,7 +382,7 @@ function HeaderContent({ pathname }: { pathname: string }) {
                 ))}
               </section>
             ))}
-          </nav>
+          </nav>}
         </div>
     </header>
   );
