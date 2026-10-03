@@ -1,3 +1,4 @@
+import { AnchorNavigation } from '@/components/layout/AnchorNavigation';
 import type { Metadata } from "next";
 import { connection } from "next/server";
 import Header from "@/components/Header";
@@ -51,6 +52,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           Skip to content
         </a>
         <Header />
+        <AnchorNavigation />
         <main id="main" className="flex-1" tabIndex={-1}>{children}</main>
         <Footer />
       </body>

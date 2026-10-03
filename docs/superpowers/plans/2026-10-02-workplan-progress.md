@@ -60,8 +60,8 @@ Execute all accepted work and create/push GitHub PRs; do not merge to main. User
 | PR-46 | queued | issue #145 |
 | PR-65 | queued | issue #164 |
 | PR-19 | queued | issue #184 |
-| PR-24 | local verified; publication pending | Shared MDX heading identity, bounded1200-character section documents;552units/types/content/audits/both builds/smoke;26 browser checks each Next/CF with4device skips; header follow-up integrated |
-| PR-66 | queued | issue #165 |
+| PR-24 | PR233 open; CI passed | Shared MDX heading identity, bounded1200-character section documents;552units/types/content/audits/both builds/smoke;26 browser checks each Next/CF with4device skips; header follow-up integrated |
+| PR-66 | local verified; publication pending | root hash listener reveals necessary native details ancestors, preserves focus/reader closure, explains missing targets;552units/bothbuilds/smoke;20browser checks each Next/CF plus4device skips |
 | PR-20 | queued | issue #185 |
 | PR-21 | queued | issue #186 |
 | PR-25 | queued | issue #190 |
@@ -108,3 +108,5 @@ PR212 CSP bounds open https://github.com/Reedtrullz/tcwiki/pull/212 (496ce6c), C
 PR217 integrates reviewed PR208 and213 into the cumulative branch after216 (c9d09ec); full530/types/lint and CI37036891783 passed. No main merge. PR04/05 CF lane passed25 checks but search submission intermittently navigated to empty /search?; do not treat that run as all-green. Pull forward the native form-value correction, then repeat the final candidate runtime lane.
 
 PR218 UTC volume periods/universe open (ecb66d0+b58b536). PR219 native search FormData open (ced5c71); deterministic stale-form regression and2Next+27CF browser checks passed. PR218 CI37038389570 failed on a broad BTC selector targeting a hidden coverage entry; corrected on both branches via exact pool-row assertions (218:6b130055,219:d05848c5), CI reruns pending. Follow-up commits preserve code scope.
+
+PR66 candidate: direct/reload/history/keyboard disclosure destinations and unavailable-target notice pass on both runtimes. First notice assertion collided with Next route announcer; scoped to the visible navigation notice. Shared layout listener serves multiple TOCs and cross-route URLs without changing public IDs. No deployment or main merge.
