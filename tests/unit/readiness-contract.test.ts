@@ -1,13 +1,30 @@
 import { describe, expect, it } from 'vitest';
 import type { NetworkStatusSourceWarning } from '@/lib/types';
+import { spawnSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 
 const { assertReadinessContract } = await import('../../scripts/lib/readiness-contract.mjs') as {
   assertReadinessContract: (json: unknown) => void;
 };
 
-import { readinessResponse, readyResponse, dynamicFeeSources, runePoolPolSources } from '../helpers/readiness-contract-fixture';
+import { readinessResponse, readyResponse, dynamicFeeSources, runePoolPolSources, controlApplicabilityResponse } from '../helpers/readiness-contract-fixture';
 
 describe('readiness runtime contract helper', () => {
+  it.each([false, true])('keeps Node/jq applicability-warning parity when ready is %s', (ready) => {
+    const response = controlApplicabilityResponse(ready);
+    if (ready) {
+      expect(() => assertReadinessContract(response)).toThrow(/review-only/);
+    } else {
+      expect(() => assertReadinessContract(response)).not.toThrow();
+    }
+    const filter = readFileSync('scripts/lib/readiness-contract.jq', 'utf8');
+    const result = spawnSync('jq', ['-e', `${filter}\nreadiness_valid`], {
+      input: JSON.stringify(response), encoding: 'utf8',
+    });
+    expect(result.error).toBeUndefined();
+    expect(result.status).toBe(ready ? 1 : 0);
+    expect(result.stdout.trim()).toBe(String(!ready));
+  });
   it('accepts the dynamic-fee readiness subsection', () => {
     expect(() => assertReadinessContract(readinessResponse())).not.toThrow();
   });

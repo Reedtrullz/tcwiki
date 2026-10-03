@@ -5,6 +5,7 @@ import type {
   Pool,
   SwapQuoteProbeResult,
 } from '@/lib/types';
+import { hasUnreviewedControlSemantics } from '@/lib/source-warnings';
 
 export type AvailabilityState = 'available' | 'limited' | 'blocked' | 'needs-review' | 'unknown';
 
@@ -217,6 +218,8 @@ export function deriveNodeOperatorActionControls(status: NetworkStatus | undefin
 }
 
 export function deriveChainAvailability(status: NetworkStatus | undefined): ChainAvailability[] {
+  const unreviewed = hasUnreviewedControlSemantics(status);
+  const applicabilityReason = 'Control applicability is unreviewed; raw observations do not prove operation availability.';
   return (status?.chainStatuses ?? [])
     .map((chain) => {
       const reasonGroups = chainReasonGroups(chain);
@@ -246,9 +249,9 @@ export function deriveChainAvailability(status: NetworkStatus | undefined): Chai
         ? limitedCell('Limited', reasonGroups.scopedOperations)
         : availableCell('No scoped halt');
       const dataQuality = chainDataQuality(chain);
-      const reasons = evidenceReasons(chain);
-      const swapLimited = swapReasons.length > 0;
-      const operationLimited = directReasons.length > 0 || dataQuality.state === 'needs-review';
+      const reasons = unreviewed ? [applicabilityReason] : evidenceReasons(chain);
+      const swapLimited = !unreviewed && swapReasons.length > 0;
+      const operationLimited = unreviewed || directReasons.length > 0 || dataQuality.state === 'needs-review';
 
       return {
         chain: chain.chain,
@@ -258,6 +261,14 @@ export function deriveChainAvailability(status: NetworkStatus | undefined): Chai
         poolDeposits,
         scopedOperations,
         dataQuality,
+        ...(unreviewed ? {
+          swapIn: reviewCell('Review applicability', [applicabilityReason]),
+          swapOut: reviewCell('Review applicability', [applicabilityReason]),
+          lpActions: reviewCell('Review applicability', [applicabilityReason]),
+          poolDeposits: reviewCell('Review applicability', [applicabilityReason]),
+          scopedOperations: reviewCell('Review applicability', [applicabilityReason]),
+          dataQuality: reviewCell('Review applicability', [applicabilityReason]),
+        } : {}),
         reasons: reasons.length > 0 ? reasons : ['No active chain-specific swap blocker observed.'],
         swapReasons,
         rawEvidence: {

@@ -16,6 +16,7 @@ const allowedWarningCategories = new Set([
   'mimir-support',
   'unknown-chain',
   'unknown-operation',
+  'control-applicability',
   'other',
 ]);
 

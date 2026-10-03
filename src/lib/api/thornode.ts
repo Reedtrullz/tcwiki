@@ -34,11 +34,15 @@ import {
 import { CHAIN_RECORDS } from '@/lib/data/static';
 import {
   EXACT_MONITORED_MIMIR_KEYS,
+  type OperationalControlActivationMode,
+  OPERATIONAL_CONTROL_CATALOG,
   PREFIX_MONITORED_MIMIR_KEYS,
   REVIEWED_NON_PAUSING_OPERATIONAL_MIMIR_PREFIXES,
   REVIEWED_OPERATIONAL_SUPPORT_MIMIR_PREFIXES,
   UNKNOWN_OPERATION_REVIEW_MIMIR_PREFIXES,
+  getOperationalControlMeaning,
   getOperationalControlCatalogEntry,
+  isOperationalControlSourceReviewed,
 } from '@/lib/operational-controls';
 import { liveDegraded, liveOk } from '@/lib/trust';
 import { isWarningDetail, uniqueSourceWarningDetails } from '@/lib/source-warnings';
@@ -96,7 +100,7 @@ const RUNEPOOL_SIGNED_BASE_UNIT_PATTERN = /^[+-]?\d+$/;
 const RUNEPOOL_UNSIGNED_BASE_UNIT_PATTERN = /^\d+$/;
 const RUNEPOOL_POL_MIMIR_PREFIX = 'POL-';
 
-type MimirActivationMode = 'positive' | 'at-or-after-height' | 'after-height' | 'until-height';
+type MimirActivationMode = OperationalControlActivationMode;
 
 type MimirNumericState =
   | { state: 'absent' }
@@ -756,6 +760,8 @@ function getWarningDetailSnapshotScore(detail: NetworkStatusSourceWarning) {
       return detail.severity === 'critical' ? 120 : 100;
     case 'height-divergence':
       return 80;
+    case 'control-applicability':
+      return 50;
     case 'source-shape':
     case 'mimir-parse':
       return 60;
@@ -1940,7 +1946,7 @@ function getInvalidExactMimirKey(mimir: Record<string, unknown>, key: string): s
     return null;
   }
 
-  return toMimirNumber(mimir[canonicalKey]) === null ? canonicalKey : null;
+  return getMimirNumericState(mimir, key).state === 'unparseable' ? canonicalKey : null;
 }
 
 function getMimirNumericState(mimir: Record<string, unknown>, key: string): MimirNumericState {
@@ -1950,7 +1956,8 @@ function getMimirNumericState(mimir: Record<string, unknown>, key: string): Mimi
   }
 
   const value = toMimirNumber(mimir[canonicalKey]);
-  return value === null
+  // The reviewed /mimir list filters negative unset sentinels; never expand one into a default.
+  return value === null || value < 0
     ? { state: 'unparseable', key: canonicalKey }
     : { state: 'valid', key: canonicalKey, value };
 }
@@ -1969,6 +1976,16 @@ function getMimirActivity(
   const value = getMimirNumericState(mimir, key);
   if (value.state !== 'valid') {
     return value;
+  }
+  if (mode === 'non-positive') {
+    return value.value <= 0
+      ? { state: 'active', key: value.key, value: value.value }
+      : { state: 'inactive', key: value.key, value: value.value };
+  }
+  if (mode === 'until-height' && thorchainHeight !== undefined) {
+    return value.value >= thorchainHeight
+      ? { state: 'active', key: value.key, value: value.value }
+      : { state: 'expired', key: value.key, value: value.value };
   }
   if (value.value <= 0) {
     return { state: 'inactive', key: value.key, value: value.value };
@@ -1998,7 +2015,10 @@ function getMimirActivity(
 function getInvalidMimirKeysByPrefix(mimir: Record<string, unknown>, prefix: string): string[] {
   const normalizedPrefix = prefix.toUpperCase();
   return Object.entries(mimir)
-    .filter(([key, value]) => key.toUpperCase().startsWith(normalizedPrefix) && toMimirNumber(value) === null)
+    .filter(([key, value]) => {
+      const numericValue = toMimirNumber(value);
+      return key.toUpperCase().startsWith(normalizedPrefix) && (numericValue === null || numericValue < 0);
+    })
     .map(([key]) => key)
     .sort();
 }
@@ -2243,15 +2263,6 @@ function getOptionalMimirActive(
       : null;
 }
 
-function isMimirActive(
-  mimir: Record<string, unknown>,
-  key: string,
-  mode: MimirActivationMode = 'positive',
-  thorchainHeight?: number
-): boolean {
-  return getMimirActivity(mimir, key, mode, thorchainHeight).state === 'active';
-}
-
 function isMimirEnabled(mimir: Record<string, unknown>, key: string): boolean | null {
   const value = getMimirNumericState(mimir, key);
   return value.state === 'valid' ? value.value > 0 : null;
@@ -2265,7 +2276,27 @@ function pauseControl(
   mode: MimirActivationMode = 'positive',
   thorchainHeight?: number
 ): OperationalControlStatus {
+  const reviewedMode = getOperationalControlCatalogEntry(key).activationMode;
+  if (reviewedMode === null) {
+    const observed = getMimirNumericState(mimir, key);
+    return {
+      key, label, description, active: false,
+      state: observed.state === 'absent' ? 'not-monitored' : observed.state === 'unparseable' ? 'unparseable' : 'unsupported',
+    };
+  }
+  if (mode !== reviewedMode) {
+    throw new Error(`Operational-control activation mode disagrees with the reviewed catalog for ${key}.`);
+  }
   const value = getMimirActivity(mimir, key, mode, thorchainHeight);
+  if (value.state === 'absent') {
+    return {
+      key,
+      label,
+      state: 'not-monitored',
+      active: false,
+      description,
+    };
+  }
   if (value.state === 'unparseable') {
     return {
       key,
@@ -2297,37 +2328,7 @@ function optionalPauseControl(
   mode: MimirActivationMode = 'positive',
   thorchainHeight?: number
 ): OperationalControlStatus {
-  const value = getMimirActivity(mimir, key, mode, thorchainHeight);
-  if (value.state === 'unparseable') {
-    return {
-      key,
-      label,
-      state: 'unparseable',
-      active: false,
-      description,
-    };
-  }
-  if (value.state === 'absent') {
-    return {
-      key,
-      label,
-      state: 'not-monitored',
-      active: false,
-      description,
-    };
-  }
-
-  return {
-    key,
-    label,
-    state: value.state === 'active' ? 'active' : value.state === 'scheduled' ? 'scheduled' : 'inactive',
-    active: value.state === 'active',
-    description: value.state === 'scheduled'
-      ? `${description} Scheduled for THORChain height ${value.value}.`
-      : value.state === 'expired'
-        ? `${description} Expired at THORChain height ${value.value}.`
-        : description,
-  };
+  return pauseControl(mimir, key, label, description, mode, thorchainHeight);
 }
 
 function enablementControl(
@@ -2336,7 +2337,11 @@ function enablementControl(
   label: string,
   description: string
 ): OperationalControlStatus {
-  const value = getMimirNumericState(mimir, key);
+  const activationMode = getOperationalControlCatalogEntry(key).activationMode;
+  if (activationMode === null) {
+    return pauseControl(mimir, key, label, description);
+  }
+  const value = getMimirActivity(mimir, key, activationMode);
   if (value.state === 'unparseable') {
     return {
       key,
@@ -2359,8 +2364,8 @@ function enablementControl(
   return {
     key,
     label,
-    state: value.value > 0 ? 'inactive' : 'disabled',
-    active: value.value <= 0,
+    state: value.state === 'active' ? 'disabled' : 'inactive',
+    active: value.state === 'active',
     description,
   };
 }
@@ -2388,7 +2393,7 @@ function aggregatePauseControl(
         ? `${invalidKeys.length} scoped key${invalidKeys.length === 1 ? '' : 's'} could not be parsed.`
         : scheduled
           ? `${scheduledKeys.length} scoped key${scheduledKeys.length === 1 ? '' : 's'} scheduled for a future THORChain height.`
-          : inactiveDescription,
+          : `${inactiveDescription} ${getOperationalControlCatalogEntry(key).absenceMeaning}`,
   };
 }
 
@@ -2397,7 +2402,7 @@ function controlLabel(key: string) {
 }
 
 function controlDescription(key: string) {
-  return getOperationalControlCatalogEntry(key).description;
+  return getOperationalControlMeaning(key);
 }
 
 function aggregateControlDescription(key: string) {
@@ -2525,7 +2530,8 @@ export function deriveNetworkStatus(
   const tradingPaused = Boolean(tradingPausedKey);
   const signingPaused = Boolean(signingPausedKey);
   const lpPaused = Boolean(lpPausedKey);
-  const loansPaused = isMimirActive(mimir, 'PAUSELOANS');
+  // No reviewed activation rule for the legacy loan control at this source revision.
+  const loansPaused = null;
   const observedChainsPaused = Boolean(observedChainsPausedKey);
   const streamingSwapsPaused = getOptionalMimirActive(mimir, 'StreamingSwapPause');
   const memolessTransactionsHalted = getOptionalMimirActive(mimir, 'HaltMemoless');
@@ -2534,7 +2540,7 @@ export function deriveNetworkStatus(
   const unbondPaused = getOptionalMimirActive(mimir, 'PauseUnbond');
   const rebondHalted = getOptionalMimirActive(mimir, 'HaltRebond');
   const operatorRotateHalted = getOptionalMimirActive(mimir, 'HaltOperatorRotate');
-  const oracleHalted = getOptionalMimirActive(mimir, 'HaltOracle');
+  const oracleHalted = null;
   const securedAssetsPaused = getOptionalMimirActive(mimir, 'HALTSECUREDGLOBAL', 'at-or-after-height', thorchainHeight);
   const tcyClaimingPaused = getOptionalMimirActive(mimir, 'TCYCLAIMINGHALT');
   const tcyClaimingSwapPaused = getOptionalMimirActive(mimir, 'TCYCLAIMINGSWAPHALT');
@@ -2793,7 +2799,7 @@ export function deriveNetworkStatus(
       : chainStatus;
   });
 
-  const monitoredControls: OperationalControlStatus[] = [
+  const parsedMonitoredControls: OperationalControlStatus[] = [
     pauseControl(mimir, 'HALTTRADING', controlLabel('HALTTRADING'), controlDescription('HALTTRADING'), 'at-or-after-height', thorchainHeight),
     optionalPauseControl(mimir, 'StreamingSwapPause', controlLabel('StreamingSwapPause'), controlDescription('StreamingSwapPause')),
     optionalPauseControl(mimir, 'HaltMemoless', controlLabel('HaltMemoless'), controlDescription('HaltMemoless')),
@@ -2904,6 +2910,28 @@ export function deriveNetworkStatus(
     enablementControl(mimir, 'BANKSENDENABLED', controlLabel('BANKSENDENABLED'), controlDescription('BANKSENDENABLED')),
   ];
 
+  const runtimeReviewed = isOperationalControlSourceReviewed(thorNodeVersion);
+  const unsupportedKeys = OPERATIONAL_CONTROL_CATALOG.filter((control) => (
+    !runtimeReviewed || (control.activationMode === null && getCanonicalMimirKey(mimir, control.key) !== undefined)
+  )).map((control) => control.key);
+  const unsupportedControlSemantics = unsupportedKeys.length > 0
+    ? warningDetail({
+        severity: 'review',
+        category: 'control-applicability',
+        message: `Operational-control semantics have not been reviewed for THORNode ${thorNodeVersion || 'unknown'}: ${unsupportedKeys.join(', ')}.`,
+        action: 'Review the exact THORNode source revision before interpreting monitored control values.',
+        keys: unsupportedKeys,
+      })
+    : undefined;
+  const monitoredControls = unsupportedControlSemantics
+    ? parsedMonitoredControls.map((control) => unsupportedKeys.includes(control.key) ? ({
+        ...control,
+        state: control.state === 'unparseable' ? 'unparseable' as const : 'unsupported' as const,
+        active: false,
+        description: `${control.description} Applicability is unreviewed for THORNode ${thorNodeVersion || 'unknown'}.`,
+      }) : control)
+    : parsedMonitoredControls;
+
   const activeControlKeys = monitoredControls
     .filter((control) => control.active)
     .map((control) => control.key);
@@ -2927,6 +2955,7 @@ export function deriveNetworkStatus(
     : null;
   const sourceWarningDetails = uniqueSourceWarningDetails([
     ...(options.sourceWarningDetails ?? []),
+    ...(unsupportedControlSemantics ? [unsupportedControlSemantics] : []),
     ...(options.sourceWarnings ?? [])
       .filter((message) => !options.sourceWarningDetails?.some((detail) => detail.message === message))
       .map((warning) => classifyNetworkSourceWarning(warning)),
@@ -3014,47 +3043,49 @@ export function deriveNetworkStatus(
   const hasSourceWarnings = sourceWarnings.length > 0;
 
   return {
-    state: isPaused ? 'paused' : hasSourceWarnings ? 'degraded' : 'operational',
-    summary: isPaused
+    state: !runtimeReviewed ? 'degraded' : isPaused ? 'paused' : hasSourceWarnings ? 'degraded' : 'operational',
+    summary: unsupportedControlSemantics
+      ? 'Operational-control applicability needs review. Raw Mimir values are retained; operation availability cannot be classified as clean.'
+      : isPaused
       ? hasSourceWarnings
         ? 'Current-only live sources show one or more THORChain operations paused, with source warnings to review.'
         : 'Current-only live sources show one or more THORChain operations paused.'
       : hasSourceWarnings
         ? 'Current-only live sources do not show active halt flags, but source warnings need review.'
         : 'Current-only live sources do not show global halt flags.',
-    tradingPaused,
-    streamingSwapsPaused,
-    memolessTransactionsHalted,
-    signingPaused: signingPaused || chainStatuses.some((chain) => chain.signingPaused),
-    lpPaused,
-    loansPaused,
-    observedChainsPaused,
-    nodePauseChainGlobal,
-    bondPaused,
-    unbondPaused,
-    rebondHalted,
-    operatorRotateHalted,
-    oracleHalted,
-    securedAssetsPaused,
+    tradingPaused: runtimeReviewed ? tradingPaused : null,
+    streamingSwapsPaused: runtimeReviewed ? streamingSwapsPaused : null,
+    memolessTransactionsHalted: runtimeReviewed ? memolessTransactionsHalted : null,
+    signingPaused: runtimeReviewed ? signingPaused || chainStatuses.some((chain) => chain.signingPaused) : null,
+    lpPaused: runtimeReviewed ? lpPaused : null,
+    loansPaused: runtimeReviewed ? loansPaused : null,
+    observedChainsPaused: runtimeReviewed ? observedChainsPaused : null,
+    nodePauseChainGlobal: runtimeReviewed ? nodePauseChainGlobal : null,
+    bondPaused: runtimeReviewed ? bondPaused : null,
+    unbondPaused: runtimeReviewed ? unbondPaused : null,
+    rebondHalted: runtimeReviewed ? rebondHalted : null,
+    operatorRotateHalted: runtimeReviewed ? operatorRotateHalted : null,
+    oracleHalted: runtimeReviewed ? oracleHalted : null,
+    securedAssetsPaused: runtimeReviewed ? securedAssetsPaused : null,
     securedAssetDepositPauseKeys,
     securedAssetWithdrawPauseKeys,
     asymWithdrawalPauseKeys,
-    tcyClaimingPaused,
-    tcyClaimingSwapPaused,
-    tcyStakingPaused,
-    tcyStakeDistributionPaused,
-    tcyUnstakingPaused,
-    tcyTradingPaused,
-    tradeAccountsEnabled,
-    tradeAccountDepositsEnabled,
+    tcyClaimingPaused: runtimeReviewed ? tcyClaimingPaused : null,
+    tcyClaimingSwapPaused: runtimeReviewed ? tcyClaimingSwapPaused : null,
+    tcyStakingPaused: runtimeReviewed ? tcyStakingPaused : null,
+    tcyStakeDistributionPaused: runtimeReviewed ? tcyStakeDistributionPaused : null,
+    tcyUnstakingPaused: runtimeReviewed ? tcyUnstakingPaused : null,
+    tcyTradingPaused: runtimeReviewed ? tcyTradingPaused : null,
+    tradeAccountsEnabled: runtimeReviewed ? tradeAccountsEnabled : null,
+    tradeAccountDepositsEnabled: runtimeReviewed ? tradeAccountDepositsEnabled : null,
     tradeAccountDepositPauseKeys,
     tradeAccountWithdrawPauseKeys,
-    manualSwapsToSynthDisabled,
-    runePoolEnabled,
-    bankSendEnabled,
-    runePoolDepositPaused,
-    runePoolWithdrawPaused,
-    wasmPaused,
+    manualSwapsToSynthDisabled: runtimeReviewed ? manualSwapsToSynthDisabled : null,
+    runePoolEnabled: runtimeReviewed ? runePoolEnabled : null,
+    bankSendEnabled: runtimeReviewed ? bankSendEnabled : null,
+    runePoolDepositPaused: runtimeReviewed ? runePoolDepositPaused : null,
+    runePoolWithdrawPaused: runtimeReviewed ? runePoolWithdrawPaused : null,
+    wasmPaused: runtimeReviewed ? wasmPaused : null,
     wasmDeployerHaltKeys,
     wasmCodeHashHaltKeys,
     wasmContractHaltKeys,
@@ -3067,6 +3098,7 @@ export function deriveNetworkStatus(
     activeEvidenceKeys,
     activePauseKeys,
     monitoredControls,
+    observedMimir: { ...mimir },
     thorNodeVersion,
     thorchainHeight,
     thorchainSnapshotPinned: options.thorchainSnapshotPinned,

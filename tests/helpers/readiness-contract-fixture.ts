@@ -148,3 +148,21 @@ export function readyResponse() {
   response.sources.thornode.runePoolPol.sourceWarningDetails = [];
   return response;
 }
+
+export function controlApplicabilityResponse(ready: boolean) {
+  const response = readyResponse();
+  const detail: NetworkStatusSourceWarning = {
+    severity: 'review',
+    category: 'control-applicability',
+    message: 'Operational-control semantics have not been reviewed for the reported THORNode version.',
+    action: 'Review the exact source revision before interpreting these controls.',
+    keys: ['HALTTRADING'],
+  };
+  response.status = ready ? 'ready' : 'degraded';
+  response.ready = ready;
+  response.warnings = [detail.message];
+  response.sources.thornode.sourceWarnings = [detail.message];
+  response.sources.thornode.sourceWarningDetails = [detail];
+  response.reasons = ready ? [] : [detail.message];
+  return response;
+}

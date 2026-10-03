@@ -12,6 +12,23 @@ export type OperationalControlArea =
   | 'synths'
   | 'bank sends';
 
+export type OperationalControlActivationMode =
+  | 'positive'
+  | 'non-positive'
+  | 'at-or-after-height'
+  | 'after-height'
+  | 'until-height';
+
+export const REVIEWED_OPERATIONAL_CONTROL_SOURCE = {
+  versionRange: '3.20.3',
+  tag: 'v3.20.3',
+  commit: 'b08d81f79275093b0fcb753e0d68ff1c16c51cb8',
+  url: 'https://gitlab.com/thorchain/thornode/-/tree/b08d81f79275093b0fcb753e0d68ff1c16c51cb8',
+} as const;
+
+export const OPERATIONAL_CONTROL_ABSENCE_MEANING =
+  'When absent: no Mimir override was returned; the effective protocol default is not inferred.';
+
 export interface OperationalControlCatalogEntry {
   key: string;
   label: string;
@@ -19,9 +36,13 @@ export interface OperationalControlCatalogEntry {
   description: string;
   searchTerms: string[];
   scoped?: boolean;
+  activationMode: OperationalControlActivationMode | null;
+  absenceMeaning: string;
+  scope: string;
+  reviewedSource: typeof REVIEWED_OPERATIONAL_CONTROL_SOURCE;
 }
 
-export const OPERATIONAL_CONTROL_CATALOG: OperationalControlCatalogEntry[] = [
+const CONTROL_DEFINITIONS: Omit<OperationalControlCatalogEntry, 'activationMode' | 'absenceMeaning' | 'scope' | 'reviewedSource'>[] = [
   {
     key: 'HALTTRADING',
     label: 'Trading',
@@ -69,7 +90,7 @@ export const OPERATIONAL_CONTROL_CATALOG: OperationalControlCatalogEntry[] = [
     key: 'PauseAsymWithdrawal-*',
     label: 'Asym LP withdrawals',
     area: 'liquidity',
-    description: 'Asymmetric liquidity withdrawals are paused for one or more chains.',
+    description: 'For dual-address LPs, a positive chain-specific flag selects symmetric withdrawal instead of the requested asymmetric asset.',
     searchTerms: ['asymmetric withdrawal', 'asym withdrawal', 'LP withdrawal'],
     scoped: true,
   },
@@ -91,14 +112,14 @@ export const OPERATIONAL_CONTROL_CATALOG: OperationalControlCatalogEntry[] = [
     key: 'PAUSELOANS',
     label: 'Loans',
     area: 'loans',
-    description: 'Legacy loan actions are paused when active.',
+    description: 'Legacy loan-control values are retained for review; no activation rule is verified in this release.',
     searchTerms: ['THORFi loans', 'lending', 'loan pause'],
   },
   {
     key: 'HALTCHAINGLOBAL',
     label: 'Chain observation',
     area: 'signing and observation',
-    description: 'Global chain observation is halted when active.',
+    description: 'Global chain operations are halted when active; observers may continue reporting transactions.',
     searchTerms: ['chain halt', 'observation halt', 'inbound observation'],
   },
   {
@@ -147,7 +168,7 @@ export const OPERATIONAL_CONTROL_CATALOG: OperationalControlCatalogEntry[] = [
     key: 'HaltOracle',
     label: 'Oracle',
     area: 'app layer',
-    description: 'Oracle operations are halted when active.',
+    description: 'Oracle-control values are retained for review; no activation rule is verified in this release.',
     searchTerms: ['oracle halt', 'app layer oracle', 'price feed'],
   },
   {
@@ -299,6 +320,60 @@ export const OPERATIONAL_CONTROL_CATALOG: OperationalControlCatalogEntry[] = [
   },
 ];
 
+const CONTROL_SEMANTICS: Record<string, { activationMode: OperationalControlActivationMode | null; scope: string }> = {
+  HALTTRADING: { activationMode: 'at-or-after-height', scope: 'Network-wide trading' },
+  StreamingSwapPause: { activationMode: 'positive', scope: 'Network-wide streaming swaps' },
+  HaltMemoless: { activationMode: 'positive', scope: 'Network-wide memoless handling' },
+  HALTSIGNING: { activationMode: 'at-or-after-height', scope: 'Network-wide outbound signing' },
+  PAUSELP: { activationMode: 'at-or-after-height', scope: 'Network-wide liquidity actions' },
+  'PAUSELPDEPOSIT-*': { activationMode: 'positive', scope: 'Pool-specific deposits' },
+  'PauseAsymWithdrawal-*': { activationMode: 'positive', scope: 'Chain-specific asymmetric selection for dual-address LPs' },
+  RUNEPoolHaltDeposit: { activationMode: 'at-or-after-height', scope: 'Network-wide RUNEPool deposits' },
+  RUNEPoolHaltWithdraw: { activationMode: 'at-or-after-height', scope: 'Network-wide RUNEPool withdrawals' },
+  PAUSELOANS: { activationMode: null, scope: 'Legacy loans; applicability unverified' },
+  HALTCHAINGLOBAL: { activationMode: 'at-or-after-height', scope: 'Network-wide chain operation halt' },
+  NODEPAUSECHAINGLOBAL: { activationMode: 'until-height', scope: 'Network-wide node-requested chain pause' },
+  HALTCHURNING: { activationMode: 'at-or-after-height', scope: 'Network-wide validator churn' },
+  PauseBond: { activationMode: 'positive', scope: 'Network-wide bonding' },
+  PauseUnbond: { activationMode: 'positive', scope: 'Network-wide unbonding' },
+  HaltRebond: { activationMode: 'positive', scope: 'Network-wide rebonding' },
+  HaltOperatorRotate: { activationMode: 'positive', scope: 'Network-wide operator rotation' },
+  HaltOracle: { activationMode: null, scope: 'Oracle operations; applicability unverified' },
+  HALTSECUREDGLOBAL: { activationMode: 'at-or-after-height', scope: 'Network-wide secured assets' },
+  'HaltSecuredDeposit-*': { activationMode: 'at-or-after-height', scope: 'Chain-specific secured deposits' },
+  'HaltSecuredWithdraw-*': { activationMode: 'at-or-after-height', scope: 'Chain-specific secured withdrawals' },
+  TCYCLAIMINGHALT: { activationMode: 'positive', scope: 'Network-wide TCY claims' },
+  TCYCLAIMINGSWAPHALT: { activationMode: 'positive', scope: 'Network-wide TCY claim swaps' },
+  TCYSTAKINGHALT: { activationMode: 'positive', scope: 'Network-wide TCY staking' },
+  TCYSTAKEDISTRIBUTIONHALT: { activationMode: 'positive', scope: 'Network-wide TCY distributions' },
+  TCYUNSTAKINGHALT: { activationMode: 'positive', scope: 'Network-wide TCY unstaking' },
+  HALTTCYTRADING: { activationMode: 'at-or-after-height', scope: 'Network-wide TCY trading' },
+  HALTWASMGLOBAL: { activationMode: 'after-height', scope: 'Network-wide WASM/app layer' },
+  'HaltWasmDeployer-*': { activationMode: 'after-height', scope: 'WASM deployer address' },
+  'HaltWasmCs-*': { activationMode: 'after-height', scope: 'WASM checksum encoded as unpadded base32' },
+  'HaltWasmContract-*': { activationMode: 'after-height', scope: 'Last six characters of a WASM contract address' },
+  TRADEACCOUNTSENABLED: { activationMode: 'non-positive', scope: 'Network-wide trade-account availability' },
+  TRADEACCOUNTSDEPOSITENABLED: { activationMode: 'non-positive', scope: 'Network-wide trade-account deposits' },
+  'HaltTradeDeposit-*': { activationMode: 'at-or-after-height', scope: 'Chain-specific trade-account deposits' },
+  'HaltTradeWithdraw-*': { activationMode: 'at-or-after-height', scope: 'Chain-specific trade-account withdrawals' },
+  MANUALSWAPSTOSYNTHDISABLED: { activationMode: 'positive', scope: 'Network-wide manual synth swaps' },
+  RUNEPOOLENABLED: { activationMode: 'non-positive', scope: 'Network-wide RUNEPool availability' },
+  BANKSENDENABLED: { activationMode: 'non-positive', scope: 'Network-wide bank sends' },
+};
+
+export const OPERATIONAL_CONTROL_CATALOG: OperationalControlCatalogEntry[] = CONTROL_DEFINITIONS.map((definition) => {
+  const semantics = CONTROL_SEMANTICS[definition.key];
+  if (!semantics) {
+    throw new Error(`Missing reviewed operational-control semantics for ${definition.key}.`);
+  }
+  return {
+    ...definition,
+    ...semantics,
+    absenceMeaning: OPERATIONAL_CONTROL_ABSENCE_MEANING,
+    reviewedSource: REVIEWED_OPERATIONAL_CONTROL_SOURCE,
+  };
+});
+
 export const EXACT_MONITORED_MIMIR_KEYS = OPERATIONAL_CONTROL_CATALOG
   .filter((control) => !control.scoped)
   .map((control) => control.key);
@@ -342,6 +417,15 @@ export function getOperationalControlCatalogEntry(key: string) {
     throw new Error(`Missing operational control catalog entry for ${key}.`);
   }
   return entry;
+}
+
+export function isOperationalControlSourceReviewed(version: string | undefined) {
+  return version?.replace(/^v/, '') === REVIEWED_OPERATIONAL_CONTROL_SOURCE.versionRange;
+}
+
+export function getOperationalControlMeaning(key: string) {
+  const control = getOperationalControlCatalogEntry(key);
+  return `${control.description} Activation: ${control.activationMode ?? 'unsupported'}. Scope: ${control.scope}. ${control.absenceMeaning} Source reviewed at THORNode ${control.reviewedSource.versionRange} (${control.reviewedSource.commit}).`;
 }
 
 export function operationalControlPrefixSearchKey(key: string) {
