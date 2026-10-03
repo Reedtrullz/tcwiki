@@ -3,6 +3,7 @@ import type { Page, Route } from '@playwright/test';
 interface SwapperFirstNetworkMockOptions {
   mimir?: Record<string, unknown>;
   quoteExpiry?: number | null;
+  version?: string;
 }
 
 export async function fulfillJson(route: Route, value: unknown) {
@@ -56,7 +57,7 @@ export async function mockSwapperFirstNetwork(page: Page, options: SwapperFirstN
     ]);
   });
   await page.route(/\/thorchain\/version(?:\?.*)?$/, async (route) => {
-    await fulfillJson(route, { current: '3.19.2' });
+    await fulfillJson(route, { current: options.version ?? '3.20.3' });
   });
   await page.route(/\/thorchain\/lastblock(?:\?.*)?$/, async (route) => {
     await fulfillJson(route, [

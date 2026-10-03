@@ -46,10 +46,10 @@ Execute all accepted work and create/push GitHub PRs; do not merge to main. User
 | PR-07 | PR235 open; integration in progress | d0bb5a9;597units;both builds/smoke;offline aging/recovery each runtime; combine234 for economics destinations |
 | PR-57 | PR229 open; CI passed | 433465e; CI37084390703; bounded decoded JSON/rows/depth/string/numeric fields |
 | PR-44 | PR230 open; successor audit gate passed | 6852c2c+70a08a3; strict official echoed height and CORS evidence; full audit failure retained; scoped exception proposed PR232 |
-| PR-42 | queued | issue #141 |
+| PR-42 | PR237 open; CI passed | 88e2890; CI37090784031SUCCESS;609units/20networkchecks eachtarget |
 | PR-51 | PR231 open; successor audit gate passed | e425f90; Node absent host; shared JS/jq fixtures,584units; own CI full-audit failure retained; scoped exception proposed PR232 |
-| PR-16 | queued | issue #181 |
-| PR-45 | queued | issue #144 |
+| PR-16 | PR238 open; local verified | 98c75ed;612units/16runtime-feechecks eachtarget; origin/source/feature receipts and deduplicated incident lifecycle |
+| PR-45 | verified candidate; publication pending | immutableTHORNode3.20.3/b08d81f;36activation rules verified/2unsupported;620units;strictJS/jq applicabilityparity;rawcontrols retained;38network/economics/runtimechecks pertarget |
 | PR-52 | queued | issue #151 |
 | PR-04 | PR218 open; CI passed | 6b130055; CI37039713892; completed UTC day/zero/duplicate/gap/rollover; separate aggregate and actual comparison days |
 | PR-38 | PR220 open; CI passed | 0982935; https://github.com/Reedtrullz/tcwiki/pull/220; CI37040858697; full542/types/lint/both builds; UTC chronology/gaps/overlap; 11 checks each Next/CF stats; full32 CF checks, one desktop-only skip |
@@ -135,3 +135,5 @@ PR66 candidate: direct/reload/history/keyboard disclosure destinations and unava
 Integration of235 and234 preserves both POL price provenance and browser stale-operation tests. Only unit-file append and progress-ledger conflicts required resolution; no product conflict. Full combined-runtime proof is pending.
 
 Combined candidate:603units/types/lint/both builds/smoke. First broad Next129pass/6fail/5skip and CF123pass/12fail/5skip retained as failed evidence. Server navigator without onLine caused false-offline SSR; connectivity now starts shared and is observed after hydration, with direct Node-like navigator regression. Failed dataset badge assertions now expect Unavailable. Focus must be established before reader-closure assertion. Final focused Next14pass; CF36pass then anchor6pass; initial broad unrelated passes remain prior-source evidence. PR235 initial CI37089728660 failed and hydration fixd78a2c4 published; economics fragment acceptance requires234 combined candidate.234 CI passed.
+
+PR45: parent immutable-source retrieval independently matched keeper_halt/manager_wasm/handler_rune_pool_deposit complete-file hashes; exclusive/inclusive boundaries agree. Catalog exactreview3.20.3;older/newer/missingversions withdraw rootinterpretations and retainrawMimirs. PAUSELOANS/HaltOracle remainunsupported. JS/jq recognize blocking applicabilitycategory. Merge with236 retained both freshness and applicability rules. Full620units/types/lint/content/bothbuilds/Nextsmoke;38network/economics/runtimebrowserchecks eachNext/CF passed, including unsupportedversion with rawcontrols visible/no positive availability. Live readiness continues to disclose PAUSELOANS applicability and14sblockage; thresholds unchanged. No merge/deploy.
