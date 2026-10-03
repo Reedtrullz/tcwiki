@@ -1,10 +1,12 @@
 import './require-node22.mjs';
-import { appendFile, readFile } from 'node:fs/promises';
+import { appendFile, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
+import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { createJiti } from 'jiti';
 import {
   buildContentReviewSchedule,
+  buildReviewIssueDraft,
   formatContentReviewSchedule,
   writeContentReviewSchedule,
 } from './lib/content-review-schedule.mjs';
@@ -52,6 +54,8 @@ function addFreshnessRecords(items, collection, records) {
       path: `src/lib/data/static.ts#${collection}[${id}]`,
       reviewedAt: record.freshness.checkedAt,
       nextReviewDue: record.freshness.nextReviewDue,
+      owner: record.freshness.reviewedBy,
+      sourceUrls: (record.sources ?? []).map(source => source.url),
     });
   });
 }
@@ -72,6 +76,7 @@ function addReviewEntries(items, collection, entries, sourcePath) {
       path: `${sourcePath}#${collection}[${id}]`,
       reviewedAt: entry.reviewedAt,
       nextReviewDue: entry.nextReviewDue,
+      sourceUrls: (entry.sources ?? []).map(source => source.url),
     });
   });
 }
@@ -112,6 +117,27 @@ addReviewEntries(items, 'TASK_INTENT_GUIDES', contentRegistry.TASK_INTENT_GUIDES
 addReviewEntries(items, 'GLOSSARY_DEFINITION_PATHS', glossary.GLOSSARY_DEFINITION_PATHS, 'src/lib/content/glossary.ts');
 addReviewEntries(items, 'GLOSSARY_TERMS', glossary.GLOSSARY_TERMS, 'src/lib/content/glossary.ts');
 
+const sourceDriftPath = optionValue(args, '--source-drift', '');
+if (sourceDriftPath) {
+  const bytes = await readFile(sourceDriftPath);
+  if (bytes.length > 2 * 1024 * 1024) throw new Error('Source-change context exceeds2MiB');
+  const report = JSON.parse(bytes.toString('utf8'));
+  if (report.kind !== 'tcwiki-canonical-source-drift' || !Array.isArray(report.checks) || report.checks.length > 20) throw new Error('Expected bounded canonical source-drift report');
+  for (const item of items) {
+    const related = report.checks.filter(check => check.affectedRecords?.includes(item.id) && check.status !== 'unchanged');
+    if (related.length) item.sourceChangeContext = related.map(check => `${String(check.id).slice(0, 80)}: ${String(check.status).slice(0, 80)} (fetch/diff is not review)`).join('; ').slice(0, 500);
+  }
+}
+const commit = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim();
+if (!/^[a-f0-9]{40}$/.test(commit)) throw new Error('Review record links require checkout commit');
+for (const item of items) {
+  const file = item.path.split('#')[0];
+  const source = execFileSync('git', ['show', `${commit}:${file}`], { cwd: root, encoding: 'utf8', maxBuffer: 2 * 1024 * 1024 }); // Lines must match the linked commit, not uncommitted working copy.
+  const escaped = item.id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const match = new RegExp(`(?:id|term|name|chain|title):\\s*['\"]${escaped}['\"]`).exec(source);
+  const line = match ? source.slice(0, match.index).split('\n').length : undefined;
+  item.recordHref = `https://github.com/Reedtrullz/tcwiki/blob/${commit}/${file}${line ? '#L' + line : ''}`;
+}
 const schedule = buildContentReviewSchedule({
   items: dedupeItems(items),
   today,
@@ -120,7 +146,25 @@ const schedule = buildContentReviewSchedule({
 });
 const markdown = formatContentReviewSchedule(schedule);
 await writeContentReviewSchedule(schedule, artifactPath);
+const markdownPath = optionValue(args, '--markdown', artifactPath.replace(/\.json$/, '') + '.md');
+await writeFile(markdownPath, markdown + '\n', 'utf8');
 console.log(markdown);
+const selected = optionValue(args, '--issue-draft', '');
+if (selected) {
+  const item = schedule.items.find(item => `${item.collection}:${item.id}` === selected);
+  if (!item) throw new Error('Selected review record does not exist');
+  const existingPath = optionValue(args, '--existing-issues', '');
+  let existing = [];
+  if (existingPath) {
+    const bytes = await readFile(existingPath);
+    if (bytes.length > 128 * 1024) throw new Error('Existing issue evidence exceeds128KiB');
+    existing = JSON.parse(bytes.toString('utf8'));
+  }
+  const draft = buildReviewIssueDraft(item, existing);
+  const draftPath = optionValue(args, '--draft-output', artifactPath.replace(/\.json$/, '') + '-issue-draft.json');
+  await writeFile(draftPath, JSON.stringify(draft, null, 2) + '\n', 'utf8');
+  console.log(draft.duplicateUrl ? `Existing review task: ${draft.duplicateUrl}` : `Local review draft written to ${draftPath}; no issue published. Check existing tasks before opening the prefilled URL.`);
+}
 console.log(`\nContent review evidence written to ${artifactPath}`);
 
 if (process.env.GITHUB_STEP_SUMMARY) {

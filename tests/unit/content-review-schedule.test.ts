@@ -12,6 +12,10 @@ const { buildContentReviewSchedule, formatContentReviewSchedule } = await import
       path: string;
       reviewedAt: string;
       nextReviewDue: string;
+      owner?: string;
+      sourceUrls?: string[];
+      recordHref?: string;
+      sourceChangeContext?: string;
     }>;
   }) => {
     status: string;
@@ -97,4 +101,37 @@ it('requires a concrete safe follow-up reference for exemptions', () => {
   for (const followUp of ['', 'javascript:alert(1)']) {
     expect(() => buildContentReviewSchedule({ today: '2026-07-13', items: [item('selected', '2026-07-12')], exceptions: [{ ...exemption, followUp }] })).toThrow();
   }
+});
+
+const { buildReviewIssueDraft } = await import('../../scripts/lib/content-review-schedule.mjs') as { buildReviewIssueDraft: (item: { id: string; collection: string; label: string; path: string; nextReviewDue: string; reviewedAt: string; owner?: string; sourceUrls?: string[]; recordHref?: string }, existing?: Array<{ body: string; url?: string }>) => { duplicateUrl?: string; marker: string; body: string; title: string; newIssueUrl?: string } };
+
+it('renders an actionable source and ownership queue without fabricating a reviewer', () => {
+  const schedule = buildContentReviewSchedule({ today: '2026-07-13', items: [{ ...item('source-change', '2026-07-12'), sourceChangeContext: 'memos: changed (fetch/diff is not review)', sourceUrls: ['https://docs.thorchain.org'], recordHref: 'https://github.com/Reedtrullz/tcwiki/blob/main/src/test.ts#L12' }] });
+  const markdown = formatContentReviewSchedule(schedule);
+  expect(markdown).toContain('unassigned');
+  expect(markdown).toContain('https://docs.thorchain.org');
+  expect(markdown).toContain('src/test.ts#L12');
+  expect(markdown).toContain('source-change');
+  expect(markdown).toContain('due date passed');
+  expect(markdown).toContain('memos: changed (fetch/diff is not review)');
+});
+
+it('exports one stable review draft and recognizes an existing matching task', () => {
+  const record = { ...item('source-change', '2026-07-12'), sourceUrls: ['https://docs.thorchain.org'] };
+  const draft = buildReviewIssueDraft(record);
+  expect(draft.marker).toBe(buildReviewIssueDraft(record).marker);
+  expect(draft.body).toContain('Review decision and supporting evidence');
+  expect(draft.body).toContain('Do not reset unrelated review dates');
+  expect(draft.newIssueUrl).toContain('https://github.com/Reedtrullz/tcwiki/issues/new?');
+  const duplicate = buildReviewIssueDraft(record, [{ body: draft.body, url: 'https://github.com/Reedtrullz/tcwiki/issues/123' }]);
+  expect(duplicate.duplicateUrl).toBe('https://github.com/Reedtrullz/tcwiki/issues/123');
+  expect(duplicate.newIssueUrl).toBeUndefined();
+});
+
+it('surfaces a changed source before the editorial due date without resetting that date', () => {
+  const schedule = buildContentReviewSchedule({ today: '2026-07-13', items: [{ ...item('future', '2026-09-01'), sourceChangeContext: 'memos: changed (fetch/diff is not review)' }] });
+  expect(schedule.attentionItems).toHaveLength(1);
+  expect(schedule.attentionItems[0].status).toBe('later');
+  expect(formatContentReviewSchedule(schedule)).toContain('before scheduled due date');
+  expect(formatContentReviewSchedule(schedule)).toContain('2026-09-01');
 });

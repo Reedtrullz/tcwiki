@@ -87,6 +87,12 @@ For application behavior, run focused units, typecheck and lint, then build and 
 
 Preserve author/source attribution and identify externally quoted material. The [rights inventory](docs/rights-and-attribution.md) and owner licensing decision must govern redistribution; this guide grants no additional rights to third-party material.
 
+## Working through the editorial queue
+
+`npm run report:content-reviews` writes JSON plus a linked Markdown queue and the CI step summary. Follow its exact record/source links, record the supporting source revision and decision, then update only reviewed fields. A source change or successful fetch does not complete a review. `--allow-overdue` is explicitly evidence-only.
+
+For a selected item, add `--issue-draft COLLECTION:ID`; this exports a local prefilled issue draft without publishing. Supply `--existing-issues <body-url-array.json>` to detect tasks with its stable marker; search for older unmarked issues before opening the draft URL. Optional `--source-drift <canonical-report.json>` adds changed/blocked source context without resetting dates. See the [editorial queue review](docs/reviews/2026-10-03-pr29-editorial-queue.md) for the complete example and limits.
+
 ## Common Contribution Tasks
 
 ### Edit an existing overview page

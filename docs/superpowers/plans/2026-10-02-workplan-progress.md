@@ -74,7 +74,7 @@ Execute all accepted work and create/push GitHub PRs; do not merge to main. User
 | PR-50 | queued | issue #149 |
 | PR-27 | queued | issue #192 |
 | PR-28 | queued | issue #193 |
-| PR-29 | queued | issue #194 |
+| PR-29 | verified candidate; publishing | issue #194; linked161recordqueue/source/owner/due/reason, optional source-change context; selected local draft/stablemarker/duplicatefixture;8focusedtests/types/lint; no issue publication |
 | PR-30 | queued | issue #195 |
 | PR-32 | verified candidate; publishing | issue #197; two issue templates, focused PR template, complete source correction example; front matter/manual links/content/tracked-input verification |
 | PR-31 | queued | issue #196 |
