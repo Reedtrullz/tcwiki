@@ -84,6 +84,6 @@ test.describe('THORChain Wiki Economics Smoke Tests', () => {
     const panel = page.locator('#runepool-pol-live');
     await expect(panel.getByText('Price source unavailable; USD valuation withheld.')).toBeVisible();
     await expect(panel.getByText(/3,740,894 RUNE/).first()).toBeVisible();
-    await expect(panel.getByText('Degraded').first()).toBeVisible();
+    await expect(panel.getByText('Unavailable', { exact: true }).first()).toBeVisible();
   });
 });

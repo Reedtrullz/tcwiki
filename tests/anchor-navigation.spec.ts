@@ -16,6 +16,7 @@ for (const href of ['/economics#runepool-pol-live', '/dynamic-fees#dynamic-fee-c
     await page.reload();
     await expect(target).toBeVisible();
     await expect.poll(async () => (await target.boundingBox())?.y ?? Infinity).toBeLessThan(300);
+    await expect(target).toBeFocused();
     // Reader closing is preserved until another explicit fragment navigation.
     const details = target.locator('xpath=ancestor-or-self::details[1]');
     await details.locator(':scope > summary').click();
