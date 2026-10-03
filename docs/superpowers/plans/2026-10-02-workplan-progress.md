@@ -91,7 +91,7 @@ Execute all accepted work and create/push GitHub PRs; do not merge to main. User
 | PR-61 | inventory candidate; owner decision pending | issue #160; README unbacked MIT claim corrected without choosing license;17MDX/126TS files/categories and Discord quotation exclusions recorded; explicit earlier owner choice remains unanswered; full-text exports gated |
 | PR-23 | queued | issue #188 |
 | PR-69 | queued | issue #204 |
-| PR-67 | queued | issue #202 |
+| PR-67 | verified dated examples; PR publication | Four centralized source-hashed records; 691 units; both builds/smoke and 14 desktop/mobile guide/link/evidence checks each runtime; unknown settlement retained |
 | PR-60 | queued | issue #159 |
 | PR-68 | queued | issue #203 |
 | PR-34 | queued | issue #199 |
@@ -164,3 +164,4 @@ PR23 candidate: curatedarticle print + text/Markdowncitation copy/visiblefallbac
 PR62 final: metadata-onlythree-claimcohort/registrylinks, deterministic identity/checksum plus direct stale/deletedlinkchecks and consistentgraphnodeIDs. 701units,types/lint/content/bothfinalbuilds/Nextsmoke and14desktop/mobilechecks eachactualruntime passed. Enclosingconfidence and independentclaimdecisions preserved; fullarticlelicense unresolved. No mainmerge/deploy.
 
 PR35 disposition: bounded one-cohort64KiB/12manualcapturesdaily/seven-day5.25MiBproposal and exact backup/restore acceptance pack. Read-only first200/479GitHubartifacts quantified; no accountquotaguarantee. Storage/replay deferred until operationalowner accepts quota/backend/backupdestination and drill. No newstorage orhistoryclaims.
+PR69 candidate: one separately dated Bitcoin-only third-party OP_RETURN source-map record, shared internal pointers in two guides, source URLs and classification/history/settlement limits.685units/types/lint/content/bothbuilds/smoke;7browserchecks eachruntime plusreport-onlynoJS1pass. Older parent review dates unchanged after content checker rejected fresh-source attachment. No API/iframe/polling/transaction certification/mainmerge/deploy.

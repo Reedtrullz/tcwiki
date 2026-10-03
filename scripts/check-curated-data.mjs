@@ -241,7 +241,12 @@ function evaluate(expression, scope, path) {
     throw new Error(`${path}: unsupported identifier ${expression.text}`);
   }
   if (ts.isArrayLiteralExpression(expression)) {
-    return expression.elements.map((element, index) => evaluate(element, scope, `${path}[${index}]`));
+    return expression.elements.flatMap((element, index) => {
+      if (!ts.isSpreadElement(element)) return [evaluate(element, scope, `${path}[${index}]`)];
+      const values = evaluate(element.expression, scope, `${path}[${index}].spread`);
+      if (!Array.isArray(values)) throw new Error(`${path}: array spread target must be an array`);
+      return values;
+    });
   }
   if (ts.isObjectLiteralExpression(expression)) {
     const value = {};
@@ -2090,6 +2095,7 @@ const collections = {
   PROTOCOL_MILESTONE_RECORDS: readRecordArray('PROTOCOL_MILESTONE_RECORDS', scope),
   TOKENOMICS_RECORDS: readRecordArray('TOKENOMICS_RECORDS', scope),
   SOURCE_MAP_SECTION_RECORDS: readRecordArray('SOURCE_MAP_SECTION_RECORDS', scope),
+  TRANSACTION_EXAMPLE_RECORDS: readRecordArray('TRANSACTION_EXAMPLE_RECORDS', scope),
 };
 
 if (!isIsoDate(staticDataLastUpdated)) {

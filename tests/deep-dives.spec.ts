@@ -52,6 +52,59 @@ test.describe('THORChain Wiki Deep Dive Smoke Tests', () => {
     }
   });
 
+  test('dated transaction examples keep evidence layers clear and fit a narrow guide', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 844 });
+    const examples = [
+      {
+        path: '/deep-dives/streaming-swaps-refunds',
+        id: 'btc-tron-swap',
+        evidence: /recipient ownership and user receipt are unknown/i,
+      },
+      {
+        path: '/deep-dives/streaming-swaps-refunds',
+        id: 'pending-usdc-refund',
+        evidence: /refund outbound transaction.*unknown/i,
+      },
+      {
+        path: '/deep-dives/build-query-data',
+        id: 'bitcoin-outbound',
+        evidence: /these are complementary layers/i,
+      },
+      {
+        path: '/deep-dives/churning',
+        id: 'ethereum-vault-migration',
+        evidence: /matched THORChain migration lifecycle.*unknown/i,
+      },
+    ];
+
+    for (const example of examples) {
+      await page.goto(example.path);
+      const article = page.locator(`article[aria-labelledby="transaction-example-${example.id}"]`);
+      await expect(article).toBeVisible();
+      await expect(article.getByRole('heading', { name: 'What each source reports' })).toBeVisible();
+      await expect(article.getByRole('heading', { name: 'What remains unknown' })).toBeVisible();
+      const evidenceSection = article.locator(`section[aria-labelledby="transaction-example-${example.id}-${example.id === 'bitcoin-outbound' ? 'memo' : 'unknowns'}"]`);
+      await expect(evidenceSection.getByText(example.evidence)).toBeVisible();
+
+      if (example.id === 'btc-tron-swap') {
+        await expect(article.getByText('Source-chain record', { exact: true })).toBeVisible();
+        await expect(article.getByText('THORChain indexer record', { exact: true })).toBeVisible();
+        await expect(article.getByText('Source-chain block', { exact: true })).toBeVisible();
+        await expect(article.getByText('THORChain indexer height', { exact: true })).toBeVisible();
+      }
+
+      if (example.id === 'ethereum-vault-migration') {
+        const memoHeight = article.locator('dt').filter({ hasText: 'THORChain memo height' }).locator('xpath=following-sibling::dd[1]');
+        const ethereumBlock = article.locator('dt').filter({ hasText: 'Source-chain block' }).locator('xpath=following-sibling::dd[1]');
+        await expect(memoHeight).toHaveText('17894403');
+        await expect(ethereumBlock).toContainText('20844210');
+      }
+
+      const documentWidth = await page.evaluate(() => document.documentElement.scrollWidth);
+      expect(documentWidth).toBeLessThanOrEqual(320);
+    }
+  });
+
   test('deep dives index renders every reader path and article card', async ({ page }) => {
     test.slow();
     await page.goto('/deep-dives');

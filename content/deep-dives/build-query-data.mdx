@@ -1,3 +1,6 @@
+import { TransactionExamples } from '@/components/features/TransactionExamples';
+import { MemoDecoderSection } from '@/components/features/MemoDecoderSection';
+
 # Build And Query THORChain Data
 
 ## What This Page Can Prove
@@ -31,6 +34,12 @@ The official developer docs describe five primary data sources:
 - **gRPC:** protobuf-based Cosmos SDK access for programmatic clients. gRPC uses protocol buffers over HTTP/2, so it needs a gRPC client rather than an ordinary browser or `curl` JSON request.
 
 For production apps, public endpoints should be treated as shared infrastructure. At this review, the official guide publishes a Liquify limit of 50,000 requests per day per IP, recommends identifying the application with `x-client-id`, and requires exponential backoff for `429` rate limits or `503` overload responses. The same guide recommends running your own THORNode when production uptime and trust requirements exceed shared-endpoint guarantees.
+
+## Dated Transaction Example: Bitcoin OUT And Midgard Trade
+
+Compare the Bitcoin transaction role from its OP_RETURN payload with the Midgard action that contains it. The labels refer to different layers and are complementary.
+
+<TransactionExamples guide="build-query-data" />
 
 ## Current And Historical Endpoint Routing
 
@@ -103,3 +112,13 @@ Builder-specific guidance for upstream failure:
 ## Shipping Boundary
 
 Before release, confirm source ownership, provider mixing, quote throttling and expiry, fresh inbound/route state at signing time, Midgard labeling, safe unit/error handling, and integration-specific tests. Public endpoints can be unavailable, rate-limited, or inconsistent; copied operational values and third-party SDKs still need their own checks.
+
+## Local Memo Decoder
+
+<MemoDecoderSection />
+
+## Bitcoin Memo Archive Pointer
+
+The [curated OP_RETURN source entry](/docs#bitcoin-memo-archive) links to recorded Bitcoin payload bytes, transaction/block references and Bitcoin-side history. Reviewed 3 October 2026 as a third-party discovery pointer, it covers Bitcoin rather than all THORChain activity. Reconcile the original bytes with primary chain evidence before interpreting the memo.
+
+An archive's THORChain classification, confirmation label, ticker count or address grouping does not prove memo validation, THORChain processing, successful cross-chain execution or destination settlement. Use the [network diagnostics](/network#network-diagnostics) for current operational evidence and keep any transaction lifecycle gaps explicit.

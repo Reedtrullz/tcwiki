@@ -3,6 +3,35 @@ export const DATA_CONFIDENCES = ['official', 'curated', 'historical', 'needs-rev
 
 export type DataConfidence = (typeof DATA_CONFIDENCES)[number];
 
+export type MemoDecoderAction = 'swap' | 'outbound' | 'refund' | 'migrate';
+export type MemoDecoderStatus = 'decoded' | 'empty' | 'too-long' | 'unsupported' | 'malformed';
+
+export interface MemoDecoderField {
+  id: string;
+  label: string;
+  raw: string;
+  interpretation: string;
+}
+
+export type MemoDecodeResult =
+  | {
+      status: 'decoded';
+      original: string;
+      /** Exact for in-bound inputs; oversized inputs use the configured bound plus one as a sentinel. */
+      byteLength: number;
+      action: MemoDecoderAction;
+      fields: MemoDecoderField[];
+      message: string;
+    }
+  | {
+      status: Exclude<MemoDecoderStatus, 'decoded'>;
+      original: string;
+      /** Exact for in-bound inputs; oversized inputs use the configured bound plus one as a sentinel. */
+      byteLength: number;
+      fields: MemoDecoderField[];
+      message: string;
+    };
+
 export interface ResponseHeightEvidence {
   requestedHeight: number;
   observedHeight?: number;
@@ -67,6 +96,51 @@ export interface SourcedRecord<T> {
   data: T;
   sources: SourceMeta[];
   freshness: FreshnessMeta;
+}
+
+export type TransactionExampleGuide = 'streaming-swaps-refunds' | 'build-query-data' | 'churning';
+
+export interface TransactionExampleAmount {
+  amount: string;
+  asset: string;
+  unit: string;
+  kind?: 'trade asset' | 'native asset' | 'token asset';
+}
+
+export interface TransactionExampleReport {
+  layer: 'source-chain' | 'thorchain-indexer';
+  label: string;
+  actionType?: string;
+  status: string;
+  observedAt?: string;
+  height?: string;
+  blockHeight?: string;
+  blockHash?: string;
+  blockTime?: string;
+  transactionId?: string;
+  outputHeight?: string;
+  outputTransactionId?: string;
+  destination?: string;
+  inputs?: TransactionExampleAmount[];
+  outputs?: TransactionExampleAmount[];
+  facts?: Array<{ label: string; value: string }>;
+  source: SourceMeta;
+  blockSource?: SourceMeta;
+}
+
+export interface TransactionExample {
+  id: string;
+  guide: TransactionExampleGuide;
+  title: string;
+  summary: string;
+  memo: {
+    sourceLabel: string;
+    value: string;
+    interpretation: string;
+    parameters?: Array<{ label: string; value: string }>;
+  };
+  reports: TransactionExampleReport[];
+  unknowns: string[];
 }
 
 export type LiveDataStatus = 'ok' | 'degraded';
