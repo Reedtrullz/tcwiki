@@ -6,7 +6,7 @@ For current live state, check `/network#network-diagnostics`. For dated incident
 
 ---
 
-The [August memoless claim evidence pilot](/governance#incident-memoless-spam-2026-08) separates release-supported handler work from the historical halt sequence that still needs retained evidence. Its current-availability citation requires a new live assessment; neither the archive nor its source fetch certifies present availability.
+The [August memoless claim evidence pilot](/governance#incident-memoless-spam-2026-08) separates release-supported handler work from the historical halt sequence that still needs retained evidence. The 7 October review withdraws the exact sequence, parameter values, vote outcome and duration below as established history. The [official 27 August recap](https://blog.thorchain.org/thorchain-puts-stability-first-monero-zcash-delayed-adr30-ai-agents-and-memoless-swaps) supports only an attributed spam-related registration pause. Current availability still requires a new live assessment; this narrow disposition does not re-review the rest of this archive.
 
 ## At a Glance
 
@@ -133,12 +133,12 @@ These ADRs did not go through a `make mimir` vote. Instead, a contributor called
 | Aug 25-26, 2026 | BASE Daemon + THOR Pool Issues | Major | 1/3 of fleet stuck; Bifrost 3.20.0 recovery loop |
 | Aug 25, 2026 | v3.20.0 Seed Phrase Validation Break | Major | Enforces 24-word BIP39, crash-looping 12-word nodes |
 | Aug 24-25, 2026 | v3.20.0 Upgrade | Major | Trading halted; THOR pool stuck at $5K/$5K |
-| Aug 24, 2026 | Memoless Transactions Disabled | Moderate | Spam resumed after re-enablement |
+| Aug 24, 2026 (authored date; unverified) | Memoless pause chronology unresolved | Unverified | Re-enablement and repeat-spam timing lack retained dated evidence |
 | Aug 23, 2026 | v3.20.0 Upgrade Announced | Moderate | Non-coordinated, 24h urgency |
 | Aug 22, 2026 | Dynamic Fee Experiment Failures | Moderate | Symbiosis zero volume; ShapeShift 5.8% vs Chainflip 54% |
 | Aug 22, 2026 | Frozen Savers Writedown Waterfall Issues | Major | Tranche 2 abandons waterfall discipline |
 | Aug 22, 2026 | Swap Queue Defects | Moderate | MRs !4807, !5012, !5020 |
-| Aug 21, 2026 | Memoless Registration Halted | Moderate | ~15,500 spam slots; registration halted |
+| Aug 21, 2026 (authored date; unverified) | Memoless registration account unresolved | Unverified | Exact halt date and spam-slot count lack retained evidence |
 | Aug 19, 2026 | Wasm Gas Consensus Failure | Critical | Height 27,489,428; 22 nodes crashed |
 | Aug 19, 2026 | TRON Node Lag (Network-Wide) | Major | 20% of nodes out of TRON consensus |
 | Aug 19, 2026 | XRP Inbound Stuck 100+ Days | Moderate | Swap stranded at 57/95 observations |
@@ -332,7 +332,7 @@ The most persistent unsolved issue across the fleet:
 | Vote | Status | Tally | Notes |
 |------|--------|-------|-------|
 | ADR030 (Delegated Node Permissions) | OPEN | For/Against | Per-node delegation registry |
-| MEMOLESSTXNCOST=200000 | OPEN | 2/3 required | Prevents free-registration spam |
+| MEMOLESSTXNCOST (authored 200000 proposal; unverified) | Unresolved historical vote | No retained tally | Neither adoption nor anti-spam effectiveness is established |
 | STREAMINGLIMITSWAPMAXAGE=5256000 | OPEN | 3 votes min | Limit swap lifetime: 3 days to 1 year |
 | TORANCHOR (BSC-USDT, Base-USDC, TRON-USDT) | VOTING | ~50-54/95 each | Stablecoin anchor integration |
 | SYSTEMINCOMEBURNRATEBPS | Gridlocked | 500: 35/95, 100: 25/95, 250: 4/95 | Burn rate debate (5% vs 1%) |
@@ -460,7 +460,7 @@ Codehans: AI-powered audit tool (GLM5.3 + Qwen3.8) finding vulnerabilities. .pfc
 |-----|-------|---------|
 | BondSlashBan | 1000000 | MDMN node ban (raised from 5K) |
 | PauseOnSlashThreshold | 100 | ETH gas spike auto-halt trigger |
-| MEMOLESSTXNCOST | 200000 | Prevent memoless registration spam |
+| MEMOLESSTXNCOST | Historical value unverified | The authored 200000 value and its effectiveness need dated receipts |
 
 ### Economic / Revenue
 

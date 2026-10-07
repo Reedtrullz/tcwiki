@@ -60,6 +60,7 @@ import {
   networkHaltsSource,
   protocolUpgradeV319Source,
   protocolUpgradeV320Source,
+  memolessRegistrationPauseRecapSource,
   adr030DelegatedOpsSource,
   adr027AffiliateRevShareSource,
   adr031RujiraAlignmentSource,
@@ -1296,11 +1297,11 @@ export const RESEARCH_REPORT_RECORDS: SourcedRecord<ResearchReport>[] = [
 const memolessPilotClaims: ClaimEvidence[] = [
   {
     id: 'memoless-august-cycle',
-    summary: 'The authored August incident describes a halt, re-enable and spam-driven re-halt cycle.',
+    summary: 'The earlier August halt/re-enable/re-halt account remains unverified and is withdrawn as established chronology.',
     source: protocolUpgradeV320Source,
     observedAt: '2026-08-26', versionScope: 'Authored August 2026 cohort; not current operations',
     scope: 'historical', reviewedAt: '2026-08-26', nextReviewDue: '2026-09-25', decision: 'needs-review',
-    limitation: 'The linked release describes implementation work, not the complete historical halt sequence. The original community/snapshot chronology still needs retained dated evidence; this pilot does not certify it.',
+    limitation: 'The original observation and review dates identify the authored account, not verified transitions. The 7 October publication disposition withdraws its exact sequence, cost vote, duration and ordinary-swap availability assertions; retained dated evidence is still missing. The release list does not certify that history.',
   },
   {
     id: 'memoless-v320-handler-work',
@@ -1409,22 +1410,22 @@ export const SECURITY_INCIDENT_RECORDS: SourcedRecord<SecurityIncident>[] = [
   }),
   record({
     id: 'memoless-spam-2026-08',
-    title: 'Memoless Transaction Halt Cycle',
+    title: 'Memoless Registration Pause — Historical Evidence Limits',
     date: '2026-08-21 to 2026-08-26',
     type: 'Operational Incident',
-    description: 'Community reporting and live Mimir snapshots show a memoless halt, re-enable with a raised transaction cost (MEMOLESSTXNCOST=200000), a spam-driven re-halt, and HALTMEMOLESS=1 active after the v3.20.0 upgrade. The official release notes include memoless ERC-20 handler and refund work in the same window.',
-    impact: 'Memoless flows were repeatedly unavailable for roughly five days; ordinary memo-based swaps continued when global trading controls were clear. Current state remains a Mimir snapshot question.',
+    description: 'The official 27 August episode recap reports that memo registrations were paused after a spam attempt. The v3.20.0 release separately lists memoless ERC-20 handler, refund-simulation and inbound-observation work. The original 21–26 August cohort dates are retained as an unverified authored range: exact halt/re-enable/re-halt transitions, MEMOLESSTXNCOST=200000, and HALTMEMOLESS=1 immediately after upgrade lack retained dated evidence.',
+    impact: 'The recap supports an attributed registration pause, not a verified five-day outage or uninterrupted ordinary swaps in the earlier windows. Those assertions are withdrawn pending historical receipts. Current availability needs a fresh source-qualified assessment.',
     resolved: false,
     trackerStatus: 'current',
     lessons: [
-      'A cost vote alone did not stop the spam; the halt key stayed the effective control.',
-      'Read HaltMemoless as scoped: it blocks memoless handling, not every swap route.',
-      'Treat MEMOLESSTXNCOST as a parameter snapshot that can be re-voted after an incident.',
+      'Separate an attributed contemporary account from retained block-by-block operational evidence.',
+      'Release implementation work does not establish historical activation or present availability.',
+      'Do not infer ordinary-swap availability or a cost vote outcome from a memoless-only control.',
     ],
     url: 'https://gitlab.com/thorchain/thornode/-/releases/v3.20.0',
-  }, [protocolUpgradeV320Source, liquifyThornodeMimirSource], 'curated', {
-    checkedAt: '2026-08-26',
-    nextReviewDue: '2026-09-25',
+  }, [protocolUpgradeV320Source, memolessRegistrationPauseRecapSource], 'needs-review', {
+    checkedAt: '2026-10-07',
+    nextReviewDue: '2026-11-07',
   }),
 ];
 const memolessPilotRecord = SECURITY_INCIDENT_RECORDS.find(record => record.data.id === 'memoless-spam-2026-08');
