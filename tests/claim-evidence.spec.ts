@@ -12,6 +12,9 @@ test('claim citations retain scope, dates and superseding evidence links', async
   await expect(current).toContainText('current-only · needs-live-evidence');
   await current.getByRole('link', { name: 'memoless-august-cycle', exact: true }).click();
   await expect(page).toHaveURL(/#claim-memoless-august-cycle$/);
-  await expect(page.locator('#claim-memoless-august-cycle')).toContainText('still needs retained dated evidence');
-  await expect(incident).toContainText('Checked 2026-08-26');
+  const historical = page.locator('#claim-memoless-august-cycle');
+  await expect(historical).toContainText('historical · needs-review');
+  await expect(historical).toContainText('claim reviewed 2026-08-26');
+  await expect(historical).toContainText('withdrawn as established chronology');
+  await expect(incident).toContainText('Checked 2026-10-07');
 });

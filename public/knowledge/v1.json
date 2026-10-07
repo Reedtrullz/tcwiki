@@ -11,9 +11,9 @@
   },
   "identity": {
     "authoredInputs": {
-      "src/lib/data/static.ts": "8838ee2cb843c30cd927c51deeb72545bfff80994ddbd76f5b788c771a14620c",
+      "src/lib/data/static.ts": "7628491a2e48bb13398a9f4fde56107b3bffc8686986df19b797c366aa300d87",
       "src/lib/content/registry.ts": "4fbd8e079d342585d034936c15e9bbe31587324de3c8f508332d0b3042b5e3e4",
-      "src/lib/sources.ts": "7be253d5ba906765a0fcc7bdebe12f8fd42afe56e23764762c6df1e0fbd26e52",
+      "src/lib/sources.ts": "273a7e189365abafe8c8ffcd4d2bab0666e18f1206c8ba322241485c6bd3370c",
       "src/lib/types.ts": "7ce679173123360384f57985d5980e1307ab7649a0c3439a68de413527f0e10c",
       "src/lib/site.ts": "e79a4609bcf097347fe1660252b7d4db81ae149520cca0b27c7059fd24a07f6d",
       "content/deep-dives/build-query-data.mdx": "d63a031b796c07eac8b50975c4358dc3b599c1455c2813ac9db08a54492b9e83",
@@ -26,15 +26,15 @@
     {
       "id": "claim:memoless-august-cycle",
       "type": "claim",
-      "summary": "The authored August incident describes a halt, re-enable and spam-driven re-halt cycle.",
+      "summary": "The earlier August halt/re-enable/re-halt account remains unverified and is withdrawn as established chronology.",
       "scope": "historical",
       "decision": "needs-review",
-      "recordConfidence": "curated",
+      "recordConfidence": "needs-review",
       "observedAt": "2026-08-26",
       "versionScope": "Authored August 2026 cohort; not current operations",
       "reviewedAt": "2026-08-26",
       "nextReviewDue": "2026-09-25",
-      "limitation": "The linked release describes implementation work, not the complete historical halt sequence. The original community/snapshot chronology still needs retained dated evidence; this pilot does not certify it.",
+      "limitation": "The original observation and review dates identify the authored account, not verified transitions. The 7 October publication disposition withdraws its exact sequence, cost vote, duration and ordinary-swap availability assertions; retained dated evidence is still missing. The release list does not certify that history.",
       "route": "/governance#claim-memoless-august-cycle",
       "source": {
         "id": "source:899b2c44707cf2cc",
@@ -50,7 +50,7 @@
       "summary": "The v3.20.0 release lists memoless ERC20 handler, refund-simulation and inbound-observation changes.",
       "scope": "historical",
       "decision": "supported",
-      "recordConfidence": "curated",
+      "recordConfidence": "needs-review",
       "observedAt": "2026-10-03",
       "versionScope": "THORNode v3.20.0",
       "reviewedAt": "2026-10-03",
@@ -71,7 +71,7 @@
       "summary": "Present memoless availability requires a fresh, source-qualified operational assessment.",
       "scope": "current-only",
       "decision": "needs-live-evidence",
-      "recordConfidence": "curated",
+      "recordConfidence": "needs-review",
       "observedAt": "2026-08-26",
       "versionScope": "Current provider result must be obtained separately",
       "reviewedAt": "2026-10-03",
@@ -233,6 +233,6 @@
   ],
   "checksum": {
     "algorithm": "sha256",
-    "value": "da3c067767794b80a0fc020ed447491c34eb146a7d611f7bda0267c4f10f2687"
+    "value": "6e158dc2253a4a17f1ffe93fd03ab43dcccc8243044218450e24917d65af55e0"
   }
 }
