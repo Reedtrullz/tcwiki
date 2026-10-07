@@ -448,6 +448,13 @@ export const protocolUpgradeV320Source: SourceMeta = {
   notes: 'Official v3.20.0 release notes plus blog recap: proposed block 27580000 on 25-Aug-2026, private binary, TSS/Bifrost hardening, memoless ERC20 work, XMR/ZEC chain clients, churn resumption prep, operational POL Mimirs, and the Stable Reserve experiment (ships disabled).',
 };
 
+export const memolessRegistrationPauseRecapSource: SourceMeta = {
+  label: 'THORSday 229 recap — memoless registration pause (27 August 2026)',
+  url: 'https://blog.thorchain.org/thorchain-puts-stability-first-monero-zcash-delayed-adr30-ai-agents-and-memoless-swaps',
+  retrievedAt: '2026-10-07',
+  notes: 'Section 5 attributes a spam-related memo-registration pause to the episode participants. It does not establish every earlier halt/re-enable transition, dated Mimir value, duration, or current availability.',
+};
+
 export const adr030DelegatedOpsSource: SourceMeta = {
   label: 'ADR-030 Delegated Node Operator Permissions (develop)',
   url: 'https://gitlab.com/thorchain/thornode/-/blob/develop/docs/architecture/adr-030-delegated-node-operator-permissions.md',
