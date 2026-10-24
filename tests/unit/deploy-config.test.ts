@@ -133,14 +133,14 @@ describe('release and browser test wiring', () => {
     expect(operationsWorkflow).toContain("cron: '53 * * * *'");
     expect(operationsWorkflow).toContain("cron: '41 6 * * 1'");
     expect(operationsWorkflow).toContain("github.event.schedule == '23 * * * *' || github.event.schedule == '53 * * * *'");
-    expect(operationsWorkflow).toContain('npm run check:production-readiness');
+    expect(operationsWorkflow).toContain('pnpm run check:production-readiness');
     expect(operationsWorkflow).toContain('--samples 3');
     expect(operationsWorkflow).toContain('--interval-ms 60000');
     expect(operationsWorkflow).toContain('scripts/update-readiness-incident.mjs');
     expect(operationsWorkflow).toContain('READINESS_ARTIFACT_URL: ${{ steps.readiness_evidence.outputs.artifact-url }}');
     expect(operationsWorkflow).toContain('group: production-readiness-incident');
     expect(operationsWorkflow).toContain('cancel-in-progress: false');
-    expect(operationsWorkflow).toContain('npm run report:content-reviews');
+    expect(operationsWorkflow).toContain('pnpm run report:content-reviews');
     expect(operationsWorkflow).toContain('--horizon-days 30');
     expect(releaseTrackedLib).toContain("'.github/workflows/operations.yml'");
   });
@@ -228,8 +228,8 @@ describe('release and browser test wiring', () => {
   it('asserts enforced CSP in Docker, public runtime, and scheduled runtime probes', () => {
     expect(dockerSmoke).toContain("'CSP_ENFORCE=1'");
     expect(dockerSmoke).toContain("CSP_ENFORCE: '1'");
-    expect(dockerSmoke).toContain("npm', ['run', 'check:runtime-url']");
-    expect(dockerSmoke).toContain("npm', ['run', 'test:e2e:docker-smoke']");
+    expect(dockerSmoke).toContain("pnpm', ['run', 'check:runtime-url']");
+    expect(dockerSmoke).toContain("pnpm', ['run', 'test:e2e:docker-smoke']");
     expect(runtimeSpec).toContain('readiness API endpoint responds with readiness metadata @docker-smoke');
     expect(workflow).toMatch(/CHECK_BASE_URL: https:\/\/wiki\.thorchain\.no[\s\S]*?CSP_ENFORCE: '1'/);
     expect(workflow).toMatch(/Run Ansible deploy[\s\S]*?CSP_ENFORCE: '1'/);
@@ -268,7 +268,7 @@ describe('release and browser test wiring', () => {
     expect(linkIntegritySpec).toContain('publicSitemapRoutes');
     expect(linkIntegritySpec).toContain('RENDERED_CONSOLE_PROBLEM_PATTERN');
     expect(linkIntegritySpec).toContain('resolves to missing anchor');
-    expect(docs).toContain('npm run test:e2e:links');
+    expect(docs).toContain('pnpm run test:e2e:links');
     expect(docs).toContain('tests/link-integrity.spec.ts');
     expect(docs).toContain('hydration/framework console');
   });
@@ -359,10 +359,10 @@ describe('release and browser test wiring', () => {
     expect(dockerSmoke).toContain("'CSP_ENFORCE=1'");
     expect(dockerSmoke).toContain("EXPECTED_IMAGE_REF: imageRef");
     expect(dockerSmoke).toContain("REQUIRE_RUNTIME_METADATA: '1'");
-    expect(dockerSmoke).toContain("npm', ['run', 'check:runtime-url']");
-    expect(dockerSmoke).toContain("npm', ['run', 'test:e2e:docker-smoke']");
+    expect(dockerSmoke).toContain("pnpm', ['run', 'check:runtime-url']");
+    expect(dockerSmoke).toContain("pnpm', ['run', 'test:e2e:docker-smoke']");
     expect(dockerSmoke).toContain('SKIP_DOCKER_BROWSER_SMOKE');
-    expect(docs).toContain('npm run smoke:docker');
+    expect(docs).toContain('pnpm run smoke:docker');
     expect(docs).toContain('strict runtime metadata');
     expect(docs).toContain('enforced CSP');
   });
@@ -380,7 +380,7 @@ describe('release and browser test wiring', () => {
     expect(workflow).toContain('DOCKER_SMOKE_COMMIT_SHA: ${{ github.sha }}');
     expect(workflow).toContain('DOCKER_SMOKE_IMAGE_REF: ghcr.io/${{ github.repository }}@sha256:1111111111111111111111111111111111111111111111111111111111111111');
     expect(workflow).toContain("DOCKER_SMOKE_PORT: '3011'");
-    expect(workflow).toContain('run: npm run smoke:docker');
+    expect(workflow).toContain('run: pnpm run smoke:docker');
     expect(workflow).not.toContain('container_id="$(docker run --rm -d');
   });
 
@@ -400,7 +400,7 @@ describe('release and browser test wiring', () => {
     expect(workflow).toContain('DOCKER_SMOKE_TAG: ${{ needs.publish.outputs.image_ref }}');
     expect(workflow).toContain('DOCKER_SMOKE_IMAGE_REF: ${{ needs.publish.outputs.image_ref }}');
     expect(workflow).toContain('DOCKER_SMOKE_COMMIT_SHA: ${{ needs.publish.outputs.app_version }}');
-    expect(workflow).toMatch(/release-image-smoke:[\s\S]*?run: npm run smoke:docker/);
+    expect(workflow).toMatch(/release-image-smoke:[\s\S]*?run: pnpm run smoke:docker/);
     expect(workflow).toContain('needs: [publish, release-image-smoke]');
     expect(dockerSmoke).toContain("if (shouldSkipBuild && shouldPull)");
     expect(dockerSmoke).toContain("runCommand('docker', ['pull', imageTag])");
@@ -408,9 +408,9 @@ describe('release and browser test wiring', () => {
 
   it('keeps a release trackedness audit available before ship decisions', () => {
     const docs = [readme, contributing, maintenance, operations].join('\n');
-    const installIndex = workflow.indexOf('run: npm ci --include=optional');
-    const trackednessIndex = workflow.indexOf('run: npm run check:release-tracked');
-    const auditIndex = workflow.indexOf('run: npm run audit:prod');
+    const installIndex = workflow.indexOf('run: pnpm install --frozen-lockfile');
+    const trackednessIndex = workflow.indexOf('run: pnpm run check:release-tracked');
+    const auditIndex = workflow.indexOf('run: pnpm run audit:prod');
 
     expect(scriptValue('check:release-tracked')).toBe('node scripts/require-node22.mjs && node scripts/check-release-tracked.mjs');
     expect(releaseTrackedCheck).toContain('auditReleaseTrackedFiles');
@@ -419,7 +419,7 @@ describe('release and browser test wiring', () => {
     expect(releaseTrackedLib).toContain('Package scripts, CI, release docs, and their local proof dependencies should not point at local-only proof files.');
     expect(trackednessIndex).toBeGreaterThan(installIndex);
     expect(trackednessIndex).toBeLessThan(auditIndex);
-    expect(docs).toContain('npm run check:release-tracked');
+    expect(docs).toContain('pnpm run check:release-tracked');
     expect(docs).toContain('local-only proof files');
     expect(docs).toContain('CI runs the same trackedness audit');
   });
@@ -443,7 +443,7 @@ describe('release and browser test wiring', () => {
     expect(existsSync('scripts/start-playwright-server.mjs')).toBe(true);
     expect(existsSync('scripts/lib/standalone-freshness.mjs')).toBe(true);
     expect(playwrightConfig).toContain("cloudflare ? 'node scripts/start-cloudflare-candidate.mjs' : 'node scripts/start-playwright-server.mjs'");
-    expect(contributing).toContain("PLAYWRIGHT_WEB_SERVER_COMMAND='npm run dev'");
+    expect(contributing).toContain("PLAYWRIGHT_WEB_SERVER_COMMAND='pnpm run dev'");
   });
 
   it('points scripted browser lanes at checked-in spec files', () => {
@@ -467,11 +467,11 @@ describe('release and browser test wiring', () => {
 
     expect(docs).toContain('Content-Security-Policy');
     expect(docs).toContain('CSP_ENFORCE=0');
-    expect(contributing).toContain('CSP_ENFORCE=1 npm run smoke:standalone');
-    expect(contributing).toContain('npm run test:e2e:csp');
-    expect(maintenance).toContain('npm run test:e2e:csp');
-    expect(contributing).toContain('CSP_ENFORCE=1 npm run check:runtime-url');
-    expect(contributing).toContain('npm run smoke:docker');
+    expect(contributing).toContain('CSP_ENFORCE=1 pnpm run smoke:standalone');
+    expect(contributing).toContain('pnpm run test:e2e:csp');
+    expect(maintenance).toContain('pnpm run test:e2e:csp');
+    expect(contributing).toContain('CSP_ENFORCE=1 pnpm run check:runtime-url');
+    expect(contributing).toContain('pnpm run smoke:docker');
     expect(docs).not.toContain('Production currently emits nonce-based `Content-Security-Policy-Report-Only`');
     expect(docs).not.toContain('Keep production in report-only mode until');
     expect(docs).not.toContain('before considering production enforcement');

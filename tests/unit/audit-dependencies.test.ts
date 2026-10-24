@@ -1,40 +1,29 @@
 import { describe, expect, it } from 'vitest';
 import { assessAudit } from '../../scripts/audit-dependencies.mjs';
 
-function fixture() {
-  return {
-    report: { auditReportVersion: 2, metadata: { vulnerabilities: { high: 2 } }, vulnerabilities: {
-      braces: { severity: 'high', nodes: ['node_modules/braces'], via: [{ name: 'braces', url: 'https://github.com/advisories/GHSA-vfj7-8cjw-p6xm', severity: 'high', range: '<=3.0.3' }] },
-      micromatch: { severity: 'high', nodes: ['node_modules/micromatch'], via: ['braces'] },
-    } },
-    lock: { packages: { 'node_modules/braces': { version: '3.0.3', dev: true }, 'node_modules/micromatch': { version: '4.0.8', dev: true } } },
-  };
+function advisory(module_name: string, severity: string) {
+  return { module_name, severity, url: `https://github.com/advisories/${module_name}`, findings: [{ version: '1.0.0', paths: [`.>${module_name}`] }] };
 }
-const now = Date.parse('2026-10-03T00:00:00Z');
-describe('bounded build advisory review exception', () => {
-  it('reports the known development chain explicitly without calling it a clean audit', () => {
-    const { report, lock } = fixture();
-    expect(assessAudit(report, lock, now)).toMatchObject({ blocked: [], excepted: ['braces', 'micromatch'] });
+
+describe('full dependency audit policy (pnpm audit --json)', () => {
+  it('passes a clean report', () => {
+    expect(assessAudit({ advisories: {}, metadata: { vulnerabilities: { info: 0, low: 0, moderate: 0, high: 0, critical: 0 } } })).toEqual({ blocked: [] });
   });
-  it('blocks the same advisory when a lockfile node is in production', () => {
-    const { report, lock } = fixture(); lock.packages['node_modules/braces'].dev = false;
-    expect(assessAudit(report, lock, now).blocked).toEqual(['braces', 'micromatch']);
+  it('ignores info and low findings', () => {
+    const report = { advisories: { 1: advisory('a', 'low'), 2: advisory('b', 'info') }, metadata: { vulnerabilities: { info: 1, low: 1 } } };
+    expect(assessAudit(report).blocked).toEqual([]);
   });
-  it('blocks a second advisory on the same package and its dependent', () => {
-    const { report, lock } = fixture(); report.vulnerabilities.braces.via.push({ name: 'braces', url: 'https://github.com/advisories/another', severity: 'high', range: '<=3.0.3' });
-    expect(assessAudit(report, lock, now).blocked).toEqual(['braces', 'micromatch']);
+  it('blocks moderate, high and critical findings once per package', () => {
+    const report = { advisories: { 1: advisory('braces', 'high'), 2: advisory('braces', 'moderate'), 3: advisory('next', 'critical'), 4: advisory('x', 'low') }, metadata: { vulnerabilities: { low: 1, moderate: 1, high: 1, critical: 1 } } };
+    expect(assessAudit(report).blocked).toEqual(['braces', 'next']);
   });
-  it('expires exactly at the review deadline', () => {
-    const { report, lock } = fixture();
-    expect(assessAudit(report, lock, Date.parse('2026-10-10T00:00:00Z')).blocked).toEqual(['braces', 'micromatch']);
+  it('no longer excepts the expired braces development advisory', () => {
+    const report = { advisories: { 1: advisory('braces', 'high') }, metadata: { vulnerabilities: { high: 1 } } };
+    expect(assessAudit(report).blocked).toEqual(['braces']);
   });
-  it('rejects absent lock nodes, changed versions, malformed reports and cycles', () => {
-    const { report, lock } = fixture(); lock.packages['node_modules/braces'].version = '3.0.2';
-    expect(assessAudit(report, lock, now).blocked).toContain('braces');
-    delete (lock.packages as Partial<typeof lock.packages>)['node_modules/micromatch'];
-    expect(assessAudit(report, lock, now).blocked).toContain('micromatch');
-    expect(() => assessAudit({ error: 'registry unavailable' }, lock, now)).toThrow('Unrecognized');
-    const cyclic = fixture(); cyclic.report.vulnerabilities.micromatch.via = ['micromatch'];
-    expect(assessAudit(cyclic.report, cyclic.lock, now).blocked).toContain('micromatch');
+  it('rejects malformed reports and contradictory counts', () => {
+    expect(() => assessAudit({ error: 'registry unavailable' })).toThrow('Unrecognized');
+    expect(() => assessAudit({ auditReportVersion: 2, vulnerabilities: {}, metadata: { vulnerabilities: {} } })).toThrow('Unrecognized');
+    expect(() => assessAudit({ advisories: {}, metadata: { vulnerabilities: { high: 1 } } })).toThrow('contradict');
   });
 });

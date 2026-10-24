@@ -101,7 +101,7 @@ for (const [path, content] of [[jsonPath, json], [llmsPath, llms]]) {
     if (error?.code !== 'ENOENT') throw error;
   }
   if (checkOnly) {
-    if (existing !== content) throw new Error(`${path.slice(root.length + 1)} is stale; run npm run generate:knowledge.`);
+    if (existing !== content) throw new Error(`${path.slice(root.length + 1)} is stale; run pnpm run generate:knowledge.`);
   } else if (existing !== content) {
     writeFileSync(path, content);
   }

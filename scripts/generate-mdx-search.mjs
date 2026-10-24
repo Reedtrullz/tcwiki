@@ -98,7 +98,7 @@ export const MDX_DEEP_DIVE_SECTION_DOCUMENTS: MdxSectionSearchDocument[] = ${JSO
 if (checkOnly) {
   const existing = readFileSync(outputPath, 'utf8');
   if (existing !== generated) {
-    console.error(`${relative(root, outputPath)} is stale. Run npm run generate:search.`);
+    console.error(`${relative(root, outputPath)} is stale. Run pnpm run generate:search.`);
     process.exit(1);
   }
   console.log('MDX search document generation is current.');

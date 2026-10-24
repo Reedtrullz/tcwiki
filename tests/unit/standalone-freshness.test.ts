@@ -21,7 +21,7 @@ function fixture() {
   writeFileSync(join(root, 'src/app/page.tsx'), 'original');
   const files: Record<string, string | null> = {
     'src/app/page.tsx': sha('original'),
-    content: null, 'public/asset.txt': sha('asset'), 'next.config.ts': null, 'package-lock.json': null,
+    content: null, 'public/asset.txt': sha('asset'), 'next.config.ts': null, 'pnpm-lock.yaml': null, 'pnpm-workspace.yaml': null,
     'package.json': null, 'postcss.config.mjs': null, 'tsconfig.json': null,
     'scripts/build-standalone.mjs': null, 'scripts/lib/standalone-freshness.mjs': null,
     'scripts/prepare-standalone-assets.mjs': null, 'scripts/start-standalone.mjs': null,

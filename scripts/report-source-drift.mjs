@@ -22,7 +22,7 @@ for (let index = 0; index < args.length; index += 1) {
     artifactPath = args[index + 1];
     index += 1;
   } else if (args[index] === '--help') {
-    console.log('Usage: npm run report:source-drift [-- --refresh] [--artifact .artifacts/path.json]\nDefault mode compares the checked-in snapshot offline. --refresh checks only the five explicit public sources and requires an artifact path.');
+    console.log('Usage: pnpm run report:source-drift [-- --refresh] [--artifact .artifacts/path.json]\nDefault mode compares the checked-in snapshot offline. --refresh checks only the five explicit public sources and requires an artifact path.');
     process.exit(0);
   } else {
     throw new Error('Unknown source-drift option. Use --help for usage.');

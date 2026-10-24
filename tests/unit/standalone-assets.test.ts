@@ -86,6 +86,6 @@ describe('prepareStandaloneAssets', () => {
 
     rmSync(join(root, '.next/static'), { force: true, recursive: true });
 
-    expect(() => prepareStandaloneAssets(root)).toThrow('Next static assets is missing. Run npm run build first.');
+    expect(() => prepareStandaloneAssets(root)).toThrow('Next static assets is missing. Run pnpm run build first.');
   });
 });

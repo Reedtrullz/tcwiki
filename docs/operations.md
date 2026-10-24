@@ -15,11 +15,11 @@ The playbook refuses mutable tags and missing versions. Production deploys defau
 ## Deploy And Evidence Boundaries
 
 Do not deploy from local work unless the user explicitly requests a deploy. Local release checks
-such as `npm run build`, `npm run smoke:standalone`, `git diff --check`, and Ansible syntax checks
-must be run under Node 22; app and release-proof npm scripts fail fast through `scripts/require-node22.mjs`
+such as `pnpm run build`, `pnpm run smoke:standalone`, `git diff --check`, and Ansible syntax checks
+must be run under Node 22; app and release-proof package scripts fail fast through `scripts/require-node22.mjs`
 when an older runtime is active. Local checks are local evidence only. They do not prove that GitHub CI passed, that a GHCR image was published,
 or that production changed.
-Use `npm run check:release-tracked` before treating local release evidence as ship-ready; it fails when package scripts, CI, release docs, or their local script/spec dependencies reference local-only proof files that have not been tracked by git. CI runs the same trackedness audit before the rest of the release-shaped app gate.
+Use `pnpm run check:release-tracked` before treating local release evidence as ship-ready; it fails when package scripts, CI, release docs, or their local script/spec dependencies reference local-only proof files that have not been tracked by git. CI runs the same trackedness audit before the rest of the release-shaped app gate.
 
 When reporting release state, keep these boundaries explicit:
 
@@ -65,7 +65,7 @@ THORNode latest-block discovery appends a unique `tcwiki_cache_bust` query value
 For a local one-sample diagnostic without waiting:
 
 ```bash
-npm run check:production-readiness -- --samples 1 --interval-ms 0 --artifact .artifacts/readiness-monitor/local.json
+pnpm run check:production-readiness --samples 1 --interval-ms 0 --artifact .artifacts/readiness-monitor/local.json
 ```
 
 ### Independent VPS readiness timer
@@ -129,10 +129,10 @@ Expected response headers include:
 - `Permissions-Policy`
 - `Content-Security-Policy`
 
-The production deploy path is configured for a nonce-based enforced CSP by default. It must not include `unsafe-inline` or `unsafe-eval`. The root layout is intentionally dynamic so Next can attach the per-request nonce to framework scripts. `CSP_ENFORCE=0` is an explicit rollback/diagnostic escape hatch only; record that exception with release evidence if used. Keep `CSP_ENFORCE=1 npm run smoke:standalone` and `npm run test:e2e:csp` passing before shipping CSP-affecting changes. For public drift checks, run:
+The production deploy path is configured for a nonce-based enforced CSP by default. It must not include `unsafe-inline` or `unsafe-eval`. The root layout is intentionally dynamic so Next can attach the per-request nonce to framework scripts. `CSP_ENFORCE=0` is an explicit rollback/diagnostic escape hatch only; record that exception with release evidence if used. Keep `CSP_ENFORCE=1 pnpm run smoke:standalone` and `pnpm run test:e2e:csp` passing before shipping CSP-affecting changes. For public drift checks, run:
 
 ```bash
-CHECK_BASE_URL=https://wiki.thorchain.no REQUIRE_RUNTIME_METADATA=1 CSP_ENFORCE=1 npm run check:runtime-url
+CHECK_BASE_URL=https://wiki.thorchain.no REQUIRE_RUNTIME_METADATA=1 CSP_ENFORCE=1 pnpm run check:runtime-url
 ```
 
 
