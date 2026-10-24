@@ -43,7 +43,7 @@ Community wiki for THORChain protocol. Next.js 16 App Router + React 19 + Tailwi
 | Work with live data | `src/lib/api/midgard.ts` | Midgard failover client. Follow Heimdall conventions |
 | Add a new deep-dive article | `content/deep-dives/` + `src/app/deep-dives/[slug]/page.tsx` | See MDX wrapper pattern below |
 | Update navigation | `src/lib/content/registry.ts` | Header, footer, home, and deep-dive listings are registry-driven |
-| Update search index | `src/lib/search/registry.ts` + generated MDX docs | Run `npm run generate:search` after article edits |
+| Update search index | `src/lib/search/registry.ts` + generated MDX docs | Run `pnpm run generate:search` after article edits |
 | Update types | `src/lib/types.ts` | All domain types live here |
 | Change design tokens | `src/app/globals.css` | OKLCH custom properties |
 | Add a shared UI component | `src/components/ui/` | No business logic. Use design tokens only |
@@ -82,21 +82,21 @@ Community wiki for THORChain protocol. Next.js 16 App Router + React 19 + Tailwi
 - Adding generic component libraries — use existing `ui/` primitives.
 - Duplicating curated data — everything static lives in `src/lib/data/static.ts`.
 - Co-locating MDX with routes — use `content/deep-dives/`.
-- Adding `npm test` — use the explicit `test:unit` and `test:e2e` scripts.
+- Adding `pnpm test` — use the explicit `test:unit` and `test:e2e` scripts.
 
 ## COMMANDS
 
 ```bash
-npm run dev     # localhost:3000
-npm run lint    # eslint (next vitals + TS)
-npm run typecheck # TypeScript strict check
-npm run test:unit # Vitest unit tests
-npm run test:e2e  # Playwright smoke tests
-npm run check:content # curated data + generated MDX search checks
-npm run audit:prod # production dependency audit
-npm run build   # next build → standalone output
-npm run start:standalone # serve built standalone output locally
-npm run smoke:standalone # probes .next/standalone health/version/headers after build
+pnpm run dev     # localhost:3000
+pnpm run lint    # eslint (next vitals + TS)
+pnpm run typecheck # TypeScript strict check
+pnpm run test:unit # Vitest unit tests
+pnpm run test:e2e  # Playwright smoke tests
+pnpm run check:content # curated data + generated MDX search checks
+pnpm run audit:prod # production dependency audit
+pnpm run build   # next build → standalone output
+pnpm run start:standalone # serve built standalone output locally
+pnpm run smoke:standalone # probes .next/standalone health/version/headers after build
 ```
 
 ## NOTES
@@ -107,7 +107,7 @@ npm run smoke:standalone # probes .next/standalone health/version/headers after 
 - `content/deep-dives/` is outside `src/` — intentional. MDX pages are imported via relative paths.
 - Component architecture is partially scaffolded. `ui/`, `layout/`, `features/` have READMEs with target architecture.
 - No `.editorconfig` or `.eslintrc` — uses `eslint.config.mjs` with Next.js defaults.
-- No `npm test` script in `package.json`.
+- No `pnpm test` script in `package.json`.
 
 <!-- BEGIN:nextjs-agent-rules -->
 

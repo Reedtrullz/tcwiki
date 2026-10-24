@@ -1,0 +1,21 @@
+# Single-package repository; this file only carries pnpm settings.
+
+# Carried over from package.json "overrides" (npm). pnpm's `a>b` selector is
+# npm's nested `{ "a": { "b": … } }` form.
+overrides:
+  postcss: ^8.5.10
+  fflate: 0.8.3
+  '@tailwindcss/typography>postcss-selector-parser': 7.1.6
+  miniflare>sharp: 0.35.5
+  # Every miniflare release pins undici exactly; 7.30.1 clears its advisories.
+  miniflare>undici: 7.30.1
+
+# pnpm 10 runs no dependency install scripts unless they are listed here.
+# esbuild, workerd (wrangler/miniflare) and unrs-resolver (eslint import
+# resolver) verify and link their platform binaries in postinstall, the same
+# set Innsats-appen allows. fsevents is macOS-only and ships a prebuilt binary.
+allowBuilds:
+  esbuild: true
+  unrs-resolver: true
+  workerd: true
+  fsevents: false

@@ -7,10 +7,13 @@ RUN apk add --no-cache ca-certificates \
 
 FROM base AS deps
 
-COPY package.json package-lock.json ./
-RUN npm ci --include=optional
+RUN corepack enable
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
+RUN pnpm install --frozen-lockfile
 
 FROM base AS builder
+
+RUN corepack enable
 
 ARG VERSION=unknown
 ARG COMMIT_SHA=unknown
@@ -21,7 +24,7 @@ ENV VERSION=${VERSION} \
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-RUN npm run build
+RUN pnpm run build
 
 FROM base AS runner
 

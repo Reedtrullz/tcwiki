@@ -3,7 +3,7 @@ import { existsSync, lstatSync, readFileSync, readdirSync, writeFileSync } from 
 import { join, relative } from 'node:path';
 
 const sourceRoots = [
-  'content', 'public', 'src', 'next.config.ts', 'package-lock.json', 'package.json',
+  'content', 'public', 'src', 'next.config.ts', 'pnpm-lock.yaml', 'pnpm-workspace.yaml', 'package.json',
   'postcss.config.mjs', 'tsconfig.json', 'scripts/build-standalone.mjs',
   'scripts/lib/standalone-freshness.mjs', 'scripts/prepare-standalone-assets.mjs',
   'scripts/start-standalone.mjs', 'scripts/require-node22.mjs', 'scripts/lib/node-version.mjs',
@@ -43,15 +43,15 @@ export function recordStandaloneInputs(root, before = captureStandaloneInputs(ro
 }
 
 export function checkStandaloneFreshness(root) {
-  if (!existsSync(serverPath(root))) throw new Error('Standalone build is missing. Run `npm run build`.');
-  if (!existsSync(receiptPath(root))) throw new Error('Standalone input receipt is missing. Run `npm run build`.');
+  if (!existsSync(serverPath(root))) throw new Error('Standalone build is missing. Run `pnpm run build`.');
+  if (!existsSync(receiptPath(root))) throw new Error('Standalone input receipt is missing. Run `pnpm run build`.');
   const receipt = JSON.parse(readFileSync(receiptPath(root), 'utf8'));
   if (receipt?.schemaVersion !== 1 || !receipt.files || typeof receipt.files !== 'object' || Array.isArray(receipt.files)) {
-    throw new Error('Standalone input receipt is invalid. Run `npm run build`.');
+    throw new Error('Standalone input receipt is invalid. Run `pnpm run build`.');
   }
   if (receipt.serverSha256 !== sha256(readFileSync(serverPath(root)))) {
-    throw new Error('Standalone server artifact differs from its build receipt. Run `npm run build`.');
+    throw new Error('Standalone server artifact differs from its build receipt. Run `pnpm run build`.');
   }
   const changed = changedInputs(receipt.files, captureStandaloneInputs(root));
-  if (changed.length) throw new Error(`Standalone build is stale; changed/missing inputs: ${changed.join(', ')}. Run \`npm run build\`.`);
+  if (changed.length) throw new Error(`Standalone build is stale; changed/missing inputs: ${changed.join(', ')}. Run \`pnpm run build\`.`);
 }

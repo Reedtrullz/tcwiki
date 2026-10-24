@@ -7,7 +7,7 @@ const roots: string[] = [];
 function fixture(installed: string | null) {
   const root = mkdtempSync(join(tmpdir(), 'tcwiki-preflight-')); roots.push(root);
   writeFileSync(join(root, 'package.json'), JSON.stringify({ devDependencies: { vitest: '^5.0.0' } }));
-  writeFileSync(join(root, 'package-lock.json'), JSON.stringify({ packages: { 'node_modules/vitest': { version: '5.0.0' } } }));
+  writeFileSync(join(root, 'pnpm-lock.yaml'), "lockfileVersion: '9.0'\n\nimporters:\n\n  .:\n    devDependencies:\n      vitest:\n        specifier: ^5.0.0\n        version: 5.0.0(@types/node@22.20.1)\n\npackages:\n\n  vitest@5.0.0:\n    resolution: {integrity: sha512-x}\n");
   if (installed) {
     mkdirSync(join(root, 'node_modules/vitest'), { recursive: true });
     writeFileSync(join(root, 'node_modules/vitest/package.json'), JSON.stringify({ version: installed }));

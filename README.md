@@ -19,13 +19,13 @@ The goal is to make THORChain more approachable for users, node operators, devel
 
 ```bash
 nvm use
-npm ci --include=optional
-npm run dev
+pnpm install --frozen-lockfile
+pnpm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000).
 
-This project requires Node 22. The npm install path enforces the `package.json` engine range, and app/proof scripts also fail fast with `scripts/require-node22.mjs`; run `nvm use` before local development or release evidence.
+This project requires Node 22. pnpm install enforces the `package.json` engine range, and app/proof scripts also fail fast with `scripts/require-node22.mjs`; run `nvm use` before local development or release evidence.
 
 ## Project Structure
 
@@ -38,7 +38,7 @@ This project requires Node 22. The npm install path enforces the `package.json` 
 - `cloudflare/do-entry.mjs` + `wrangler.do.jsonc` — Cloudflare forwarding Worker and SQLite WikiDO serving path.
 - `Dockerfile` + `ansible-playbook.yml` — Supported standalone verification and guarded VPS rollback path.
 
-For release-shaped local runtime checks after `npm run build`, use `npm run start:standalone` or `npm run smoke:standalone` rather than `next start`.
+For release-shaped local runtime checks after `pnpm run build`, use `pnpm run start:standalone` or `pnpm run smoke:standalone` rather than `next start`.
 
 ## Contributing
 
@@ -58,15 +58,15 @@ We welcome improvements! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for:
 - **Health, readiness, and version checks**: The site exposes `/api/health`, `/api/ready`, and `/api/version`. `/api/health` is liveness-only; `/api/ready` carries upstream source confidence, RUNEPool/POL status, RUNEPool/POL source posture at `sources.thornode.runePoolPol`, and strict runtime identity diagnostics when `RUNTIME_METADATA_REQUIRED=1`. Ansible keeps the Docker health check on liveness and verifies health, version, image digest, commit metadata, and runtime diagnostics. Rollback uses the previous `/api/version` readback with Docker env fallback, verifies restored metadata, then fails closed after rollback attempts.
 - **Runtime headers**: Production deploys are configured to emit nonce-based `Content-Security-Policy` by default. Set `CSP_ENFORCE=0` only as an explicit rollback/diagnostic escape hatch, and keep enforced CSP smoke coverage green before shipping.
 
-The direct Worker preview was too CPU-heavy for Workers Free. `npm run build:cloudflare` prepares the serving candidate: a thin Worker forwards application requests to SQLite WikiDO; static assets use the asset binding. The Vite config compiles MDX with the same GFM plugin as Next. `wrangler.do.jsonc` defaults to an isolated preview name; creating a preview or deploying is a separate explicit action.
+The direct Worker preview was too CPU-heavy for Workers Free. `pnpm run build:cloudflare` prepares the serving candidate: a thin Worker forwards application requests to SQLite WikiDO; static assets use the asset binding. The Vite config compiles MDX with the same GFM plugin as Next. `wrangler.do.jsonc` defaults to an isolated preview name; creating a preview or deploying is a separate explicit action.
 
 | Check | What it proves |
 |---|---|
 | `node scripts/check-workspace.mjs` | Read-only Node and installed-versus-locked package drift, checkout identity and dirty state. Use `--root /absolute/checkout` to inspect another checkout. It never installs, cleans or probes providers. |
-| `npm run build` / `npm run smoke:standalone` | Next standalone compilation, fingerprinted input/artifact freshness and local runtime/header behavior. |
-| `npm run build:cloudflare` / `npx wrangler deploy --config wrangler.do.jsonc --dry-run` | vinext/DO compilation and upload/config validation. Dry-run does not exercise browser hydration or a deployed Worker. |
-| `npx wrangler dev --config wrangler.do.jsonc` | Local serving of the built WikiDO candidate. Point Playwright explicitly at this server; the ordinary browser command defaults to standalone. |
-| `npm run check:runtime-url` with exact expected identity | Runtime/header readback at the specified URL. Liveness and self-reported identity do not prove every feature, settlement or independent artifact attestation. |
+| `pnpm run build` / `pnpm run smoke:standalone` | Next standalone compilation, fingerprinted input/artifact freshness and local runtime/header behavior. |
+| `pnpm run build:cloudflare` / `pnpm exec wrangler deploy --config wrangler.do.jsonc --dry-run` | vinext/DO compilation and upload/config validation. Dry-run does not exercise browser hydration or a deployed Worker. |
+| `pnpm exec wrangler dev --config wrangler.do.jsonc` | Local serving of the built WikiDO candidate. Point Playwright explicitly at this server; the ordinary browser command defaults to standalone. |
+| `pnpm run check:runtime-url` with exact expected identity | Runtime/header readback at the specified URL. Liveness and self-reported identity do not prove every feature, settlement or independent artifact attestation. |
 
 Current CI builds both target families but the default browser lane uses standalone; track the production-shaped browser/artifact-promotion work in the [execution plan](docs/superpowers/plans/2026-10-02-entire-workplan.md). Live source probes are separate from deterministic offline tests and from reviewed content claims.
 
@@ -75,37 +75,37 @@ Recommended local release-shaped gate:
 ```bash
 nvm use
 df -h /System/Volumes/Data # inspect capacity before long builds
-npm run check:release-tracked # fails if release proof commands point at local-only proof files
-npm run check:content
-npm run check:live-snapshot # pinned same-provider THORNode supported-chain drift check
-npm run check:live-snapshot -- --artifact .artifacts/live-source-drift/local.json # optional durable drift evidence
-npm run audit:prod
-npm run audit:all
-npm run typecheck
-npm run test:unit
-npm run lint
-npm run build
-npm run smoke:standalone
-CSP_ENFORCE=1 npm run smoke:standalone
-npm run smoke:docker # builds and probes a local Docker candidate; set SKIP_DOCKER_BROWSER_SMOKE=1 to skip the narrow browser lane
-npm run test:e2e:visual # focused route overflow / first-viewport visual safety smoke
-npm run test:e2e:links # rendered internal links, anchors, and hydration/runtime console crawl
-npm run test:e2e
-npm run test:e2e:csp
-CHECK_BASE_URL=https://wiki.thorchain.no REQUIRE_RUNTIME_METADATA=1 CSP_ENFORCE=1 npm run check:runtime-url # public runtime/header drift probe
+pnpm run check:release-tracked # fails if release proof commands point at local-only proof files
+pnpm run check:content
+pnpm run check:live-snapshot # pinned same-provider THORNode supported-chain drift check
+pnpm run check:live-snapshot --artifact .artifacts/live-source-drift/local.json # optional durable drift evidence
+pnpm run audit:prod
+pnpm run audit:all
+pnpm run typecheck
+pnpm run test:unit
+pnpm run lint
+pnpm run build
+pnpm run smoke:standalone
+CSP_ENFORCE=1 pnpm run smoke:standalone
+pnpm run smoke:docker # builds and probes a local Docker candidate; set SKIP_DOCKER_BROWSER_SMOKE=1 to skip the narrow browser lane
+pnpm run test:e2e:visual # focused route overflow / first-viewport visual safety smoke
+pnpm run test:e2e:links # rendered internal links, anchors, and hydration/runtime console crawl
+pnpm run test:e2e
+pnpm run test:e2e:csp
+CHECK_BASE_URL=https://wiki.thorchain.no REQUIRE_RUNTIME_METADATA=1 CSP_ENFORCE=1 pnpm run check:runtime-url # public runtime/header drift probe
 IMAGE_REF=ghcr.io/example/tcwiki@sha256:1111111111111111111111111111111111111111111111111111111111111111 APP_VERSION=1111111111111111111111111111111111111111 ansible-playbook -i inventory/hosts.yml ansible-playbook.yml --syntax-check
 ```
 
-`npm run smoke:docker` builds a local image with strict runtime metadata, runs it on a free localhost port with enforced CSP, probes `/api/health`, `/api/version`, `/api/ready`, security headers, and then runs the narrow `@docker-smoke` browser lane against that same container. Set `DOCKER_SMOKE_PULL=1` to refresh the base image, `SKIP_DOCKER_BROWSER_SMOKE=1` for the API/header-only pass, or `DOCKER_SMOKE_KEEP_IMAGE=1` when debugging the built image.
+`pnpm run smoke:docker` builds a local image with strict runtime metadata, runs it on a free localhost port with enforced CSP, probes `/api/health`, `/api/version`, `/api/ready`, security headers, and then runs the narrow `@docker-smoke` browser lane against that same container. Set `DOCKER_SMOKE_PULL=1` to refresh the base image, `SKIP_DOCKER_BROWSER_SMOKE=1` for the API/header-only pass, or `DOCKER_SMOKE_KEEP_IMAGE=1` when debugging the built image.
 
-`npm run check:release-tracked` verifies that release-proof package scripts, CI wiring, release docs, and their local script/spec dependencies do not point at local-only proof files. Run it before treating local release evidence as ship-ready, especially after adding new scripts, Playwright specs, or shared test helpers. CI runs the same trackedness audit before the rest of the release-shaped app gate.
+`pnpm run check:release-tracked` verifies that release-proof package scripts, CI wiring, release docs, and their local script/spec dependencies do not point at local-only proof files. Run it before treating local release evidence as ship-ready, especially after adding new scripts, Playwright specs, or shared test helpers. CI runs the same trackedness audit before the rest of the release-shaped app gate.
 
-PR CI builds and scans the candidate Docker image, then runs the same `npm run smoke:docker` helper in prebuilt-image mode against the scanned tag exposed at `http://127.0.0.1:3011`. On pushes to `main`, CI publishes the scanned digest, pulls that immutable digest in a fresh `Smoke published image` job, and runs the same runtime/header/browser smoke before Ansible can deploy it. That lane is intentionally narrow: health/version/ready metadata, the shared readiness contract, security headers, the Home first-screen smoke, and one mocked loaded-state smoke each for Network, Dynamic Fees, Economics RUNEPool/POL, and Stats, not the full Playwright suite. The visual lane lives in `tests/visual-safety.spec.ts` plus the deep-dive visual checks. The rendered link lane crawls public sitemap routes in `tests/link-integrity.spec.ts`, verifies same-origin links and anchors, and fails on hydration/framework console problems. Page-specific journeys live in page-named specs so failures point at the feature area.
+PR CI builds and scans the candidate Docker image, then runs the same `pnpm run smoke:docker` helper in prebuilt-image mode against the scanned tag exposed at `http://127.0.0.1:3011`. On pushes to `main`, CI publishes the scanned digest, pulls that immutable digest in a fresh `Smoke published image` job, and runs the same runtime/header/browser smoke before Ansible can deploy it. That lane is intentionally narrow: health/version/ready metadata, the shared readiness contract, security headers, the Home first-screen smoke, and one mocked loaded-state smoke each for Network, Dynamic Fees, Economics RUNEPool/POL, and Stats, not the full Playwright suite. The visual lane lives in `tests/visual-safety.spec.ts` plus the deep-dive visual checks. The rendered link lane crawls public sitemap routes in `tests/link-integrity.spec.ts`, verifies same-origin links and anchors, and fails on hydration/framework console problems. Page-specific journeys live in page-named specs so failures point at the feature area.
 
-`npm run test:e2e` starts a fresh standalone server by default and fails closed when relevant input content or the server artifact differs from its build receipt; preserved mtimes cannot hide changes. Proposal/test document edits do not stale the artifact. Run `npm run build` first for standalone proof, or use `PLAYWRIGHT_WEB_SERVER_COMMAND='npm run dev' npm run test:e2e -- <spec>` for source-mode browser checks while iterating. To test an already running standalone server or a remote deployment instead, set `PLAYWRIGHT_BASE_URL`, for example:
+`pnpm run test:e2e` starts a fresh standalone server by default and fails closed when relevant input content or the server artifact differs from its build receipt; preserved mtimes cannot hide changes. Proposal/test document edits do not stale the artifact. Run `pnpm run build` first for standalone proof, or use `PLAYWRIGHT_WEB_SERVER_COMMAND='pnpm run dev' pnpm run test:e2e <spec>` for source-mode browser checks while iterating. To test an already running standalone server or a remote deployment instead, set `PLAYWRIGHT_BASE_URL`, for example:
 
 ```bash
-PLAYWRIGHT_BASE_URL=https://wiki.thorchain.no npm run test:e2e
+PLAYWRIGHT_BASE_URL=https://wiki.thorchain.no pnpm run test:e2e
 ```
 
 The deployment setup preflights a candidate container on localhost before replacing the live container. It is still not a full blue/green traffic switch, but bad image/version/strict readiness contract candidates (`/api/ready?contract=strict`) are rejected before the existing container is touched, and rollback is attempted if replacement health or version readback fails.

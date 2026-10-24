@@ -11,7 +11,7 @@ Opt-in capture/review:
 ```sh
 node scripts/check-upstream-contracts.mjs --capture .artifacts/upstream-candidate-YYYYMMDD.json
 node scripts/check-upstream-contracts.mjs --report .artifacts/upstream-report-YYYYMMDD.json
-npm run test:unit -- tests/unit/upstream-contracts.test.ts
+pnpm run test:unit tests/unit/upstream-contracts.test.ts
 ```
 
 Outputs must be new files below `.artifacts/`; the command refuses overwrite and does not replace this baseline. Inspect the sanitized JSON and diffs, confirm metadata/redaction, copy a reviewed candidate to a new versioned fixture (or revise v1 deliberately), then run the offline checks and submit a PR. Never update values to make malformed-provider checks pass. The independent scheduled/dispatch workflow retains a seven-day report artifact; ordinary PR tests make no live calls. Reported drift is observation evidence rather than a parser regression verdict. Add fields/sample rows only for a demonstrated parser gap.

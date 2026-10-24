@@ -28,11 +28,12 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v6
         with:
           node-version: ${{ env.NODE_VERSION }}
+      - run: corepack enable
       - name: Sample public readiness and direct THORNode providers
         id: monitor
         continue-on-error: true
         run: >-
-          npm run check:production-readiness --
+          pnpm run check:production-readiness
           --base-url https://wiki.thorchain.no
           --samples 3
           --interval-ms 60000
@@ -65,13 +66,13 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v6
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: npm
-      - run: npm ci --include=optional
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
       - name: Build content review queue
         id: reviews
         continue-on-error: true
         run: >-
-          npm run report:content-reviews --
+          pnpm run report:content-reviews
           --horizon-days 30
           --artifact .artifacts/content-reviews/content-review-schedule.json
       - name: Upload content review evidence
@@ -98,11 +99,11 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v6
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: npm
-      - run: npm ci --include=optional
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
       - name: Capture and compare the five allowlisted public sources
         run: >-
-          npm run report:source-drift --
+          pnpm run report:source-drift
           --refresh
           --artifact .artifacts/source-drift/canonical-source-drift.json
       - name: Upload source drift evidence

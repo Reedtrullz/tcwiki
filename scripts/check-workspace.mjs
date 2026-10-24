@@ -9,11 +9,31 @@ if (args.length && (args.length !== 2 || args[0] !== '--root')) {
 const root = resolve(args[1] ?? process.cwd());
 function json(path) { return existsSync(path) ? JSON.parse(readFileSync(path, 'utf8')) : null; }
 const manifest = json(join(root, 'package.json'));
-const lock = json(join(root, 'package-lock.json'));
-if (!manifest || !lock) throw new Error('Workspace needs package.json and package-lock.json.');
+const lockText = existsSync(join(root, 'pnpm-lock.yaml')) ? readFileSync(join(root, 'pnpm-lock.yaml'), 'utf8') : null;
+if (!manifest || lockText === null) throw new Error('Workspace needs package.json and pnpm-lock.yaml.');
+// Resolved versions of the root importer's direct dependencies, read from the
+// `importers: '.':` block of pnpm-lock.yaml (no YAML dependency needed).
+function lockedRootVersions(text) {
+  const versions = {};
+  const block = text.split(/\r?\n/);
+  let inRoot = false; let current = null;
+  for (const line of block) {
+    if (/^importers:\s*$/.test(line)) continue;
+    if (/^  '?\.'?:\s*$/.test(line)) { inRoot = true; continue; }
+    if (inRoot && /^\S/.test(line)) break;
+    if (inRoot && /^  \S/.test(line)) break;
+    if (!inRoot) continue;
+    const name = line.match(/^      ('?)(.+?)\1:\s*$/);
+    if (name) { current = name[2]; continue; }
+    const version = line.match(/^        version:\s*'?([^('\s]+)/);
+    if (version && current) versions[current] = version[1];
+  }
+  return versions;
+}
+const lockedVersions = lockedRootVersions(lockText);
 const names = ['next', 'react', 'vitest', 'vinext', 'wrangler', '@cloudflare/vite-plugin'];
 const packages = names.filter((name) => manifest.dependencies?.[name] || manifest.devDependencies?.[name]).map((name) => {
-  const locked = lock.packages?.[`node_modules/${name}`]?.version ?? null;
+  const locked = lockedVersions[name] ?? null;
   const installed = json(join(root, 'node_modules', name, 'package.json'))?.version ?? null;
   return { name, declared: manifest.dependencies?.[name] ?? manifest.devDependencies?.[name], locked, installed,
     status: !installed ? 'not-installed' : !locked ? 'missing-lock-entry' : installed === locked ? 'matched' : 'drift' };

@@ -31,47 +31,47 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v6
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-      - run: npm ci --include=optional
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
       - name: Validate exclusive production targets
         run: node scripts/cloudflare-artifact.mjs --targets
         env:
           TCWIKI_CLOUDFLARE_DEPLOY_ENABLED: ${{ vars.TCWIKI_CLOUDFLARE_DEPLOY_ENABLED }}
           TCWIKI_VPS_DEPLOY_ENABLED: ${{ vars.TCWIKI_VPS_DEPLOY_ENABLED }}
-      - run: npm run check:release-tracked
-      - run: npm run audit:prod
+      - run: pnpm run check:release-tracked
+      - run: pnpm run audit:prod
       - name: Audit full dependency tree
-        run: npm run audit:all
-      - run: npm run check:content
-      - run: npm run lint
-      - run: npm run typecheck
-      - run: npm run test:unit
-      - run: npm run build
+        run: pnpm run audit:all
+      - run: pnpm run check:content
+      - run: pnpm run lint
+      - run: pnpm run typecheck
+      - run: pnpm run test:unit
+      - run: pnpm run build
         env:
           CI: true
-      - run: npm run smoke:standalone
-      - run: npm run smoke:standalone
+      - run: pnpm run smoke:standalone
+      - run: pnpm run smoke:standalone
         env:
           CSP_ENFORCE: '1'
       - name: Build Cloudflare Durable Object candidate
-        run: npm run build:cloudflare
+        run: pnpm run build:cloudflare
       - name: Validate Cloudflare upload bundle
-        run: npx wrangler deploy --config wrangler.do.jsonc --dry-run
+        run: pnpm exec wrangler deploy --config wrangler.do.jsonc --dry-run
       - name: Identify complete Cloudflare candidate
         id: worker_artifact
         run: node scripts/cloudflare-artifact.mjs --github-output >> "$GITHUB_OUTPUT"
-      - run: npx playwright install --with-deps chromium
-      - run: npm run test:e2e
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm run test:e2e
         env:
           CI: true
-          PLAYWRIGHT_WEB_SERVER_COMMAND: npm run start:standalone
+          PLAYWRIGHT_WEB_SERVER_COMMAND: pnpm run start:standalone
       - name: Enforced CSP browser smoke
-        run: npm run test:e2e:csp
+        run: pnpm run test:e2e:csp
         env:
           CI: true
-          PLAYWRIGHT_WEB_SERVER_COMMAND: npm run start:standalone
+          PLAYWRIGHT_WEB_SERVER_COMMAND: pnpm run start:standalone
       - name: Browser proof on built Cloudflare WikiDO candidate
-        run: npm run test:e2e:cloudflare
+        run: pnpm run test:e2e:cloudflare
         env:
           CI: true
       - name: Retain tested Cloudflare artifact for promotion
@@ -112,7 +112,7 @@ jobs:
           DOCKER_SMOKE_COMMIT_SHA: ${{ github.sha }}
           DOCKER_SMOKE_IMAGE_REF: ghcr.io/${{ github.repository }}@sha256:1111111111111111111111111111111111111111111111111111111111111111
           DOCKER_SMOKE_PORT: '3011'
-        run: npm run smoke:docker
+        run: pnpm run smoke:docker
       - name: Install pinned Ansible for PR syntax check
         if: github.event_name == 'pull_request'
         run: |
@@ -136,11 +136,11 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v6
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-      - run: npm ci --include=optional
-      - run: npm run check:content
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run check:content
       - name: Check live source snapshot drift
-        run: npm run check:live-snapshot -- --artifact .artifacts/live-source-drift/live-chain-snapshot.json
+        run: pnpm run check:live-snapshot --artifact .artifacts/live-source-drift/live-chain-snapshot.json
       - name: Upload live source drift evidence
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -149,7 +149,7 @@ jobs:
           path: .artifacts/live-source-drift/live-chain-snapshot.json
           if-no-files-found: warn
           retention-days: 30
-      - run: npm run check:runtime-url
+      - run: pnpm run check:runtime-url
         env:
           CHECK_BASE_URL: https://wiki.thorchain.no
           REQUIRE_RUNTIME_METADATA: '1'
@@ -258,15 +258,15 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v6
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+      - run: corepack enable
       - name: Login to GHCR
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.4.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - run: npm ci --include=optional
-      - run: npx playwright install --with-deps chromium
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
       - name: Run published digest smoke
         env:
           DOCKER_SMOKE_SKIP_BUILD: '1'
@@ -275,7 +275,7 @@ jobs:
           DOCKER_SMOKE_IMAGE_REF: ${{ needs.publish.outputs.image_ref }}
           DOCKER_SMOKE_COMMIT_SHA: ${{ needs.publish.outputs.app_version }}
           DOCKER_SMOKE_PORT: '3012'
-        run: npm run smoke:docker
+        run: pnpm run smoke:docker
 
   deploy:
     name: Deploy to VPS
@@ -290,6 +290,7 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v6
         with:
           node-version: ${{ env.NODE_VERSION }}
+      - run: corepack enable
       - name: Install Ansible
         run: |
           python3 -m pip install --upgrade pip
@@ -319,7 +320,7 @@ jobs:
           EXPECTED_IMAGE_REF: ${{ needs.publish.outputs.image_ref }}
           REQUIRE_RUNTIME_METADATA: '1'
           CSP_ENFORCE: '1'
-        run: npm run check:runtime-url
+        run: pnpm run check:runtime-url
 
   deploy-cloudflare:
     name: Deploy to Cloudflare
@@ -334,8 +335,8 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v6
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-      - run: npm ci --include=optional
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
       - name: Download tested Cloudflare artifact
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
@@ -349,7 +350,7 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           WORKER_REF: ${{ needs.build-check.outputs.worker_ref }}
         run: >-
-          npx wrangler deploy --config wrangler.do.jsonc --name thorchain-wiki
+          pnpm exec wrangler deploy --config wrangler.do.jsonc --name thorchain-wiki
           --var CSP_ENFORCE:1 --var RUNTIME_METADATA_REQUIRED:1
           --var THORNODE_SNAPSHOT_LAG_BLOCKS:10
           --var APP_VERSION:${{ github.sha }} --var COMMIT_SHA:${{ github.sha }}
@@ -362,7 +363,7 @@ jobs:
           EXPECTED_IMAGE_REF: ${{ needs.build-check.outputs.worker_ref }}
           REQUIRE_RUNTIME_METADATA: '1'
           CSP_ENFORCE: '1'
-        run: npm run check:runtime-url
+        run: pnpm run check:runtime-url
       - name: Verify routed public domain after propagation
         env:
           CHECK_BASE_URL: https://wiki.thorchain.no
@@ -371,4 +372,4 @@ jobs:
           EXPECTED_IMAGE_REF: ${{ needs.build-check.outputs.worker_ref }}
           REQUIRE_RUNTIME_METADATA: '1'
           CSP_ENFORCE: '1'
-        run: npm run check:runtime-url
+        run: pnpm run check:runtime-url
