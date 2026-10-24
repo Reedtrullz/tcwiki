@@ -4,7 +4,8 @@ import { replaceExplorerUrl } from '@/lib/explorer-url';
 
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import Link from 'next/link';
-import { usePathname, useSearchParams } from 'next/navigation';
+import { usePathname } from 'next/navigation';
+import { useExplorerSearchParamString } from '@/hooks/useExplorerSearchParamString';
 import { Check, Copy, Search, X } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import {
@@ -209,8 +210,8 @@ export function SourceMapExplorer({
   sections: SourceMapExplorerSection[];
 }) {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const searchParamString = searchParams.toString();
+  const searchParamString = useExplorerSearchParamString();
+  const searchParams = useMemo(() => new URLSearchParams(searchParamString), [searchParamString]);
   const filters = useMemo<SourceMapExplorerFilters>(() => ({
     query: searchParams.get(QUERY_PARAM) ?? '',
     view: normalizeSourceMapView(searchParams.get(VIEW_PARAM)),

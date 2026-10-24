@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { mergeExplorerUrl, replaceExplorerUrl } from '@/lib/explorer-url';
+import { getExplorerSearchParamString, mergeExplorerUrl, replaceExplorerUrl, subscribeExplorerQuery } from '@/lib/explorer-url';
 import { parseDynamicFeeRecordFilters } from '@/lib/data/dynamic-fees-helpers';
 
 afterEach(() => vi.unstubAllGlobals());
@@ -24,6 +24,42 @@ describe('explorer URL contract', () => {
     replaceExplorerUrl('/docs?keep=stale', ['source_q']);
     expect(replaceState).toHaveBeenCalledTimes(1);
   });
+  it('exposes the live query string and notifies subscribers on explorer writes', () => {
+    const listeners = new Set<() => void>();
+    const location = { href: 'https://wiki.test/stats?keep=1', search: '?keep=1' };
+    const replaceState = vi.fn((_state: unknown, _title: string, url: string) => {
+      location.href = `https://wiki.test${url}`;
+      location.search = url.includes('?') ? `?${url.split('?')[1].split('#')[0]}` : '';
+    });
+    vi.stubGlobal('window', {
+      location,
+      history: { replaceState },
+      dispatchEvent: (event: Event) => {
+        if (event.type === 'wiki-explorer-query-change') {
+          for (const listener of listeners) listener();
+        }
+        return true;
+      },
+      addEventListener: (type: string, listener: () => void) => {
+        if (type === 'wiki-explorer-query-change' || type === 'popstate' || type === 'pageshow') {
+          listeners.add(listener);
+        }
+      },
+      removeEventListener: (_type: string, listener: () => void) => {
+        listeners.delete(listener);
+      },
+    });
+    const onChange = vi.fn();
+    const unsubscribe = subscribeExplorerQuery(onChange);
+    expect(getExplorerSearchParamString()).toBe('keep=1');
+    replaceExplorerUrl('/stats?pool_q=quote+expiry', ['pool_q']);
+    expect(getExplorerSearchParamString()).toBe('keep=1&pool_q=quote+expiry');
+    expect(onChange).toHaveBeenCalledOnce();
+    unsubscribe();
+    replaceExplorerUrl('/stats?pool_q=reset', ['pool_q']);
+    expect(onChange).toHaveBeenCalledOnce();
+  });
+
   it('validates namespaced fee values without losing whitespace or valid bounds filters', () => {
     expect(parseDynamicFeeRecordFilters(new URLSearchParams('fee_q=BTC+ETH+&fee_whitelist=monitor&fee_bps=above&fee_current=with-current')))
       .toEqual({ query: 'BTC ETH ', whitelist: 'monitor', bps: 'above', current: 'with-current' });

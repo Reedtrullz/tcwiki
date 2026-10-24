@@ -3,7 +3,8 @@
 import { replaceExplorerUrl } from '@/lib/explorer-url';
 
 import { useCallback, useEffect, useMemo, useRef, useSyncExternalStore } from 'react';
-import { usePathname, useSearchParams } from 'next/navigation';
+import { usePathname } from 'next/navigation';
+import { useExplorerSearchParamString } from '@/hooks/useExplorerSearchParamString';
 import { Search, X } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
@@ -151,8 +152,8 @@ export function GovernanceIncidentArchiveExplorer({
   incidentRecords: SourcedRecord<SecurityIncident>[];
 }) {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const searchParamString = searchParams.toString();
+  const searchParamString = useExplorerSearchParamString();
+  const searchParams = useMemo(() => new URLSearchParams(searchParamString), [searchParamString]);
   const filters = useMemo<IncidentFilterState>(() => ({
     query: searchParams.get(QUERY_PARAM) ?? '',
     posture: normalizePostureFilter(searchParams.get(POSTURE_PARAM)),
