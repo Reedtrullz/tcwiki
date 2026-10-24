@@ -23,3 +23,21 @@ export function replaceExplorerUrl(nextHref: string, ownedParameters: readonly s
   window.history.replaceState(null, '', next);
   window.dispatchEvent(new Event(EXPLORER_QUERY_EVENT));
 }
+
+
+/** Subscribe to explorer filter writes (replaceState) and browser history traversal. */
+export function subscribeExplorerQuery(onChange: () => void) {
+  window.addEventListener('popstate', onChange);
+  window.addEventListener('pageshow', onChange);
+  window.addEventListener(EXPLORER_QUERY_EVENT, onChange);
+  return () => {
+    window.removeEventListener('popstate', onChange);
+    window.removeEventListener('pageshow', onChange);
+    window.removeEventListener(EXPLORER_QUERY_EVENT, onChange);
+  };
+}
+
+/** Current query string without leading `?`, matching `URLSearchParams#toString()`. */
+export function getExplorerSearchParamString(): string {
+  return new URLSearchParams(window.location.search).toString();
+}

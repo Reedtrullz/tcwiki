@@ -4,7 +4,8 @@ import { replaceExplorerUrl } from '@/lib/explorer-url';
 
 import { useCallback, useEffect, useMemo, useRef, useSyncExternalStore } from 'react';
 import Link from 'next/link';
-import { usePathname, useSearchParams } from 'next/navigation';
+import { usePathname } from 'next/navigation';
+import { useExplorerSearchParamString } from '@/hooks/useExplorerSearchParamString';
 import { Search, X } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import { FreshnessMeta } from '@/components/ui/FreshnessMeta';
@@ -125,8 +126,8 @@ function GlossaryTermCard({ term }: { term: GlossaryExplorerTerm }) {
 export function GlossaryExplorer({ terms }: { terms: GlossaryExplorerTerm[] }) {
   const hydrated = useSyncExternalStore(() => () => undefined, () => true, () => false);
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const searchParamString = searchParams.toString();
+  const searchParamString = useExplorerSearchParamString();
+  const searchParams = useMemo(() => new URLSearchParams(searchParamString), [searchParamString]);
   const categories = useMemo(
     () => Array.from(new Set(terms.map((term) => term.category))).sort((left, right) => left.localeCompare(right)),
     [terms]

@@ -4,7 +4,8 @@ import { replaceExplorerUrl } from '@/lib/explorer-url';
 
 import { useCallback, useEffect, useMemo, useRef, useSyncExternalStore } from 'react';
 import Link from 'next/link';
-import { usePathname, useSearchParams } from 'next/navigation';
+import { usePathname } from 'next/navigation';
+import { useExplorerSearchParamString } from '@/hooks/useExplorerSearchParamString';
 import { X } from 'lucide-react';
 import type { Chain, EcosystemProject, SourcedRecord } from '@/lib/types';
 import { Badge } from '@/components/ui/Badge';
@@ -135,8 +136,8 @@ function directoryPostureBadgeVariant(posture: EcosystemDirectoryPosture) {
 export function EcosystemFilterList({ projectRecords, chainRecords }: EcosystemFilterListProps) {
   const hydrated = useSyncExternalStore(() => () => undefined, () => true, () => false);
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const searchParamString = searchParams.toString();
+  const searchParamString = useExplorerSearchParamString();
+  const searchParams = useMemo(() => new URLSearchParams(searchParamString), [searchParamString]);
 
   const categories = useMemo(() => uniqueSorted(projectRecords.map((record) => record.data.category)), [projectRecords]);
   const chains = useMemo(() => uniqueSorted(projectRecords.flatMap((record) => record.data.chains)), [projectRecords]);

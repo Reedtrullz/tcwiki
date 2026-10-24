@@ -2,7 +2,8 @@
 
 import Link from 'next/link';
 import { useMemo } from 'react';
-import { usePathname, useSearchParams } from 'next/navigation';
+import { usePathname } from 'next/navigation';
+import { useExplorerSearchParamString } from '@/hooks/useExplorerSearchParamString';
 import { Activity, TrendingUp, TrendingDown, Zap } from 'lucide-react';
 import { useNetworkData, useEarningsHistory, useNetworkStatus, useMidgardHealth, usePools } from '@/lib/hooks/useMidgard';
 import { NetworkStatusBanner } from '@/components/features/NetworkStatusBanner';
@@ -158,8 +159,8 @@ function StatsSourceIssueNotice({
 
 export default function StatsPage() {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const searchParamString = searchParams.toString();
+  const searchParamString = useExplorerSearchParamString();
+  const searchParams = useMemo(() => new URLSearchParams(searchParamString), [searchParamString]);
   const selectedPoolPeriod = normalizeStatsPoolPeriod(searchParams.get('pool_period'));
   const {
     data: networkData,

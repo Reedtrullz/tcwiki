@@ -4,7 +4,8 @@ import { replaceExplorerUrl } from '@/lib/explorer-url';
 
 import { useCallback, useEffect, useMemo, useRef, useSyncExternalStore } from 'react';
 import Link from 'next/link';
-import { usePathname, useSearchParams } from 'next/navigation';
+import { usePathname } from 'next/navigation';
+import { useExplorerSearchParamString } from '@/hooks/useExplorerSearchParamString';
 import { X } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
@@ -122,8 +123,8 @@ function describeNoResults(labels: string[]) {
 export function ProtocolChainFinder({ chainRecords, catalogReviewedAt }: ProtocolChainFinderProps) {
   const hydrated = useSyncExternalStore(() => () => undefined, () => true, () => false);
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const searchParamString = searchParams.toString();
+  const searchParamString = useExplorerSearchParamString();
+  const searchParams = useMemo(() => new URLSearchParams(searchParamString), [searchParamString]);
   const addressFormats = useMemo(
     () => uniqueSorted(chainRecords.flatMap((record) => record.data.addressFormats)),
     [chainRecords]
