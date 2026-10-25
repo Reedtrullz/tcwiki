@@ -23,8 +23,8 @@ async function load(path, instrumented) {
     }
     code = 'export const counts = { compilations: 0, tokenizations: 0, expansions: 0 };\n' + code;
   }
-  const module = await import(`data:text/javascript;base64,${Buffer.from(stripTypeScriptTypes(code)).toString('base64')}#${instrumented}`);
-  return { module, sourceHash: hash(source), instrumentationHash: hash(code),
+  const importedModule = await import(`data:text/javascript;base64,${Buffer.from(stripTypeScriptTypes(code)).toString('base64')}#${instrumented}`);
+  return { module: importedModule, sourceHash: hash(source), instrumentationHash: hash(code),
     sourceBytes: Buffer.byteLength(source), sourceGzipBytes: gzipSync(source, { level: 9 }).length,
     strippedBytes: Buffer.byteLength(stripTypeScriptTypes(source)),
     strippedGzipBytes: gzipSync(stripTypeScriptTypes(source), { level: 9 }).length };
@@ -94,7 +94,11 @@ const plain = await load(sourcePath, false);
 const measured = await load(sourcePath, true);
 const semantics = exercise(plain.module);
 const rows = exercise(measured.module);
-assert.deepEqual(rows.map(({ work, ...row }) => row), semantics, 'instrumentation preserves observations');
+assert.deepEqual(rows.map(row => {
+  const observation = { ...row };
+  delete observation.work;
+  return observation;
+}), semantics, 'instrumentation preserves observations');
 const termInputs = [
   ...cases.map(([, query]) => query),
   ...Array.from({ length: 128 }, (_, i) => `  RUNE${String.fromCharCode(i)}BTC rune AB12 a  `),
