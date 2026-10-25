@@ -14,7 +14,6 @@ export function getSearchQueryTerms(query: string) {
   const normalizedQuery = query.trim().toLowerCase();
   const terms = normalizedQuery
     .split(/[^a-z0-9]+/i)
-    .map((term) => term.trim().toLowerCase())
     .filter((term) => term.length > 1);
 
   return Array.from(new Set([normalizedQuery, ...terms]))
@@ -35,15 +34,17 @@ export function runSafeLunrSearch(index: LunrSearchIndex, query: string): LunrSe
     return [];
   }
 
-  const fallbackQuery = getSafeFallbackQuery(trimmedQuery);
+  let fallbackQuery: string | undefined;
 
   try {
     const results = index.search(trimmedQuery);
-    if (results.length > 0 || !LUNR_QUERY_SYNTAX_CHARS.test(trimmedQuery) || !fallbackQuery) {
+    if (results.length > 0 || !LUNR_QUERY_SYNTAX_CHARS.test(trimmedQuery)) {
       return results;
     }
-    return index.search(fallbackQuery);
+    fallbackQuery = getSafeFallbackQuery(trimmedQuery);
+    return fallbackQuery ? index.search(fallbackQuery) : results;
   } catch {
+    fallbackQuery ??= getSafeFallbackQuery(trimmedQuery);
     if (!fallbackQuery) {
       return [];
     }
