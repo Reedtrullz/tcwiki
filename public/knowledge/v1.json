@@ -11,9 +11,9 @@
   },
   "identity": {
     "authoredInputs": {
-      "src/lib/data/static.ts": "7628491a2e48bb13398a9f4fde56107b3bffc8686986df19b797c366aa300d87",
+      "src/lib/data/static.ts": "1bca86d3c6c9072ba7521bc9e9eb5b4716cf90e17353164009cbe8504968fb54",
       "src/lib/content/registry.ts": "cdbcbda74e1b194e230da107847be2113b10c348b9b222d8765d38e7bec0038b",
-      "src/lib/sources.ts": "66f2e09150c20fb113ff72ddb9fe95f715d71ad228625780d431a821a594ee35",
+      "src/lib/sources.ts": "3a93cde49ef5a31d05d6a0366c5108ef3d2266ce2914383f07b922e0a4890def",
       "src/lib/types.ts": "7ce679173123360384f57985d5980e1307ab7649a0c3439a68de413527f0e10c",
       "src/lib/site.ts": "e79a4609bcf097347fe1660252b7d4db81ae149520cca0b27c7059fd24a07f6d",
       "content/deep-dives/build-query-data.mdx": "d63a031b796c07eac8b50975c4358dc3b599c1455c2813ac9db08a54492b9e83",
@@ -233,6 +233,6 @@
   ],
   "checksum": {
     "algorithm": "sha256",
-    "value": "43e0749a489efab8aeb80fc5953a36ad9c49a44ee80ebb7a4e7623f192351fc9"
+    "value": "431535c3ae13d99f3a851d86609d7bfcf9c5c629b1e621c524ed2dfc45b555d5"
   }
 }

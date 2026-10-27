@@ -955,6 +955,19 @@ describe('SEARCH_DOCUMENTS', () => {
     expect(docsMatching('not canonical protocol proof').some((doc) => doc.id === 'source-map:community-channels')).toBe(true);
   });
 
+  it('finds the reviewed REVSHARE record under both ADR numbers with its review metadata', () => {
+    const record = GOVERNANCE_PROPOSAL_RECORDS.find((candidate) => candidate.data.id === 'adr-027-revshare');
+    const doc = SEARCH_DOCUMENTS.find((candidate) => candidate.id === 'governance:adr-027-revshare');
+    expect(doc).toMatchObject({
+      reviewedAt: record?.freshness.checkedAt,
+      nextReviewDue: record?.freshness.nextReviewDue,
+      confidence: 'curated',
+    });
+    for (const query of ['ADR-027', 'ADR-029', 'REVSHARE']) {
+      expect(docsMatching(query).some((candidate) => candidate.id === doc?.id)).toBe(true);
+    }
+  });
+
   it('indexes source-map decision boundaries and non-claims', () => {
     for (const record of SOURCE_MAP_SECTION_RECORDS) {
       expect(record.data.decision, `${record.data.id} decision`).toBeTruthy();

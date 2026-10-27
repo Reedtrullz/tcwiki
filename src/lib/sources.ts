@@ -463,10 +463,24 @@ export const adr030DelegatedOpsSource: SourceMeta = {
 };
 
 export const adr027AffiliateRevShareSource: SourceMeta = {
-  label: 'ADR-027 Affiliate Revenue Share / REVSHARE (develop)',
-  url: 'https://gitlab.com/thorchain/thornode/-/blob/develop/docs/architecture/adr-027-affiliate-revshare.md',
-  retrievedAt: '2026-08-26',
-  notes: 'Official develop-branch ADR text marked Proposed: per-thorname REVSHARE-<name> operational Mimirs capped at 5000 bps, reserve-funded payouts through AffiliateCollector at end of block.',
+  label: 'ADR-027 Affiliate Revenue Share / REVSHARE (2276d163)',
+  url: 'https://gitlab.com/thorchain/thornode/-/blob/2276d16386e96b6693f11f7e76473623f3fdb767/docs/architecture/adr-027-affiliate-revshare.md',
+  retrievedAt: '2026-10-27',
+  notes: 'Pinned September 18 revision still labels the ADR Proposed. Describes per-THORName REVSHARE Mimirs capped at 5000 bps and reserve-funded block-end payouts through separate THORName collectors. Design status is separate from the official ADR-029 vote report and live activation.',
+};
+
+export const affiliateRevShareImplementationSource: SourceMeta = {
+  label: 'REVSHARE implementation MR 4779',
+  url: 'https://gitlab.com/thorchain/thornode/-/merge_requests/4779',
+  retrievedAt: '2026-10-27',
+  notes: 'GitLab API confirms merged May 18, 2026; squash commit b346a00207cfd694e560706e7e437ab6470e96ec. Merged implementation is not evidence of a current affiliate rate or payout.',
+};
+
+export const affiliateRevShareQ32026Source: SourceMeta = {
+  label: 'Q3 2026 report: ADR-029 approval and planned SwapKit trial',
+  url: 'https://blog.thorchain.org/thorchain-quarterly-report-q3-2026',
+  retrievedAt: '2026-10-27',
+  notes: 'Official October 23 report says nodes approved ADR-029 in August. Describes a planned 20% SwapKit trial lasting one to three months, starting when SwapKit is ready; does not establish that the trial or live payouts have started.',
 };
 
 export const adr031RujiraAlignmentSource: SourceMeta = {
