@@ -1,23 +1,16 @@
+import { readProviderJson } from './bounded-json';
 import type {
   LiveDataResult,
   MayaNetworkStats,
   MayaNode,
   SourceMeta,
 } from '@/lib/types';
-import { liveDegraded, liveOk } from '@/lib/trust';
+import { liveDegraded, liveOk, normalizeApyToPercent } from '@/lib/trust';
 
-const MAYA_MIDGARD_ENDPOINTS: SourceMeta[] = [
-  {
-    label: 'Maya Midgard',
-    url: 'https://midgard.mayachain.info/v2',
-  },
-  {
-    label: 'Maya Midgard (direct)',
-    url: 'https://midgard.mayachain.info/v2',
-  },
-];
-
-let activeEndpoint = 0;
+const MAYA_MIDGARD_ENDPOINT: SourceMeta = {
+  label: 'Maya Midgard',
+  url: 'https://midgard.mayachain.info/v2',
+};
 
 function sourceForPath(endpoint: SourceMeta, path: string): SourceMeta {
   return {
@@ -45,31 +38,24 @@ async function requestFromEndpoint<T>(endpoint: SourceMeta, path: string): Promi
       throw new Error(`${response.status} ${response.statusText}`);
     }
 
-    return await response.json() as T;
+    return await readProviderJson(response, controller.signal) as T;
   } finally {
     globalThis.clearTimeout(timeoutId);
   }
 }
 
-async function request<T>(path: string): Promise<LiveDataResult<T>> {
-  const errors: string[] = [];
+async function request<T>(path: string, normalize: (raw: unknown) => T): Promise<LiveDataResult<T>> {
+  const checkedAt = new Date().toISOString();
+  const source = sourceForPath(MAYA_MIDGARD_ENDPOINT, path);
 
-  for (let i = 0; i < MAYA_MIDGARD_ENDPOINTS.length; i += 1) {
-    const endpointIndex = (activeEndpoint + i) % MAYA_MIDGARD_ENDPOINTS.length;
-    const endpoint = MAYA_MIDGARD_ENDPOINTS[endpointIndex];
-    const checkedAt = new Date().toISOString();
-
-    try {
-      const data = await requestFromEndpoint<T>(endpoint, path);
-      activeEndpoint = endpointIndex;
-      return liveOk(data, sourceForPath(endpoint, path), checkedAt);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unknown Maya Midgard error';
-      errors.push(`${endpoint.label}: ${message}`);
-    }
+  try {
+    const raw = await requestFromEndpoint<unknown>(MAYA_MIDGARD_ENDPOINT, path);
+    const data = normalize(raw);
+    return liveOk(data, source, checkedAt);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown Maya Midgard error';
+    return liveDegraded<T>(`Maya Midgard source did not provide usable data (${message})`, source, checkedAt);
   }
-
-  return liveDegraded<T>(`Maya Midgard source did not respond (${errors.join('; ')})`);
 }
 
 function asString(value: unknown): string | undefined {
@@ -84,6 +70,27 @@ function asRequiredString(value: unknown, field: string): string {
   return s;
 }
 
+function asRequiredNodeAddress(value: unknown): string {
+  if (typeof value !== 'string' || value.trim() === '') {
+    throw new Error('Maya Midgard invalid node.nodeAddress');
+  }
+  return value;
+}
+
+function asRecord(value: unknown, field: string): Record<string, unknown> {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    throw new Error(`Maya Midgard response was not an object (${field})`);
+  }
+  return value as Record<string, unknown>;
+}
+
+function asRequiredBaseUnitString(value: unknown, field: string): string {
+  if (typeof value !== 'string' || !/^\d+$/.test(value)) {
+    throw new Error(`Maya Midgard invalid ${field}`);
+  }
+  return value;
+}
+
 function asNonNegativeInteger(value: unknown, field: string): number {
   if (typeof value === 'number') {
     if (!Number.isSafeInteger(value) || value < 0) throw new Error(`Maya Midgard invalid ${field}`);
@@ -96,74 +103,62 @@ function asNonNegativeInteger(value: unknown, field: string): number {
   return n;
 }
 
+function asApy(value: unknown, field: string): string {
+  const apy = asRequiredString(value, field);
+  const percent = normalizeApyToPercent(apy, 'decimal');
+  if (percent === null || percent < 0) throw new Error(`Maya Midgard invalid ${field}`);
+  return apy;
+}
+
 function normalizeMayaNode(raw: Record<string, unknown>): MayaNode {
-  const nodeAddress = asRequiredString(raw.nodeAddress ?? raw.node_address ?? raw.address, 'node.nodeAddress');
+  const nodeAddress = asRequiredNodeAddress(raw.nodeAddress ?? raw.node_address ?? raw.address);
   const status = asString(raw.status);
+  const rawSlashPoints = raw.slashPoints ?? raw.slash_points;
 
   return {
     nodeAddress,
     address: nodeAddress,
-    bond: asString(raw.bond),
+    bond: raw.bond === undefined || raw.bond === null
+      ? undefined
+      : asRequiredBaseUnitString(raw.bond, 'node.bond'),
     status,
     version: asString(raw.version),
-    slashPoints: typeof raw.slashPoints === 'number' ? raw.slashPoints
-      : typeof raw.slash_points === 'number' ? raw.slash_points
-      : undefined,
+    slashPoints: rawSlashPoints === undefined || rawSlashPoints === null
+      ? undefined
+      : asNonNegativeInteger(rawSlashPoints, 'node.slashPoints'),
     isActive: status ? status.toLowerCase() === 'active' : undefined,
     ipaddress: asString(raw.ipAddress ?? raw.ip_address),
   };
 }
 
-function normalizeMayaNodes(result: LiveDataResult<Record<string, unknown>[]>): LiveDataResult<MayaNode[]> {
-  if (result.status !== 'ok' || !result.data) {
-    return liveDegraded<MayaNode[]>(result.error ?? 'Maya nodes did not load', result.sources ?? result.source, result.checkedAt);
-  }
-  if (!Array.isArray(result.data)) {
-    return liveDegraded<MayaNode[]>('Maya nodes response was not an array', result.sources ?? result.source, result.checkedAt);
-  }
-  try {
-    return { ...result, data: result.data.map(normalizeMayaNode) };
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Maya nodes could not be normalized';
-    return liveDegraded<MayaNode[]>(message, result.sources ?? result.source, result.checkedAt);
-  }
+function normalizeMayaNodes(raw: unknown): MayaNode[] {
+  if (!Array.isArray(raw)) throw new Error('Maya nodes response was not an array');
+  return raw.map((node) => normalizeMayaNode(asRecord(node, 'node')));
 }
 
-function normalizeMayaNetwork(result: LiveDataResult<Record<string, unknown>>): LiveDataResult<MayaNetworkStats> {
-  if (result.status !== 'ok' || !result.data) {
-    return liveDegraded<MayaNetworkStats>(result.error ?? 'Maya network did not load', result.sources ?? result.source, result.checkedAt);
-  }
-  try {
-    return {
-      ...result,
-      data: {
-        totalPooledRune: asRequiredString(result.data.totalPooledRune ?? result.data.total_pooled_rune, 'network.totalPooledRune'),
-        totalReserve: asRequiredString(result.data.totalReserve ?? result.data.total_reserve, 'network.totalReserve'),
-        activeNodeCount: asNonNegativeInteger(result.data.activeNodeCount ?? result.data.active_node_count, 'network.activeNodeCount'),
-        standbyNodeCount: asNonNegativeInteger(result.data.standbyNodeCount ?? result.data.standby_node_count, 'network.standbyNodeCount'),
-        bondingAPY: asRequiredString(result.data.bondingAPY ?? result.data.bonding_apy, 'network.bondingAPY'),
-        liquidityAPY: asRequiredString(result.data.liquidityAPY ?? result.data.liquidity_apy, 'network.liquidityAPY'),
-        nextChurnHeight: asNonNegativeInteger(result.data.nextChurnHeight ?? result.data.next_churn_height, 'network.nextChurnHeight'),
-        bondMetrics: typeof result.data.bondMetrics === 'object' && result.data.bondMetrics !== null
-          ? result.data.bondMetrics as Record<string, unknown>
-          : {},
-      },
-    };
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Maya network could not be normalized';
-    return liveDegraded<MayaNetworkStats>(message, result.sources ?? result.source, result.checkedAt);
-  }
+function normalizeMayaNetwork(raw: unknown): MayaNetworkStats {
+  const data = asRecord(raw, 'network');
+  return {
+    totalPooledRune: asRequiredBaseUnitString(data.totalPooledRune ?? data.total_pooled_rune, 'network.totalPooledRune'),
+    totalReserve: asRequiredBaseUnitString(data.totalReserve ?? data.total_reserve, 'network.totalReserve'),
+    activeNodeCount: asNonNegativeInteger(data.activeNodeCount ?? data.active_node_count, 'network.activeNodeCount'),
+    standbyNodeCount: asNonNegativeInteger(data.standbyNodeCount ?? data.standby_node_count, 'network.standbyNodeCount'),
+    bondingAPY: asApy(data.bondingAPY ?? data.bonding_apy, 'network.bondingAPY'),
+    liquidityAPY: asApy(data.liquidityAPY ?? data.liquidity_apy, 'network.liquidityAPY'),
+    nextChurnHeight: asNonNegativeInteger(data.nextChurnHeight ?? data.next_churn_height, 'network.nextChurnHeight'),
+    bondMetrics: typeof data.bondMetrics === 'object' && data.bondMetrics !== null && !Array.isArray(data.bondMetrics)
+      ? data.bondMetrics as Record<string, unknown>
+      : {},
+  };
 }
 
 export class MayaAPI {
   static async getNetwork(): Promise<LiveDataResult<MayaNetworkStats>> {
-    const raw = await request<Record<string, unknown>>('/network');
-    return normalizeMayaNetwork(raw);
+    return request('/network', normalizeMayaNetwork);
   }
 
   static async getNodes(): Promise<LiveDataResult<MayaNode[]>> {
-    const raw = await request<Record<string, unknown>[]>('/nodes');
-    return normalizeMayaNodes(raw);
+    return request('/mayachain/nodes', normalizeMayaNodes);
   }
 }
 

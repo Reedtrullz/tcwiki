@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
-import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
-import type { StatsPoolExplorerFilters, StatsPoolSortKey } from '@/lib/stats-dashboard';
+import { replaceExplorerUrl } from '@/lib/explorer-url';
+import { normalizeStatsPoolPeriod, type StatsPoolExplorerFilters, type StatsPoolSortKey } from '@/lib/stats-dashboard';
+import type { MidgardPoolPeriod } from '@/lib/types';
 
 const poolSortQueryValues: Record<string, StatsPoolSortKey> = {
   depth: 'runeDepth',
@@ -10,8 +11,10 @@ const poolSortQueryValues: Record<string, StatsPoolSortKey> = {
   volume24hUsd: 'volume24hRune',
   liquidity: 'liquidityUsd',
   liquidityUsd: 'liquidityUsd',
-  apy: 'apyPercent',
-  apyPercent: 'apyPercent',
+  apy: 'poolAPYPercent',
+  apyPercent: 'poolAPYPercent',
+  poolAPY: 'poolAPYPercent',
+  annualPercentageRate: 'annualPercentageRatePercent',
   asset: 'asset',
 };
 
@@ -19,7 +22,8 @@ const poolSortParamValues: Record<StatsPoolSortKey, string> = {
   runeDepth: 'depth',
   volume24hRune: 'volume',
   liquidityUsd: 'liquidity',
-  apyPercent: 'apy',
+  annualPercentageRatePercent: 'annualPercentageRate',
+  poolAPYPercent: 'poolAPY',
   asset: 'asset',
 };
 
@@ -43,16 +47,16 @@ export interface UsePoolExplorerFiltersResult {
   replacePoolFiltersInUrl: (nextFilters: StatsPoolExplorerFilters) => void;
   poolAvailableChains: string[];
   poolAvailableStatuses: string[];
+  poolPeriod: MidgardPoolPeriod;
+  updatePoolPeriod: (period: MidgardPoolPeriod) => void;
 }
 
 export function usePoolExplorerFilters({
-  router,
   pathname,
   searchParamString,
   poolAvailableChains,
   poolAvailableStatuses,
 }: {
-  router: AppRouterInstance;
   pathname: string;
   searchParamString: string;
   poolAvailableChains: string[];
@@ -66,6 +70,7 @@ export function usePoolExplorerFilters({
     status: normalizePoolOptionParam(searchParams.get('pool_status'), poolAvailableStatuses),
     sort: normalizePoolSortParam(searchParams.get('pool_sort')),
   }), [poolAvailableChains, poolAvailableStatuses, searchParams]);
+  const poolPeriod = normalizeStatsPoolPeriod(searchParams.get('pool_period'));
 
   const latestPoolFiltersRef = useRef(poolFilters);
   useEffect(() => {
@@ -74,7 +79,7 @@ export function usePoolExplorerFilters({
 
   const replacePoolFiltersInUrl = useCallback((nextFilters: StatsPoolExplorerFilters) => {
     const params = new URLSearchParams(searchParamString);
-    const query = nextFilters.query.trim();
+    const query = nextFilters.query.slice(0, 256);
     if (query) {
       params.set('pool_q', query);
     } else {
@@ -96,18 +101,21 @@ export function usePoolExplorerFilters({
       params.delete('pool_sort');
     }
     const queryString = params.toString();
-    router.replace(
-      pathname + (queryString ? '?' + queryString : '') + '#available-pools',
-      { scroll: false },
-    );
-  }, [pathname, router, searchParamString]);
+    replaceExplorerUrl(pathname + (queryString ? '?' + queryString : '') + '#available-pools', ['pool_q', 'pool_chain', 'pool_status', 'pool_sort']);
+  }, [pathname, searchParamString]);
 
   const updatePoolFilters = useCallback((partialFilters: Partial<StatsPoolExplorerFilters>) => {
-    replacePoolFiltersInUrl({
-      ...latestPoolFiltersRef.current,
-      ...partialFilters,
-    });
+    const next = { ...latestPoolFiltersRef.current, ...partialFilters };
+    latestPoolFiltersRef.current = next;
+    replacePoolFiltersInUrl(next);
   }, [replacePoolFiltersInUrl]);
+
+  const updatePoolPeriod = useCallback((period: MidgardPoolPeriod) => {
+    const params = new URLSearchParams(searchParamString);
+    params.set('pool_period', period);
+    const queryString = params.toString();
+    replaceExplorerUrl(pathname + (queryString ? '?' + queryString : '') + '#available-pools', ['pool_period']);
+  }, [pathname, searchParamString]);
 
   return {
     poolFilters,
@@ -115,5 +123,7 @@ export function usePoolExplorerFilters({
     replacePoolFiltersInUrl,
     poolAvailableChains,
     poolAvailableStatuses,
+    poolPeriod,
+    updatePoolPeriod,
   };
 }

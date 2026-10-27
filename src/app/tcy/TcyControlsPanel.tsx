@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/Card';
 import { LiveSourceMeta } from '@/components/ui/LiveSourceMeta';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { useNetworkStatus } from '@/lib/hooks/useMidgard';
+import { operationEvidenceNeedsRefresh } from '@/lib/network-status-summary';
 import { liveResultIsDegraded } from '@/lib/live-result';
 import { summarizeSourceWarning } from '@/lib/source-warnings';
 import { getOperationalControlCatalogEntry } from '@/lib/operational-controls';
@@ -16,6 +17,7 @@ interface TcyControlsViewProps {
   result?: LiveDataResult<NetworkStatus>;
   status?: NetworkStatus;
   isLoading?: boolean;
+  onRefresh?: () => unknown;
 }
 
 interface TcyControlDefinition {
@@ -162,6 +164,7 @@ function controlValue(definition: TcyControlDefinition, status: NetworkStatus | 
     };
   }
 
+  if (value === false && operationEvidenceNeedsRefresh(status)) return { label: definition.label, keyName: definition.keyName, value: 'Dated context', tone: 'warning', detail: 'Refresh operation evidence before relying on this observed inactive halt.', rawValue: value };
   if (value === false) {
     return {
       label: definition.label,
@@ -211,6 +214,7 @@ function overallPosture(controls: TcyControlViewModel[], status: NetworkStatus |
       detail: `${active.map((control) => control.label).join(', ')} ${active.length === 1 ? 'needs' : 'need'} current review before saying TCY actions are available.`,
     };
   }
+  if (controls.some(control => control.value === 'Dated context')) return { value: 'Dated context', tone: 'warning' as const, detail: 'Refresh operation evidence before relying on observed inactive TCY controls.' };
   const unknown = controls.filter((control) => control.rawValue !== false);
   if (unknown.length > 0) {
     return {
@@ -266,13 +270,14 @@ function groupedControlValue(
   if (controls.some((control) => control.rawValue === true)) {
     return { value: blockedValue, tone: 'danger' as const };
   }
+  if (controls.some(control => control.value === 'Dated context')) return { value: 'Dated context', tone: 'warning' as const };
   if (controls.some((control) => control.rawValue !== false)) {
     return { value: 'Needs review', tone: 'warning' as const };
   }
   return { value: clearValue, tone: 'success' as const };
 }
 
-export function TcyControlsView({ result, status, isLoading }: TcyControlsViewProps) {
+export function TcyControlsView({ result, status, isLoading, onRefresh }: TcyControlsViewProps) {
   const controls = TCY_CONTROL_DEFINITIONS.map((control) => controlValue(control, status, isLoading));
   const posture = overallPosture(controls, status, isLoading);
   const quality = sourceQuality(result, isLoading);
@@ -374,7 +379,7 @@ export function TcyControlsView({ result, status, isLoading }: TcyControlsViewPr
           <h3 className="text-base font-semibold text-slate-100">Source Posture</h3>
           <p className="mt-1 text-xs leading-relaxed text-slate-400">{snapshotDetail(status)}</p>
           <div className="mt-3">
-            <LiveSourceMeta result={result} />
+            <LiveSourceMeta result={result} onRefresh={onRefresh} />
           </div>
           {warningHeadline && (
             <div className="mt-3 rounded-md border border-amber-500/25 bg-amber-500/10 p-3 text-xs leading-relaxed text-amber-200">
@@ -417,7 +422,7 @@ export function TcyControlsView({ result, status, isLoading }: TcyControlsViewPr
 }
 
 export function TcyControlsPanel() {
-  const { result, data, isLoading } = useNetworkStatus();
+  const { result, data, isLoading, refresh } = useNetworkStatus();
 
-  return <TcyControlsView result={result} status={data} isLoading={isLoading} />;
+  return <TcyControlsView onRefresh={refresh} result={result} status={data} isLoading={isLoading} />;
 }

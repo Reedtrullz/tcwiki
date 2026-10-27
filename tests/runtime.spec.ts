@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { test, expect } from '@playwright/test';
 import { publicSitemapRoutes } from '../src/lib/sitemap';
 import { routeUrl } from '../src/lib/site';
@@ -110,6 +111,11 @@ test.describe('THORChain Wiki Runtime Smoke Tests', () => {
     expect(json.version).toBeTruthy();
     expect(json.runtime).toBeTruthy();
     expect(json.runtime.version).toBe(json.version);
+    if (process.env.PLAYWRIGHT_RUNTIME === 'cloudflare') {
+      const manifest = JSON.parse(readFileSync('.artifacts/cloudflare-manifest.json', 'utf8')) as { commit: string; digest: string };
+      expect(json.runtime).toEqual(expect.objectContaining({ strict: true, verified: true, commit: manifest.commit, image: `cloudflare-worker@sha256:${manifest.digest}`, warnings: [] }));
+    }
+
   });
 
   test('readiness API endpoint responds with readiness metadata @docker-smoke', async ({ request }) => {

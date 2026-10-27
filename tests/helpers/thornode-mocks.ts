@@ -2,6 +2,10 @@ import type { Page, Route } from '@playwright/test';
 
 interface SwapperFirstNetworkMockOptions {
   mimir?: Record<string, unknown>;
+  nodeRows?: Record<string, unknown>[];
+  networkSummary?: Partial<Record<'activeNodeCount' | 'standbyNodeCount', string | number>>;
+  quoteExpiry?: number | null;
+  version?: string;
 }
 
 export async function fulfillJson(route: Route, value: unknown) {
@@ -19,6 +23,27 @@ export async function mockSwapperFirstNetwork(page: Page, options: SwapperFirstN
     { asset: 'BSC.BNB', assetDepth: '100000000', runeDepth: '100000000', status: 'available' },
     { asset: 'SOL.SOL', assetDepth: '100000000', runeDepth: '100000000', status: 'available' },
   ];
+
+  await page.route(/\/v2\/network(?:\?.*)?$/, async (route) => {
+    await fulfillJson(route, {
+      totalPooledRune: '100000000',
+      totalReserve: '200000000',
+      activeNodeCount: options.networkSummary?.activeNodeCount ?? '103',
+      standbyNodeCount: options.networkSummary?.standbyNodeCount ?? '70',
+      bondingAPY: '0.12',
+      liquidityAPY: '0.045',
+      nextChurnHeight: '123456',
+      bondMetrics: {},
+    });
+  });
+  await page.route(/\/thorchain\/nodes(?:\?.*)?$/, async (route) => {
+    await fulfillJson(route, options.nodeRows ?? [
+      { node_address: 'thor1active', status: 'Active', version: '3.20.3' },
+      { node_address: 'thor1standby', status: 'Standby', version: '3.20.3' },
+      { node_address: 'thor1disabled', status: 'Disabled', version: '3.20.2' },
+      { node_address: 'thor1whitelisted', status: 'Whitelisted', version: '3.20.3' },
+    ]);
+  });
 
   await page.route(/\/base\/tendermint\/v1beta1\/blocks\/latest(?:\?.*)?$/, async (route) => {
     await fulfillJson(route, {
@@ -55,7 +80,7 @@ export async function mockSwapperFirstNetwork(page: Page, options: SwapperFirstN
     ]);
   });
   await page.route(/\/thorchain\/version(?:\?.*)?$/, async (route) => {
-    await fulfillJson(route, { current: '3.19.2' });
+    await fulfillJson(route, { current: options.version ?? '3.20.3' });
   });
   await page.route(/\/thorchain\/lastblock(?:\?.*)?$/, async (route) => {
     await fulfillJson(route, [
@@ -110,7 +135,7 @@ export async function mockSwapperFirstNetwork(page: Page, options: SwapperFirstN
       ],
     });
   });
-  await page.route(/\/v2\/pools\?status=available$/, async (route) => {
+  await page.route(/\/v2\/pools\?status=available(?:&period=(?:1h|24h|7d|14d|30d|90d|100d|180d|365d))?$/, async (route) => {
     await fulfillJson(route, pools);
   });
   await page.route(/\/thorchain\/quote\/swap\?.*$/, async (route) => {
@@ -148,7 +173,7 @@ export async function mockSwapperFirstNetwork(page: Page, options: SwapperFirstN
       inbound_confirmation_seconds: 600,
       outbound_delay_seconds: 12,
       total_swap_seconds: 612,
-      expiry: 1790000000,
+      expiry: options.quoteExpiry === null ? undefined : options.quoteExpiry ?? Math.floor(Date.now() / 1000) + 120,
       fees: {
         asset: 'ETH.ETH',
         total: '30000',

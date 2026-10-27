@@ -1,0 +1,9 @@
+# PR-69 OP_RETURN Bitcoin memo source pointer
+
+The current third-party archive was inspected on 3 October using the Agent Reach Jina reader after direct web access was unavailable. Public list/detail text exposes memo payload bytes, Bitcoin transaction/block references and external explorer links. Reader observations are discovery evidence; neither its CONFIRMED label nor its THORChain grouping was independently certified as a cross-chain outcome.
+
+One source graph entry owns the external URL. One new separately dated source-map record carries curated confidence, observed/reviewed 2026-10-03 and due 2026-11-03. Build/query and streaming/refund guides link to that same internal entry. This preserves their July parent review dates and avoids presenting today's source addition as review of all existing claims. The generated section search index exposes the bounded pointer.
+
+Coverage is Bitcoin-only and third-party. Classification, address attribution, complete history, THORChain memo validation and destination settlement are explicit non-claims. No iframe, API integration, ingestion, polling, provider dependence or automatic request to opreturn.xyz is added.
+
+Validation: 685 units across60files, focused source/search/freshness checks, types/lint/content, Next standalone and Cloudflare builds and standalone smoke passed. Seven docs/glossary/internal-link/source-pointer/server-seed browser checks passed on both runtimes with enforced CSP; exact final Next check repeated after registry whitespace cleanup. A separate report-only Next no-JavaScript check passed, confirming the prior server-seed CSP-mode followup. Prior content check rejected a fresh source added to July-reviewed parent entries; those attachments were removed rather than changing their review dates. Initial missing source import and assertion case errors were corrected and retained in local logs. No main merge, deployment or production certification.

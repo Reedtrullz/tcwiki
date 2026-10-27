@@ -12,11 +12,14 @@ import {
   SwapQuoteProbeResult,
   SwapQuoteRequest,
 } from '@/lib/types';
+import { formatEvidenceTimestamp } from '@/lib/utils';
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import { ResponsiveVisibility } from '@/components/ui/ResponsiveVisibility';
+import { ProviderRequestDisclosure } from '@/components/features/ProviderRequestDisclosure';
 import { LiveSourceMeta } from '@/components/ui/LiveSourceMeta';
 import { usePools, useSwapQuoteProbe } from '@/lib/hooks/useMidgard';
+import { hasUnreviewedControlSemantics } from '@/lib/source-warnings';
 import {
   AvailabilityCell,
   ChainAvailability,
@@ -24,6 +27,8 @@ import {
   deriveNodeOperatorActionControls,
   deriveNetworkWideControls,
   deriveRouteAvailability,
+  quoteProofValidity,
+  routeOperationFingerprint,
   NATIVE_RUNE_ASSET,
 } from '@/lib/network-diagnostics';
 
@@ -36,6 +41,7 @@ interface NetworkStatusBannerProps {
   isLoading?: boolean;
   variant?: NetworkStatusBannerVariant;
   showQuoteChecker?: boolean;
+  onRefresh?: () => unknown;
 }
 
 interface EvidenceRow {
@@ -153,6 +159,9 @@ function isEnablementControlKey(key: string) {
 }
 
 function getControlStateLabel(key: string, state: string) {
+  if (state === 'unsupported') {
+    return 'review applicability';
+  }
   if (!isEnablementControlKey(key)) {
     if (state === 'active') {
       const upperKey = key.toUpperCase();
@@ -187,6 +196,9 @@ function getControlClassName(state: string, active: boolean) {
   }
   if (state === 'unparseable') {
     return 'border-amber-500/30 bg-amber-500/10 text-amber-200';
+  }
+  if (state === 'unsupported') {
+    return 'border-amber-500/30 bg-amber-500/10 text-amber-100';
   }
   if (state === 'scheduled') {
     return 'border-sky-500/30 bg-sky-500/10 text-sky-200';
@@ -291,19 +303,22 @@ function parseWarningKeys(message: string) {
 }
 
 function fallbackWarningDetail(message: string): NetworkStatusSourceWarning {
-  const category = message.includes('Unknown operation-like')
-    ? 'unknown-operation'
-    : message.includes('Known operational-support')
-      ? 'mimir-support'
-      : message.includes('Unknown chain-scoped')
-        ? 'unknown-chain'
-        : message.includes('could not be parsed')
-          ? 'mimir-parse'
-          : message.includes('latest block timestamp')
-            ? 'freshness'
-            : message.includes('omitted') || message.includes('missing') || message.includes('did not include')
-              ? 'source-shape'
-              : 'other';
+  let category: NetworkStatusSourceWarning['category'] = 'other';
+  if (message.includes('Unknown operation-like')) {
+    category = 'unknown-operation';
+  } else if (message.includes('Known operational-support')) {
+    category = 'mimir-support';
+  } else if (message.includes('Unknown chain-scoped')) {
+    category = 'unknown-chain';
+  } else if (message.includes('Operational-control semantics have not been reviewed')) {
+    category = 'control-applicability';
+  } else if (message.includes('could not be parsed')) {
+    category = 'mimir-parse';
+  } else if (message.includes('latest block timestamp')) {
+    category = 'freshness';
+  } else if (message.includes('omitted') || message.includes('missing') || message.includes('did not include')) {
+    category = 'source-shape';
+  }
   const keys = category === 'unknown-operation' || category === 'unknown-chain' || category === 'mimir-support'
     ? parseWarningKeys(message)
     : [];
@@ -327,6 +342,9 @@ function getWarningDetails(status: NetworkStatus | undefined) {
 }
 
 function getWarningTitle(detail: NetworkStatusSourceWarning) {
+  if (detail.category === 'control-applicability') {
+    return 'Operational-control applicability needs review.';
+  }
   if ((detail.category === 'unknown-operation' || detail.category === 'unknown-chain') && detail.keys?.length) {
     return `${detail.keys.length} ${detail.category === 'unknown-operation' ? 'operation-like' : 'chain-scoped'} Mimir ${detail.keys.length === 1 ? 'key needs' : 'keys need'} review.`;
   }
@@ -353,7 +371,8 @@ function hasKeyLikeWarning(detail: NetworkStatusSourceWarning) {
   return detail.category === 'unknown-operation' ||
     detail.category === 'unknown-chain' ||
     detail.category === 'mimir-support' ||
-    detail.category === 'mimir-parse';
+    detail.category === 'mimir-parse' ||
+    detail.category === 'control-applicability';
 }
 
 function getDisclosureKeys(keys: string[] | undefined) {
@@ -423,6 +442,14 @@ function getSwapStatusPresentation(
       badge: 'unknown',
       summary: status.summary || 'THORNode status could not be classified.',
       detail: 'Live swap controls could not be classified.',
+    };
+  }
+
+  if (hasUnreviewedControlSemantics(status)) {
+    return {
+      tone: 'unknown', label: 'Review applicability', badge: 'needs review',
+      summary: 'Control applicability is unreviewed; raw Mimir observations do not prove swap availability.',
+      detail: 'Review the exact THORNode source revision',
     };
   }
 
@@ -559,6 +586,13 @@ function deriveNodeOperationCell(
   pausedOrHalted: boolean | null | undefined,
   control: OperationalControlStatus | undefined
 ): { cell: AvailabilityCell; reason: string } {
+  if (control?.state === 'unsupported') {
+    const reason = `${definition.key} semantics are unreviewed for the reported THORNode version.`;
+    return {
+      cell: { state: 'needs-review', label: 'Review applicability', reasons: [reason] },
+      reason,
+    };
+  }
   if (control?.state === 'active' || pausedOrHalted === true) {
     const reason = `${definition.key} is active in current Mimir.`;
     return {
@@ -783,7 +817,7 @@ function routeFallbackStatusLabel(routeStatus: ReturnType<typeof deriveRouteAvai
     <div className={`rounded-md border px-3 py-2 text-xs ${quoteStatusClassName(routeStatus.status)}`}>
       <p className="font-semibold">{routeStatus.label}</p>
       {routeStatus.reasons.length > 0 && (
-        <p className="mt-1 text-slate-300/80">{routeStatus.reasons.slice(0, 2).join(' / ')}</p>
+        <p className="mt-1 text-slate-300/80">{routeStatus.reasons.join(' / ')}</p>
       )}
     </div>
   );
@@ -843,14 +877,16 @@ function getRefundTriageIntro(
   }
   if (quoteData?.quote) {
     return {
-      title: 'Current route is open',
-      summary: 'A current quote confirms this route is open for this pair and amount now. Check an explorer for refund causes.',
+      title: 'Quote returned for this route',
+      summary: routeStatus.status === 'available'
+        ? 'The provider returned an unexpired quote for this pair and amount. Execution and any refund still require transaction evidence.'
+        : 'The recorded quote is retained, but operation evidence limits or cannot confirm execution. Recheck explicitly; transaction evidence is still required.',
     };
   }
   if (quoteData?.failure) {
     return {
-      title: 'Current quote failed or was limited',
-      summary: 'The quote error is useful current route evidence. It only explains a past refund when the route, amount, quote flow, memo, and transaction evidence line up.',
+      title: 'Quote check failed or was limited',
+      summary: 'The recorded quote error is route-check evidence. It only explains a past refund when the route, amount, quote flow, memo, and transaction evidence line up.',
     };
   }
   if (quoteError) {
@@ -878,24 +914,24 @@ function buildRefundTriageRows(
 ): RefundTriageRow[] {
   const quoteRow: RefundTriageRow = quoteData?.quote
     ? {
-        label: 'Current quote result',
+        label: 'Recorded quote result',
         state: 'present',
         detail: 'THORNode returned a quote for the selected route and amount. Treat it as current-only route evidence.',
       }
     : quoteData?.failure
       ? {
-          label: 'Current quote result',
+          label: 'Recorded quote result',
           state: 'present',
           detail: quoteData.failure.message,
         }
       : quoteError
         ? {
-            label: 'Current quote result',
+            label: 'Recorded quote result',
             state: 'review',
-            detail: 'A quote was attempted, but the response could not be used as route proof.',
+            detail: quoteError,
           }
         : {
-            label: 'Current quote result',
+            label: 'Recorded quote result',
             state: 'missing',
             detail: 'No quote has been checked for this selected route and amount.',
           };
@@ -992,7 +1028,7 @@ function RefundTriagePanel({
   );
 }
 
-function RouteQuoteChecker({ status, statusLoading }: { status: NetworkStatus | undefined; statusLoading: boolean }) {
+function RouteQuoteChecker({ status, statusLoading, operationsResult }: { status: NetworkStatus | undefined; statusLoading: boolean; operationsResult?: LiveDataResult<NetworkStatus> }) {
   const { data: pools, result: poolsResult, isLoading: poolsLoading } = usePools();
   const routePools = useMemo(() => routeSelectablePools(pools), [pools]);
   const poolGroups = useMemo(() => groupPoolsByChain(routePools), [routePools]);
@@ -1008,6 +1044,9 @@ function RouteQuoteChecker({ status, statusLoading }: { status: NetworkStatus | 
   const [quoteRequestVersion, setQuoteRequestVersion] = useState(0);
   const [inputError, setInputError] = useState<string | null>(null);
   const [quoteInvalidated, setQuoteInvalidated] = useState(false);
+  const [operationSnapshot, setOperationSnapshot] = useState<string>();
+  const [operationChanged, setOperationChanged] = useState(false);
+  const [quoteNow, refreshQuoteClock] = useState(() => Date.now());
   const routeQueryHydratedRef = useRef(false);
   const routeQueryActiveRef = useRef(false);
   const routeSectionRef = useRef<HTMLElement | null>(null);
@@ -1037,14 +1076,50 @@ function RouteQuoteChecker({ status, statusLoading }: { status: NetworkStatus | 
   const sameAssetSelected = Boolean(selectedFromAsset && selectedToAsset && selectedFromAsset === selectedToAsset);
   const amountValidationMessage = amount && !amountBaseUnits ? 'Enter a positive amount with up to 8 decimals.' : null;
   const routeInputMessage = inputError ?? (sameAssetSelected ? 'Choose two different assets.' : amountValidationMessage);
+  const operationFingerprint = routeOperationFingerprint(selectedFromAsset, selectedToAsset, status);
+  const materialChange = Boolean(operationSnapshot && operationSnapshot !== operationFingerprint);
+  useEffect(() => {
+    if (!quoteRequest || !materialChange || operationChanged) return;
+    const timer = window.setTimeout(() => setOperationChanged(true), 0);
+    return () => window.clearTimeout(timer);
+  }, [quoteRequest, materialChange, operationChanged]);
   const routeStatus = deriveRouteAvailability(
     selectedFromAsset,
     selectedToAsset,
     status,
     routePools,
-    activeQuoteData
+    activeQuoteData,
+    quoteNow,
+    { quote: activeQuoteResult, operations: operationsResult, operationChanged: operationChanged || materialChange }
   );
-  const canSubmit = Boolean(selectedFromAsset && selectedToAsset && !sameAssetSelected && amountBaseUnits && !activeQuoteIsLoading);
+  const quoteValidity = quoteProofValidity(activeQuoteData?.quote);
+  const usableQuoteData = activeQuoteData?.quote && quoteValidity !== 'valid' ? undefined : activeQuoteData;
+  const staleQuoteError = activeQuoteData?.quote && quoteValidity !== 'valid'
+    ? (quoteValidity === 'expired' ? 'The recorded quote has expired.' : 'The recorded quote has no usable expiry.')
+    : undefined;
+  const retryAtMs = Date.parse(activeQuoteData?.failure?.retryAt ?? '');
+  const retryBlocked = Number.isFinite(retryAtMs) && retryAtMs > quoteNow;
+  const quoteExpiry = activeQuoteData?.quote?.expiry;
+  useEffect(() => {
+    const deadline = quoteExpiry !== undefined && Number.isFinite(quoteExpiry) ? quoteExpiry * 1000 : retryAtMs;
+    if (!Number.isFinite(deadline)) return;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    function schedule() {
+      const remaining = deadline - Date.now();
+      if (remaining > 0) timer = setTimeout(update, Math.min(remaining, 2_147_483_647));
+    }
+    function update() {
+      clearTimeout(timer);
+      refreshQuoteClock(Date.now());
+      schedule();
+    }
+    function onResume() { if (document.visibilityState === 'visible') update(); }
+    update();
+    document.addEventListener('visibilitychange', onResume);
+    window.addEventListener('focus', update);
+    return () => { clearTimeout(timer); document.removeEventListener('visibilitychange', onResume); window.removeEventListener('focus', update); };
+  }, [quoteExpiry, retryAtMs]);
+  const canSubmit = Boolean(selectedFromAsset && selectedToAsset && !sameAssetSelected && amountBaseUnits && !activeQuoteIsLoading && !retryBlocked);
 
   const replaceRouteQueryInUrl = useCallback((nextState: {
     fromAsset: string;
@@ -1207,6 +1282,7 @@ function RouteQuoteChecker({ status, statusLoading }: { status: NetworkStatus | 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const now = Date.now();
+    if (retryBlocked) { setInputError('Provider rate limit: wait for the retry time before checking again.'); return; }
     if (now - lastSubmittedAtRef.current < 1000) {
       setInputError('Quote checks are throttled to about one request per second.');
       return;
@@ -1226,6 +1302,8 @@ function RouteQuoteChecker({ status, statusLoading }: { status: NetworkStatus | 
 
     setInputError(null);
     setQuoteInvalidated(false);
+    setOperationSnapshot(operationFingerprint);
+    setOperationChanged(false);
     lastSubmittedAtRef.current = now;
     setQuoteRequest({
       fromAsset: selectedFromAsset,
@@ -1251,7 +1329,9 @@ function RouteQuoteChecker({ status, statusLoading }: { status: NetworkStatus | 
         </div>
       </div>
 
-      <form className="mt-3 grid gap-2 lg:grid-cols-[1fr_1fr_0.8fr_auto]" onSubmit={handleSubmit}>
+      <ProviderRequestDisclosure variant="quote" />
+
+      <form aria-describedby="quote-request-disclosure" className="mt-3 grid gap-2 lg:grid-cols-[1fr_1fr_0.8fr_auto]" onSubmit={handleSubmit}>
         <label className="text-xs text-slate-300">
           <span className="mb-1 block text-[10px] font-semibold uppercase tracking-wider text-slate-500">From asset</span>
           <select
@@ -1306,13 +1386,19 @@ function RouteQuoteChecker({ status, statusLoading }: { status: NetworkStatus | 
             disabled={!canSubmit}
             className="w-full rounded-md border border-accent/40 bg-accent/10 px-3 py-2 text-sm font-semibold text-accent transition-colors hover:border-rune hover:text-rune disabled:cursor-not-allowed disabled:border-slate-700 disabled:bg-slate-900 disabled:text-slate-500"
           >
-            {activeQuoteIsLoading ? 'Checking' : 'Check route'}
+            {activeQuoteIsLoading ? 'Checking' : retryBlocked ? 'Retry later' : 'Check route'}
           </button>
         </div>
       </form>
 
       {routeInputMessage && (
         <p className="mt-2 text-xs text-amber-200">{routeInputMessage}</p>
+      )}
+
+      {retryBlocked && (
+        <p className="mt-2 text-xs text-amber-200" role="status">
+          Provider rate limit. Manual retry available after {new Date(retryAtMs).toISOString()}.
+        </p>
       )}
 
       {quoteInvalidated && (
@@ -1344,6 +1430,7 @@ function RouteQuoteChecker({ status, statusLoading }: { status: NetworkStatus | 
             ['Recommended min input', formatBaseUnitAmount(activeQuoteData.quote.recommendedMinAmountIn, selectedFromAsset)],
             ['Estimated time', formatQuoteDuration(activeQuoteData.quote.totalSwapSeconds)],
             ['Quote expiry', formatQuoteExpiry(activeQuoteData.quote.expiry)],
+            ['Quote checked at', formatQuoteExpiry(activeQuoteResult?.checkedAt ? Date.parse(activeQuoteResult.checkedAt) / 1000 : undefined)],
           ].map(([label, value]) => (
             <div key={label} className="rounded-md border border-border bg-slate-950/30 px-3 py-2">
               <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">{label}</p>
@@ -1367,8 +1454,8 @@ function RouteQuoteChecker({ status, statusLoading }: { status: NetworkStatus | 
       )}
 
       <RefundTriagePanel
-        activeQuoteData={activeQuoteData}
-        activeQuoteError={activeQuoteError}
+        activeQuoteData={usableQuoteData}
+        activeQuoteError={staleQuoteError ?? activeQuoteError}
         isCheckingQuote={activeQuoteIsLoading}
         routeStatus={routeStatus}
       />
@@ -1401,8 +1488,9 @@ function chunkControlsByGroup(controls: OperationalControlStatus[]) {
   return [...groups.entries()];
 }
 
-export function NetworkStatusBanner({ result, isLoading = false, variant = 'diagnostic', showQuoteChecker = false }: NetworkStatusBannerProps) {
+export function NetworkStatusBanner({ result, isLoading = false, variant = 'diagnostic', showQuoteChecker = false, onRefresh }: NetworkStatusBannerProps) {
   const status = result?.data;
+  const unreviewedControls = hasUnreviewedControlSemantics(status);
   const isPaused = status?.state === 'paused';
   const isDegraded = result?.status === 'degraded' || status?.state === 'degraded';
   const isUnknown = status?.state === 'unknown';
@@ -1410,7 +1498,7 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
   const hasInvalidMimirKeys = Boolean(status && status.invalidMimirKeys.length > 0);
   const warningDetails = getWarningDetails(status);
   const hasSourceWarnings = Boolean(status && (hasInvalidMimirKeys || status.sourceWarnings.length > 0 || warningDetails.length > 0));
-  const scheduledMimirKeys = status?.scheduledMimirKeys ?? [];
+  const scheduledMimirKeys = unreviewedControls ? [] : status?.scheduledMimirKeys ?? [];
   const hasScheduledMimirKeys = scheduledMimirKeys.length > 0;
   const scheduledControls = status?.monitoredControls.filter((control) => control.state === 'scheduled') ?? [];
   const hasTrustWarning = isPaused || isDegraded || isUnknown || isUnavailable || hasSourceWarnings || hasScheduledMimirKeys;
@@ -1433,7 +1521,8 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
     control.active ||
     control.state === 'disabled' ||
     control.state === 'scheduled' ||
-    control.state === 'unparseable'
+    control.state === 'unparseable' ||
+    control.state === 'unsupported'
   )) ?? [];
   const secondaryControls = status?.monitoredControls.filter((control) => !priorityControls.includes(control)) ?? [];
 
@@ -1498,8 +1587,8 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
       key,
       state: 'active',
     }));
-  const evidenceRows = [...controlEvidenceRows, ...chainMimirEvidenceRows, ...inboundEvidenceRows, ...scopedEvidenceRows];
-  const evidenceCount = evidenceRows.length;
+  const evidenceRows = unreviewedControls ? [] : [...controlEvidenceRows, ...chainMimirEvidenceRows, ...inboundEvidenceRows, ...scopedEvidenceRows];
+  const evidenceCount = unreviewedControls ? Object.keys(status?.observedMimir ?? {}).length : evidenceRows.length;
   const Icon = hasTrustWarning ? AlertTriangle : CheckCircle2;
   const primaryBadgeVariant = swapStatus.tone === 'open'
     ? 'success'
@@ -1536,7 +1625,9 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
     : result?.error ?? (isUnavailable ? 'Current-only THORNode status is unavailable.' : swapStatus.summary);
   const compact = variant === 'compact';
   const otherOperationsDetail = status
-    ? activeActions.length === 0
+    ? unreviewedControls
+      ? 'Raw controls need source review before operation availability can be classified'
+      : activeActions.length === 0
       ? 'No LP, loans, churning, node, secured, TCY, trade, WASM, or app-layer pause observed'
       : operationAffectedChains.length > 0
         ? `${operationAffectedChains.length} chain status${operationAffectedChains.length === 1 ? '' : 'es'} with direct non-swap operation impacts`
@@ -1550,14 +1641,14 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
     },
     {
       label: 'Limited chains',
-      value: status ? (swapLimitedChains.length > 0 ? swapLimitedChains.map((chain) => chain.chain).join(', ') : 'None observed') : 'Unavailable',
+      value: unreviewedControls ? 'Review applicability' : status ? (swapLimitedChains.length > 0 ? swapLimitedChains.map((chain) => chain.chain).join(', ') : 'None observed') : 'Unavailable',
       detail: status && swapLimitedChains.length > 0
         ? swapLimitedChains.map((chain) => `${chain.chain}: ${firstSwapReasonText(chain)}`).join(' / ')
         : undefined,
     },
     {
       label: 'Other operations',
-      value: status ? (activeActions.length > 0 ? activeActions.slice(0, 2).join(', ') : 'None observed') : 'Unavailable',
+      value: unreviewedControls ? 'Review applicability' : status ? (activeActions.length > 0 ? activeActions.slice(0, 2).join(', ') : 'None observed') : 'Unavailable',
       detail: otherOperationsDetail ?? undefined,
     },
     {
@@ -1611,7 +1702,7 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
           </div>
         </div>
         <div className="min-w-52">
-          <LiveSourceMeta result={sourceMetaResult} />
+          <LiveSourceMeta result={sourceMetaResult} onRefresh={onRefresh} />
           {status?.thorNodeVersion && (
             <p className="mt-1 text-[11px] text-slate-400">THORNode {status.thorNodeVersion}</p>
           )}
@@ -1619,7 +1710,7 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
             <p className="mt-1 text-[11px] text-slate-400">
               THORChain height {status.thorchainHeight}
               {status.thorchainSnapshotPinned === false ? ' / snapshot unpinned' : ''}
-              {status.thorchainBlockTime ? ` / block time ${new Date(status.thorchainBlockTime).toLocaleTimeString()}` : ''}
+              {status.thorchainBlockTime ? ` / block time ${formatEvidenceTimestamp(status.thorchainBlockTime)}` : ''}
               {status.thorchainBlockAgeSeconds !== undefined ? ` / Block age ${formatBlockAge(status.thorchainBlockAgeSeconds)}` : ''}
               {status.thorchainLastblockSpread !== undefined && status.thorchainLastblockSpread > 0 ? ` / lastblock spread ${status.thorchainLastblockSpread} blocks` : ''}
             </p>
@@ -1675,9 +1766,9 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
             </span>
           </div>
           {nodeOperationRows.length > 0 ? (
-            <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
               {nodeOperationRows.map((operation) => (
-                <div key={operation.id} className={`rounded-md border p-3 ${nodeOperationCardClassName(operation.cell)}`}>
+                <div key={operation.id} className={`min-w-0 rounded-md border p-3 [overflow-wrap:anywhere] ${nodeOperationCardClassName(operation.cell)}`}>
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="text-sm font-semibold text-slate-200">{operation.label}</span>
                     {renderStatusCell(operation.cell)}
@@ -1837,7 +1928,7 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
               </div>
             ))}
           </ResponsiveVisibility>
-          <ResponsiveVisibility desktop className="overflow-x-auto rounded-md border border-border">
+          <ResponsiveVisibility desktop className="overflow-x-auto rounded-md border border-border focus-visible:outline-accent" role="region" aria-label="Per-chain operation table" tabIndex={0}>
             <table className="min-w-[1040px] w-full text-left text-[11px]">
               <caption className="sr-only">Per-chain live operation state</caption>
               <thead className="bg-slate-950/30 text-slate-400">
@@ -1870,10 +1961,12 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
       )}
 
       {!compact && showQuoteChecker && (
-        <RouteQuoteChecker status={status} statusLoading={isLoading} />
+        <RouteQuoteChecker status={status} statusLoading={isLoading} operationsResult={result} />
       )}
 
-      {!compact && evidenceRows.length > 0 && (
+      {!compact && <ProviderRequestDisclosure variant="diagnostic" />}
+
+      {!compact && (evidenceRows.length > 0 || (unreviewedControls && status?.observedMimir)) && (
         <details className="mt-4 rounded-md border border-border bg-surface/50">
           <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2 text-xs font-semibold text-slate-300">
             <span>Operational evidence</span>
@@ -1881,8 +1974,16 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
           </summary>
           <div className="border-t border-border px-3 py-3">
             <p className="text-[11px] text-slate-400">
-              Active Mimir keys and inbound-address fields from the live THORNode source above. Global controls appear once here instead of being repeated on every inherited chain card.
+              {unreviewedControls
+                ? 'Raw Mimir observations are retained without assigning active or inactive meaning to unreviewed semantics.'
+                : 'Active Mimir keys and inbound-address fields from the live THORNode source above. Global controls appear once here instead of being repeated on every inherited chain card.'}
             </p>
+            {unreviewedControls && (
+              <pre className="mt-3 max-h-80 overflow-auto rounded border border-border bg-slate-950 p-2 text-[10px] text-slate-300">
+                {JSON.stringify(status?.observedMimir, null, 2)}
+              </pre>
+            )}
+            {!unreviewedControls && <>
             <div className="mt-3 space-y-2 sm:hidden" role="list" aria-label="Active source evidence for network operation state">
               {evidenceRows.map((row) => (
                 <div key={`mobile:${row.id}`} role="listitem" className="rounded-md border border-border bg-slate-950/30 p-2">
@@ -1901,7 +2002,7 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
                 </div>
               ))}
             </div>
-            <div className="mt-3 hidden overflow-x-auto sm:block">
+            <div className="mt-3 hidden overflow-x-auto sm:block focus-visible:outline-accent" role="region" aria-label="Source evidence table" tabIndex={0}>
               <table className="min-w-[720px] text-left text-[11px]">
                 <caption className="sr-only">Active source evidence for network operation state</caption>
                 <thead className="text-slate-400">
@@ -1930,6 +2031,7 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
                 </tbody>
               </table>
             </div>
+            </>}
           </div>
         </details>
       )}
@@ -2003,7 +2105,7 @@ export function NetworkStatusBanner({ result, isLoading = false, variant = 'diag
             {priorityControls.length > 0 ? (
               priorityControls.map(renderControlChip)
             ) : (
-              <span className="text-xs text-slate-400">No active, disabled, scheduled, or unparseable monitored controls.</span>
+              <span className="text-xs text-slate-400">No active, disabled, scheduled, unparseable, or unsupported monitored controls.</span>
             )}
           </div>
           {secondaryControls.length > 0 && (

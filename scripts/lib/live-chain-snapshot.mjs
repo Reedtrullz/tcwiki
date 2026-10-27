@@ -1,18 +1,9 @@
+import { THORNODE_PROVIDER_DEFAULTS, THORNODE_CHAIN_SET_POLICY } from './thornode-data-policy.mjs';
+import { responseHeightEvidence } from './response-height.mjs';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
 
-export const DEFAULT_THORNODE_SOURCES = [
-  {
-    label: 'Liquify THORNode',
-    url: 'https://gateway.liquify.com/chain/thorchain_api/thorchain',
-    cosmosUrl: 'https://gateway.liquify.com/chain/thorchain_api/cosmos',
-  },
-  {
-    label: 'THORChain THORNode',
-    url: 'https://thornode.thorchain.network/thorchain',
-    cosmosUrl: 'https://thornode.thorchain.network/cosmos',
-  },
-];
+export const DEFAULT_THORNODE_SOURCES = THORNODE_PROVIDER_DEFAULTS;
 
 export const INBOUND_OPERATION_FIELDS = [
   'halted',
@@ -22,10 +13,10 @@ export const INBOUND_OPERATION_FIELDS = [
 ];
 
 const LATEST_BLOCK_PATH = '/base/tendermint/v1beta1/blocks/latest';
-const BLOCK_STALE_WARNING_SECONDS = 12;
-const BLOCK_STALE_DEGRADED_SECONDS = 30;
-const BLOCK_FUTURE_WARNING_SECONDS = 12;
-const BLOCK_FUTURE_DEGRADED_SECONDS = 30;
+const BLOCK_STALE_WARNING_SECONDS = THORNODE_CHAIN_SET_POLICY.blockAgeWarningSeconds;
+const BLOCK_STALE_DEGRADED_SECONDS = THORNODE_CHAIN_SET_POLICY.blockAgeDegradedSeconds;
+const BLOCK_FUTURE_WARNING_SECONDS = THORNODE_CHAIN_SET_POLICY.futureWarningSeconds;
+const BLOCK_FUTURE_DEGRADED_SECONDS = THORNODE_CHAIN_SET_POLICY.futureDegradedSeconds;
 const FETCH_TIMEOUT_MS = 10_000;
 const MAX_EVIDENCE_MESSAGE_LENGTH = 500;
 const EVIDENCE_CHECK_NAME = 'live-chain-snapshot';
@@ -61,7 +52,7 @@ export function getConservativeSnapshotHeight(latestHeight) {
     throw new Error(`latest height must be a non-negative safe integer; got ${latestHeight}.`);
   }
 
-  return Math.max(0, latestHeight - 1);
+  return Math.max(0, latestHeight - THORNODE_CHAIN_SET_POLICY.snapshotLagBlocks);
 }
 
 export function parseLatestBlockInfo(value) {
@@ -196,6 +187,7 @@ function providerSnapshotEvidence(snapshot, status = 'usable') {
     status: status === 'usable' && snapshot.warnings.length > 0 ? 'warning' : status,
     latestHeight: snapshot.latestHeight,
     snapshotHeight: snapshot.snapshotHeight,
+    heightPinning: snapshot.heightPinning,
     blockTime: snapshot.blockTime,
     blockAgeSeconds: snapshot.blockAgeSeconds,
     liveChains,
@@ -214,6 +206,7 @@ function providerErrorEvidence(source, message) {
 
 function evidenceSourcePolicy() {
   return {
+    ...THORNODE_CHAIN_SET_POLICY,
     latestBlockPath: LATEST_BLOCK_PATH,
     pinnedSnapshot: 'latest_height_minus_1',
     inboundAddressesPath: '/inbound_addresses?height={snapshotHeight}',
@@ -305,7 +298,7 @@ export class LiveChainSnapshotError extends Error {
   }
 }
 
-async function fetchJson(fetchImpl, url) {
+async function fetchJson(fetchImpl, url, requestedHeight) {
   const controller = new AbortController();
   const timeoutId = globalThis.setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
 
@@ -317,7 +310,8 @@ async function fetchJson(fetchImpl, url) {
     if (!response.ok) {
       throw new Error(`${response.status} ${response.statusText}`);
     }
-    return await response.json();
+    const data = await response.json();
+    return requestedHeight === undefined ? data : { data, heightPinning: responseHeightEvidence(requestedHeight, response.headers?.get('grpc-metadata-x-cosmos-block-height')) };
   } finally {
     globalThis.clearTimeout(timeoutId);
   }
@@ -328,12 +322,13 @@ async function fetchProviderSnapshot(source, fetchImpl, nowMs) {
   const latestBlockInfo = parseLatestBlockInfo(latestBlock);
   const snapshotHeight = getConservativeSnapshotHeight(latestBlockInfo.height);
   const { ageSeconds, warnings } = getBlockAgeWarnings(latestBlockInfo.time, nowMs);
-  const inbound = await fetchJson(fetchImpl, `${source.url}/inbound_addresses?height=${snapshotHeight}`);
+  const { data: inbound, heightPinning } = await fetchJson(fetchImpl, `${source.url}/inbound_addresses?height=${snapshotHeight}`, snapshotHeight);
   const liveChains = validateInboundAddresses(inbound);
 
   return {
     source,
     liveChains,
+    heightPinning,
     latestHeight: latestBlockInfo.height,
     snapshotHeight,
     blockTime: latestBlockInfo.time,

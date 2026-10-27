@@ -1,4 +1,5 @@
 import './require-node22.mjs';
+import { buildReviewExceptionMap } from './lib/content-review-schedule.mjs';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -14,6 +15,9 @@ const jiti = createJiti(import.meta.url, {
   moduleCache: false,
 });
 const { SEARCH_DOCUMENTS: actualSearchDocuments } = await jiti.import(join(root, 'src/lib/search/registry.ts'));
+const { buildClaimReviewItems } = await jiti.import(join(root, 'src/lib/claim-evidence.ts'));
+const { SECURITY_INCIDENT_RECORDS: actualIncidentRecords } = await jiti.import(join(root, 'src/lib/data/static.ts'));
+buildClaimReviewItems(actualIncidentRecords); // Validate only consumed pilot claim fields; record dates stay independent.
 const sharedSources = await jiti.import(join(root, 'src/lib/sources.ts'));
 const {
   DEEP_DIVE_READER_PATHS: actualDeepDiveReaderPaths,
@@ -56,7 +60,11 @@ const liveInboundUrls = new Set([
   'https://thornode.thorchain.network/thorchain/inbound_addresses',
 ]);
 const contentCheckToday = process.env.CONTENT_CHECK_TODAY ?? new Date().toISOString().slice(0, 10);
-const allowOverdueContent = process.env.ALLOW_OVERDUE_CONTENT === '1';
+const reviewExceptions = buildReviewExceptionMap({
+  exceptions: JSON.parse(readFileSync(process.env.CONTENT_REVIEW_EXCEPTIONS_FILE ?? join(root, 'docs/content-review-exceptions.json'), 'utf8')),
+  today: contentCheckToday,
+});
+if (process.env.ALLOW_OVERDUE_CONTENT === '1') console.warn('ALLOW_OVERDUE_CONTENT is ignored; use an owned, scoped, expiring review exception.');
 const routeSourcePostureEntryIds = new Set(actualRouteSourcePostureEntryIds);
 
 function fail(path, message) {
@@ -129,8 +137,14 @@ function validateSharedSourceReuse(sourceFile, filePath) {
 }
 
 function validateReviewDueDate(value, path) {
-  if (!allowOverdueContent && isIsoDate(value) && value < contentCheckToday) {
-    fail(path, `is overdue as of ${contentCheckToday}; refresh the content or set ALLOW_OVERDUE_CONTENT=1 with release evidence`);
+  if (isIsoDate(value) && value < contentCheckToday) {
+    const scope = path.match(/^([^[]+)\[([^\]]+)\]/);
+    const exception = scope ? reviewExceptions.get(`${scope[1]}:${scope[2]}`) : undefined;
+    if (exception?.active) {
+      console.warn(`${path}: overdue exception; owner ${exception.owner}; expires ${exception.expiresOn}; ${exception.reason}; follow-up ${exception.followUp}`);
+    } else {
+      fail(path, `is overdue as of ${contentCheckToday}; source review or an owned scoped exception is required${exception ? ` (exception expired ${exception.expiresOn})` : ''}`);
+    }
   }
 }
 
@@ -227,7 +241,12 @@ function evaluate(expression, scope, path) {
     throw new Error(`${path}: unsupported identifier ${expression.text}`);
   }
   if (ts.isArrayLiteralExpression(expression)) {
-    return expression.elements.map((element, index) => evaluate(element, scope, `${path}[${index}]`));
+    return expression.elements.flatMap((element, index) => {
+      if (!ts.isSpreadElement(element)) return [evaluate(element, scope, `${path}[${index}]`)];
+      const values = evaluate(element.expression, scope, `${path}[${index}].spread`);
+      if (!Array.isArray(values)) throw new Error(`${path}: array spread target must be an array`);
+      return values;
+    });
   }
   if (ts.isObjectLiteralExpression(expression)) {
     const value = {};
@@ -2076,6 +2095,8 @@ const collections = {
   PROTOCOL_MILESTONE_RECORDS: readRecordArray('PROTOCOL_MILESTONE_RECORDS', scope),
   TOKENOMICS_RECORDS: readRecordArray('TOKENOMICS_RECORDS', scope),
   SOURCE_MAP_SECTION_RECORDS: readRecordArray('SOURCE_MAP_SECTION_RECORDS', scope),
+  WIKI_CHANGE_RECORDS: readRecordArray('WIKI_CHANGE_RECORDS', scope),
+  TRANSACTION_EXAMPLE_RECORDS: readRecordArray('TRANSACTION_EXAMPLE_RECORDS', scope),
 };
 
 if (!isIsoDate(staticDataLastUpdated)) {

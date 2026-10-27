@@ -1,0 +1,375 @@
+{
+  "documentCount": 323,
+  "splits": [
+    {
+      "split": "development",
+      "queries": 14,
+      "top1Success": 14,
+      "top5Success": 14
+    },
+    {
+      "split": "held-out",
+      "queries": 10,
+      "top1Success": 8,
+      "top5Success": 8
+    }
+  ],
+  "rows": [
+    {
+      "id": "swap-status",
+      "split": "development",
+      "top5": [
+        "task:swap-availability",
+        "task:why-paused",
+        "mimir:official-halt-controls",
+        "task:app-layer-and-secured-assets",
+        "task:tcy-current-controls"
+      ],
+      "top1Success": true,
+      "top5Success": true,
+      "confusingFirst": false,
+      "current": true,
+      "exact": false
+    },
+    {
+      "id": "tcy-control",
+      "split": "development",
+      "top5": [
+        "task:tcy-current-controls",
+        "mimir:official-halt-controls",
+        "deep-dive-section:savers:evidence-ladder",
+        "deep-dive-section:tcy-recovery-timeline:what-to-check-now",
+        "deep-dive-savers"
+      ],
+      "top1Success": true,
+      "top5Success": true,
+      "confusingFirst": false,
+      "current": true,
+      "exact": true
+    },
+    {
+      "id": "asset-id",
+      "split": "development",
+      "top5": [
+        "chain:btc",
+        "deep-dive-section:build-query-data:amounts-assets-and-units",
+        "deep-dive-build-query-data"
+      ],
+      "top1Success": true,
+      "top5Success": true,
+      "confusingFirst": false,
+      "current": false,
+      "exact": true
+    },
+    {
+      "id": "minimum-input",
+      "split": "development",
+      "top5": [
+        "glossary:recommended-min-amount-in",
+        "task:build-query",
+        "task:ordinary-fee-mechanics",
+        "deep-dive-path:developer-data-integration",
+        "deep-dive-section:streaming-swaps-refunds:what-to-check-first"
+      ],
+      "top1Success": true,
+      "top5Success": true,
+      "confusingFirst": false,
+      "current": false,
+      "exact": true
+    },
+    {
+      "id": "name-definition",
+      "split": "development",
+      "top5": [
+        "glossary:thorname",
+        "governance:adr-027-revshare",
+        "glossary:dynamic-l1-fee",
+        "source-map:dynamic-fee-experiment",
+        "governance:adr-026-dynamic-l1-fees"
+      ],
+      "top1Success": true,
+      "top5Success": true,
+      "confusingFirst": false,
+      "current": false,
+      "exact": false
+    },
+    {
+      "id": "refund-status",
+      "split": "development",
+      "top5": [
+        "task:swap-refund-lifecycle",
+        "deep-dive-streaming-swaps-refunds",
+        "deep-dive-section:governance-comprehensive:pending-stuck-votes-as-of-aug-2026",
+        "glossary:outbound-fee",
+        "deep-dive-section:governance-comprehensive:bsc-outbound-queue"
+      ],
+      "top1Success": true,
+      "top5Success": true,
+      "confusingFirst": false,
+      "current": false,
+      "exact": false
+    },
+    {
+      "id": "api-builder",
+      "split": "development",
+      "top5": [
+        "task:build-query",
+        "deep-dive-path:developer-data-integration",
+        "deep-dive-midgard-thornode-data",
+        "docs",
+        "deep-dive-section:midgard-thornode-data:source-roles"
+      ],
+      "top1Success": true,
+      "top5Success": true,
+      "confusingFirst": false,
+      "current": false,
+      "exact": false
+    },
+    {
+      "id": "expiry-definition",
+      "split": "development",
+      "top5": [
+        "glossary:quote-expiry",
+        "glossary:quote",
+        "deep-dive-section:streaming-swaps-refunds:what-to-check-first",
+        "deep-dive-section:build-query-data:quotes-inbound-addresses-and-caching",
+        "deep-dive-section:build-query-data:minimum-safe-query-sequence"
+      ],
+      "top1Success": true,
+      "top5Success": true,
+      "confusingFirst": false,
+      "current": false,
+      "exact": false
+    },
+    {
+      "id": "fee-experiment",
+      "split": "development",
+      "top5": [
+        "task:fees-and-adr026",
+        "glossary:dynamic-l1-fee",
+        "governance:adr-026-dynamic-l1-fees",
+        "dynamic-fees",
+        "source-map:dynamic-fee-experiment"
+      ],
+      "top1Success": true,
+      "top5Success": true,
+      "confusingFirst": false,
+      "current": false,
+      "exact": false
+    },
+    {
+      "id": "interface-trust",
+      "split": "development",
+      "top5": [
+        "task:choose-interface",
+        "source-map:third-party-interfaces-wallets",
+        "ecosystem:shapeshift",
+        "task:fees-and-adr026",
+        "deep-dive-section:build-query-data:minimum-safe-query-sequence"
+      ],
+      "top1Success": true,
+      "top5Success": true,
+      "confusingFirst": false,
+      "current": false,
+      "exact": false
+    },
+    {
+      "id": "value-claim",
+      "split": "development",
+      "top5": [
+        "task:rune-tokenomics",
+        "source-map:rune-tokenomics-and-value",
+        "deep-dive-section:governance-comprehensive:bch-p2sh-queue-fairness",
+        "deep-dive-incentive-pendulum",
+        "deep-dive-rune-settlement"
+      ],
+      "top1Success": true,
+      "top5Success": true,
+      "confusingFirst": false,
+      "current": false,
+      "exact": false
+    },
+    {
+      "id": "historical-incident",
+      "split": "development",
+      "top5": [
+        "incident:gg20-vault-exploit-2026",
+        "deep-dive-path:network-security",
+        "milestone:2026-05-15:GG20 Vault Exploit and Emergency Halt",
+        "deep-dive-section:tss:common-misreadings",
+        "glossary:gg20"
+      ],
+      "top1Success": true,
+      "top5Success": true,
+      "confusingFirst": false,
+      "current": false,
+      "exact": false
+    },
+    {
+      "id": "empty-query",
+      "split": "development",
+      "top5": [],
+      "top1Success": true,
+      "top5Success": true,
+      "confusingFirst": false,
+      "current": false,
+      "exact": false
+    },
+    {
+      "id": "unsupported-topic",
+      "split": "development",
+      "top5": [],
+      "top1Success": true,
+      "top5Success": true,
+      "confusingFirst": false,
+      "current": false,
+      "exact": false
+    },
+    {
+      "id": "live-pair-held",
+      "split": "held-out",
+      "top5": [
+        "task:swap-availability",
+        "task:build-query",
+        "task:swap-refund-lifecycle",
+        "deep-dive-section:rune-settlement:the-settlement-layer",
+        "ecosystem:rango"
+      ],
+      "top1Success": true,
+      "top5Success": true,
+      "confusingFirst": false,
+      "current": true,
+      "exact": false
+    },
+    {
+      "id": "tcy-claim-held",
+      "split": "held-out",
+      "top5": [
+        "task:tcy-current-controls",
+        "tcy",
+        "source-map:historical-features-and-recovery",
+        "mimir:official-halt-controls",
+        "task:tcy-recovery"
+      ],
+      "top1Success": true,
+      "top5Success": true,
+      "confusingFirst": false,
+      "current": true,
+      "exact": false
+    },
+    {
+      "id": "app-current-held",
+      "split": "held-out",
+      "top5": [
+        "task:app-layer-and-secured-assets",
+        "deep-dive-app-layer",
+        "mimir:official-halt-controls",
+        "task:swap-availability",
+        "task:choose-interface"
+      ],
+      "top1Success": true,
+      "top5Success": true,
+      "confusingFirst": false,
+      "current": true,
+      "exact": false
+    },
+    {
+      "id": "asset-id-held",
+      "split": "held-out",
+      "top5": [
+        "chain:eth",
+        "deep-dive-section:build-query-data:amounts-assets-and-units",
+        "deep-dive-build-query-data"
+      ],
+      "top1Success": true,
+      "top5Success": true,
+      "confusingFirst": false,
+      "current": false,
+      "exact": true
+    },
+    {
+      "id": "refund-held",
+      "split": "held-out",
+      "top5": [
+        "task:swap-refund-lifecycle",
+        "deep-dive-streaming-swaps-refunds",
+        "deep-dive-section:bifrost:how-observation-works",
+        "deep-dive-bifrost",
+        "deep-dive-section:bifrost:common-misreadings"
+      ],
+      "top1Success": true,
+      "top5Success": true,
+      "confusingFirst": false,
+      "current": false,
+      "exact": false
+    },
+    {
+      "id": "name-general-held",
+      "split": "held-out",
+      "top5": [
+        "glossary:thorname",
+        "governance:adr-027-revshare",
+        "glossary:dynamic-l1-fee",
+        "source-map:dynamic-fee-experiment",
+        "governance:adr-026-dynamic-l1-fees"
+      ],
+      "top1Success": true,
+      "top5Success": true,
+      "confusingFirst": false,
+      "current": false,
+      "exact": false
+    },
+    {
+      "id": "typo-midgard-held",
+      "split": "held-out",
+      "top5": [
+        "ecosystem:swapkit",
+        "deep-dive-section:incentive-pendulum:common-misreadings",
+        "deep-dive-section:liquidity-actions:metrics-yield-and-earnings",
+        "deep-dive-section:midgard-thornode-data:dashboard-evidence-rules",
+        "deep-dive-incentive-pendulum"
+      ],
+      "top1Success": false,
+      "top5Success": false,
+      "confusingFirst": false,
+      "current": false,
+      "exact": false
+    },
+    {
+      "id": "typo-protocol-held",
+      "split": "held-out",
+      "top5": [],
+      "top1Success": false,
+      "top5Success": false,
+      "confusingFirst": false,
+      "current": false,
+      "exact": false
+    },
+    {
+      "id": "expiry-syntax-held",
+      "split": "held-out",
+      "top5": [
+        "glossary:quote-expiry",
+        "task:ordinary-fee-mechanics",
+        "deep-dive-path:developer-data-integration",
+        "glossary:quote",
+        "deep-dive-section:streaming-swaps-refunds:what-to-check-first"
+      ],
+      "top1Success": true,
+      "top5Success": true,
+      "confusingFirst": false,
+      "current": false,
+      "exact": false
+    },
+    {
+      "id": "negative-held",
+      "split": "held-out",
+      "top5": [],
+      "top1Success": true,
+      "top5Success": true,
+      "confusingFirst": false,
+      "current": false,
+      "exact": false
+    }
+  ]
+}

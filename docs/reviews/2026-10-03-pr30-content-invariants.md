@@ -1,0 +1,7 @@
+# Editorial cohort fixtures and content invariants (PR-30, issue #195)
+
+The two bounded chain/developer and liquidity/economics review tests now reference one small explicit fixture for their authored July review dates, due dates, scope, source pointers and the exact reviewed chain set. These are existing editorial decisions, not a new October review or automatic repin. The ILP change remains linked to its separate2October review; the memoless claim pilot has its own IDs and independently validated dates.
+
+Structural/source/address/unit/anchor/current-versus-historical checks remain in the tests and content validator. Targeted safety assertions for live-only dust, historical ILP, conflicting supply claims, height/provider provenance and signed accounting fields are retained. One noncritical constant-function sentence accepts equivalent punctuation/case; removing its concept still fails. No snapshots replaced by opaque hashes, meaningful regression deletions, generic schema library or article rewrites.
+
+Validation:16focused chain/liquidity/claim/source-freshness tests, typecheck and content checks passed; fixture source URLs were independently matched to the existing source registry. Dates/source/qualifier/anchor validation still fails through existing content and claim guards; this test-only change needs no product rebuild. Fixture evidence is historical repository state, not reverified current protocol behavior. Candidate commits unsigned due unavailable interactive signer; no main merge/deployment.

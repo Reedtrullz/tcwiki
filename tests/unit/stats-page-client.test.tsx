@@ -36,7 +36,7 @@ vi.mock('@/lib/hooks/useMidgard', () => ({
   useEarningsHistory: () => hookState.earnings(),
   useMidgardHealth: () => hookState.health(),
   useNetworkStatus: () => hookState.status(),
-  usePools: () => hookState.pools(),
+  usePools: (period?: string) => hookState.pools(period),
   useSwapQuoteProbe: () => hookState.quote(),
   useDailyVolume: () => ({
     data: undefined,
@@ -167,6 +167,21 @@ describe('StatsPageClient source posture', () => {
     expect(html).not.toContain('Headline metric source needs review');
     expect(html).not.toContain('Pool snapshot source needs review');
     expect(html).not.toContain('Earnings history source needs review');
+  });
+
+  it('uses the bounded URL-selected pool period and shows its source provenance', () => {
+    navigationState.searchParams = new URLSearchParams('pool_period=30d');
+    hookState.pools.mockReturnValue(hookResult(ok(pools(), {
+      label: 'THORChain Midgard',
+      url: 'https://midgard.thorchain.network/v2/pools?status=available&period=30d',
+    })));
+
+    const html = renderToStaticMarkup(<StatsPageClient />);
+
+    expect(hookState.pools).toHaveBeenCalledWith('30d');
+    expect(html).toContain('aria-label="Pool return period"');
+    expect(html).toContain('value="30d"');
+    expect(html).toContain('period=30d');
   });
 
   it('puts the operational check before metric interpretation guidance', () => {

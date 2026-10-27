@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { NetworkStatusBanner } from '@/components/features/NetworkStatusBanner';
+import { deriveNetworkStatus } from '@/lib/api/thornode';
 import { ChainOperationalStatus, LiveDataResult, NetworkStatus } from '@/lib/types';
 
 function chain(overrides: Partial<ChainOperationalStatus> & { chain: string }): ChainOperationalStatus {
@@ -68,6 +69,20 @@ function renderStatus(status: NetworkStatus, variant: 'compact' | 'diagnostic' =
 }
 
 describe('NetworkStatusBanner', () => {
+  it('renders unreviewed controls as applicability review without clean operation claims', () => {
+    const status = deriveNetworkStatus({ HALTTRADING: 0, PauseBond: 1, HALTWASMGLOBAL: 200 }, [{
+      chain: 'BTC', halted: false, global_trading_paused: false,
+      chain_trading_paused: false, chain_lp_actions_paused: false,
+    }], undefined, 100);
+    const html = renderStatus(status);
+    expect(html).toContain('Review applicability');
+    expect(html).not.toContain('No swap blocker');
+    expect(html).not.toContain('No global swap halt detected');
+    expect(html).not.toContain('PauseBond is active in current Mimir');
+    expect(html).not.toContain('Scheduled monitored Mimir keys');
+    expect(html).toContain('HALTWASMGLOBAL');
+    expect(html).toContain('200');
+  });
   it('answers ordinary swap availability before LP and maintenance controls', () => {
     const html = renderStatus({
       ...baseStatus,

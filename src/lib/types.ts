@@ -1,8 +1,58 @@
+import type { ThornodeDataPolicy } from '../../scripts/lib/thornode-data-policy.mjs';
 export const DATA_CONFIDENCES = ['official', 'curated', 'historical', 'needs-review'] as const;
+
+export interface ClpScenarioResult {
+  slipPercent: string;
+  fee: string;
+  output: string;
+}
+
+export interface ClpLearningModel {
+  id: string;
+  title: string;
+  assumptions: string;
+  ruleScope: string;
+}
 
 export type DataConfidence = (typeof DATA_CONFIDENCES)[number];
 
+export type MemoDecoderAction = 'swap' | 'outbound' | 'refund' | 'migrate';
+export type MemoDecoderStatus = 'decoded' | 'empty' | 'too-long' | 'unsupported' | 'malformed';
+
+export interface MemoDecoderField {
+  id: string;
+  label: string;
+  raw: string;
+  interpretation: string;
+}
+
+export type MemoDecodeResult =
+  | {
+      status: 'decoded';
+      original: string;
+      /** Exact for in-bound inputs; oversized inputs use the configured bound plus one as a sentinel. */
+      byteLength: number;
+      action: MemoDecoderAction;
+      fields: MemoDecoderField[];
+      message: string;
+    }
+  | {
+      status: Exclude<MemoDecoderStatus, 'decoded'>;
+      original: string;
+      /** Exact for in-bound inputs; oversized inputs use the configured bound plus one as a sentinel. */
+      byteLength: number;
+      fields: MemoDecoderField[];
+      message: string;
+    };
+
+export interface ResponseHeightEvidence {
+  requestedHeight: number;
+  observedHeight?: number;
+  verification: 'verified' | 'unverified';
+}
+
 export interface SourceMeta {
+  heightPinning?: ResponseHeightEvidence;
   label: string;
   url: string;
   retrievedAt?: string;
@@ -16,17 +66,115 @@ export interface FreshnessMeta {
   nextReviewDue?: string;
 }
 
+export interface ClaimEvidence {
+  id: string;
+  summary: string;
+  source: SourceMeta;
+  observedAt: string;
+  versionScope: string;
+  scope: 'current-only' | 'historical' | 'design';
+  reviewedAt: string;
+  nextReviewDue: string;
+  decision: 'supported' | 'needs-review' | 'needs-live-evidence' | 'superseded';
+  limitation: string;
+  supersedes?: string;
+}
+
+/** Browser-local reading notes; these snapshots describe navigation, not competence. */
+export interface LearningProgressStepSnapshot {
+  entryId: string;
+  reviewedAt: string;
+}
+
+export interface LearningProgressBookmark extends LearningProgressStepSnapshot {
+  savedAt: string;
+}
+
+export interface LearningProgressPathState {
+  pathId: string;
+  /** Derived from the current reader-path registry and validated on import. */
+  pathHref: string;
+  bookmark: LearningProgressBookmark | null;
+  readSteps: LearningProgressStepSnapshot[];
+}
+
+export interface LearningProgressDocument {
+  version: 1;
+  selectedPathId: string | null;
+  paths: LearningProgressPathState[];
+}
+
 export interface SourcedRecord<T> {
+  claims?: ClaimEvidence[];
   data: T;
   sources: SourceMeta[];
   freshness: FreshnessMeta;
+}
+
+export type TransactionExampleGuide = 'streaming-swaps-refunds' | 'build-query-data' | 'churning';
+
+export interface TransactionExampleAmount {
+  amount: string;
+  asset: string;
+  unit: string;
+  kind?: 'trade asset' | 'native asset' | 'token asset';
+}
+
+export interface TransactionExampleReport {
+  layer: 'source-chain' | 'thorchain-indexer';
+  label: string;
+  actionType?: string;
+  status: string;
+  observedAt?: string;
+  height?: string;
+  blockHeight?: string;
+  blockHash?: string;
+  blockTime?: string;
+  transactionId?: string;
+  outputHeight?: string;
+  outputTransactionId?: string;
+  destination?: string;
+  inputs?: TransactionExampleAmount[];
+  outputs?: TransactionExampleAmount[];
+  facts?: Array<{ label: string; value: string }>;
+  source: SourceMeta;
+  blockSource?: SourceMeta;
+}
+
+export interface TransactionExample {
+  id: string;
+  guide: TransactionExampleGuide;
+  title: string;
+  summary: string;
+  memo: {
+    sourceLabel: string;
+    value: string;
+    interpretation: string;
+    parameters?: Array<{ label: string; value: string }>;
+  };
+  reports: TransactionExampleReport[];
+  unknowns: string[];
 }
 
 export type LiveDataStatus = 'ok' | 'degraded';
 
 export type SourceHealthSeverity = 'ok' | 'warning' | 'degraded' | 'unknown';
 
+export interface LiveCollectionTiming {
+  startedAt: string;
+  completedAt: string;
+  durationMs: number;
+  blockObservedAt?: string;
+}
+
 export interface LiveDataResult<T> {
+  presentation?: {
+    kind: 'operational' | 'aggregate' | 'historical';
+    state: 'current' | 'refreshing' | 'last-good' | 'stale' | 'unavailable' | 'historical';
+  };
+  collection?: LiveCollectionTiming;
+  dataPolicy?: Readonly<ThornodeDataPolicy>;
+  assessedAt?: string;
   status: LiveDataStatus;
   checkedAt: string;
   data?: T;
@@ -34,6 +182,10 @@ export interface LiveDataResult<T> {
   sources?: SourceMeta[];
   error?: string;
 }
+
+export const MIDGARD_POOL_PERIODS = ['1h', '24h', '7d', '14d', '30d', '90d', '100d', '180d', '365d'] as const;
+export type MidgardPoolPeriod = (typeof MIDGARD_POOL_PERIODS)[number];
+export const DEFAULT_MIDGARD_POOL_PERIOD: MidgardPoolPeriod = '14d';
 
 export interface MidgardHealth {
   provider?: string;
@@ -99,6 +251,9 @@ export interface ReadinessResponse {
     thornode: {
       status: LiveDataStatus;
       checkedAt?: string;
+      collection?: LiveCollectionTiming;
+      dataPolicy?: Readonly<ThornodeDataPolicy>;
+      assessedAt?: string;
       source?: SourceMeta;
       sources?: SourceMeta[];
       sourceCount: number;
@@ -125,6 +280,9 @@ export interface ReadinessResponse {
       dynamicFees: {
         status: LiveDataStatus;
         checkedAt?: string;
+        collection?: LiveCollectionTiming;
+        dataPolicy?: Readonly<ThornodeDataPolicy>;
+        assessedAt?: string;
         source?: SourceMeta;
         sources?: SourceMeta[];
         error?: string;
@@ -134,6 +292,7 @@ export interface ReadinessResponse {
         trackedRecordCount?: number;
         currentEntryCount?: number;
         whitelistedThornameCount?: number;
+        historyPolicy?: 'not-requested';
         historyThornameCount?: number;
         historySampleCount?: number;
         thorchainHeight?: number;
@@ -146,6 +305,9 @@ export interface ReadinessResponse {
       runePoolPol: {
         status: LiveDataStatus;
         checkedAt?: string;
+        collection?: LiveCollectionTiming;
+        dataPolicy?: Readonly<ThornodeDataPolicy>;
+        assessedAt?: string;
         source?: SourceMeta;
         sources?: SourceMeta[];
         error?: string;
@@ -191,7 +353,6 @@ export interface Pool {
   annualPercentageRate?: string;
   poolAPY?: string;
   apy?: number;
-  apyPercent?: number;
   assetPrice?: string;
   assetPriceUSD?: string;
   runePriceUSD?: string;
@@ -234,6 +395,7 @@ export interface SwapQuoteSuccess {
 export type SwapQuoteFailureKind = 'halt' | 'input' | 'rate-limit' | 'provider' | 'malformed' | 'unknown';
 
 export interface SwapQuoteFailure {
+  retryAt?: string;
   kind: SwapQuoteFailureKind;
   code?: number;
   httpStatus?: number;
@@ -279,6 +441,8 @@ export interface Node {
     secp256k1?: string;
   };
 }
+
+export type ThorchainNodeCoverageRow = Pick<Node, 'status' | 'version'> & { nodeAddress?: string };
 
 export interface MayaNode {
   nodeAddress: string;
@@ -595,7 +759,9 @@ export interface DynamicL1FeeSourceFreshness {
   thorchainHeight: number;
   thorchainBlockTime: string;
   thorchainBlockAgeSeconds?: number;
+  /** Compatibility flag for a requested pin; response verification is separate. */
   snapshotPinned: boolean;
+  heightPinning?: ResponseHeightEvidence;
 }
 
 export interface DynamicL1FeeStatus {
@@ -650,7 +816,9 @@ export interface RunePoolSourceFreshness {
   thorchainHeight: number;
   thorchainBlockTime: string;
   thorchainBlockAgeSeconds?: number;
+  /** Compatibility flag for a requested pin; response verification is separate. */
   snapshotPinned: boolean;
+  heightPinning?: ResponseHeightEvidence;
 }
 
 export interface RunePoolPolStatus {
@@ -685,6 +853,7 @@ export interface ChainOperationalStatus {
   lastSignedOut?: number;
   lastThorchainHeight?: number;
   sourceWarnings?: string[];
+  sourceWarningDetails?: NetworkStatusSourceWarning[];
   securedAssetDepositPaused?: boolean;
   securedAssetWithdrawPaused?: boolean;
   tradeAccountDepositPaused?: boolean;
@@ -701,7 +870,7 @@ export interface ChainOperationalStatus {
 
 export type NetworkStatusState = 'operational' | 'paused' | 'degraded' | 'unknown';
 
-export type OperationalControlState = 'active' | 'inactive' | 'disabled' | 'scheduled' | 'not-monitored' | 'unparseable';
+export type OperationalControlState = 'active' | 'inactive' | 'disabled' | 'scheduled' | 'not-monitored' | 'unparseable' | 'unsupported';
 
 export type NetworkStatusWarningSeverity = 'critical' | 'warning' | 'review';
 
@@ -714,6 +883,7 @@ export type NetworkStatusWarningCategory =
   | 'mimir-support'
   | 'unknown-chain'
   | 'unknown-operation'
+  | 'control-applicability'
   | 'other';
 
 export interface NetworkStatusSourceWarning {
@@ -736,13 +906,13 @@ export interface OperationalControlStatus {
 export interface NetworkStatus {
   state: NetworkStatusState;
   summary: string;
-  tradingPaused: boolean;
+  tradingPaused: boolean | null;
   streamingSwapsPaused?: boolean | null;
   memolessTransactionsHalted?: boolean | null;
-  signingPaused: boolean;
-  lpPaused: boolean;
-  loansPaused: boolean;
-  observedChainsPaused: boolean;
+  signingPaused: boolean | null;
+  lpPaused: boolean | null;
+  loansPaused: boolean | null;
+  observedChainsPaused: boolean | null;
   nodePauseChainGlobal?: boolean | null;
   bondPaused?: boolean | null;
   unbondPaused?: boolean | null;
@@ -782,6 +952,8 @@ export interface NetworkStatus {
   /** @deprecated Use activeControlKeys and activeEvidenceKeys for new UI. */
   activePauseKeys: string[];
   monitoredControls: OperationalControlStatus[];
+  /** Raw /mimir observations retained independently of reviewed interpretation. */
+  observedMimir?: Record<string, unknown>;
   thorNodeVersion?: string;
   thorchainHeight?: number;
   thorchainSnapshotPinned?: boolean;
@@ -794,3 +966,69 @@ export interface NetworkStatus {
   sourceWarnings: string[];
   sourceWarningDetails?: NetworkStatusSourceWarning[];
 }
+
+export interface ExecutionEvidenceMap {
+  id: string;
+  limitation: string;
+  stages: Array<{ id: string; label: string; evidence: string; boundary: string; href: string }>;
+}
+
+export interface WikiChangeRecord {
+  id: string;
+  title: string;
+  summary: string;
+  href: string;
+  sourceDate: string;
+  reviewedAt: string;
+}
+
+export interface DiagnosticEvidenceExport {
+  format: 'tcwiki-network-controls';
+  schemaVersion: 1;
+  exportedAt: string;
+  scope: 'already-collected-network-controls';
+  limitation: string;
+  status: LiveDataStatus | 'unavailable';
+  checkedAt: string | null;
+  assessedAt: string | null;
+  presentation: LiveDataResult<NetworkStatus>['presentation'] | null;
+  collection: LiveCollectionTiming | null;
+  runtime: { version: string | null; commit: string | null; image: string | null };
+  height: { observed: number | null; snapshotPinned: boolean | null; blockTime: string | null };
+  sources: Array<{ label: string; url: string; retrievedAt: string | null; heightPinning: { requestedHeight: number; observedHeight: number | null; verification: 'verified' | 'unverified' } | null }>;
+  summary: string | null;
+  error: string | null;
+  warnings: string[];
+  invalidMimirKeys: string[];
+  controls: Array<{ key: string; label: string; state: OperationalControlState; active: boolean }>;
+  rawMimir: { available: boolean; unit: string; values: Record<string, string | number | { unavailable: string }>; omitted: number };
+  omitted: { sources: number; warnings: number; controls: number; invalidMimirKeys: number };
+}
+
+export interface MimirProviderCell {
+  state: 'valid' | 'missing' | 'malformed' | 'alias-conflict';
+  raw: string | number | null;
+  normalized: string | null;
+}
+
+export interface MimirProviderSample {
+  status: 'observed' | 'unavailable';
+  source: SourceMeta;
+  checkedAt: string;
+  collection: LiveCollectionTiming;
+  requestedHeight: number | null;
+  observedHeight: number | null;
+  verification: 'verified' | 'unverified' | 'mismatch';
+  error: string | null;
+  values: Record<string, MimirProviderCell>;
+}
+/** Read-only Midgard indexer observations; no independent settlement evidence. */
+export interface TransactionEvidenceCoin { asset: string | null; amount: string | null; }
+export interface TransactionEvidenceTransfer { txID: string | null; rawHeight: string | null; height: string | null; coins: TransactionEvidenceCoin[] | null; }
+export interface TransactionEvidenceAction {
+  type: string | null; status: string | null; rawDate: string | null; observedAt: string | null;
+  height: string | null; rawHeight: string | null; memo: string | null; reason: string | null;
+  inputs: TransactionEvidenceTransfer[] | null; outputs: TransactionEvidenceTransfer[] | null;
+  fees: TransactionEvidenceCoin[] | null; warnings: string[];
+}
+export interface TransactionEvidence { hash: string; actions: TransactionEvidenceAction[]; count: string | null; warnings: string[]; }

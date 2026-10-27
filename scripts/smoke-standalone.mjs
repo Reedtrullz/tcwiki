@@ -1,4 +1,5 @@
 import './require-node22.mjs';
+import { checkStandaloneFreshness } from './lib/standalone-freshness.mjs';
 import { spawn } from 'node:child_process';
 import { createServer } from 'node:net';
 import { dirname, join } from 'node:path';
@@ -44,7 +45,8 @@ const port = process.env.SMOKE_PORT ?? await getFreePort();
 const baseUrl = `http://127.0.0.1:${port}`;
 
 try {
-  prepareStandaloneAssets(root);
+  checkStandaloneFreshness(root);
+prepareStandaloneAssets(root);
 } catch (error) {
   console.error(error instanceof Error ? error.message : error);
   process.exit(1);

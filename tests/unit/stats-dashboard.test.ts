@@ -8,6 +8,7 @@ import {
   deriveStatsPoolSnapshot,
   midgardResultHasCleanHealth,
   midgardSourceIssueIsVisible,
+  normalizeStatsPoolPeriod,
 } from '@/lib/stats-dashboard';
 import type { HistoryItem, LiveDataResult, MidgardHealth, NetworkStats, NetworkStatus, Pool, SourceMeta } from '@/lib/types';
 
@@ -87,12 +88,14 @@ function pool(
     status = 'available',
     liquidityInUSD,
     volume24h,
+    annualPercentageRate,
     poolAPY,
   }: {
     runeDepth?: string;
     status?: string;
     liquidityInUSD?: string;
     volume24h?: string;
+    annualPercentageRate?: string;
     poolAPY?: string;
   }
 ): Pool {
@@ -107,6 +110,9 @@ function pool(
   }
   if (volume24h !== undefined) {
     item.volume24h = volume24h;
+  }
+  if (annualPercentageRate !== undefined) {
+    item.annualPercentageRate = annualPercentageRate;
   }
   if (poolAPY !== undefined) {
     item.poolAPY = poolAPY;
@@ -321,7 +327,7 @@ describe('stats dashboard decision facts', () => {
       runeDepthLabel: '2 RUNE',
       liquidityUsdLabel: '$1M',
       volume24hRuneLabel: '250K RUNE',
-      apyLabel: '12.50%',
+      poolAPYLabel: '12.50%',
     }));
     expect(snapshot.rows[1]).toEqual(expect.objectContaining({
       asset: 'ETH.ETH',
@@ -329,7 +335,7 @@ describe('stats dashboard decision facts', () => {
       volume24hRune: null,
       liquidityUsdLabel: 'Unavailable',
       volume24hRuneLabel: 'Unavailable',
-      apyLabel: 'Unavailable',
+      poolAPYLabel: 'Unavailable',
     }));
   });
 
@@ -348,9 +354,61 @@ describe('stats dashboard decision facts', () => {
       liquidityUsdLabel: '$1.05M',
       volume24hRune: 291098.30445174,
       volume24hRuneLabel: '291K RUNE',
-      apyLabel: '0.00%',
+      poolAPYLabel: '0.00%',
     }));
     expect(snapshot.highestVolumePool?.asset).toBe('AVAX.AVAX');
+  });
+
+  it('rejects malformed USD and overflowing poolAPY at the presentation boundary', () => {
+    const [row] = deriveStatsPoolSnapshot([pool('BTC.BTC', {
+      liquidityInUSD: '0x10',
+      poolAPY: '9'.repeat(307),
+    })], false).rows;
+
+    expect(row.liquidityUsd).toBeNull();
+    expect(row.liquidityUsdLabel).toBe('Unavailable');
+    expect(row.poolAPYPercent).toBeNull();
+    expect(row.poolAPYLabel).toBe('Unavailable');
+  });
+
+  it('does not rank a reported annualPercentageRate field as poolAPY', () => {
+    const rows = deriveStatsPoolSnapshot([
+      pool('APR.ONLY', { annualPercentageRate: '0.50' }),
+      pool('APY.ONLY', { poolAPY: '0.03' }),
+    ], false).rows;
+
+    expect(rows.find((row) => row.asset === 'APR.ONLY')?.poolAPYLabel).toBe('Unavailable');
+    expect(deriveStatsPoolExplorer(rows, {
+      query: '',
+      chain: 'all',
+      status: 'all',
+      sort: 'poolAPYPercent',
+    }).rows.map((row) => row.asset)).toEqual(['APY.ONLY', 'APR.ONLY']);
+  });
+
+  it('keeps both disagreeing return fields distinct for labels and rankings', () => {
+    const rows = deriveStatsPoolSnapshot([
+      pool('POOL.A', { annualPercentageRate: '0.04', poolAPY: '0.11' }),
+      pool('POOL.B', { annualPercentageRate: '0.08', poolAPY: '0.03' }),
+    ], false).rows;
+
+    expect(rows.find((row) => row.asset === 'POOL.A')).toEqual(expect.objectContaining({
+      annualPercentageRateLabel: '4.00%',
+      poolAPYLabel: '11.00%',
+    }));
+    expect(deriveStatsPoolExplorer(rows, {
+      query: '', chain: 'all', status: 'all', sort: 'annualPercentageRatePercent',
+    }).rows.map((row) => row.asset)).toEqual(['POOL.B', 'POOL.A']);
+    expect(deriveStatsPoolExplorer(rows, {
+      query: '', chain: 'all', status: 'all', sort: 'poolAPYPercent',
+    }).rows.map((row) => row.asset)).toEqual(['POOL.A', 'POOL.B']);
+  });
+
+  it('bounds URL-selected pool periods to the Midgard enum and defaults invalid values', () => {
+    expect(normalizeStatsPoolPeriod('30d')).toBe('30d');
+    expect(normalizeStatsPoolPeriod('all')).toBe('14d');
+    expect(normalizeStatsPoolPeriod('unknown')).toBe('14d');
+    expect(normalizeStatsPoolPeriod(null)).toBe('14d');
   });
 
   it('filters and sorts Midgard pool rows while keeping missing values last', () => {
@@ -403,7 +461,7 @@ describe('stats dashboard decision facts', () => {
       query: '',
       chain: 'all',
       status: 'available',
-      sort: 'apyPercent',
+      sort: 'poolAPYPercent',
     });
 
     expect(availableApy.rows.map((row) => row.asset)).toEqual([
@@ -411,7 +469,7 @@ describe('stats dashboard decision facts', () => {
       'SOL.SOL',
       'ETH.USDC-0XA0B86991C6218B36C1D19D4A2E9EB0CE3606EB48',
     ]);
-    expect(availableApy.activeFilterLabels).toEqual(['Status: available', 'Sort: APY']);
+    expect(availableApy.activeFilterLabels).toEqual(['Status: available', 'Sort: poolAPY']);
   });
 
   it('keeps real zero source values as zero while missing values stay unavailable', () => {
@@ -505,5 +563,49 @@ describe('stats dashboard decision facts', () => {
     expect(coverage.recentAvailableIntervals).toBe(6);
     expect(coverage.recentUnavailableIntervals).toBe(1);
     expect(coverage.recentSevenEarnings).toBe(27);
+  });
+});
+
+describe('earnings interval chronology', () => {
+  const first = 1_704_067_200;
+  const day = 86_400;
+  const now = (first + 10 * day) * 1000;
+  it('is permutation-invariant and counts identical interval repeats only once', () => {
+    const input = Array.from({ length: 8 }, (_, i) => historyInterval(String(first + i * day), String((i + 1) * 1e8)));
+    const a = deriveStatsEarningsRows(input, now);
+    const b = deriveStatsEarningsRows([input[4], ...input.toReversed(), input[4]], now);
+    expect(b.map(row => row.id)).toEqual(a.map(row => row.id));
+    expect(deriveStatsEarningsCoverage(b, false).totalEarnings).toBe(36);
+    expect(deriveStatsEarningsCoverage(b, false).recentSevenEarnings).toBe(35);
+    expect(b[0].name).toBe('2024-01-08 UTC');
+    expect(b[0].periodLabel).toContain('2024-01-09T00:00:00.000Z');
+  });
+  it('withholds conflicting duplicates and overlapping intervals rather than inflating totals', () => {
+    const conflicting = deriveStatsEarningsRows([historyInterval(String(first), '100000000'), historyInterval(String(first), '200000000')], now);
+    expect(conflicting).toHaveLength(1);
+    expect(deriveStatsEarningsCoverage(conflicting, false).totalEarnings).toBeNull();
+    expect(conflicting[0].periodIssue).toMatch(/Conflicting/);
+    const overlapping = deriveStatsEarningsRows([{ ...historyInterval(String(first), '100000000'), endTime: String(first + 2 * day) }, historyInterval(String(first + day), '200000000')], now);
+    expect(overlapping.every(row => row.earnings === null)).toBe(true);
+    expect(overlapping.every(row => row.periodIssue?.includes('Overlapping'))).toBe(true);
+  });
+  it('reports gaps and completed coverage with a seven-calendar-day comparison window', () => {
+    const rows = deriveStatsEarningsRows([historyInterval(String(first), '100000000'), historyInterval(String(first + 8 * day), '200000000'), historyInterval(String(first + 10 * day), '900000000')], now);
+    const coverage = deriveStatsEarningsCoverage(rows, false);
+    expect(coverage.completedIntervals).toBe(2);
+    expect(coverage.missingPeriods).toBe(7);
+    expect(coverage.recentIntervalCount).toBe(1);
+    expect(coverage.recentSevenEarnings).toBe(2);
+    expect(coverage.totalEarnings).toBe(3);
+  });
+  it('rejects unknown or invalid timestamps and changes completion only at the UTC boundary', () => {
+    const interval = historyInterval(String(first), '100000000');
+    expect(deriveStatsEarningsRows([interval], (first + day) * 1000 - 1)[0].earnings).toBeNull();
+    expect(deriveStatsEarningsRows([interval], (first + day) * 1000)[0].earnings).toBe(1);
+    for (const startTime of ['1704067200junk', 'Infinity', '9007199254740991']) {
+      const rows = deriveStatsEarningsRows([{ ...interval, startTime }], now);
+      expect(rows[0].earnings).toBeNull();
+      expect(rows[0].name).toBe('Period unavailable');
+    }
   });
 });

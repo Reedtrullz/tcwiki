@@ -12,10 +12,13 @@ import {
   YAxis,
 } from 'recharts';
 import type { StatsPoolExplorerFilters, StatsPoolRow, StatsPoolSortKey } from '@/lib/stats-dashboard';
+import type { LiveDataResult, MidgardHealth, MidgardPoolPeriod, Pool } from '@/lib/types';
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
+import { LiveSourceMeta } from '@/components/ui/LiveSourceMeta';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { ResponsiveVisibility } from '@/components/ui/ResponsiveVisibility';
+import { MIDGARD_POOL_PERIODS } from '@/lib/types';
 
 const chartTooltipContentStyle = {
   backgroundColor: 'oklch(0.15 0.01 250)',
@@ -38,7 +41,8 @@ const poolSortOptions: Array<{ value: StatsPoolSortKey; label: string }> = [
   { value: 'runeDepth', label: 'RUNE depth' },
   { value: 'volume24hRune', label: '24h volume (RUNE)' },
   { value: 'liquidityUsd', label: 'Liquidity' },
-  { value: 'apyPercent', label: 'APY' },
+  { value: 'annualPercentageRatePercent', label: 'annualPercentageRate' },
+  { value: 'poolAPYPercent', label: 'poolAPY' },
   { value: 'asset', label: 'Asset' },
 ];
 
@@ -108,6 +112,10 @@ export interface StatsPoolExplorerProps {
   poolAvailableChains: string[];
   poolAvailableStatuses: string[];
   poolsLoading: boolean;
+  poolPeriod: MidgardPoolPeriod;
+  updatePoolPeriod: (period: MidgardPoolPeriod) => void;
+  poolsResult?: LiveDataResult<Pool[]>;
+  midgardHealthResult?: LiveDataResult<MidgardHealth>;
 }
 
 export function StatsPoolExplorer({
@@ -127,6 +135,10 @@ export function StatsPoolExplorer({
   poolAvailableChains,
   poolAvailableStatuses,
   poolsLoading,
+  poolPeriod,
+  updatePoolPeriod,
+  poolsResult,
+  midgardHealthResult,
 }: StatsPoolExplorerProps) {
   const hasPoolData = totalRows > 0;
 
@@ -178,7 +190,7 @@ export function StatsPoolExplorer({
         ) : hasPoolData ? (
           <div className="grid gap-6">
             <div className="rounded-lg border border-border bg-surface/60 p-3">
-              <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_10rem_10rem_10rem_auto]">
+              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_9rem_9rem_10rem_10rem_auto]">
                 <label className="grid gap-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
                   Search pools
                   <span className="relative">
@@ -234,6 +246,19 @@ export function StatsPoolExplorer({
                     ))}
                   </select>
                 </label>
+                <label className="grid gap-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                  Return period
+                  <select
+                    aria-label="Pool return period"
+                    value={poolPeriod}
+                    onChange={(event) => updatePoolPeriod(event.target.value as MidgardPoolPeriod)}
+                    className="h-10 rounded-md border border-border bg-surface px-3 text-sm font-medium text-slate-100 outline-none transition focus:border-accent"
+                  >
+                    {MIDGARD_POOL_PERIODS.map((period) => (
+                      <option key={period} value={period}>{period}</option>
+                    ))}
+                  </select>
+                </label>
                 <div className="flex items-end">
                   <button
                     type="button"
@@ -247,10 +272,14 @@ export function StatsPoolExplorer({
               </div>
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 <p className="text-xs font-medium text-slate-400">{summary}</p>
+                <Badge variant="info">Period: {poolPeriod}</Badge>
                 {activeFilterLabels.map((label) => (
                   <Badge key={label} variant="info">{label}</Badge>
                 ))}
               </div>
+              <p className="mt-3 text-xs leading-relaxed text-slate-500">
+                Midgard describes both /pools return fields as period-based annual earnings-to-depth estimates. Values use the provider decimal scale shown as a percentage (×100); fields remain separate, and ranking compares only the selected field.
+              </p>
             </div>
             <div className="grid gap-6 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.4fr)]">
               <div>
@@ -275,7 +304,7 @@ export function StatsPoolExplorer({
                           labelStyle={chartTooltipLabelStyle}
                           formatter={(value) => [formatRuneAmount(chartNumber(value)), 'RUNE depth']}
                         />
-                        <Bar dataKey="runeDepth" fill="oklch(0.75 0.15 85)" radius={[0, 4, 4, 0]} name="RUNE depth" />
+                        <Bar isAnimationActive={false} dataKey="runeDepth" fill="oklch(0.75 0.15 85)" radius={[0, 4, 4, 0]} name="RUNE depth" />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -318,16 +347,20 @@ export function StatsPoolExplorer({
                               <dd className="text-slate-200">{pool.volume24hRuneLabel}</dd>
                             </div>
                             <div>
-                              <dt>APY</dt>
-                              <dd className="text-slate-200">{pool.apyLabel}</dd>
+                              <dt>annualPercentageRate</dt>
+                              <dd className="text-slate-200">{pool.annualPercentageRateLabel}</dd>
+                            </div>
+                            <div>
+                              <dt>poolAPY</dt>
+                              <dd className="text-slate-200">{pool.poolAPYLabel}</dd>
                             </div>
                           </dl>
                         </div>
                       ))}
                       </div>
                     </ResponsiveVisibility>
-                    <ResponsiveVisibility desktop className="mt-3 overflow-x-auto">
-                      <table className="w-full min-w-[640px] text-left text-xs text-slate-400">
+                    <ResponsiveVisibility desktop className="mt-3 overflow-x-auto focus-visible:outline-accent" role="region" aria-label="Available pool table" tabIndex={0}>
+                      <table className="w-full min-w-[820px] text-left text-xs text-slate-400">
                         <caption className="sr-only">Midgard available-pool rows snapshot</caption>
                         <thead className="text-[11px] uppercase tracking-wider text-slate-400">
                           <tr>
@@ -336,7 +369,8 @@ export function StatsPoolExplorer({
                             <th scope="col" className="py-2 pr-4">RUNE depth</th>
                             <th scope="col" className="py-2 pr-4">Liquidity</th>
                             <th scope="col" className="py-2 pr-4">24h volume (RUNE)</th>
-                            <th scope="col" className="py-2 pr-4">APY</th>
+                            <th scope="col" className="py-2 pr-4">annualPercentageRate</th>
+                            <th scope="col" className="py-2 pr-4">poolAPY</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -350,7 +384,8 @@ export function StatsPoolExplorer({
                               <td className="py-2 pr-4">{pool.runeDepthLabel}</td>
                               <td className="py-2 pr-4">{pool.liquidityUsdLabel}</td>
                               <td className="py-2 pr-4">{pool.volume24hRuneLabel}</td>
-                              <td className="py-2 pr-4">{pool.apyLabel}</td>
+                              <td className="py-2 pr-4">{pool.annualPercentageRateLabel}</td>
+                              <td className="py-2 pr-4">{pool.poolAPYLabel}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -365,6 +400,9 @@ export function StatsPoolExplorer({
           <p className="py-16 text-center text-slate-400">Midgard available-pool rows unavailable from live sources.</p>
         )}
       </Card>
+      <div className="mt-2">
+        <LiveSourceMeta result={poolsResult} healthResult={midgardHealthResult} />
+      </div>
     </section>
   );
 }

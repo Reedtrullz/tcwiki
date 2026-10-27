@@ -1,0 +1,32 @@
+import { test, expect } from '@playwright/test';
+import axe from 'axe-core';
+
+test('local CLP lab separates toy arithmetic from route evidence and rejects invalid depth', async ({ page }) => {
+  await page.goto('/deep-dives/clp#try-a-single-leg-clp-scenario');
+  const lab = page.getByRole('region', { name: 'Educational CLP scenario' });
+  await expect(lab).toBeVisible();
+  await expect(lab.getByRole('status')).toContainText('82.64462809');
+  await expect(lab).toContainText('not a quote');
+  await expect(lab).toContainText('minimum slip floors');
+  const input = lab.getByLabel('Input amount (x)', { exact: true });
+  await input.fill('10');
+  const calculate = lab.getByRole('button', { name: 'Calculate toy scenario' });
+  await calculate.focus();
+  await page.keyboard.press('Enter');
+  await expect(lab.getByRole('status')).toContainText('0.99009900%');
+  await expect(lab.getByRole('status')).toContainText('9.80296049');
+  await lab.getByLabel('Input-side depth (X)', { exact: true }).fill('0');
+  await calculate.click();
+  await expect(lab.getByRole('status')).toContainText('Result unavailable');
+  await expect(lab.getByRole('status')).not.toContainText('9.80296049');
+  await lab.getByLabel('Input-side depth (X)', { exact: true }).fill('1000');
+  await calculate.click();
+  await expect(lab.getByRole('status')).toContainText('9.80296049');
+  await page.setViewportSize({ width: 320, height: 844 });
+  const width = await lab.evaluate(node => ({ actual: node.scrollWidth, available: node.clientWidth }));
+  expect(width.actual).toBeLessThanOrEqual(width.available + 2);
+  await page.addScriptTag({ content: axe.source });
+  const violations = await lab.evaluate(async node => (await (window as unknown as { axe: typeof import('axe-core') }).axe.run(node, { runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] } })).violations);
+  expect(violations).toEqual([]);
+  await expect(lab.getByRole('link', { name: 'Check current route evidence' })).toHaveAttribute('href', '/network#check-a-route');
+});

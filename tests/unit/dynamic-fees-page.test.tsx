@@ -93,6 +93,16 @@ const liveResult: LiveDataResult<DynamicL1FeeStatus> = {
 };
 
 describe('DynamicFeesView', () => {
+  it('uses the same invalid-bounds label in distribution and pair details, and discloses paused sealing', () => {
+    const invalid = structuredClone(status);
+    invalid.mimir.floorBps = { key: 'floor', value: 20, effectiveValue: 20, state: 'active' };
+    invalid.mimir.ceilingBps = { key: 'ceiling', value: 1, effectiveValue: 1, state: 'active' };
+    invalid.mimir.epochBlocks = { key: 'epoch', value: 0, effectiveValue: 0, state: 'inactive' };
+    const html = renderToStaticMarkup(<DynamicFeesView result={{ ...liveResult, data: invalid }} status={invalid} />);
+    expect(html.match(/Invalid bounds/g)?.length).toBeGreaterThanOrEqual(3);
+    expect(html).not.toContain('<dd>Inside bounds</dd>');
+    expect(html).toContain('Epoch sealing paused: epoch length is zero.');
+  });
   it('renders source labels, current-only posture, and dynamic fee records', () => {
     const html = renderToStaticMarkup(<DynamicFeesView result={liveResult} status={status} />);
 

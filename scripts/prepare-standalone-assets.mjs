@@ -40,7 +40,7 @@ function copyDirectoryContents(source, destination) {
 function copyDirectory(source, destination, label, required) {
   if (!existsSync(source)) {
     if (required) {
-      throw new Error(`${label} is missing. Run npm run build first.`);
+      throw new Error(`${label} is missing. Run pnpm run build first.`);
     }
     return;
   }
@@ -53,7 +53,7 @@ export function prepareStandaloneAssets(root = defaultRoot) {
   const serverPath = join(standaloneDir, 'server.js');
 
   if (!existsSync(serverPath)) {
-    throw new Error('Standalone server is missing. Run npm run build first.');
+    throw new Error('Standalone server is missing. Run pnpm run build first.');
   }
 
   copyDirectory(

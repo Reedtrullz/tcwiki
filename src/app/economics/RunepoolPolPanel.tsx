@@ -6,9 +6,11 @@ import { Card } from '@/components/ui/Card';
 import { LiveSourceMeta } from '@/components/ui/LiveSourceMeta';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { useEarningsHistory, useNetworkStatus, useRunePoolPolStatus } from '@/lib/hooks/useMidgard';
+import { operationEvidenceNeedsRefresh } from '@/lib/network-status-summary';
 import { liveResultIsDegraded } from '@/lib/live-result';
+import { deriveStatsEarningsRows } from '@/lib/stats-dashboard';
 import { summarizeSourceWarning } from '@/lib/source-warnings';
-import { formatRuneFromBaseUnits } from '@/lib/trust';
+import { formatRuneFromBaseUnits, parseFiniteDecimal, runeBaseUnitsToNumber } from '@/lib/trust';
 import type { HistoryItem, LiveDataResult, NetworkStatus, RunePoolPolStatus } from '@/lib/types';
 
 const RUNE_BASE_UNITS = BigInt(100000000);
@@ -21,9 +23,14 @@ interface RunePoolPolViewProps {
   isLoading?: boolean;
   earningsHistory?: HistoryItem[];
   earningsLoading?: boolean;
+  earningsResult?: LiveDataResult<HistoryItem[]>;
+  earningsError?: string;
+  observedAtMs?: number;
   networkResult?: LiveDataResult<NetworkStatus>;
   networkStatus?: NetworkStatus;
   networkLoading?: boolean;
+  onRefresh?: () => unknown;
+  onRefreshNetwork?: () => unknown;
 }
 
 interface PolTrackerSummary {
@@ -65,24 +72,8 @@ function factCardClass(tone: FactTone) {
   }
 }
 
-function formatRune(value: string | null | undefined) {
-  if (value === undefined || value === null) {
-    return 'Unavailable';
-  }
-
-  try {
-    const raw = BigInt(value);
-    const sign = raw < BigInt(0) ? '-' : '';
-    const absolute = raw < BigInt(0) ? -raw : raw;
-    const rounded = (absolute + RUNE_BASE_UNITS / BigInt(2)) / RUNE_BASE_UNITS;
-    return `${sign}${rounded.toLocaleString('en-US')} RUNE`;
-  } catch {
-    return 'Unavailable';
-  }
-}
-
 function parseRuneBaseUnits(value: string | null | undefined) {
-  if (value === undefined || value === null) {
+  if (value === undefined || value === null || !/^-?\d+$/.test(value)) {
     return null;
   }
 
@@ -93,25 +84,21 @@ function parseRuneBaseUnits(value: string | null | undefined) {
   }
 }
 
-function formatUnitValue(value: string | null | undefined) {
-  if (value === undefined || value === null) {
+function formatRune(value: string | null | undefined) {
+  const raw = parseRuneBaseUnits(value);
+  if (raw === null) {
     return 'Unavailable';
   }
 
-  try {
-    return BigInt(value).toLocaleString('en-US');
-  } catch {
-    return 'Unavailable';
-  }
+  const sign = raw < BigInt(0) ? '-' : '';
+  const absolute = raw < BigInt(0) ? -raw : raw;
+  const rounded = (absolute + RUNE_BASE_UNITS / BigInt(2)) / RUNE_BASE_UNITS;
+  return `${sign}${rounded.toLocaleString('en-US')} RUNE`;
 }
 
-function parseFiniteDecimal(value: string | undefined) {
-  if (value === undefined || value === '') {
-    return null;
-  }
-
-  const numeric = Number(value);
-  return Number.isFinite(numeric) ? numeric : null;
+function formatUnitValue(value: string | null | undefined) {
+  const units = parseRuneBaseUnits(value);
+  return units === null ? 'Unavailable' : units.toLocaleString('en-US');
 }
 
 function formatUsdCompact(value: number | null) {
@@ -126,8 +113,7 @@ function formatUsdCompact(value: number | null) {
 }
 
 function runeNumberFromBaseUnits(value: string | null | undefined) {
-  const raw = parseRuneBaseUnits(value);
-  return raw === null ? null : Number(raw) / Number(RUNE_BASE_UNITS);
+  return runeBaseUnitsToNumber(value);
 }
 
 function formatUsdPrice(value: number | null) {
@@ -138,23 +124,13 @@ function formatUsdPrice(value: number | null) {
   return `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}`;
 }
 
-function formatHistoryDate(seconds: string | undefined) {
-  if (!seconds) {
-    return null;
-  }
-
-  const parsed = Number(seconds);
-  if (!Number.isFinite(parsed)) {
-    return null;
-  }
-
-  return new Date(parsed * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
-}
-
 function derivePolTrackerSummary(
   status: RunePoolPolStatus | undefined,
   earningsHistory: HistoryItem[] | undefined,
-  earningsLoading: boolean | undefined
+  earningsLoading: boolean | undefined,
+  earningsResult: LiveDataResult<HistoryItem[]> | undefined,
+  earningsError: string | undefined,
+  observedAtMs = Date.now()
 ): PolTrackerSummary | undefined {
   if (!status) {
     return undefined;
@@ -162,25 +138,34 @@ function derivePolTrackerSummary(
 
   const formatRuneOrUnavailable = (value: string | null) => (value === null ? 'Unavailable' : formatRuneFromBaseUnits(value));
   const polRune = runeNumberFromBaseUnits(status.pol.valueRuneBaseUnits);
+  const pnlBaseUnits = parseRuneBaseUnits(status.pol.pnlRuneBaseUnits);
   const pnlRune = runeNumberFromBaseUnits(status.pol.pnlRuneBaseUnits);
-  const runePriceUsd = earningsHistory
-    ?.map((item) => parseFiniteDecimal(item.runePriceUSD))
-    .filter((price): price is number => price !== null && price > 0)
-    .at(-1);
-  const latestEarningsItem = earningsHistory?.at(-1);
-  const usdPriceNote = earningsLoading && runePriceUsd === undefined
-    ? 'Midgard daily RUNE/USD price is loading.'
-    : runePriceUsd === undefined
-      ? 'Midgard daily RUNE/USD price was not available in the loaded history.'
-      : `Latest Midgard daily RUNE/USD interval (${formatHistoryDate(latestEarningsItem?.startTime) ?? 'date unavailable'})`;
-  const usdTone: FactTone = runePriceUsd === undefined ? 'info' : 'success';
+  const priceSourceReady = earningsResult?.status === 'ok' && !earningsError && !liveResultIsDegraded(earningsResult)
+    && Boolean(earningsResult.source || earningsResult.sources?.length);
+  const history = earningsResult?.data ?? earningsHistory;
+  let priceRecord: { price: number; period: string; endTime: number } | undefined;
+  if (priceSourceReady) {
+    for (const row of deriveStatsEarningsRows(history, observedAtMs)) {
+      if (!row.completed || row.periodIssue || row.startTime === null || row.endTime === null) continue;
+      const item = history?.find(item => item.startTime === String(row.startTime) && item.endTime === String(row.endTime));
+      const price = parseFiniteDecimal(item?.runePriceUSD);
+      if (price !== null && price > 0) { priceRecord = { price, period: row.periodLabel, endTime: row.endTime }; break; }
+    }
+  }
+  const runePriceUsd = priceRecord?.price;
+  const ageDays = priceRecord ? (observedAtMs - priceRecord.endTime * 1000) / 86_400_000 : undefined;
+  const usdPriceNote = earningsLoading && !priceRecord ? 'Midgard daily RUNE/USD price is loading.'
+    : !priceSourceReady ? 'Price source unavailable; USD valuation withheld.'
+      : !priceRecord ? 'No valid completed daily price interval; USD valuation withheld.'
+        : `Daily reference valuation: ${priceRecord.period}; price interval age ${ageDays!.toFixed(1)} days. This is not contemporaneous USD accounting with the THORNode POL snapshot.`;
+  const usdTone: FactTone = !priceRecord ? 'info' : ageDays! > 1 ? 'warning' : 'info';
 
   return {
     polRune: formatRuneOrUnavailable(status.pol.valueRuneBaseUnits),
     polUsd: formatUsdCompact(polRune === null || runePriceUsd === undefined ? null : polRune * runePriceUsd),
     pnlRune: formatRuneOrUnavailable(status.pol.pnlRuneBaseUnits),
     pnlUsd: formatUsdCompact(pnlRune === null || runePriceUsd === undefined ? null : pnlRune * runePriceUsd),
-    pnlTone: pnlRune === null ? 'info' : pnlRune >= 0 ? 'success' : 'danger',
+    pnlTone: pnlBaseUnits === null ? 'info' : pnlBaseUnits >= BigInt(0) ? 'success' : 'danger',
     lifetimeDeposited: formatRuneOrUnavailable(status.pol.runeDepositedBaseUnits),
     lifetimeWithdrawn: formatRuneOrUnavailable(status.pol.runeWithdrawnBaseUnits),
     usdPrice: formatUsdPrice(runePriceUsd ?? null),
@@ -189,10 +174,11 @@ function derivePolTrackerSummary(
   };
 }
 
-function availabilityValue(value: boolean | null | undefined, isLoading: boolean | undefined) {
+function availabilityValue(value: boolean | null | undefined, isLoading: boolean | undefined, stale = false) {
   if (isLoading && value === undefined) {
     return { value: 'Loading', tone: 'info' as const, detail: 'Network diagnostics are still loading RUNEPool controls.' };
   }
+  if (value === true && stale) return { value: 'Dated context', tone: 'warning' as const, detail: 'Refresh operation evidence before relying on this observed enablement.' };
   if (value === true) {
     return { value: 'Control enabled', tone: 'success' as const, detail: '`RUNEPOOLENABLED` is active in the checked network snapshot; this is not deposit, withdrawal, wallet, or future-availability proof.' };
   }
@@ -207,7 +193,8 @@ function actionPauseValue(
   enabled: boolean | null | undefined,
   label: string,
   key: string,
-  isLoading: boolean | undefined
+  isLoading: boolean | undefined,
+  stale = false
 ) {
   if (isLoading && paused === undefined) {
     return { value: 'Loading', tone: 'info' as const, detail: `Network diagnostics are still loading ${label}.` };
@@ -218,6 +205,7 @@ function actionPauseValue(
   if (paused === true) {
     return { value: 'Paused', tone: 'danger' as const, detail: `\`${key}\` is active in the checked network snapshot.` };
   }
+  if (paused === false && stale) return { value: 'Dated context', tone: 'warning' as const, detail: 'Refresh operation evidence before relying on this observed inactive halt.' };
   if (paused === false) {
     return { value: 'No active halt', tone: 'success' as const, detail: `\`${key}\` is present and inactive in the checked network snapshot; this clears the tracked halt only.` };
   }
@@ -264,7 +252,7 @@ function snapshotDetail(status: RunePoolPolStatus | undefined) {
   const age = status.sourceFreshness.thorchainBlockAgeSeconds;
   return [
     `height ${status.sourceFreshness.thorchainHeight.toLocaleString('en-US')}`,
-    status.sourceFreshness.snapshotPinned ? 'height-pinned' : 'not pinned',
+    status.sourceFreshness.heightPinning?.verification === 'verified' ? 'response height verified' : status.sourceFreshness.snapshotPinned ? 'height requested; response unverified' : 'not pinned',
     age === undefined ? undefined : `${age}s block age`,
   ].filter(Boolean).join(' / ');
 }
@@ -463,6 +451,8 @@ function actionDecisionValue(value: string, action: 'deposit' | 'withdraw') {
       return 'RUNEPool disabled';
     case 'Loading':
       return 'Loading';
+    case 'Dated context':
+      return 'Dated context';
     case 'Needs review':
       return 'Needs review';
     default:
@@ -476,16 +466,22 @@ export function RunepoolPolView({
   isLoading,
   earningsHistory,
   earningsLoading,
+  earningsResult,
+  earningsError,
+  observedAtMs,
   networkResult,
   networkStatus,
   networkLoading,
+  onRefresh,
+  onRefreshNetwork,
 }: RunePoolPolViewProps) {
   const accounting = sourceQuality(result, isLoading);
-  const enabled = availabilityValue(networkStatus?.runePoolEnabled, networkLoading);
-  const deposits = actionPauseValue(networkStatus?.runePoolDepositPaused, networkStatus?.runePoolEnabled, 'RUNEPool deposits', 'RUNEPoolHaltDeposit', networkLoading);
-  const withdrawals = actionPauseValue(networkStatus?.runePoolWithdrawPaused, networkStatus?.runePoolEnabled, 'RUNEPool withdrawals', 'RUNEPoolHaltWithdraw', networkLoading);
+  const staleOperations = operationEvidenceNeedsRefresh(networkStatus);
+  const enabled = availabilityValue(networkStatus?.runePoolEnabled, networkLoading, staleOperations);
+  const deposits = actionPauseValue(networkStatus?.runePoolDepositPaused, networkStatus?.runePoolEnabled, 'RUNEPool deposits', 'RUNEPoolHaltDeposit', networkLoading, staleOperations);
+  const withdrawals = actionPauseValue(networkStatus?.runePoolWithdrawPaused, networkStatus?.runePoolEnabled, 'RUNEPool withdrawals', 'RUNEPoolHaltWithdraw', networkLoading, staleOperations);
   const scope = polScope(status, isLoading);
-  const actionTone = deposits.tone === 'danger' || withdrawals.tone === 'danger' ? 'danger' as const : 'success' as const;
+  const actionTone = deposits.tone === 'danger' || withdrawals.tone === 'danger' ? 'danger' as const : staleOperations ? 'warning' as const : 'success' as const;
   const actionDetail = deposits.value === withdrawals.value
     ? deposits.detail
     : `Deposit: ${deposits.value}. Withdraw: ${withdrawals.value}. Halt controls do not prove wallet/interface support or future availability.`;
@@ -507,7 +503,7 @@ export function RunepoolPolView({
   const warningHeadline = sourceWarningHeadline(status);
   const relationship = bucketRelationship(status);
   const snapshotCards = decisionCards;
-  const tracker = derivePolTrackerSummary(status, earningsHistory, earningsLoading);
+  const tracker = derivePolTrackerSummary(status, earningsHistory, earningsLoading, earningsResult, earningsError, observedAtMs);
 
   return (
     <section id="runepool-pol-live" className="mb-12 scroll-mt-24">
@@ -559,6 +555,7 @@ export function RunepoolPolView({
             <Badge variant={badgeVariant(tracker?.usdTone ?? 'info')}>{tracker?.usdPrice ?? 'Unavailable'}</Badge>
           </div>
           <p className="text-[11px] leading-relaxed text-slate-500">{tracker?.usdPriceNote ?? 'Midgard daily RUNE/USD price was not loaded.'}</p>
+          <LiveSourceMeta result={earningsResult} />
         </div>
       </Card>
 
@@ -678,7 +675,7 @@ export function RunepoolPolView({
         <Card>
           <h3 className="text-base font-semibold text-slate-100">Source Posture</h3>
           <div className="mt-3">
-            <LiveSourceMeta result={result} />
+            <LiveSourceMeta result={result} onRefresh={onRefresh} />
           </div>
           {warningHeadline && (
             <div className="mt-3 rounded-md border border-amber-500/25 bg-amber-500/10 p-3 text-xs leading-relaxed text-amber-200">
@@ -689,7 +686,7 @@ export function RunepoolPolView({
           {networkResult && (
             <div className="mt-3 border-t border-border pt-3">
               <p className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Network diagnostics</p>
-              <LiveSourceMeta result={networkResult} />
+              <LiveSourceMeta result={networkResult} onRefresh={onRefreshNetwork} />
             </div>
           )}
         </Card>
@@ -773,21 +770,27 @@ export function RunepoolPolPanel() {
     result,
     data,
     isLoading,
+    refresh,
   } = useRunePoolPolStatus();
-  const { data: earningsHistory, isLoading: earningsLoading } = useEarningsHistory('day', 30);
+  const { data: earningsHistory, result: earningsResult, error: earningsError, isLoading: earningsLoading } = useEarningsHistory('day', 30);
   const {
     result: networkResult,
     data: networkStatus,
     isLoading: networkLoading,
+    refresh: refreshNetwork,
   } = useNetworkStatus();
 
   return (
     <RunepoolPolView
+      onRefresh={refresh}
+      onRefreshNetwork={refreshNetwork}
       result={result}
       status={data}
       isLoading={isLoading}
       earningsHistory={earningsHistory}
       earningsLoading={earningsLoading}
+      earningsResult={earningsResult}
+      earningsError={earningsError}
       networkResult={networkResult}
       networkStatus={networkStatus}
       networkLoading={networkLoading}

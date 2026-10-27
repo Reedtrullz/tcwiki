@@ -1,6 +1,7 @@
 import type { MDXComponents } from 'mdx/types';
 import type { ReactNode } from 'react';
-import { cn, slugifyFragment } from '@/lib/utils';
+import { cn } from '@/lib/utils';
+import { slugifyDeepDiveHeading } from '@/lib/deep-dive-heading-id.mjs';
 
 function textFromChildren(children: ReactNode): string {
   if (typeof children === 'string' || typeof children === 'number') {
@@ -41,7 +42,7 @@ export function useMDXComponents(components: MDXComponents): MDXComponents {
     ),
     h2: ({ children, className, id, ...props }) => (
       <h2
-        id={typeof id === 'string' ? id : slugifyFragment(textFromChildren(children))}
+        id={typeof id === 'string' ? id : slugifyDeepDiveHeading(textFromChildren(children))}
         className={cn('scroll-mt-24', className)}
         {...props}
       >
@@ -50,7 +51,7 @@ export function useMDXComponents(components: MDXComponents): MDXComponents {
     ),
     h3: ({ children, className, id, ...props }) => (
       <h3
-        id={typeof id === 'string' ? id : slugifyFragment(textFromChildren(children))}
+        id={typeof id === 'string' ? id : slugifyDeepDiveHeading(textFromChildren(children))}
         className={cn('scroll-mt-24', className)}
         {...props}
       >

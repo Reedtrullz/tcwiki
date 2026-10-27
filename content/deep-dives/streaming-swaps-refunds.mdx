@@ -1,3 +1,5 @@
+import { TransactionExamples } from '@/components/features/TransactionExamples';
+
 # Streaming Swaps And Refunds
 
 THORChain swaps are not just a formula. A real swap depends on a fresh quote, a current inbound address, a valid memo, enough amount to clear dust and fee thresholds, live chain/trading/signing state, pool availability, and the outbound path.
@@ -16,6 +18,8 @@ When a user asks "why did my swap refund?", start with the most current evidence
 
 The Network diagnostics route checker now includes a refund/failed-swap triage panel that separates current quote evidence from missing transaction evidence. Use it as a checklist, not as a wallet instruction or support verdict.
 
+The [one-hash transaction lookup](/network#transaction-evidence) can explicitly read up to five related Midgard actions. It keeps the raw memo separate from a bounded local syntax interpretation and shows indexer time, THORChain index height, inputs, outbounds and reported network fees with their units. Provider status remains a processing report: source-chain confirmation and destination settlement are unknown without independent receipts. The request disclosure names both fixed providers before a hash is sent; the wiki does not retain a lookup history.
+
 If those pieces are missing, the honest answer is "insufficient evidence", not a guessed refund cause.
 
 ## Swap Lifecycle
@@ -30,6 +34,12 @@ A normal base-layer swap moves through a few evidence points:
 - If execution is valid and signing is available, nodes sign the outbound transaction. If execution is invalid or impossible, the protocol can refund according to the available source-chain path.
 
 The [CLP formula](/deep-dives/clp#how-clp-works) explains pricing. It does not prove that the specific route, memo, amount, quote, or outbound path is currently executable.
+
+## Dated Transaction Examples
+
+These records show how a Bitcoin source-chain transaction and a Midgard action can describe different stages. The refund example remains pending because its captured response has no refund outbound.
+
+<TransactionExamples guide="streaming-swaps-refunds" />
 
 ## Streaming Swaps
 
@@ -78,3 +88,9 @@ For real transactions, use a fresh official quote flow or interface implementati
 Use, in order of strength: the current exact-route quote and its error body; Network diagnostics for route/signing/source state; the actual inbound memo, chains, and refund hash; labeled pool and fee data; then static docs for design meaning alone. They do not prove a past refund's specific cause or a future swap's success.
 
 This triage map cannot prove route availability, interface correctness, copied-value safety, or signing behavior. Streaming swaps also do not remove slip, refund, delay, or execution risk; assign a refund cause only from matching transaction evidence.
+
+## Bitcoin Memo Archive Pointer
+
+The [curated OP_RETURN source entry](/docs#bitcoin-memo-archive) links to recorded Bitcoin payload bytes, transaction/block references and Bitcoin-side history. Reviewed 3 October 2026 as a third-party discovery pointer, it covers Bitcoin rather than all THORChain activity. Reconcile the original bytes with primary chain evidence before interpreting the memo.
+
+An archive's THORChain classification, confirmation label, ticker count or address grouping does not prove memo validation, THORChain processing, successful cross-chain execution or destination settlement. Use the [network diagnostics](/network#network-diagnostics) for current operational evidence and keep any transaction lifecycle gaps explicit.

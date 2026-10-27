@@ -3,22 +3,24 @@
 import useSWR from 'swr';
 import { MayaAPI } from '@/lib/api/maya';
 import type { LiveDataResult, MayaNetworkStats, MayaNode } from '@/lib/types';
-import { SWR_OPTIONS, unwrapLiveResult } from '@/lib/hooks/live-data';
+import { requireLiveData } from '@/lib/live-presentation';
+import { useLivePresentation } from '@/lib/hooks/useLivePresentation';
+import { SWR_OPTIONS } from '@/lib/hooks/swr-options';
 
 export function useMayaNetwork() {
-  const { data, error, isLoading } = useSWR<LiveDataResult<MayaNetworkStats>>(
+  const { data, error, isLoading, isValidating, mutate } = useSWR<LiveDataResult<MayaNetworkStats>>(
     'maya:network',
-    () => MayaAPI.getNetwork(),
+    () => requireLiveData(() => MayaAPI.getNetwork()),
     SWR_OPTIONS
   );
-  return unwrapLiveResult(data, error, isLoading);
+  return useLivePresentation(data, error, isLoading, isValidating, { kind: 'aggregate' }, () => mutate(current => current, { revalidate: true, throwOnError: false }));
 }
 
 export function useMayaNodes() {
-  const { data, error, isLoading } = useSWR<LiveDataResult<MayaNode[]>>(
+  const { data, error, isLoading, isValidating, mutate } = useSWR<LiveDataResult<MayaNode[]>>(
     'maya:nodes',
-    () => MayaAPI.getNodes(),
+    () => requireLiveData(() => MayaAPI.getNodes()),
     SWR_OPTIONS
   );
-  return unwrapLiveResult(data, error, isLoading);
+  return useLivePresentation(data, error, isLoading, isValidating, { kind: 'aggregate' }, () => mutate(current => current, { revalidate: true, throwOnError: false }));
 }

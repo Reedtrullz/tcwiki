@@ -16,3 +16,9 @@ export function slugifyFragment(value: string) {
 export function recordAnchor(prefix: string, id: string | number) {
   return slugifyFragment(`${prefix}-${id}`);
 }
+
+/** Stable across server/browser locale and timezone for evidence receipts. */
+export function formatEvidenceTimestamp(value: string) {
+  const time = Date.parse(value);
+  return Number.isFinite(time) ? new Date(time).toISOString() : 'Unavailable';
+}

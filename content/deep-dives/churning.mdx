@@ -1,3 +1,5 @@
+import { TransactionExamples } from '@/components/features/TransactionExamples';
+
 # Churning and Node Lifecycle
 
 Churning is the mechanism that keeps the THORChain validator set fresh, secure, and decentralized over time.
@@ -42,6 +44,8 @@ The combination of churning and economic penalties is intended to reduce long-li
 Churn is also a vault-management event. When the active validator set changes, new vault keys can be created and assets may migrate from older vaults to newer vaults. Official technology docs describe vault migration as a multi-round process designed to maintain service availability during validator-set changes.
 
 That makes churn relevant to users even if they never run a node: vault addresses, signing responsibility, outbound queues, and operational pause controls can all matter during sensitive migration windows. A churned-out node returning to Standby is still not automatically free to unbond while its key remains part of a migrating vault.
+
+<TransactionExamples guide="churning" />
 
 Current churn claims need Network diagnostics, THORNode node/churn state, current Mimir constants, the exact node lifecycle stage, and release-dated evidence. This design does not reveal the next rotation, current eligibility, migration completion, or chain-client readiness.
 

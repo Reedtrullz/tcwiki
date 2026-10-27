@@ -1,6 +1,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import { readLayoutSafety } from './helpers/layout-safety';
 import { fulfillJson, mockSwapperFirstNetwork } from './helpers/thornode-mocks';
+import axe from 'axe-core';
 
 function earningsInterval(index: number) {
   const startTime = 1_704_067_200 + index * 86_400;
@@ -23,7 +24,7 @@ function earningsInterval(index: number) {
 }
 
 async function mockStatsMidgard(page: Page) {
-  await page.route(/(?:gateway\.liquify\.com\/chain\/thorchain_midgard|midgard\.thorchain\.network)\/v2\/pools\?status=available$/, async (route) => {
+  await page.route(/(?:gateway\.liquify\.com\/chain\/thorchain_midgard|midgard\.thorchain\.network)\/v2\/pools\?status=available&period=(?:1h|24h|7d|14d|30d|90d|100d|180d|365d)$/, async (route) => {
     await fulfillJson(route, [
       {
         asset: 'BTC.BTC',
@@ -88,7 +89,7 @@ async function mockStatsMidgard(page: Page) {
 
 async function mockStatsMidgardPoolFailure(page: Page) {
   await mockStatsMidgard(page);
-  await page.route(/(?:gateway\.liquify\.com\/chain\/thorchain_midgard|midgard\.thorchain\.network)\/v2\/pools\?status=available$/, async (route) => {
+  await page.route(/(?:gateway\.liquify\.com\/chain\/thorchain_midgard|midgard\.thorchain\.network)\/v2\/pools\?status=available&period=(?:1h|24h|7d|14d|30d|90d|100d|180d|365d)$/, async (route) => {
     await route.fulfill({
       status: 503,
       contentType: 'application/json',
@@ -179,7 +180,7 @@ test.describe('THORChain Wiki Stats Smoke Tests', () => {
     await expect(page.getByLabel(/Pool sort/i)).toBeVisible();
     await expect(page.getByText('Top Pools By RUNE Depth')).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Loaded Row List' })).toBeVisible();
-    await expect(page.getByText('BTC.BTC').first()).toBeVisible();
+    await expect(page.locator('#available-pools').getByRole(isMobile ? 'listitem' : 'row').filter({ hasText: 'BTC.BTC' })).toBeVisible();
     await expect(page.getByText('Unavailable').first()).toBeVisible();
     await expect(page.getByText(/BSC and SOL are swap-limited/i).first()).toBeVisible();
     await expect(page.getByRole('heading', { name: /Related Checks/i })).toBeVisible();
@@ -215,10 +216,17 @@ test.describe('THORChain Wiki Stats Smoke Tests', () => {
     await expect(pools.getByRole('searchbox', { name: /Filter Midgard available-pool rows/i })).toHaveValue('eth');
     await expect(pools.getByLabel(/Pool chain/i)).toHaveValue('ETH');
     await expect(pools.getByLabel(/Pool sort/i)).toHaveValue('volume24hRune');
+    await expect(pools.getByLabel(/Pool return period/i)).toHaveValue('14d');
     await expect(pools.getByText('Search: eth')).toBeVisible();
     await expect(pools.getByText('Chain: ETH')).toBeVisible();
     await expect(pools.getByText('Sort: 24h volume (RUNE)')).toBeVisible();
     await expect(pools.getByText(/Showing 2 of 4 pool rows after filters/i)).toBeVisible();
+    await pools.getByLabel(/Pool return period/i).selectOption('30d');
+    await expect(page).toHaveURL(/pool_period=30d/);
+    await expect(page).toHaveURL(/pool_q=eth/);
+    await expect(page).toHaveURL(/pool_sort=volume/);
+    await expect(pools.getByText('Period: 30d')).toBeVisible();
+    await expect(pools.getByLabel('Live data sources').locator('a').first()).toHaveAttribute('href', /period=30d$/);
     if (isMobile) {
       await expect(pools.getByRole('listitem').filter({ hasText: 'ETH.ETH' })).toBeVisible();
       await expect(pools.getByRole('listitem').filter({ hasText: 'ETH.USDC-0XA0B86991C6218B36C1D19D4A2E9EB0CE3606EB48' })).toBeVisible();
@@ -233,7 +241,7 @@ test.describe('THORChain Wiki Stats Smoke Tests', () => {
     await expect(pools.getByText(/No pools match "atom" on ETH/i)).toBeVisible();
 
     await pools.getByRole('button', { name: /Reset pool filters/i }).click();
-    await expect(page).toHaveURL(/\/stats#available-pools$/);
+    await expect(page).toHaveURL(/\/stats\?pool_period=30d#available-pools$/);
     await expect(pools.getByRole('searchbox', { name: /Filter Midgard available-pool rows/i })).toHaveValue('');
     await expect(pools.getByText('BTC.BTC').first()).toBeVisible();
   });
@@ -267,4 +275,81 @@ test.describe('THORChain Wiki Stats Smoke Tests', () => {
       `mobile stats loaded state overflow ${JSON.stringify({ viewportWidth: layout.viewportWidth, overflowing: layout.overflowing })}`
     ).toBeLessThanOrEqual(layout.viewportWidth + 2);
   });
+});
+
+test.describe('Earnings UTC period evidence', () => {
+  test.use({ timezoneId: 'Pacific/Honolulu' });
+  test('earnings preserve UTC chronology, deduplicate totals and disclose calendar gaps', async ({ page, isMobile }) => {
+    await mockSwapperFirstNetwork(page);
+    await mockStatsMidgard(page);
+    const historyRoute = /(?:gateway\.liquify\.com\/chain\/thorchain_midgard|midgard\.thorchain\.network)\/v2\/history\/earnings.*/;
+    await page.route(historyRoute, route => fulfillJson(route, { intervals: [...Array.from({ length: 8 }, (_, i) => earningsInterval(i)).reverse(), earningsInterval(4)] }));
+    await page.goto('/stats');
+    const earnings = page.locator('#earnings-history');
+    await expect(earnings.getByText('36 RUNE', { exact: true })).toBeVisible();
+    if (isMobile) await expect(earnings.getByRole('list', { name: 'Recent daily earnings intervals' }).getByRole('listitem').first().getByText('2024-01-08 UTC', { exact: true })).toBeVisible();
+    else await expect(earnings.getByRole('row').nth(1).getByRole('cell').first()).toHaveText('2024-01-08 UTC');
+    const axisTicks = earnings.getByRole('application').getByText(/^\d{4}-\d{2}-\d{2} UTC$/);
+    await expect(axisTicks.first()).toBeVisible();
+    const ticks = await axisTicks.allTextContents();
+    expect(ticks.length).toBeGreaterThan(1);
+    expect(ticks).toEqual([...ticks].sort());
+    expect(ticks.at(-1)).toBe('2024-01-08 UTC');
+    await page.route(historyRoute, route => fulfillJson(route, { intervals: [earningsInterval(0), earningsInterval(8)] }));
+    await page.reload();
+    await expect(earnings.getByText(/7 missing daily periods in the loaded range/)).toBeVisible();
+    await expect(earnings.getByText('9 RUNE', { exact: true }).first()).toBeVisible();
+    await expect(earnings.getByText('Partial window', { exact: true })).toBeVisible();
+  });
+});
+
+
+test('loaded pool comparison preserves basis, missing values and URL without detail requests', async ({ page }) => {
+  await mockSwapperFirstNetwork(page);
+  await mockStatsMidgard(page);
+  let poolListReads = 0;
+  const detailReads: string[] = [];
+  page.on('request', request => {
+    if (/\/v2\/pools\?/.test(request.url())) poolListReads += 1;
+    if (/\/v2\/pool\//.test(request.url())) detailReads.push(request.url());
+  });
+  await page.goto('/stats?pool_q=BTC');
+  const comparison = page.getByRole('region', { name: 'Compare loaded pools', exact: true });
+  const addPool = comparison.getByLabel('Add a loaded pool', { exact: true });
+  await expect(addPool.getByRole('option', { name: 'BTC.BTC', exact: true })).toBeAttached();
+  await expect(page.getByRole('button', { name: 'Open search', exact: true })).toBeEnabled();
+  const readsBefore = poolListReads;
+  for (const asset of ['BTC.BTC', 'ETH.ETH', 'GAIA.ATOM']) {
+    await addPool.selectOption(asset);
+    const add = comparison.getByRole('button', { name: 'Add to comparison' });
+    await expect(add).toBeEnabled();
+    await add.focus();
+    await page.keyboard.press('Enter');
+    await expect(comparison.getByRole('columnheader', { name: asset, exact: true })).toBeVisible();
+  }
+  await expect(addPool).toBeDisabled();
+  await expect(page).toHaveURL(/pool_q=BTC/);
+  await expect(page).toHaveURL(/compare_pool=BTC.BTC/);
+  const table = comparison.getByRole('table');
+  await expect(table).toContainText('rate window 14d');
+  await expect(table.getByRole('row').filter({ has: page.getByRole('rowheader', { name: 'poolAPY (14d window)', exact: true }) }).getByRole('cell').nth(2)).toHaveText('Unavailable');
+  expect(poolListReads).toBe(readsBefore);
+  expect(detailReads).toEqual([]);
+  await page.reload();
+  await expect(comparison.getByRole('columnheader', { name: 'BTC.BTC', exact: true })).toBeVisible();
+  await page.goto('/docs');
+  await page.goBack();
+  await expect(comparison.getByRole('columnheader', { name: 'ETH.ETH', exact: true })).toBeVisible();
+  await page.goForward();
+  await expect(page).toHaveURL(/\/docs$/);
+  await page.goBack();
+  await expect(comparison.getByRole('columnheader', { name: 'GAIA.ATOM', exact: true })).toBeVisible();
+  await comparison.getByRole('button', { name: 'Remove ETH.ETH from comparison', exact: true }).click();
+  await expect(comparison.getByRole('columnheader', { name: 'ETH.ETH', exact: true })).toHaveCount(0);
+  await page.setViewportSize({ width: 320, height: 844 });
+  const widths = await comparison.evaluate(node => ({ actual: node.scrollWidth, available: node.clientWidth }));
+  expect(widths.actual).toBeLessThanOrEqual(widths.available + 2);
+  await page.addScriptTag({ content: axe.source });
+  const violations = await comparison.evaluate(async node => (await (window as unknown as { axe: typeof import('axe-core') }).axe.run(node, { runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] } })).violations);
+  expect(violations).toEqual([]);
 });

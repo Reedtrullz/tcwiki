@@ -20,7 +20,7 @@ async function fulfillJson(route: Route, value: unknown) {
   });
 }
 
-async function mockDynamicFeesThornode(page: Page) {
+async function mockDynamicFeesThornode(page: Page, mimir: Record<string, unknown> = {}, historyOverrides: Record<string, unknown> = {}) {
   const currentEpoch = '1867';
   const historyByThorname: Record<string, unknown> = {
     shapeshift: {
@@ -78,6 +78,7 @@ async function mockDynamicFeesThornode(page: Page) {
       L1DynamicFeeEpochBlocks: 14400,
       'DYNAMICFEE-WHITELIST-SHAPESHIFT': 1,
       'DYNAMICFEE-WHITELIST-SYMBIOSIS': 2,
+      ...mimir,
     });
   });
   await page.route(/\/thorchain\/dynamic_l1_fees(?:\?.*)?$/, async (route) => {
@@ -126,7 +127,7 @@ async function mockDynamicFeesThornode(page: Page) {
   await page.route(/\/thorchain\/dynamic_l1_fees\/([^/?]+)(?:\?.*)?$/, async (route) => {
     const url = new URL(route.request().url());
     const thorname = decodeURIComponent(url.pathname.split('/').at(-1) ?? '').toLowerCase();
-    const history = historyByThorname[thorname];
+    const history = historyOverrides[thorname] ?? historyByThorname[thorname];
 
     if (history) {
       await fulfillJson(route, history);
@@ -138,6 +139,86 @@ async function mockDynamicFeesThornode(page: Page) {
       contentType: 'application/json',
       body: JSON.stringify({ message: 'not found' }),
     });
+  });
+}
+
+test('fee filters validate URL values and survive copy, reload and history', async ({ page }) => {
+  await mockDynamicFeesThornode(page);
+  await page.goto('/dynamic-fees?keep=proof&fee_whitelist=invalid&fee_bps=bogus&fee_current=invalid#dynamic-fee-records-explorer');
+  const panel = page.locator('#dynamic-fee-records-explorer');
+  await expect(panel.getByRole('combobox', { name: 'Whitelist', exact: true })).toHaveValue('all', { timeout: 15_000 });
+  await expect(panel.getByRole('combobox', { name: 'Bps position', exact: true })).toHaveValue('all');
+  await expect(panel.getByRole('combobox', { name: 'Current epoch', exact: true })).toHaveValue('all');
+  const input = panel.getByRole('searchbox', { name: 'Search tracked records' });
+  const historyLength = await page.evaluate(() => history.length);
+  await input.pressSequentially('BTC.BTC ETH.ETH', { delay: 0 });
+  await expect(input).toHaveValue('BTC.BTC ETH.ETH');
+  await panel.getByRole('combobox', { name: 'Whitelist', exact: true }).selectOption('active');
+  await panel.getByRole('combobox', { name: 'Bps position', exact: true }).selectOption('inside');
+  await expect.poll(() => new URL(page.url()).searchParams.get('fee_q')).toBe('BTC.BTC ETH.ETH');
+  expect(new URL(page.url()).searchParams.get('keep')).toBe('proof');
+  expect(new URL(page.url()).searchParams.get('fee_whitelist')).toBe('active');
+  await expect.poll(() => new URL(page.url()).searchParams.get('fee_bps')).toBe('inside');
+  expect(await page.evaluate(() => history.length)).toBe(historyLength);
+  const copied = page.url();
+  await page.reload();
+  await expect(input).toHaveValue('BTC.BTC ETH.ETH', { timeout: 15_000 });
+  await expect(panel.getByRole('combobox', { name: 'Whitelist', exact: true })).toHaveValue('active');
+  await page.goto('/rune');
+  await page.goBack();
+  await expect(page).toHaveURL(copied);
+  await expect(input).toHaveValue('BTC.BTC ETH.ETH', { timeout: 15_000 });
+  await page.goForward();
+  await expect(page).toHaveURL(/\/rune$/);
+  await page.goBack();
+  await panel.getByRole('button', { name: 'Reset filters', exact: true }).click();
+  await expect(input).toHaveValue('');
+  expect(new URL(page.url()).searchParams.get('fee_q')).toBeNull();
+  expect(new URL(page.url()).searchParams.get('keep')).toBe('proof');
+});
+
+test('stored fee history exposes partial fields and changes to common attribution membership', async ({ page }) => {
+  await mockDynamicFeesThornode(page, {}, {
+    shapeshift: { thorname: 'shapeshift', whitelist_state: '1', pairs: [{ pair: 'BTC.BTC|ETH.ETH', dynamic_bps: '4', last_active_epoch: '1866', history: [
+      { epoch: '1864', volume_tor: '10000000000', fees_tor: '', bps_at_close: '2' },
+      { epoch: '1866', volume_tor: '10000000000', fees_tor: '100000000', bps_at_close: '4' },
+    ] }] },
+    symbiosis: { thorname: 'symbiosis', whitelist_state: '2', pairs: [{ pair: 'BTC.BTC|THOR.RUNE', dynamic_bps: '1', last_active_epoch: '1864', history: [
+      { epoch: '1864', volume_tor: '100000000', fees_tor: '200000000', bps_at_close: '10' },
+    ] }] },
+  });
+  await page.goto('/dynamic-fees');
+  const history = page.locator('#dynamic-fee-historical-results');
+  await expect(history.getByText(/Stored history attributes eligible swap legs/)).toBeVisible();
+  const summary = history.locator('summary:visible').filter({ hasText: 'Sample coverage and attribution' }).first();
+  await expect(summary).toBeVisible();
+  await summary.click();
+  await expectAnyVisible(history.getByText('Fees 1/2; volume 2/2; controller floors 2/2.', { exact: true }));
+  await expectAnyVisible(history.getByText('symbiosis|BTC.BTC|THOR.RUNE', { exact: true }));
+  await history.getByRole('checkbox', { name: 'Compare common attribution cohort' }).check();
+  await expect(history.getByText(/Only attribution keys present in every loaded epoch/)).toBeVisible();
+  await expectAnyVisible(history.getByText('Fees 0/1; volume 1/1; controller floors 1/1.', { exact: true }));
+  await expect(history.getByText('symbiosis|BTC.BTC|THOR.RUNE', { exact: true })).toHaveCount(0);
+  await expectAnyVisible(history.getByText('Partial fields: these sums contain only the stored values available.', { exact: true }));
+});
+
+for (const scenario of [
+  { name: 'inverted', floor: 20, ceiling: 1, filter: 'invalid', label: 'Invalid bounds', count: 2 },
+  { name: 'equal', floor: 4, ceiling: 4, filter: 'equal', label: 'At shared bound', count: 1 },
+  { name: 'below', floor: 5, ceiling: 20, filter: 'below', label: 'Below floor', count: 2 },
+  { name: 'above', floor: 0, ceiling: 0, filter: 'above', label: 'Above ceiling', count: 2 },
+]) {
+  test(`fee ${scenario.name} bounds stay consistent in filters and distribution`, async ({ page }) => {
+    await mockDynamicFeesThornode(page, { L1DynamicFeeFloorBPS: scenario.floor, L1DynamicFeeCeilingBPS: scenario.ceiling, L1DynamicFeeEpochBlocks: 0 });
+    await page.goto('/dynamic-fees');
+    await expect(page.getByText(/Epoch sealing paused: epoch length is zero/)).toBeVisible();
+    const distribution = page.locator('#dynamic-fee-bps-distribution');
+    await expect(distribution.getByText(new RegExp(`bps · ${scenario.label}`)).first()).toBeVisible();
+    const explorer = page.locator('#dynamic-fee-records-explorer');
+    await explorer.getByLabel(/Bps position/).selectOption(scenario.filter);
+    await expect(explorer.getByText(`Showing ${scenario.count} of 2`, { exact: true })).toBeVisible();
+    await explorer.getByLabel(/Bps position/).selectOption('inside');
+    await expect(explorer.getByText('Showing 0 of 2', { exact: true })).toBeVisible();
   });
 }
 
@@ -245,7 +326,7 @@ test.describe('THORChain Wiki Dynamic Fees Smoke Tests', () => {
 
     const sourceStatus = page.locator('#dynamic-fee-source-status');
     const liveTracker = page.locator('#dynamic-fees-live');
-    await expect(sourceStatus.getByText('Degraded', { exact: true })).toBeVisible();
+    await expect(sourceStatus.getByText('Unavailable', { exact: true })).toBeVisible();
     await expect(sourceStatus).toContainText(/did not provide a usable snapshot/i);
     await expect(liveTracker.getByText('Sources unavailable', { exact: true })).toBeVisible();
     await expect(liveTracker.getByText('Coverage unavailable', { exact: true })).toBeVisible();

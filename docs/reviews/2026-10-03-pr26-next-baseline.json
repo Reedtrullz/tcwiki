@@ -1,0 +1,458 @@
+{
+  "measuredAt": "2026-10-03T04:55:53.161Z",
+  "runtime": "next",
+  "version": {
+    "version": "development",
+    "commit": "unknown",
+    "image": "unknown",
+    "runtime": {
+      "version": "development",
+      "commit": "unknown",
+      "image": "unknown",
+      "strict": false,
+      "verified": false,
+      "warnings": [
+        "Runtime version metadata is missing or still using a local placeholder.",
+        "Runtime commit metadata is missing or not a git SHA.",
+        "Runtime image metadata is missing or not an immutable sha256 digest ref."
+      ]
+    }
+  },
+  "receiptSha256": "8c60254d081b2dd070c627201694f58318b3c3cbda15020f0a0b438bcbfef020",
+  "device": {
+    "platform": "darwin",
+    "release": "27.2.0",
+    "cpu": "Apple M1 Pro",
+    "logicalCpus": 10,
+    "memoryGiB": 16,
+    "browser": "153.0.8010.12"
+  },
+  "conditions": {
+    "transport": "loopback; no network or CPU throttling; fresh browser context and disabled HTTP cache per route",
+    "clientPayload": "deterministic four available pools plus fixed public network/health/quote fixtures; missing analytics fields remain unavailable",
+    "compression": "gzip/Brotli modeled from decoded response bodies; not negotiated wire size",
+    "collectionWindowMs": 500,
+    "mixedReadiness": "live server-side upstream reads; initial cache state is not assumed cold",
+    "concurrentOtherWork": "record in accompanying review; local timings do not establish production DO serialization or Core Web Vitals"
+  },
+  "reports": [
+    {
+      "route": "/",
+      "loadToHeadingMs": 355.16258400000004,
+      "html": {
+        "decodedBytes": 94225,
+        "modeledGzipBytes": 13764,
+        "modeledBrotliBytes": 10079
+      },
+      "assets": [
+        {
+          "path": "/_next/static/chunks/0s_ae2dj8euyj.js",
+          "decodedBytes": 65210,
+          "modeledGzipBytes": 16721,
+          "modeledBrotliBytes": 14373
+        },
+        {
+          "path": "/_next/static/chunks/17v-iepo82sgg.js",
+          "decodedBytes": 27989,
+          "modeledGzipBytes": 8793,
+          "modeledBrotliBytes": 7609
+        },
+        {
+          "path": "/_next/static/chunks/18ksjhqskv366.js",
+          "decodedBytes": 29468,
+          "modeledGzipBytes": 7693,
+          "modeledBrotliBytes": 6784
+        },
+        {
+          "path": "/_next/static/chunks/1a_yj_ag62i2f.js",
+          "decodedBytes": 31647,
+          "modeledGzipBytes": 9778,
+          "modeledBrotliBytes": 8653
+        },
+        {
+          "path": "/_next/static/chunks/1j006_3f41nk6.css",
+          "decodedBytes": 71067,
+          "modeledGzipBytes": 13111,
+          "modeledBrotliBytes": 10468
+        },
+        {
+          "path": "/_next/static/chunks/1rj7ns8rte9vc.js",
+          "decodedBytes": 229156,
+          "modeledGzipBytes": 71628,
+          "modeledBrotliBytes": 61215
+        },
+        {
+          "path": "/_next/static/chunks/200mydvq8p1cw.js",
+          "decodedBytes": 63939,
+          "modeledGzipBytes": 17992,
+          "modeledBrotliBytes": 15283
+        },
+        {
+          "path": "/_next/static/chunks/2gnhnya78pj6q.js",
+          "decodedBytes": 67109,
+          "modeledGzipBytes": 17236,
+          "modeledBrotliBytes": 15075
+        },
+        {
+          "path": "/_next/static/chunks/310vm2bl3xxpt.js",
+          "decodedBytes": 5364,
+          "modeledGzipBytes": 1970,
+          "modeledBrotliBytes": 1665
+        },
+        {
+          "path": "/_next/static/chunks/377pbetjy5plo.js",
+          "decodedBytes": 116668,
+          "modeledGzipBytes": 32985,
+          "modeledBrotliBytes": 28412
+        },
+        {
+          "path": "/_next/static/chunks/3fntmmi971322.js",
+          "decodedBytes": 14377,
+          "modeledGzipBytes": 3661,
+          "modeledBrotliBytes": 3266
+        },
+        {
+          "path": "/_next/static/chunks/3sdc736rvq-vg.js",
+          "decodedBytes": 51306,
+          "modeledGzipBytes": 15380,
+          "modeledBrotliBytes": 13338
+        },
+        {
+          "path": "/_next/static/chunks/40qt1bgv5m1kc.js",
+          "decodedBytes": 165418,
+          "modeledGzipBytes": 45088,
+          "modeledBrotliBytes": 38164
+        },
+        {
+          "path": "/_next/static/chunks/turbopack-38nlxzxgjfa2n.js",
+          "decodedBytes": 10946,
+          "modeledGzipBytes": 4305,
+          "modeledBrotliBytes": 3861
+        }
+      ],
+      "indexConstructionMs": [],
+      "interactions": []
+    },
+    {
+      "route": "/search",
+      "loadToHeadingMs": 377.15549999999985,
+      "html": {
+        "decodedBytes": 85897,
+        "modeledGzipBytes": 13428,
+        "modeledBrotliBytes": 9859
+      },
+      "assets": [
+        {
+          "path": "/_next/static/chunks/0s_ae2dj8euyj.js",
+          "decodedBytes": 65210,
+          "modeledGzipBytes": 16721,
+          "modeledBrotliBytes": 14373
+        },
+        {
+          "path": "/_next/static/chunks/17v-iepo82sgg.js",
+          "decodedBytes": 27989,
+          "modeledGzipBytes": 8793,
+          "modeledBrotliBytes": 7609
+        },
+        {
+          "path": "/_next/static/chunks/18ksjhqskv366.js",
+          "decodedBytes": 29468,
+          "modeledGzipBytes": 7693,
+          "modeledBrotliBytes": 6784
+        },
+        {
+          "path": "/_next/static/chunks/1j006_3f41nk6.css",
+          "decodedBytes": 71067,
+          "modeledGzipBytes": 13111,
+          "modeledBrotliBytes": 10468
+        },
+        {
+          "path": "/_next/static/chunks/1rj7ns8rte9vc.js",
+          "decodedBytes": 229156,
+          "modeledGzipBytes": 71628,
+          "modeledBrotliBytes": 61215
+        },
+        {
+          "path": "/_next/static/chunks/200mydvq8p1cw.js",
+          "decodedBytes": 63939,
+          "modeledGzipBytes": 17992,
+          "modeledBrotliBytes": 15283
+        },
+        {
+          "path": "/_next/static/chunks/2a499mv7k-qg9.js",
+          "decodedBytes": 459283,
+          "modeledGzipBytes": 126319,
+          "modeledBrotliBytes": 75717
+        },
+        {
+          "path": "/_next/static/chunks/2tudnqxf1e2x9.js",
+          "decodedBytes": 8641,
+          "modeledGzipBytes": 3058,
+          "modeledBrotliBytes": 2707
+        },
+        {
+          "path": "/_next/static/chunks/310vm2bl3xxpt.js",
+          "decodedBytes": 5364,
+          "modeledGzipBytes": 1970,
+          "modeledBrotliBytes": 1665
+        },
+        {
+          "path": "/_next/static/chunks/3fntmmi971322.js",
+          "decodedBytes": 14377,
+          "modeledGzipBytes": 3661,
+          "modeledBrotliBytes": 3266
+        },
+        {
+          "path": "/_next/static/chunks/3sdc736rvq-vg.js",
+          "decodedBytes": 51306,
+          "modeledGzipBytes": 15380,
+          "modeledBrotliBytes": 13338
+        },
+        {
+          "path": "/_next/static/chunks/40qt1bgv5m1kc.js",
+          "decodedBytes": 165418,
+          "modeledGzipBytes": 45088,
+          "modeledBrotliBytes": 38164
+        },
+        {
+          "path": "/_next/static/chunks/turbopack-38nlxzxgjfa2n.js",
+          "decodedBytes": 10946,
+          "modeledGzipBytes": 4305,
+          "modeledBrotliBytes": 3861
+        }
+      ],
+      "indexConstructionMs": [
+        86.20000004768372
+      ],
+      "interactions": [
+        {
+          "query": "quote expiry",
+          "fillSubmitToResultsMs": 106.46083399999998
+        },
+        {
+          "query": "HALTTCYTRADING",
+          "fillSubmitToResultsMs": 139.69445900000028
+        },
+        {
+          "query": "BTC.BTC",
+          "fillSubmitToResultsMs": 55.80216700000028
+        }
+      ]
+    },
+    {
+      "route": "/stats",
+      "loadToHeadingMs": 199.9032500000003,
+      "html": {
+        "decodedBytes": 100471,
+        "modeledGzipBytes": 14737,
+        "modeledBrotliBytes": 10918
+      },
+      "assets": [
+        {
+          "path": "/_next/static/chunks/0s_ae2dj8euyj.js",
+          "decodedBytes": 65210,
+          "modeledGzipBytes": 16721,
+          "modeledBrotliBytes": 14373
+        },
+        {
+          "path": "/_next/static/chunks/17v-iepo82sgg.js",
+          "decodedBytes": 27989,
+          "modeledGzipBytes": 8793,
+          "modeledBrotliBytes": 7609
+        },
+        {
+          "path": "/_next/static/chunks/18ksjhqskv366.js",
+          "decodedBytes": 29468,
+          "modeledGzipBytes": 7693,
+          "modeledBrotliBytes": 6784
+        },
+        {
+          "path": "/_next/static/chunks/1j006_3f41nk6.css",
+          "decodedBytes": 71067,
+          "modeledGzipBytes": 13111,
+          "modeledBrotliBytes": 10468
+        },
+        {
+          "path": "/_next/static/chunks/1rj7ns8rte9vc.js",
+          "decodedBytes": 229156,
+          "modeledGzipBytes": 71628,
+          "modeledBrotliBytes": 61215
+        },
+        {
+          "path": "/_next/static/chunks/200mydvq8p1cw.js",
+          "decodedBytes": 63939,
+          "modeledGzipBytes": 17992,
+          "modeledBrotliBytes": 15283
+        },
+        {
+          "path": "/_next/static/chunks/2gnhnya78pj6q.js",
+          "decodedBytes": 67109,
+          "modeledGzipBytes": 17236,
+          "modeledBrotliBytes": 15075
+        },
+        {
+          "path": "/_next/static/chunks/310vm2bl3xxpt.js",
+          "decodedBytes": 5364,
+          "modeledGzipBytes": 1970,
+          "modeledBrotliBytes": 1665
+        },
+        {
+          "path": "/_next/static/chunks/32xtb8n9lf6yh.js",
+          "decodedBytes": 454938,
+          "modeledGzipBytes": 127212,
+          "modeledBrotliBytes": 105535
+        },
+        {
+          "path": "/_next/static/chunks/377pbetjy5plo.js",
+          "decodedBytes": 116668,
+          "modeledGzipBytes": 32985,
+          "modeledBrotliBytes": 28412
+        },
+        {
+          "path": "/_next/static/chunks/3e0wnmyvxs0ot.js",
+          "decodedBytes": 25312,
+          "modeledGzipBytes": 8231,
+          "modeledBrotliBytes": 7332
+        },
+        {
+          "path": "/_next/static/chunks/3fntmmi971322.js",
+          "decodedBytes": 14377,
+          "modeledGzipBytes": 3661,
+          "modeledBrotliBytes": 3266
+        },
+        {
+          "path": "/_next/static/chunks/3sdc736rvq-vg.js",
+          "decodedBytes": 51306,
+          "modeledGzipBytes": 15380,
+          "modeledBrotliBytes": 13338
+        },
+        {
+          "path": "/_next/static/chunks/40qt1bgv5m1kc.js",
+          "decodedBytes": 165418,
+          "modeledGzipBytes": 45088,
+          "modeledBrotliBytes": 38164
+        },
+        {
+          "path": "/_next/static/chunks/turbopack-38nlxzxgjfa2n.js",
+          "decodedBytes": 10946,
+          "modeledGzipBytes": 4305,
+          "modeledBrotliBytes": 3861
+        }
+      ],
+      "indexConstructionMs": [],
+      "interactions": []
+    }
+  ],
+  "mixed": [
+    {
+      "pass": "initial",
+      "concurrency": 8,
+      "elapsedMs": 3426.0192499999994,
+      "rows": [
+        {
+          "path": "/docs",
+          "status": 200,
+          "durationMs": 111.28670799999963,
+          "bytes": 504578
+        },
+        {
+          "path": "/protocol",
+          "status": 200,
+          "durationMs": 108.13566700000047,
+          "bytes": 212145
+        },
+        {
+          "path": "/docs",
+          "status": 200,
+          "durationMs": 110.86824999999953,
+          "bytes": 504578
+        },
+        {
+          "path": "/protocol",
+          "status": 200,
+          "durationMs": 107.11595800000032,
+          "bytes": 212145
+        },
+        {
+          "path": "/api/ready",
+          "status": 503,
+          "durationMs": 3423.759209,
+          "bytes": 34162
+        },
+        {
+          "path": "/api/ready",
+          "status": 503,
+          "durationMs": 3422.287708,
+          "bytes": 34162
+        },
+        {
+          "path": "/api/ready",
+          "status": 503,
+          "durationMs": 3423.5031249999993,
+          "bytes": 34162
+        },
+        {
+          "path": "/api/ready",
+          "status": 503,
+          "durationMs": 3423.5400419999987,
+          "bytes": 34162
+        }
+      ]
+    },
+    {
+      "pass": "warm",
+      "concurrency": 8,
+      "elapsedMs": 77.45174999999836,
+      "rows": [
+        {
+          "path": "/docs",
+          "status": 200,
+          "durationMs": 76.21850000000086,
+          "bytes": 504578
+        },
+        {
+          "path": "/protocol",
+          "status": 200,
+          "durationMs": 72.230458,
+          "bytes": 212145
+        },
+        {
+          "path": "/docs",
+          "status": 200,
+          "durationMs": 75.94850000000042,
+          "bytes": 504578
+        },
+        {
+          "path": "/protocol",
+          "status": 200,
+          "durationMs": 71.82095800000025,
+          "bytes": 212145
+        },
+        {
+          "path": "/api/ready",
+          "status": 503,
+          "durationMs": 31.836374999998952,
+          "bytes": 34162
+        },
+        {
+          "path": "/api/ready",
+          "status": 503,
+          "durationMs": 36.85858299999927,
+          "bytes": 34162
+        },
+        {
+          "path": "/api/ready",
+          "status": 503,
+          "durationMs": 38.37837500000023,
+          "bytes": 34162
+        },
+        {
+          "path": "/api/ready",
+          "status": 503,
+          "durationMs": 41.11124999999993,
+          "bytes": 34162
+        }
+      ]
+    }
+  ]
+}

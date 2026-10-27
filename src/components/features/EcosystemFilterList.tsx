@@ -1,8 +1,11 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { replaceExplorerUrl } from '@/lib/explorer-url';
+
+import { useCallback, useEffect, useMemo, useRef, useSyncExternalStore } from 'react';
 import Link from 'next/link';
-import { usePathname, useSearchParams } from 'next/navigation';
+import { usePathname } from 'next/navigation';
+import { useExplorerSearchParamString } from '@/hooks/useExplorerSearchParamString';
 import { X } from 'lucide-react';
 import type { Chain, EcosystemProject, SourcedRecord } from '@/lib/types';
 import { Badge } from '@/components/ui/Badge';
@@ -98,14 +101,6 @@ function describeNoResults(activeFilterLabels: string[]) {
   return `No ecosystem entries match ${activeFilterLabels.join(' + ')}.`;
 }
 
-function replaceUrlFromFilter(nextUrl: string) {
-  if (typeof window === 'undefined') {
-    return;
-  }
-
-  window.history.replaceState(window.history.state, '', nextUrl);
-  window.dispatchEvent(new PopStateEvent('popstate', { state: window.history.state }));
-}
 
 function sampleRouteChainForProject(project: EcosystemProject, activeChain: string) {
   return activeChain !== ALL && project.chains.includes(activeChain)
@@ -139,9 +134,10 @@ function directoryPostureBadgeVariant(posture: EcosystemDirectoryPosture) {
 }
 
 export function EcosystemFilterList({ projectRecords, chainRecords }: EcosystemFilterListProps) {
+  const hydrated = useSyncExternalStore(() => () => undefined, () => true, () => false);
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const searchParamString = searchParams.toString();
+  const searchParamString = useExplorerSearchParamString();
+  const searchParams = useMemo(() => new URLSearchParams(searchParamString), [searchParamString]);
 
   const categories = useMemo(() => uniqueSorted(projectRecords.map((record) => record.data.category)), [projectRecords]);
   const chains = useMemo(() => uniqueSorted(projectRecords.flatMap((record) => record.data.chains)), [projectRecords]);
@@ -206,7 +202,7 @@ export function EcosystemFilterList({ projectRecords, chainRecords }: EcosystemF
 
   const replaceFiltersInUrl = useCallback((nextFilters: EcosystemFilterState) => {
     const nextParams = new URLSearchParams(searchParamString);
-    const normalizedNextQuery = nextFilters.query.trim();
+    const normalizedNextQuery = nextFilters.query.slice(0, 256);
 
     if (normalizedNextQuery) {
       nextParams.set(QUERY_PARAM, normalizedNextQuery);
@@ -236,7 +232,7 @@ export function EcosystemFilterList({ projectRecords, chainRecords }: EcosystemF
     }
 
     const nextParamString = nextParams.toString();
-    replaceUrlFromFilter(nextParamString ? `${pathname}?${nextParamString}` : pathname);
+    replaceExplorerUrl(nextParamString ? `${pathname}?${nextParamString}` : pathname, [QUERY_PARAM, CATEGORY_PARAM, CHAIN_PARAM, POSTURE_PARAM, LEGACY_STATUS_PARAM, LEGACY_CONFIDENCE_PARAM]);
   }, [pathname, searchParamString]);
 
   const updateFilters = (patch: Partial<EcosystemFilterState>) => {
@@ -268,7 +264,7 @@ export function EcosystemFilterList({ projectRecords, chainRecords }: EcosystemF
             </p>
           </div>
           {activeFilters && (
-            <button
+            <button disabled={!hydrated}
               type="button"
               onClick={resetFilters}
               className="inline-flex items-center gap-1 self-start rounded-md border border-border px-2.5 py-1.5 text-xs text-slate-400 transition-colors hover:border-accent/30 hover:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 sm:self-auto"
@@ -281,7 +277,7 @@ export function EcosystemFilterList({ projectRecords, chainRecords }: EcosystemF
         <div role="group" aria-labelledby="ecosystem-filter-heading" className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <label className="text-xs text-slate-400">
             Find
-            <input
+            <input disabled={!hydrated}
               type="search"
               value={query}
               onChange={(event) => updateFilters({ query: event.target.value })}
@@ -291,21 +287,21 @@ export function EcosystemFilterList({ projectRecords, chainRecords }: EcosystemF
           </label>
           <label className="text-xs text-slate-400">
             Category
-            <select value={category} onChange={(event) => updateFilters({ category: event.target.value })} className={selectControlClass}>
+            <select disabled={!hydrated} value={category} onChange={(event) => updateFilters({ category: event.target.value })} className={selectControlClass}>
               <option value={ALL}>All categories</option>
               {categories.map((option) => <option key={option} value={option}>{option}</option>)}
             </select>
           </label>
           <label className="text-xs text-slate-400">
             Chain
-            <select value={chain} onChange={(event) => updateFilters({ chain: event.target.value })} className={selectControlClass}>
+            <select disabled={!hydrated} value={chain} onChange={(event) => updateFilters({ chain: event.target.value })} className={selectControlClass}>
               <option value={ALL}>All chains</option>
               {chains.map((option) => <option key={option} value={option}>{option}</option>)}
             </select>
           </label>
           <label className="text-xs text-slate-400">
             Directory posture
-            <select
+            <select disabled={!hydrated}
               value={posture}
               onChange={(event) => {
                 const nextPosture = event.target.value;
@@ -439,7 +435,7 @@ export function EcosystemFilterList({ projectRecords, chainRecords }: EcosystemF
           <p className="mt-1">
             These filters only narrow the curated directory; they do not prove an interface is unavailable, unsafe, unsupported, or offline.
           </p>
-          <button
+          <button disabled={!hydrated}
             type="button"
             onClick={resetFilters}
             className="mt-3 text-accent underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"

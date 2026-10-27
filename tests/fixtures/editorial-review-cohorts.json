@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "note": "Existing authored review decisions, preserved from the bounded July cohorts. Fixture centralization is not a new source review and does not certify current operation. New claim-level decisions use their own IDs/dates in static.ts.",
+  "cohorts": {
+    "chain-developer-data": {
+      "reviewedAt": "2026-07-14",
+      "nextReviewDue": "2026-11-17",
+      "scope": "Dated supported-chain/address/source-map/developer content cohort; live dust and route availability excluded",
+      "sources": [
+        "https://dev.thorchain.org/chain-clients/",
+        "https://gateway.liquify.com/chain/thorchain_api/thorchain/inbound_addresses"
+      ],
+      "evidence": "Original chain-data-content-review.test.ts assertions plus source metadata; retain authored dates until an evidence-backed cohort update.",
+      "records": [
+        "BTC",
+        "ETH",
+        "BSC",
+        "AVAX",
+        "GAIA",
+        "DOGE",
+        "LTC",
+        "BCH",
+        "TRON",
+        "BASE",
+        "SOL",
+        "XRP"
+      ]
+    },
+    "liquidity-economics": {
+      "reviewedAt": "2026-07-14",
+      "nextReviewDue": "2026-11-17",
+      "scope": "Dated LP/economics/source/glossary cohort; no present yield, current controls or fixed POL membership",
+      "sources": [
+        "https://docs.thorchain.org/technical-documentation/thorchain-finance/continuous-liquidity-pools",
+        "https://dev.thorchain.org/concepts/rune-pool.html"
+      ],
+      "evidence": "Original liquidity-economics-content-review.test.ts assertions plus source metadata; ILP correction separately reviewed in docs/reviews/2026-10-02-ilp-removal.md.",
+      "safetyBoundaries": [
+        "IL protection is historical and removed",
+        "RUNEPool accounting fields can be negative",
+        "Supply source disagreement remains explicit",
+        "Provider and height provenance required"
+      ]
+    }
+  }
+}

@@ -1,8 +1,11 @@
 'use client';
 
+import { replaceExplorerUrl } from '@/lib/explorer-url';
+
 import { useCallback, useEffect, useMemo, useRef, useSyncExternalStore } from 'react';
 import Link from 'next/link';
-import { usePathname, useSearchParams } from 'next/navigation';
+import { usePathname } from 'next/navigation';
+import { useExplorerSearchParamString } from '@/hooks/useExplorerSearchParamString';
 import { ArrowRight, Search, X } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import { FreshnessMeta } from '@/components/ui/FreshnessMeta';
@@ -116,14 +119,6 @@ function getServerHydratedSnapshot() {
   return false;
 }
 
-function replaceUrlFromFilter(nextUrl: string) {
-  if (typeof window === 'undefined') {
-    return;
-  }
-
-  window.history.replaceState(window.history.state, '', nextUrl);
-  window.dispatchEvent(new PopStateEvent('popstate', { state: window.history.state }));
-}
 
 function DeepDiveArticleCard({ article }: { article: DeepDiveLibraryArticle }) {
   return (
@@ -198,8 +193,8 @@ export function DeepDiveLibraryExplorer({
   topics: DeepDiveLibraryTopic[];
 }) {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const searchParamString = searchParams.toString();
+  const searchParamString = useExplorerSearchParamString();
+  const searchParams = useMemo(() => new URLSearchParams(searchParamString), [searchParamString]);
   const filters = useMemo<DeepDiveLibraryFilterState>(() => ({
     query: searchParams.get(QUERY_PARAM) ?? '',
     topicId: normalizeTopicId(searchParams.get(TOPIC_PARAM), topics),
@@ -228,7 +223,7 @@ export function DeepDiveLibraryExplorer({
 
   const replaceFiltersInUrl = useCallback((nextFilters: DeepDiveLibraryFilterState) => {
     const nextParams = new URLSearchParams(searchParamString);
-    const normalizedQuery = nextFilters.query.trim();
+    const normalizedQuery = nextFilters.query.slice(0, 256);
 
     if (normalizedQuery) {
       nextParams.set(QUERY_PARAM, normalizedQuery);
@@ -245,7 +240,7 @@ export function DeepDiveLibraryExplorer({
     const nextParamString = nextParams.toString();
     const nextUrl = nextParamString ? `${pathname}?${nextParamString}` : pathname;
 
-    replaceUrlFromFilter(nextUrl);
+    replaceExplorerUrl(nextUrl, [QUERY_PARAM, TOPIC_PARAM]);
   }, [pathname, searchParamString]);
 
   const updateFilters = (patch: Partial<DeepDiveLibraryFilterState>) => {

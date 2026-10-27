@@ -1,18 +1,25 @@
+import { readProviderJson } from './bounded-json';
+import { normalizeTransactionEvidence, transactionHash } from '@/lib/transaction-evidence';
+import type { TransactionEvidence } from '@/lib/types';
 import {
   AssetPrice,
   ChainData,
   HistoryItem,
   LiveDataResult,
   MidgardHealth,
+  DEFAULT_MIDGARD_POOL_PERIOD,
+  MIDGARD_POOL_PERIODS,
+  MidgardPoolPeriod,
   NetworkStats,
   Node,
   Pool,
   SourceMeta,
   Swap,
 } from '@/lib/types';
-import { liveDegraded, liveOk, normalizeApyToPercent } from '@/lib/trust';
+import { liveDegraded, liveOk } from '@/lib/trust';
+import { DAILY_VOLUME_POOLS } from '@/lib/daily-volume';
 
-const MIDGARD_ENDPOINTS = [
+export const MIDGARD_ENDPOINTS = [
   {
     label: 'Liquify Midgard',
     url: 'https://gateway.liquify.com/chain/thorchain_midgard/v2',
@@ -73,9 +80,12 @@ async function request<T>(path: string): Promise<LiveDataResult<T>> {
   return liveDegraded<T>(`Midgard source did not respond (${errors.join('; ')})`);
 }
 
-async function requestFromEndpoint<T>(endpoint: SourceMeta, path: string): Promise<T> {
+async function requestFromEndpoint<T>(endpoint: SourceMeta, path: string, signal?: AbortSignal): Promise<T> {
   const controller = new AbortController();
   const timeoutId = globalThis.setTimeout(() => controller.abort(), 5000);
+  const abort = () => controller.abort();
+  signal?.addEventListener('abort', abort, { once: true });
+  if (signal?.aborted) controller.abort();
 
   try {
     const response = await fetch(joinEndpointPath(endpoint.url, path), {
@@ -87,9 +97,10 @@ async function requestFromEndpoint<T>(endpoint: SourceMeta, path: string): Promi
       throw new Error(`${response.status} ${response.statusText}`);
     }
 
-    return await response.json() as T;
+    return await readProviderJson(response, controller.signal) as T;
   } finally {
     globalThis.clearTimeout(timeoutId);
+    signal?.removeEventListener('abort', abort);
   }
 }
 
@@ -436,7 +447,6 @@ function normalizePool(raw: RawPool): Pool {
     annualPercentageRate,
     poolAPY,
     apy: numericApy,
-    apyPercent: normalizeApyToPercent(poolAPY ?? annualPercentageRate ?? numericApy, 'decimal') ?? undefined,
     assetPrice: asString(raw.assetPrice),
     assetPriceUSD: asString(raw.assetPriceUSD),
     runePriceUSD: asString(raw.runePriceUSD),
@@ -525,12 +535,34 @@ function normalizeHistory(result: LiveDataResult<RawHistoryResponse>): LiveDataR
   try {
     return {
       ...result,
-      data: result.data.intervals.map((interval, index) => normalizeHistoryItem(interval, index)),
+      data: normalizeHistoryIntervals(result.data.intervals),
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Midgard earnings history response could not be normalized';
     return liveDegraded<HistoryItem[]>(message, result.sources ?? result.source, result.checkedAt);
   }
+}
+
+function normalizeHistoryIntervals(intervals: unknown[]): HistoryItem[] {
+  const unique = new Map<string, HistoryItem>();
+  for (const [index, value] of intervals.entries()) {
+    const interval = normalizeHistoryItem(value, index);
+    const start = Number(interval.startTime); const end = interval.endTime ? Number(interval.endTime) : undefined;
+    if (!Number.isFinite(new Date(start * 1000).getTime()) || (end !== undefined && (!Number.isFinite(new Date(end * 1000).getTime()) || end <= start))) {
+      throw new Error(`Midgard earnings interval ${index} has invalid time boundaries`);
+    }
+    const id = `${interval.startTime}-${interval.endTime}`;
+    const existing = unique.get(id);
+    if (existing && JSON.stringify(existing) !== JSON.stringify(interval)) throw new Error(`Midgard earnings interval ${id} has conflicting duplicates`);
+    unique.set(id, interval);
+  }
+  const rows = [...unique.values()].sort((a, b) => Number(a.startTime) - Number(b.startTime));
+  for (let index = 1; index < rows.length; index += 1) {
+    if (rows[index - 1].endTime && Number(rows[index].startTime) < Number(rows[index - 1].endTime)) {
+      throw new Error(`Midgard earnings intervals overlap at ${rows[index].startTime}`);
+    }
+  }
+  return rows;
 }
 
 function optionalHistoryString(value: unknown): string {
@@ -564,8 +596,17 @@ function normalizeHistoryItem(value: unknown, index: number): HistoryItem {
 }
 
 export class MidgardAPI {
-  static async getPools(status = 'available'): Promise<LiveDataResult<Pool[]>> {
-    const query = status ? `?status=${encodeURIComponent(status)}` : '';
+  static async getPools(
+    status = 'available',
+    period: MidgardPoolPeriod = DEFAULT_MIDGARD_POOL_PERIOD
+  ): Promise<LiveDataResult<Pool[]>> {
+    if (!MIDGARD_POOL_PERIODS.includes(period)) return liveDegraded<Pool[]>('Unsupported pool return period; select a bounded duration.');
+    const params = new URLSearchParams();
+    if (status) {
+      params.set('status', status);
+    }
+    params.set('period', period);
+    const query = `?${params.toString()}`;
     return requestNormalized<RawPool[], Pool[]>(`/pools${query}`, normalizePools);
   }
 
@@ -608,6 +649,27 @@ export class MidgardAPI {
 
   static async getChains(): Promise<LiveDataResult<ChainData[]>> {
     return requestNormalized<RawChain[], ChainData[]>('/chains', normalizeChains);
+  }
+
+  /** Explicit one-hash pilot. Fixed providers, five actions, existing bounded body/deadline. */
+  static async getTransactionEvidence(hash: string, signal?: AbortSignal): Promise<LiveDataResult<TransactionEvidence>> {
+    if (!transactionHash(hash)) return liveDegraded('Enter one 32-byte hexadecimal transaction hash (optional 0x prefix).');
+    const path = `/actions?txid=${encodeURIComponent(hash)}&limit=5`;
+    const attempted: SourceMeta[] = [];
+    for (const endpoint of MIDGARD_ENDPOINTS) {
+      if (signal?.aborted) return liveDegraded('Lookup cancelled; transaction evidence remains unknown.', attempted);
+      attempted.push(sourceForPath(endpoint, path));
+      try {
+        const raw = await requestFromEndpoint<unknown>(endpoint, path, signal);
+        const data = normalizeTransactionEvidence(raw, hash);
+        if (signal?.aborted) return liveDegraded('Lookup cancelled; transaction evidence remains unknown.', attempted);
+        return liveOk(data, sourceForPath(endpoint, path), new Date().toISOString());
+      } catch {
+        // Failed or malformed indexer evidence does not establish transaction absence.
+        continue;
+      }
+    }
+    return liveDegraded('The indexers did not provide usable evidence. Transaction state remains unknown.', attempted);
   }
 
   static async getActions(): Promise<LiveDataResult<Record<string, unknown>[]>> {
@@ -654,9 +716,14 @@ export class MidgardAPI {
     );
   }
 
-  static async getPoolVolumeHistory(pool: string, interval = 'day', count = 8): Promise<LiveDataResult<Record<string, unknown>[]>> {
+  static async getDailyVolumeHistories() {
+    // Six curated pool reads and one documented all-network aggregate, not all-pool fan-out.
+    return Promise.all([...DAILY_VOLUME_POOLS, undefined].map(pool => this.getPoolVolumeHistory(pool, 'day', 8)));
+  }
+
+  static async getPoolVolumeHistory(pool: string | undefined, interval = 'day', count = 8): Promise<LiveDataResult<Record<string, unknown>[]>> {
     return requestNormalized<{ intervals?: Record<string, unknown>[] }, Record<string, unknown>[]>(
-      `/history/swaps?pool=${encodeURIComponent(pool)}&interval=${encodeURIComponent(interval)}&count=${count}`,
+      `/history/swaps?${pool === undefined ? '' : `pool=${encodeURIComponent(pool)}&`}interval=${encodeURIComponent(interval)}&count=${count}`,
       (result) => {
         if (result.status !== 'ok') {
           return liveDegraded<Record<string, unknown>[]>(

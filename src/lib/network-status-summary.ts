@@ -1,4 +1,5 @@
 import type { NetworkStatus } from '@/lib/types';
+import { hasUnreviewedControlSemantics } from '@/lib/source-warnings';
 
 interface NetworkCurrentOnlyStateOptions {
   paused: boolean | null | undefined;
@@ -46,6 +47,9 @@ export function getNetworkCurrentOnlyStateLabel({
   if (sourceUnavailable) {
     return 'Unavailable';
   }
+  if (hasUnreviewedControlSemantics(networkStatus)) {
+    return 'Review applicability';
+  }
   if (
     hasUnparseableControl(networkStatus, controlKeys) ||
     hasMatchingInvalidKey(networkStatus, invalidKeyPatterns)
@@ -83,4 +87,8 @@ export function getSecuredAssetsSummaryPaused(networkStatus: NetworkStatus | und
   }
 
   return networkStatus.securedAssetsPaused;
+}
+
+export function operationEvidenceNeedsRefresh(status: NetworkStatus | undefined) {
+  return Boolean(status?.sourceWarningDetails?.some(detail => detail.category === 'freshness' && detail.severity !== 'review'));
 }

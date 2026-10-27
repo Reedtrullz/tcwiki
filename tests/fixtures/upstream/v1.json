@@ -1,0 +1,250 @@
+{
+  "schemaVersion": 1,
+  "capturedAt": "2026-10-03T00:05:31.995Z",
+  "protocolVersion": "3.20.3",
+  "height": 28077880,
+  "context": "THORNode version and height are separate observations; Midgard/Maya indexer heights are unavailable in these captures.",
+  "contracts": [
+    {
+      "id": "thor-version",
+      "sourceUrl": "https://gateway.liquify.com/chain/thorchain_api/thorchain/version",
+      "observedAt": "2026-10-03T00:05:27.388Z",
+      "status": "captured",
+      "payload": {
+        "current": "3.20.3",
+        "next": "3.20.3"
+      }
+    },
+    {
+      "id": "thor-block",
+      "sourceUrl": "https://gateway.liquify.com/chain/thorchain_api/cosmos/base/tendermint/v1beta1/blocks/latest",
+      "observedAt": "2026-10-03T00:05:27.669Z",
+      "status": "captured",
+      "payload": {
+        "block": {
+          "header": {
+            "height": "28077880",
+            "time": "2026-10-03T00:05:14.746802869Z",
+            "version": {}
+          }
+        }
+      }
+    },
+    {
+      "id": "thor-mimir",
+      "sourceUrl": "https://gateway.liquify.com/chain/thorchain_api/thorchain/mimir",
+      "observedAt": "2026-10-03T00:05:27.718Z",
+      "status": "captured",
+      "payload": {
+        "HALTTRADING": 0,
+        "HALTSIGNING": 0,
+        "PAUSELP": 0,
+        "HALTCHAINGLOBAL": 0,
+        "L1DYNAMICFEEENABLED": 1,
+        "L1SLIPMINBPS": 10,
+        "RUNEPOOLENABLED": 1,
+        "RUNEPOOLDEPOSITMATURITYBLOCKS": 432000,
+        "MINRUNEPOOLDEPTH": 1000000000000
+      }
+    },
+    {
+      "id": "thor-inbound",
+      "sourceUrl": "https://gateway.liquify.com/chain/thorchain_api/thorchain/inbound_addresses",
+      "observedAt": "2026-10-03T00:05:27.766Z",
+      "status": "captured",
+      "payload": [
+        {
+          "chain": "AVAX",
+          "halted": false,
+          "global_trading_paused": false,
+          "chain_trading_paused": false,
+          "chain_lp_actions_paused": false,
+          "gas_rate": "15",
+          "gas_rate_units": "nAVAX",
+          "outbound_tx_size": "100000",
+          "outbound_fee": "2319429",
+          "dust_threshold": "100000"
+        },
+        {
+          "chain": "BASE",
+          "halted": false,
+          "global_trading_paused": false,
+          "chain_trading_paused": false,
+          "chain_lp_actions_paused": false,
+          "gas_rate": "150",
+          "gas_rate_units": "mwei",
+          "outbound_tx_size": "100000",
+          "outbound_fee": "9376",
+          "dust_threshold": "1000"
+        },
+        {
+          "chain": "BCH",
+          "halted": false,
+          "global_trading_paused": false,
+          "chain_trading_paused": false,
+          "chain_lp_actions_paused": false,
+          "gas_rate": "3",
+          "gas_rate_units": "satsperbyte",
+          "outbound_tx_size": "1500",
+          "outbound_fee": "80161",
+          "dust_threshold": "10000"
+        }
+      ]
+    },
+    {
+      "id": "thor-runepool",
+      "sourceUrl": "https://gateway.liquify.com/chain/thorchain_api/thorchain/runepool",
+      "observedAt": "2026-10-03T00:05:27.823Z",
+      "status": "captured",
+      "payload": {
+        "pol": {
+          "rune_deposited": "1250313135142376",
+          "rune_withdrawn": "864435314500305",
+          "value": "295491968071948",
+          "pnl": "-90385852570123",
+          "current_deposit": "385877820642071"
+        },
+        "providers": {
+          "units": "221819062620600",
+          "pending_units": "0",
+          "pending_rune": "0",
+          "value": "171024814472081",
+          "pnl": "-97452603494420",
+          "current_deposit": "268477417966501"
+        },
+        "reserve": {
+          "units": "161433809612955",
+          "value": "124467153599867",
+          "pnl": "7066750924297",
+          "current_deposit": "117400402675570"
+        }
+      }
+    },
+    {
+      "id": "midgard-network",
+      "sourceUrl": "https://gateway.liquify.com/chain/thorchain_midgard/v2/network",
+      "observedAt": "2026-10-03T00:05:27.873Z",
+      "status": "captured",
+      "payload": {
+        "totalPooledRune": "5779542526306290",
+        "totalReserve": "2531757200059536",
+        "activeNodeCount": "103",
+        "standbyNodeCount": "70",
+        "bondingAPY": "1.7499847416856031",
+        "liquidityAPY": "0.14157534815233364",
+        "nextChurnHeight": "28108165"
+      }
+    },
+    {
+      "id": "midgard-pools",
+      "sourceUrl": "https://gateway.liquify.com/chain/thorchain_midgard/v2/pools?status=available",
+      "observedAt": "2026-10-03T00:05:30.970Z",
+      "status": "captured",
+      "payload": [
+        {
+          "asset": "AVAX.AVAX",
+          "assetDepth": "8460901146762",
+          "runeDepth": "122378732882814",
+          "status": "available",
+          "poolAPY": "0.0222938113558262",
+          "liquidityInUSD": "1829389.3983013344",
+          "volume24h": "27570351821119"
+        },
+        {
+          "asset": "AVAX.USDC-0XB97EF9EF8734C71904D8002F8B6BC66DD9C48A6E",
+          "assetDepth": "9236734172148",
+          "runeDepth": "12368396184545",
+          "status": "available",
+          "poolAPY": "0.031173281015140164",
+          "liquidityInUSD": "184888.68483658016",
+          "volume24h": "3616644055048"
+        },
+        {
+          "asset": "AVAX.USDT-0X9702230A8EA53601F5CD2DC00FDBC13D4DF4A8C7",
+          "assetDepth": "6876449981285",
+          "runeDepth": "9046664152903",
+          "status": "available",
+          "poolAPY": "0.021701630066496058",
+          "liquidityInUSD": "135233.94292203506",
+          "volume24h": "2233419622733"
+        }
+      ]
+    },
+    {
+      "id": "midgard-earnings",
+      "sourceUrl": "https://gateway.liquify.com/chain/thorchain_midgard/v2/history/earnings?interval=day&count=2",
+      "observedAt": "2026-10-03T00:05:31.216Z",
+      "status": "captured",
+      "payload": {
+        "intervals": [
+          {
+            "startTime": "1790899200",
+            "endTime": "1790985600",
+            "earnings": "2250171141111",
+            "avgNodeCount": "102.65",
+            "blockRewards": "-16260648",
+            "liquidityFees": "2250187401759",
+            "bondingEarnings": "1119343487678",
+            "liquidityEarnings": "1130827653433",
+            "runePriceUSD": "0.7472257662431401"
+          },
+          {
+            "startTime": "1790985600",
+            "endTime": "1791072000",
+            "earnings": "0",
+            "avgNodeCount": "103.00",
+            "blockRewards": "0",
+            "liquidityFees": "0",
+            "bondingEarnings": "0",
+            "liquidityEarnings": "0",
+            "runePriceUSD": "0.7472257662431401"
+          }
+        ]
+      }
+    },
+    {
+      "id": "maya-network",
+      "sourceUrl": "https://midgard.mayachain.info/v2/network",
+      "observedAt": "2026-10-03T00:05:31.666Z",
+      "status": "captured",
+      "payload": {
+        "totalPooledRune": "537785795764815524",
+        "totalReserve": "4066852396840647",
+        "activeNodeCount": "40",
+        "standbyNodeCount": "17",
+        "bondingAPY": "0.03087997853623725",
+        "liquidityAPY": "0.007265742426020516",
+        "nextChurnHeight": "10017947223"
+      }
+    },
+    {
+      "id": "maya-nodes",
+      "sourceUrl": "https://midgard.mayachain.info/v2/mayachain/nodes",
+      "observedAt": "2026-10-03T00:05:31.995Z",
+      "status": "captured",
+      "payload": [
+        {
+          "node_address": "redacted-node",
+          "bond": "2513885997382",
+          "slash_points": 6,
+          "status": "Whitelisted",
+          "version": "1.107.3"
+        },
+        {
+          "node_address": "redacted-node",
+          "bond": "2980434500926157",
+          "slash_points": 718,
+          "status": "Active",
+          "version": "1.134.0"
+        },
+        {
+          "node_address": "redacted-node",
+          "bond": "3056224122183",
+          "slash_points": 15,
+          "status": "Whitelisted",
+          "version": "1.107.2"
+        }
+      ]
+    }
+  ]
+}

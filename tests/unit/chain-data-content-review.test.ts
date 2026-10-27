@@ -1,3 +1,4 @@
+import reviewCohorts from '../fixtures/editorial-review-cohorts.json';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
@@ -11,26 +12,16 @@ import {
 } from '@/lib/content/registry';
 import { chainClientsSource } from '@/lib/sources';
 
-const REVIEWED_AT = '2026-07-14';
-const NEXT_REVIEW_DUE = '2026-11-17';
+const cohort = reviewCohorts.cohorts['chain-developer-data'];
+const REVIEWED_AT = cohort.reviewedAt;
+const NEXT_REVIEW_DUE = cohort.nextReviewDue;
 const LIVE_INBOUND_URL = 'https://gateway.liquify.com/chain/thorchain_api/thorchain/inbound_addresses';
 
 describe('chain and developer-data content review', () => {
   it('keeps the supported-chain catalog tied to the reviewed live chain set', () => {
-    expect(CHAIN_RECORDS.map((record) => record.data.chain)).toEqual([
-      'BTC',
-      'ETH',
-      'BSC',
-      'AVAX',
-      'GAIA',
-      'DOGE',
-      'LTC',
-      'BCH',
-      'TRON',
-      'BASE',
-      'SOL',
-      'XRP',
-    ]);
+    expect(cohort.sources).toContain(chainClientsSource.url);
+    expect(cohort.sources).toContain(LIVE_INBOUND_URL);
+    expect(CHAIN_RECORDS.map((record) => record.data.chain)).toEqual(cohort.records);
 
     for (const record of CHAIN_RECORDS) {
       expect(record.data.supported, record.data.chain).toBe(true);

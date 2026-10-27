@@ -1,3 +1,4 @@
+import reviewCohorts from '../fixtures/editorial-review-cohorts.json';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { GLOSSARY_TERMS } from '@/lib/content/glossary';
@@ -23,12 +24,15 @@ import {
   runePoolEndpointSource,
 } from '@/lib/sources';
 
-const REVIEWED_AT = '2026-07-14';
-const NEXT_REVIEW_DUE = '2026-11-17';
+const cohort = reviewCohorts.cohorts['liquidity-economics'];
+const REVIEWED_AT = cohort.reviewedAt;
+const NEXT_REVIEW_DUE = cohort.nextReviewDue;
 const LIQUIFY_RUNEPOOL_URL = 'https://gateway.liquify.com/chain/thorchain_api/thorchain/runepool';
 
 describe('liquidity and economics content review', () => {
   it('refreshes the shared official source cohort and current RUNEPool endpoint', () => {
+    expect(cohort.sources).toContain(continuousLiquidityPoolsSource.url);
+    expect(cohort.sources).toContain(runePoolDevSource.url);
     for (const source of [
       liquidityProvidersSource,
       continuousLiquidityPoolsSource,
@@ -118,7 +122,7 @@ describe('liquidity and economics content review', () => {
     const liquidityActions = readFileSync('content/deep-dives/liquidity-actions.mdx', 'utf8');
     const runePool = readFileSync('content/deep-dives/runepool-pol.mdx', 'utf8');
 
-    expect(clp).toContain("THORChain's CLP is a constant-function pool design");
+    expect(clp).toMatch(/CLP is a constant.function pool design/i);
     expect(clp).not.toContain('Unlike constant-product AMMs');
     expect(pendulum).not.toContain('During bull markets with high liquidity demand');
     expect(pendulum).toContain('`425M and burning`');

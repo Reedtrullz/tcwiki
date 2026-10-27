@@ -171,7 +171,7 @@ try {
     throw new Error(`Docker run did not return a container id; got ${containerId || 'empty output'}.`);
   }
 
-  await runCommand('npm', ['run', 'check:runtime-url'], {
+  await runCommand('pnpm', ['run', 'check:runtime-url'], {
     env: {
       CHECK_BASE_URL: baseUrl,
       EXPECTED_VERSION: commitSha,
@@ -183,7 +183,7 @@ try {
   });
 
   if (!shouldSkipBrowser) {
-    await runCommand('npm', ['run', 'test:e2e:docker-smoke'], {
+    await runCommand('pnpm', ['run', 'test:e2e:docker-smoke'], {
       env: {
         PLAYWRIGHT_BASE_URL: baseUrl,
         CSP_ENFORCE: '1',

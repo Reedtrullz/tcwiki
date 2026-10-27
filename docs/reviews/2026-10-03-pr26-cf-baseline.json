@@ -1,0 +1,924 @@
+{
+  "measuredAt": "2026-10-03T04:57:18.189Z",
+  "runtime": "cloudflare",
+  "version": {
+    "version": "12079ab7fd419b7e734191473a422601d4a1d505",
+    "commit": "12079ab7fd419b7e734191473a422601d4a1d505",
+    "image": "cloudflare-worker@sha256:8922569ec35ab29d03da6e6abad31985164113534658dbc511c95cbd94605706",
+    "runtime": {
+      "version": "12079ab7fd419b7e734191473a422601d4a1d505",
+      "commit": "12079ab7fd419b7e734191473a422601d4a1d505",
+      "image": "cloudflare-worker@sha256:8922569ec35ab29d03da6e6abad31985164113534658dbc511c95cbd94605706",
+      "strict": true,
+      "verified": true,
+      "warnings": []
+    }
+  },
+  "receiptSha256": "f5d3a78e2869425d6164396a5105292ebbbcf28e759881c5fe05b168498d04a6",
+  "device": {
+    "platform": "darwin",
+    "release": "27.2.0",
+    "cpu": "Apple M1 Pro",
+    "logicalCpus": 10,
+    "memoryGiB": 16,
+    "browser": "153.0.8010.12"
+  },
+  "conditions": {
+    "transport": "loopback; no network or CPU throttling; fresh browser context and disabled HTTP cache per route",
+    "clientPayload": "deterministic four available pools plus fixed public network/health/quote fixtures; missing analytics fields remain unavailable",
+    "compression": "gzip/Brotli modeled from decoded response bodies; not negotiated wire size",
+    "collectionWindowMs": 500,
+    "mixedReadiness": "live server-side upstream reads; initial cache state is not assumed cold",
+    "concurrentOtherWork": "record in accompanying review; local timings do not establish production DO serialization or Core Web Vitals"
+  },
+  "reports": [
+    {
+      "route": "/",
+      "loadToHeadingMs": 528.6478330000001,
+      "html": {
+        "decodedBytes": 95165,
+        "modeledGzipBytes": 14538,
+        "modeledBrotliBytes": 10534
+      },
+      "assets": [
+        {
+          "path": "/_next/static/chunks/activity-COaVYuCj.js",
+          "decodedBytes": 274,
+          "modeledGzipBytes": 229,
+          "modeledBrotliBytes": 205
+        },
+        {
+          "path": "/_next/static/chunks/AnchorNavigation-Owujhljs.js",
+          "decodedBytes": 2604,
+          "modeledGzipBytes": 1275,
+          "modeledBrotliBytes": 1050
+        },
+        {
+          "path": "/_next/static/chunks/arrow-right-ChTFT4Xq.js",
+          "decodedBytes": 205,
+          "modeledGzipBytes": 188,
+          "modeledBrotliBytes": 161
+        },
+        {
+          "path": "/_next/static/chunks/Badge-kMXsvYqe.js",
+          "decodedBytes": 495,
+          "modeledGzipBytes": 320,
+          "modeledBrotliBytes": 265
+        },
+        {
+          "path": "/_next/static/chunks/Card-CcFJbBsX.js",
+          "decodedBytes": 498,
+          "modeledGzipBytes": 325,
+          "modeledBrotliBytes": 268
+        },
+        {
+          "path": "/_next/static/chunks/chevron-down-CDghELgX.js",
+          "decodedBytes": 168,
+          "modeledGzipBytes": 166,
+          "modeledBrotliBytes": 159
+        },
+        {
+          "path": "/_next/static/chunks/createLucideIcon-BydU3YTZ.js",
+          "decodedBytes": 812,
+          "modeledGzipBytes": 527,
+          "modeledBrotliBytes": 451
+        },
+        {
+          "path": "/_next/static/chunks/DeepDiveLibraryExplorer-BN8QtaTR.js",
+          "decodedBytes": 8704,
+          "modeledGzipBytes": 2790,
+          "modeledBrotliBytes": 2464
+        },
+        {
+          "path": "/_next/static/chunks/ecosystem-directory-l0Oc1Rby.js",
+          "decodedBytes": 322,
+          "modeledGzipBytes": 186,
+          "modeledBrotliBytes": 143
+        },
+        {
+          "path": "/_next/static/chunks/framework-2k-VFE-j.js",
+          "decodedBytes": 219348,
+          "modeledGzipBytes": 67650,
+          "modeledBrotliBytes": 58171
+        },
+        {
+          "path": "/_next/static/chunks/FreshnessMeta-8nsCz42m.js",
+          "decodedBytes": 1110,
+          "modeledGzipBytes": 502,
+          "modeledBrotliBytes": 455
+        },
+        {
+          "path": "/_next/static/chunks/Header-BMNYXSdx.js",
+          "decodedBytes": 12025,
+          "modeledGzipBytes": 3126,
+          "modeledBrotliBytes": 2735
+        },
+        {
+          "path": "/_next/static/chunks/HomePageClient-BUBKDt_-.js",
+          "decodedBytes": 9867,
+          "modeledGzipBytes": 3293,
+          "modeledBrotliBytes": 2829
+        },
+        {
+          "path": "/_next/static/chunks/Icon-Dchdx3bh.js",
+          "decodedBytes": 2529,
+          "modeledGzipBytes": 1231,
+          "modeledBrotliBytes": 1113
+        },
+        {
+          "path": "/_next/static/chunks/index-B5yn6jaW.js",
+          "decodedBytes": 131953,
+          "modeledGzipBytes": 35588,
+          "modeledBrotliBytes": 30606
+        },
+        {
+          "path": "/_next/static/chunks/layout-segment-context-Db7Dp84U.js",
+          "decodedBytes": 496,
+          "modeledGzipBytes": 344,
+          "modeledBrotliBytes": 301
+        },
+        {
+          "path": "/_next/static/chunks/link-CVQSraRU.js",
+          "decodedBytes": 11947,
+          "modeledGzipBytes": 4531,
+          "modeledBrotliBytes": 4089
+        },
+        {
+          "path": "/_next/static/chunks/LiveSourceMeta-C_qNt_26.js",
+          "decodedBytes": 113974,
+          "modeledGzipBytes": 31800,
+          "modeledBrotliBytes": 27899
+        },
+        {
+          "path": "/_next/static/chunks/network-status-summary-zFlfGwrb.js",
+          "decodedBytes": 963,
+          "modeledGzipBytes": 544,
+          "modeledBrotliBytes": 468
+        },
+        {
+          "path": "/_next/static/chunks/NetworkPageClient-CCFBHUaY.js",
+          "decodedBytes": 26456,
+          "modeledGzipBytes": 7727,
+          "modeledBrotliBytes": 6689
+        },
+        {
+          "path": "/_next/static/chunks/NetworkStatusBanner-DvRI2SRz.js",
+          "decodedBytes": 67567,
+          "modeledGzipBytes": 17035,
+          "modeledBrotliBytes": 15086
+        },
+        {
+          "path": "/_next/static/chunks/operational-controls--AYM4FKv.js",
+          "decodedBytes": 60705,
+          "modeledGzipBytes": 17693,
+          "modeledBrotliBytes": 15008
+        },
+        {
+          "path": "/_next/static/chunks/PageContainer-BUwdr7-S.js",
+          "decodedBytes": 291,
+          "modeledGzipBytes": 233,
+          "modeledBrotliBytes": 195
+        },
+        {
+          "path": "/_next/static/chunks/PageTableOfContents-BHu7DQYW.js",
+          "decodedBytes": 1347,
+          "modeledGzipBytes": 760,
+          "modeledBrotliBytes": 649
+        },
+        {
+          "path": "/_next/static/chunks/registry-CGT_MJg7.js",
+          "decodedBytes": 59795,
+          "modeledGzipBytes": 16225,
+          "modeledBrotliBytes": 14023
+        },
+        {
+          "path": "/_next/static/chunks/RelatedChecks-CkXk_bMx.js",
+          "decodedBytes": 1887,
+          "modeledGzipBytes": 816,
+          "modeledBrotliBytes": 731
+        },
+        {
+          "path": "/_next/static/chunks/ResponsiveVisibility-CEveyzun.js",
+          "decodedBytes": 1009,
+          "modeledGzipBytes": 585,
+          "modeledBrotliBytes": 547
+        },
+        {
+          "path": "/_next/static/chunks/rolldown-runtime-hePW80VL.js",
+          "decodedBytes": 716,
+          "modeledGzipBytes": 428,
+          "modeledBrotliBytes": 381
+        },
+        {
+          "path": "/_next/static/chunks/search-DHqYT3vv.js",
+          "decodedBytes": 214,
+          "modeledGzipBytes": 195,
+          "modeledBrotliBytes": 172
+        },
+        {
+          "path": "/_next/static/chunks/SearchPageClient-Cm1URKNo.js",
+          "decodedBytes": 456455,
+          "modeledGzipBytes": 125753,
+          "modeledBrotliBytes": 75370
+        },
+        {
+          "path": "/_next/static/chunks/SectionHeader-OJ2IYc-0.js",
+          "decodedBytes": 376,
+          "modeledGzipBytes": 259,
+          "modeledBrotliBytes": 205
+        },
+        {
+          "path": "/_next/static/chunks/SourceMapExplorer-tlNOnzPr.js",
+          "decodedBytes": 12579,
+          "modeledGzipBytes": 3703,
+          "modeledBrotliBytes": 3302
+        },
+        {
+          "path": "/_next/static/chunks/SourceMetaDisclosure-ngUsS14q.js",
+          "decodedBytes": 4306,
+          "modeledGzipBytes": 1616,
+          "modeledBrotliBytes": 1426
+        },
+        {
+          "path": "/_next/static/chunks/sources-C69Hra0q.js",
+          "decodedBytes": 22888,
+          "modeledGzipBytes": 6611,
+          "modeledBrotliBytes": 5434
+        },
+        {
+          "path": "/_next/static/chunks/StatCard-D-_qqWZO.js",
+          "decodedBytes": 852,
+          "modeledGzipBytes": 480,
+          "modeledBrotliBytes": 420
+        },
+        {
+          "path": "/_next/static/chunks/stats-dashboard-ChKorBGa.js",
+          "decodedBytes": 12494,
+          "modeledGzipBytes": 4086,
+          "modeledBrotliBytes": 3628
+        },
+        {
+          "path": "/_next/static/chunks/StatsPageClient-Af1l8GjT.js",
+          "decodedBytes": 429899,
+          "modeledGzipBytes": 119441,
+          "modeledBrotliBytes": 99711
+        },
+        {
+          "path": "/_next/static/chunks/utils-Dhgtj1dj.js",
+          "decodedBytes": 27796,
+          "modeledGzipBytes": 8741,
+          "modeledBrotliBytes": 7647
+        },
+        {
+          "path": "/_next/static/chunks/vinext-DTA5xgTi.js",
+          "decodedBytes": 134883,
+          "modeledGzipBytes": 40326,
+          "modeledBrotliBytes": 34951
+        },
+        {
+          "path": "/_next/static/chunks/x-BbGM2Q9O.js",
+          "decodedBytes": 194,
+          "modeledGzipBytes": 179,
+          "modeledBrotliBytes": 155
+        },
+        {
+          "path": "/_next/static/css/layout.DL3YJR3r.css",
+          "decodedBytes": 68212,
+          "modeledGzipBytes": 12092,
+          "modeledBrotliBytes": 9833
+        }
+      ],
+      "indexConstructionMs": [
+        94
+      ],
+      "interactions": []
+    },
+    {
+      "route": "/search",
+      "loadToHeadingMs": 235.57937499999935,
+      "html": {
+        "decodedBytes": 86514,
+        "modeledGzipBytes": 14032,
+        "modeledBrotliBytes": 10301
+      },
+      "assets": [
+        {
+          "path": "/_next/static/chunks/activity-COaVYuCj.js",
+          "decodedBytes": 274,
+          "modeledGzipBytes": 229,
+          "modeledBrotliBytes": 205
+        },
+        {
+          "path": "/_next/static/chunks/AnchorNavigation-Owujhljs.js",
+          "decodedBytes": 2604,
+          "modeledGzipBytes": 1275,
+          "modeledBrotliBytes": 1050
+        },
+        {
+          "path": "/_next/static/chunks/arrow-right-ChTFT4Xq.js",
+          "decodedBytes": 205,
+          "modeledGzipBytes": 188,
+          "modeledBrotliBytes": 161
+        },
+        {
+          "path": "/_next/static/chunks/Badge-kMXsvYqe.js",
+          "decodedBytes": 495,
+          "modeledGzipBytes": 320,
+          "modeledBrotliBytes": 265
+        },
+        {
+          "path": "/_next/static/chunks/Card-CcFJbBsX.js",
+          "decodedBytes": 498,
+          "modeledGzipBytes": 325,
+          "modeledBrotliBytes": 268
+        },
+        {
+          "path": "/_next/static/chunks/chevron-down-CDghELgX.js",
+          "decodedBytes": 168,
+          "modeledGzipBytes": 166,
+          "modeledBrotliBytes": 159
+        },
+        {
+          "path": "/_next/static/chunks/createLucideIcon-BydU3YTZ.js",
+          "decodedBytes": 812,
+          "modeledGzipBytes": 527,
+          "modeledBrotliBytes": 451
+        },
+        {
+          "path": "/_next/static/chunks/ecosystem-directory-l0Oc1Rby.js",
+          "decodedBytes": 322,
+          "modeledGzipBytes": 186,
+          "modeledBrotliBytes": 143
+        },
+        {
+          "path": "/_next/static/chunks/framework-2k-VFE-j.js",
+          "decodedBytes": 219348,
+          "modeledGzipBytes": 67650,
+          "modeledBrotliBytes": 58171
+        },
+        {
+          "path": "/_next/static/chunks/FreshnessMeta-8nsCz42m.js",
+          "decodedBytes": 1110,
+          "modeledGzipBytes": 502,
+          "modeledBrotliBytes": 455
+        },
+        {
+          "path": "/_next/static/chunks/GlossaryExplorer-CgRBBlyE.js",
+          "decodedBytes": 7294,
+          "modeledGzipBytes": 2572,
+          "modeledBrotliBytes": 2258
+        },
+        {
+          "path": "/_next/static/chunks/Header-BMNYXSdx.js",
+          "decodedBytes": 12025,
+          "modeledGzipBytes": 3126,
+          "modeledBrotliBytes": 2735
+        },
+        {
+          "path": "/_next/static/chunks/HomePageClient-BUBKDt_-.js",
+          "decodedBytes": 9867,
+          "modeledGzipBytes": 3293,
+          "modeledBrotliBytes": 2829
+        },
+        {
+          "path": "/_next/static/chunks/Icon-Dchdx3bh.js",
+          "decodedBytes": 2529,
+          "modeledGzipBytes": 1231,
+          "modeledBrotliBytes": 1113
+        },
+        {
+          "path": "/_next/static/chunks/index-B5yn6jaW.js",
+          "decodedBytes": 131953,
+          "modeledGzipBytes": 35588,
+          "modeledBrotliBytes": 30606
+        },
+        {
+          "path": "/_next/static/chunks/layout-segment-context-Db7Dp84U.js",
+          "decodedBytes": 496,
+          "modeledGzipBytes": 344,
+          "modeledBrotliBytes": 301
+        },
+        {
+          "path": "/_next/static/chunks/link-CVQSraRU.js",
+          "decodedBytes": 11947,
+          "modeledGzipBytes": 4531,
+          "modeledBrotliBytes": 4089
+        },
+        {
+          "path": "/_next/static/chunks/LiveSourceMeta-C_qNt_26.js",
+          "decodedBytes": 113974,
+          "modeledGzipBytes": 31800,
+          "modeledBrotliBytes": 27899
+        },
+        {
+          "path": "/_next/static/chunks/network-status-summary-zFlfGwrb.js",
+          "decodedBytes": 963,
+          "modeledGzipBytes": 544,
+          "modeledBrotliBytes": 468
+        },
+        {
+          "path": "/_next/static/chunks/NetworkPageClient-CCFBHUaY.js",
+          "decodedBytes": 26456,
+          "modeledGzipBytes": 7727,
+          "modeledBrotliBytes": 6689
+        },
+        {
+          "path": "/_next/static/chunks/NetworkStatusBanner-DvRI2SRz.js",
+          "decodedBytes": 67567,
+          "modeledGzipBytes": 17035,
+          "modeledBrotliBytes": 15086
+        },
+        {
+          "path": "/_next/static/chunks/operational-controls--AYM4FKv.js",
+          "decodedBytes": 60705,
+          "modeledGzipBytes": 17693,
+          "modeledBrotliBytes": 15008
+        },
+        {
+          "path": "/_next/static/chunks/PageContainer-BUwdr7-S.js",
+          "decodedBytes": 291,
+          "modeledGzipBytes": 233,
+          "modeledBrotliBytes": 195
+        },
+        {
+          "path": "/_next/static/chunks/PageTableOfContents-BHu7DQYW.js",
+          "decodedBytes": 1347,
+          "modeledGzipBytes": 760,
+          "modeledBrotliBytes": 649
+        },
+        {
+          "path": "/_next/static/chunks/ProtocolChainFinder-D0rOAP-Y.js",
+          "decodedBytes": 8240,
+          "modeledGzipBytes": 2804,
+          "modeledBrotliBytes": 2460
+        },
+        {
+          "path": "/_next/static/chunks/registry-CGT_MJg7.js",
+          "decodedBytes": 59795,
+          "modeledGzipBytes": 16225,
+          "modeledBrotliBytes": 14023
+        },
+        {
+          "path": "/_next/static/chunks/RelatedChecks-CkXk_bMx.js",
+          "decodedBytes": 1887,
+          "modeledGzipBytes": 816,
+          "modeledBrotliBytes": 731
+        },
+        {
+          "path": "/_next/static/chunks/ResponsiveVisibility-CEveyzun.js",
+          "decodedBytes": 1009,
+          "modeledGzipBytes": 585,
+          "modeledBrotliBytes": 547
+        },
+        {
+          "path": "/_next/static/chunks/rolldown-runtime-hePW80VL.js",
+          "decodedBytes": 716,
+          "modeledGzipBytes": 428,
+          "modeledBrotliBytes": 381
+        },
+        {
+          "path": "/_next/static/chunks/route-checks-BRb9ZESZ.js",
+          "decodedBytes": 421,
+          "modeledGzipBytes": 319,
+          "modeledBrotliBytes": 269
+        },
+        {
+          "path": "/_next/static/chunks/search-DHqYT3vv.js",
+          "decodedBytes": 214,
+          "modeledGzipBytes": 195,
+          "modeledBrotliBytes": 172
+        },
+        {
+          "path": "/_next/static/chunks/SearchPageClient-Cm1URKNo.js",
+          "decodedBytes": 456455,
+          "modeledGzipBytes": 125753,
+          "modeledBrotliBytes": 75370
+        },
+        {
+          "path": "/_next/static/chunks/SectionHeader-OJ2IYc-0.js",
+          "decodedBytes": 376,
+          "modeledGzipBytes": 259,
+          "modeledBrotliBytes": 205
+        },
+        {
+          "path": "/_next/static/chunks/SourceMapExplorer-tlNOnzPr.js",
+          "decodedBytes": 12579,
+          "modeledGzipBytes": 3703,
+          "modeledBrotliBytes": 3302
+        },
+        {
+          "path": "/_next/static/chunks/SourceMetaDisclosure-ngUsS14q.js",
+          "decodedBytes": 4306,
+          "modeledGzipBytes": 1616,
+          "modeledBrotliBytes": 1426
+        },
+        {
+          "path": "/_next/static/chunks/sources-C69Hra0q.js",
+          "decodedBytes": 22888,
+          "modeledGzipBytes": 6611,
+          "modeledBrotliBytes": 5434
+        },
+        {
+          "path": "/_next/static/chunks/StatCard-D-_qqWZO.js",
+          "decodedBytes": 852,
+          "modeledGzipBytes": 480,
+          "modeledBrotliBytes": 420
+        },
+        {
+          "path": "/_next/static/chunks/stats-dashboard-ChKorBGa.js",
+          "decodedBytes": 12494,
+          "modeledGzipBytes": 4086,
+          "modeledBrotliBytes": 3628
+        },
+        {
+          "path": "/_next/static/chunks/TcyControlsPanel-DkeKzjUa.js",
+          "decodedBytes": 11067,
+          "modeledGzipBytes": 3055,
+          "modeledBrotliBytes": 2692
+        },
+        {
+          "path": "/_next/static/chunks/utils-Dhgtj1dj.js",
+          "decodedBytes": 27796,
+          "modeledGzipBytes": 8741,
+          "modeledBrotliBytes": 7647
+        },
+        {
+          "path": "/_next/static/chunks/vinext-DTA5xgTi.js",
+          "decodedBytes": 134883,
+          "modeledGzipBytes": 40326,
+          "modeledBrotliBytes": 34951
+        },
+        {
+          "path": "/_next/static/chunks/x-BbGM2Q9O.js",
+          "decodedBytes": 194,
+          "modeledGzipBytes": 179,
+          "modeledBrotliBytes": 155
+        },
+        {
+          "path": "/_next/static/css/layout.DL3YJR3r.css",
+          "decodedBytes": 68212,
+          "modeledGzipBytes": 12092,
+          "modeledBrotliBytes": 9833
+        }
+      ],
+      "indexConstructionMs": [
+        82.70000004768372
+      ],
+      "interactions": [
+        {
+          "query": "quote expiry",
+          "fillSubmitToResultsMs": 156.82329200000004
+        },
+        {
+          "query": "HALTTCYTRADING",
+          "fillSubmitToResultsMs": 156.59983300000022
+        },
+        {
+          "query": "BTC.BTC",
+          "fillSubmitToResultsMs": 59.15704199999982
+        }
+      ]
+    },
+    {
+      "route": "/stats",
+      "loadToHeadingMs": 161.67704200000026,
+      "html": {
+        "decodedBytes": 101186,
+        "modeledGzipBytes": 15400,
+        "modeledBrotliBytes": 11367
+      },
+      "assets": [
+        {
+          "path": "/_next/static/chunks/activity-COaVYuCj.js",
+          "decodedBytes": 274,
+          "modeledGzipBytes": 229,
+          "modeledBrotliBytes": 205
+        },
+        {
+          "path": "/_next/static/chunks/AnchorNavigation-Owujhljs.js",
+          "decodedBytes": 2604,
+          "modeledGzipBytes": 1275,
+          "modeledBrotliBytes": 1050
+        },
+        {
+          "path": "/_next/static/chunks/arrow-right-ChTFT4Xq.js",
+          "decodedBytes": 205,
+          "modeledGzipBytes": 188,
+          "modeledBrotliBytes": 161
+        },
+        {
+          "path": "/_next/static/chunks/Badge-kMXsvYqe.js",
+          "decodedBytes": 495,
+          "modeledGzipBytes": 320,
+          "modeledBrotliBytes": 265
+        },
+        {
+          "path": "/_next/static/chunks/Card-CcFJbBsX.js",
+          "decodedBytes": 498,
+          "modeledGzipBytes": 325,
+          "modeledBrotliBytes": 268
+        },
+        {
+          "path": "/_next/static/chunks/chevron-down-CDghELgX.js",
+          "decodedBytes": 168,
+          "modeledGzipBytes": 166,
+          "modeledBrotliBytes": 159
+        },
+        {
+          "path": "/_next/static/chunks/createLucideIcon-BydU3YTZ.js",
+          "decodedBytes": 812,
+          "modeledGzipBytes": 527,
+          "modeledBrotliBytes": 451
+        },
+        {
+          "path": "/_next/static/chunks/framework-2k-VFE-j.js",
+          "decodedBytes": 219348,
+          "modeledGzipBytes": 67650,
+          "modeledBrotliBytes": 58171
+        },
+        {
+          "path": "/_next/static/chunks/Header-BMNYXSdx.js",
+          "decodedBytes": 12025,
+          "modeledGzipBytes": 3126,
+          "modeledBrotliBytes": 2735
+        },
+        {
+          "path": "/_next/static/chunks/HomePageClient-BUBKDt_-.js",
+          "decodedBytes": 9867,
+          "modeledGzipBytes": 3293,
+          "modeledBrotliBytes": 2829
+        },
+        {
+          "path": "/_next/static/chunks/Icon-Dchdx3bh.js",
+          "decodedBytes": 2529,
+          "modeledGzipBytes": 1231,
+          "modeledBrotliBytes": 1113
+        },
+        {
+          "path": "/_next/static/chunks/index-B5yn6jaW.js",
+          "decodedBytes": 131953,
+          "modeledGzipBytes": 35588,
+          "modeledBrotliBytes": 30606
+        },
+        {
+          "path": "/_next/static/chunks/layout-segment-context-Db7Dp84U.js",
+          "decodedBytes": 496,
+          "modeledGzipBytes": 344,
+          "modeledBrotliBytes": 301
+        },
+        {
+          "path": "/_next/static/chunks/link-CVQSraRU.js",
+          "decodedBytes": 11947,
+          "modeledGzipBytes": 4531,
+          "modeledBrotliBytes": 4089
+        },
+        {
+          "path": "/_next/static/chunks/LiveSourceMeta-C_qNt_26.js",
+          "decodedBytes": 113974,
+          "modeledGzipBytes": 31800,
+          "modeledBrotliBytes": 27899
+        },
+        {
+          "path": "/_next/static/chunks/network-status-summary-zFlfGwrb.js",
+          "decodedBytes": 963,
+          "modeledGzipBytes": 544,
+          "modeledBrotliBytes": 468
+        },
+        {
+          "path": "/_next/static/chunks/NetworkPageClient-CCFBHUaY.js",
+          "decodedBytes": 26456,
+          "modeledGzipBytes": 7727,
+          "modeledBrotliBytes": 6689
+        },
+        {
+          "path": "/_next/static/chunks/NetworkStatusBanner-DvRI2SRz.js",
+          "decodedBytes": 67567,
+          "modeledGzipBytes": 17035,
+          "modeledBrotliBytes": 15086
+        },
+        {
+          "path": "/_next/static/chunks/operational-controls--AYM4FKv.js",
+          "decodedBytes": 60705,
+          "modeledGzipBytes": 17693,
+          "modeledBrotliBytes": 15008
+        },
+        {
+          "path": "/_next/static/chunks/PageContainer-BUwdr7-S.js",
+          "decodedBytes": 291,
+          "modeledGzipBytes": 233,
+          "modeledBrotliBytes": 195
+        },
+        {
+          "path": "/_next/static/chunks/PageTableOfContents-BHu7DQYW.js",
+          "decodedBytes": 1347,
+          "modeledGzipBytes": 760,
+          "modeledBrotliBytes": 649
+        },
+        {
+          "path": "/_next/static/chunks/registry-CGT_MJg7.js",
+          "decodedBytes": 59795,
+          "modeledGzipBytes": 16225,
+          "modeledBrotliBytes": 14023
+        },
+        {
+          "path": "/_next/static/chunks/RelatedChecks-CkXk_bMx.js",
+          "decodedBytes": 1887,
+          "modeledGzipBytes": 816,
+          "modeledBrotliBytes": 731
+        },
+        {
+          "path": "/_next/static/chunks/ResponsiveVisibility-CEveyzun.js",
+          "decodedBytes": 1009,
+          "modeledGzipBytes": 585,
+          "modeledBrotliBytes": 547
+        },
+        {
+          "path": "/_next/static/chunks/rolldown-runtime-hePW80VL.js",
+          "decodedBytes": 716,
+          "modeledGzipBytes": 428,
+          "modeledBrotliBytes": 381
+        },
+        {
+          "path": "/_next/static/chunks/search-DHqYT3vv.js",
+          "decodedBytes": 214,
+          "modeledGzipBytes": 195,
+          "modeledBrotliBytes": 172
+        },
+        {
+          "path": "/_next/static/chunks/SectionHeader-OJ2IYc-0.js",
+          "decodedBytes": 376,
+          "modeledGzipBytes": 259,
+          "modeledBrotliBytes": 205
+        },
+        {
+          "path": "/_next/static/chunks/SourceMetaDisclosure-ngUsS14q.js",
+          "decodedBytes": 4306,
+          "modeledGzipBytes": 1616,
+          "modeledBrotliBytes": 1426
+        },
+        {
+          "path": "/_next/static/chunks/sources-C69Hra0q.js",
+          "decodedBytes": 22888,
+          "modeledGzipBytes": 6611,
+          "modeledBrotliBytes": 5434
+        },
+        {
+          "path": "/_next/static/chunks/StatCard-D-_qqWZO.js",
+          "decodedBytes": 852,
+          "modeledGzipBytes": 480,
+          "modeledBrotliBytes": 420
+        },
+        {
+          "path": "/_next/static/chunks/stats-dashboard-ChKorBGa.js",
+          "decodedBytes": 12494,
+          "modeledGzipBytes": 4086,
+          "modeledBrotliBytes": 3628
+        },
+        {
+          "path": "/_next/static/chunks/StatsPageClient-Af1l8GjT.js",
+          "decodedBytes": 429899,
+          "modeledGzipBytes": 119441,
+          "modeledBrotliBytes": 99711
+        },
+        {
+          "path": "/_next/static/chunks/utils-Dhgtj1dj.js",
+          "decodedBytes": 27796,
+          "modeledGzipBytes": 8741,
+          "modeledBrotliBytes": 7647
+        },
+        {
+          "path": "/_next/static/chunks/vinext-DTA5xgTi.js",
+          "decodedBytes": 134883,
+          "modeledGzipBytes": 40326,
+          "modeledBrotliBytes": 34951
+        },
+        {
+          "path": "/_next/static/chunks/x-BbGM2Q9O.js",
+          "decodedBytes": 194,
+          "modeledGzipBytes": 179,
+          "modeledBrotliBytes": 155
+        },
+        {
+          "path": "/_next/static/css/layout.DL3YJR3r.css",
+          "decodedBytes": 68212,
+          "modeledGzipBytes": 12092,
+          "modeledBrotliBytes": 9833
+        }
+      ],
+      "indexConstructionMs": [],
+      "interactions": []
+    }
+  ],
+  "mixed": [
+    {
+      "pass": "initial",
+      "concurrency": 8,
+      "elapsedMs": 3187.9782920000016,
+      "rows": [
+        {
+          "path": "/docs",
+          "status": 200,
+          "durationMs": 96.80395800000042,
+          "bytes": 505281
+        },
+        {
+          "path": "/protocol",
+          "status": 200,
+          "durationMs": 111.39225000000079,
+          "bytes": 212832
+        },
+        {
+          "path": "/docs",
+          "status": 200,
+          "durationMs": 120.37716700000055,
+          "bytes": 505281
+        },
+        {
+          "path": "/protocol",
+          "status": 200,
+          "durationMs": 124.77299999999923,
+          "bytes": 212832
+        },
+        {
+          "path": "/api/ready",
+          "status": 503,
+          "durationMs": 3184.583541,
+          "bytes": 34249
+        },
+        {
+          "path": "/api/ready",
+          "status": 503,
+          "durationMs": 3182.4000830000004,
+          "bytes": 34249
+        },
+        {
+          "path": "/api/ready",
+          "status": 503,
+          "durationMs": 3186.355125,
+          "bytes": 34249
+        },
+        {
+          "path": "/api/ready",
+          "status": 503,
+          "durationMs": 3184.6437079999996,
+          "bytes": 34249
+        }
+      ]
+    },
+    {
+      "pass": "warm",
+      "concurrency": 8,
+      "elapsedMs": 94.5479579999992,
+      "rows": [
+        {
+          "path": "/docs",
+          "status": 200,
+          "durationMs": 70.65695900000173,
+          "bytes": 505281
+        },
+        {
+          "path": "/protocol",
+          "status": 200,
+          "durationMs": 78.55875000000015,
+          "bytes": 212832
+        },
+        {
+          "path": "/docs",
+          "status": 200,
+          "durationMs": 87.87870800000019,
+          "bytes": 505281
+        },
+        {
+          "path": "/protocol",
+          "status": 200,
+          "durationMs": 93.75154199999997,
+          "bytes": 212832
+        },
+        {
+          "path": "/api/ready",
+          "status": 503,
+          "durationMs": 57.20116600000074,
+          "bytes": 34249
+        },
+        {
+          "path": "/api/ready",
+          "status": 503,
+          "durationMs": 57.4398340000007,
+          "bytes": 34249
+        },
+        {
+          "path": "/api/ready",
+          "status": 503,
+          "durationMs": 58.226667000000816,
+          "bytes": 34249
+        },
+        {
+          "path": "/api/ready",
+          "status": 503,
+          "durationMs": 55.312041999999565,
+          "bytes": 34249
+        }
+      ]
+    }
+  ]
+}

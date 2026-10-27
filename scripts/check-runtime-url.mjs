@@ -11,6 +11,9 @@ const expectedImageRef = process.env.EXPECTED_IMAGE_REF;
 const requireReady = process.env.REQUIRE_READY === '1';
 const requireRuntimeMetadata = process.env.REQUIRE_RUNTIME_METADATA === '1' || shouldRequireRuntimeMetadata(baseUrl);
 const enforcedCsp = process.env.CSP_ENFORCE === '1';
+const budgetMs = Number(process.env.RUNTIME_PROBE_BUDGET_MS ?? 90_000);
+if (!Number.isSafeInteger(budgetMs) || budgetMs < 250 || budgetMs > 90_000) throw new Error('RUNTIME_PROBE_BUDGET_MS must be250..90000.');
+const deadline = performance.now() + budgetMs;
 
 if (!baseUrl) {
   console.error('CHECK_BASE_URL or first argument is required.');
@@ -29,16 +32,18 @@ function shouldRequireRuntimeMetadata(value) {
 async function fetchUntil(path, isExpectedStatus, init = undefined) {
   let lastError;
   for (let attempt = 0; attempt < 60; attempt += 1) {
+    const remaining = deadline - performance.now();
+    if (remaining <= 0) throw new Error('Runtime probe overall deadline exceeded.');
     try {
-      const response = await fetch(`${baseUrl}${path}`, { cache: 'no-store', ...init });
-      if (isExpectedStatus(response)) {
+      const response = await fetch(`${baseUrl}${path}`, { cache: 'no-store', ...init, signal: AbortSignal.timeout(Math.max(1, Math.floor(Math.min(5000, remaining)))) });
+      if (await isExpectedStatus(response)) {
         return response;
       }
       lastError = new Error(`${path} returned ${response.status}`);
     } catch (error) {
       lastError = error;
     }
-    await wait(500);
+    await wait(Math.max(0, Math.min(500, deadline - performance.now())));
   }
   throw lastError ?? new Error(`${path} did not become ready`);
 }
@@ -95,7 +100,13 @@ function expectRuntimeMetadata(json) {
   });
 }
 
-const health = await fetchUntil('/api/health', (response) => response.ok);
+async function hasExpectedRuntime(response) {
+  if (!response.ok) return false;
+  expectRuntimeMetadata(await response.clone().json());
+  return true;
+}
+
+const health = await fetchUntil('/api/health', hasExpectedRuntime);
 const healthJson = await health.json();
 if (healthJson.status !== 'healthy' || !healthJson.commit || !healthJson.image) {
   throw new Error(`Unexpected health response: ${JSON.stringify(healthJson)}`);
@@ -103,7 +114,7 @@ if (healthJson.status !== 'healthy' || !healthJson.commit || !healthJson.image) 
 expectRuntimeMetadata(healthJson);
 expectHeader(health.headers, 'cache-control', 'no-store');
 
-const version = await fetchUntil('/api/version', (response) => response.ok);
+const version = await fetchUntil('/api/version', hasExpectedRuntime);
 const versionJson = await version.json();
 if (!versionJson.version || !versionJson.commit || !versionJson.image) {
   throw new Error(`Unexpected version response: ${JSON.stringify(versionJson)}`);
@@ -113,7 +124,11 @@ expectHeader(version.headers, 'cache-control', 'no-store');
 
 const ready = await fetchUntil(
   '/api/ready',
-  (response) => requireReady ? response.status === 200 : response.status === 200 || response.status === 503
+  async (response) => {
+    if (response.status !== 200 && (requireReady || response.status !== 503)) return false;
+    expectRuntimeMetadata(await response.clone().json());
+    return true;
+  }
 );
 const readyJson = await ready.json();
 assertReadinessContract(readyJson);

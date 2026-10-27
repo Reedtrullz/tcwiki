@@ -22,6 +22,8 @@ import type {
 } from '@/lib/types';
 import {
   currentByRecord,
+  bpsPositionForValue,
+  trustedDynamicConfigValue,
   currentWithoutSealedRecords,
   enabledState,
   formatBps,
@@ -89,6 +91,7 @@ interface DynamicFeesViewProps {
   isLoading?: boolean;
   isDegraded?: boolean;
   error?: string;
+  onRefresh?: () => unknown;
 }
 
 export function DynamicFeesView({
@@ -98,6 +101,7 @@ export function DynamicFeesView({
   isLoading = false,
   isDegraded = false,
   error,
+  onRefresh,
 }: DynamicFeesViewProps) {
   const currentEntries = useMemo(() => currentByRecord(status), [status]);
   const orphanCurrentEntries = useMemo(() => currentWithoutSealedRecords(status), [status]);
@@ -106,13 +110,13 @@ export function DynamicFeesView({
   const enabled = enabledState(status, liveState);
   const whitelistedCount = status?.mimir.whitelistedPartners.filter((partner) => partner.whitelisted).length;
   const trackedPairCount = new Set((status?.records ?? []).map((record) => recordKey(record.thorname, record.pair))).size;
-  const floorBps = status?.mimir.floorBps.effectiveValue ?? status?.mimir.floorBps.value;
-  const ceilingBps = status?.mimir.ceilingBps.effectiveValue ?? status?.mimir.ceilingBps.value;
+  const floorBps = trustedDynamicConfigValue(status?.mimir.floorBps);
+  const ceilingBps = trustedDynamicConfigValue(status?.mimir.ceilingBps);
   const floorPinnedCount = typeof floorBps === 'number'
-    ? (status?.records ?? []).filter((record) => record.dynamicBps === floorBps).length
+    ? (status?.records ?? []).filter((record) => bpsPositionForValue(record.dynamicBps, floorBps, ceilingBps) === 'floor').length
     : undefined;
   const ceilingPinnedCount = typeof ceilingBps === 'number'
-    ? (status?.records ?? []).filter((record) => record.dynamicBps === ceilingBps).length
+    ? (status?.records ?? []).filter((record) => bpsPositionForValue(record.dynamicBps, floorBps, ceilingBps) === 'ceiling').length
     : undefined;
   const sourceWarningCount = status?.sourceWarnings.length;
 
@@ -135,6 +139,7 @@ export function DynamicFeesView({
       {children}
 
       <SourceStatusStrip
+        onRefresh={onRefresh}
         result={result}
         status={status}
         isDegraded={isDegraded}
@@ -182,6 +187,10 @@ export function DynamicFeesView({
         </div>
       </details>
 
+      {trustedDynamicConfigValue(status?.mimir.epochBlocks) === 0 && (
+        <p className="mb-6 text-sm text-amber-300">Epoch sealing paused: epoch length is zero. Enabled attribution and stored records do not prove an active sealing cadence.</p>
+      )}
+
       <HistoricalResultsChart status={status} />
 
       <DynamicFeeRecordsExplorer
@@ -218,7 +227,7 @@ export function DynamicFeesView({
               {floorPinnedCount ?? 'Unavailable'} at floor / {ceilingPinnedCount ?? 'Unavailable'} at ceiling across {status.records.length.toLocaleString()} tracked records.
             </p>
           )}
-          <BpsDistribution records={status?.records ?? []} />
+          <BpsDistribution records={status?.records ?? []} floorBps={floorBps} ceilingBps={ceilingBps} />
         </Card>
         <Card className="min-w-0">
           <h2 className="mb-3 text-sm font-semibold">Operational evidence</h2>
@@ -271,10 +280,11 @@ export function DynamicFeesView({
 }
 
 export default function DynamicFeesPageClient({ children }: { children?: ReactNode }) {
-  const { result, data: status, isLoading, isDegraded, error } = useDynamicL1FeeStatus();
+  const { result, data: status, isLoading, isDegraded, error, refresh } = useDynamicL1FeeStatus();
 
   return (
     <DynamicFeesView
+      onRefresh={refresh}
       result={result}
       status={status}
       isLoading={isLoading}

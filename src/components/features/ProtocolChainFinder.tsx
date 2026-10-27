@@ -1,8 +1,11 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { replaceExplorerUrl } from '@/lib/explorer-url';
+
+import { useCallback, useEffect, useMemo, useRef, useSyncExternalStore } from 'react';
 import Link from 'next/link';
-import { usePathname, useSearchParams } from 'next/navigation';
+import { usePathname } from 'next/navigation';
+import { useExplorerSearchParamString } from '@/hooks/useExplorerSearchParamString';
 import { X } from 'lucide-react';
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
@@ -116,19 +119,12 @@ function describeNoResults(labels: string[]) {
   return `No supported-chain catalog entries match ${labels.join(' + ')}.`;
 }
 
-function replaceUrlFromFilter(nextUrl: string) {
-  if (typeof window === 'undefined') {
-    return;
-  }
-
-  window.history.replaceState(window.history.state, '', nextUrl);
-  window.dispatchEvent(new PopStateEvent('popstate', { state: window.history.state }));
-}
 
 export function ProtocolChainFinder({ chainRecords, catalogReviewedAt }: ProtocolChainFinderProps) {
+  const hydrated = useSyncExternalStore(() => () => undefined, () => true, () => false);
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const searchParamString = searchParams.toString();
+  const searchParamString = useExplorerSearchParamString();
+  const searchParams = useMemo(() => new URLSearchParams(searchParamString), [searchParamString]);
   const addressFormats = useMemo(
     () => uniqueSorted(chainRecords.flatMap((record) => record.data.addressFormats)),
     [chainRecords]
@@ -161,7 +157,7 @@ export function ProtocolChainFinder({ chainRecords, catalogReviewedAt }: Protoco
 
   const replaceFiltersInUrl = useCallback((nextFilters: ChainFinderFilterState) => {
     const nextParams = new URLSearchParams(searchParamString);
-    const normalizedNextQuery = nextFilters.query.trim();
+    const normalizedNextQuery = nextFilters.query.slice(0, 256);
 
     if (normalizedNextQuery) {
       nextParams.set(QUERY_PARAM, normalizedNextQuery);
@@ -182,7 +178,7 @@ export function ProtocolChainFinder({ chainRecords, catalogReviewedAt }: Protoco
     }
 
     const nextParamString = nextParams.toString();
-    replaceUrlFromFilter(nextParamString ? `${pathname}?${nextParamString}` : pathname);
+    replaceExplorerUrl(nextParamString ? `${pathname}?${nextParamString}` : pathname, [QUERY_PARAM, FORMAT_PARAM, NOTES_PARAM]);
   }, [pathname, searchParamString]);
 
   const updateFilters = (patch: Partial<ChainFinderFilterState>) => {
@@ -216,7 +212,7 @@ export function ProtocolChainFinder({ chainRecords, catalogReviewedAt }: Protoco
             </p>
           </div>
           {activeFilters && (
-            <button
+            <button disabled={!hydrated}
               type="button"
               onClick={resetFilters}
               className="inline-flex items-center gap-1 self-start rounded-md border border-border px-2.5 py-1.5 text-xs text-slate-400 transition-colors hover:border-accent/30 hover:text-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 lg:self-auto"
@@ -230,7 +226,7 @@ export function ProtocolChainFinder({ chainRecords, catalogReviewedAt }: Protoco
         <div role="group" aria-labelledby="supported-chain-finder-heading" className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <label className="text-xs text-slate-400">
             Find
-            <input
+            <input disabled={!hydrated}
               type="search"
               value={query}
               onChange={(event) => updateFilters({ query: event.currentTarget.value })}
@@ -241,14 +237,14 @@ export function ProtocolChainFinder({ chainRecords, catalogReviewedAt }: Protoco
           </label>
           <label className="text-xs text-slate-400">
             Address format
-            <select value={format} onChange={(event) => updateFilters({ format: event.currentTarget.value })} className={selectControlClass}>
+            <select disabled={!hydrated} value={format} onChange={(event) => updateFilters({ format: event.currentTarget.value })} className={selectControlClass}>
               <option value={ALL}>All formats</option>
               {addressFormats.map((option) => <option key={option} value={option}>{option}</option>)}
             </select>
           </label>
           <label className="text-xs text-slate-400">
             Review notes
-            <select
+            <select disabled={!hydrated}
               value={notes}
               onChange={(event) => updateFilters({ notes: normalizeNoteFilter(event.currentTarget.value) })}
               className={selectControlClass}
@@ -334,7 +330,7 @@ export function ProtocolChainFinder({ chainRecords, catalogReviewedAt }: Protoco
           <p className="mt-1">
             These filters only narrow the curated catalog; they do not prove a chain is unavailable, unsupported by every interface, or halted.
           </p>
-          <button
+          <button disabled={!hydrated}
             type="button"
             onClick={resetFilters}
             className="mt-3 text-accent underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60"

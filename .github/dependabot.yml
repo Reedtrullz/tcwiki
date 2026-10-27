@@ -5,10 +5,18 @@ updates:
     schedule:
       interval: weekly
     groups:
+      next:
+        update-types: [minor, patch]
+        patterns:
+          - next
+          - '@next/mdx'
+          - eslint-config-next
       react:
+        update-types: [minor, patch]
         patterns:
           - react
           - react-dom
+          - react-server-dom-webpack
     # ESLint 10 stays guarded until Next/eslint-config-next compatibility is
     # proven through this repo's CI gates.
     # TypeScript majors are intentionally not ignored: the MDX declaration in

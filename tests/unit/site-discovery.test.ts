@@ -71,9 +71,9 @@ describe('site discovery routes', () => {
   it('keeps sitemap entries to canonical route discovery without fake freshness hints', () => {
     const entries = sitemap();
 
-    expect(entries).toEqual(publicSitemapRoutes().map((route) => ({
-      url: routeUrl(route.path),
-    })));
+    expect(entries).toEqual(publicSitemapRoutes().map((route) => route.path === '/updates'
+      ? { url: routeUrl(route.path), lastModified: new Date('2026-10-03T00:00:00.000Z') }
+      : { url: routeUrl(route.path) }));
   });
 
   it('allows public pages, points at the sitemap, and excludes API routes from crawlers', () => {

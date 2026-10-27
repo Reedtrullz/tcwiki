@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useSyncExternalStore } from 'react';
+import { EXPLORER_QUERY_EVENT, replaceExplorerUrl } from '@/lib/explorer-url';
 import { Badge } from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import { ResponsiveVisibility } from '@/components/ui/ResponsiveVisibility';
@@ -18,6 +19,7 @@ import {
   EMPTY_DYNAMIC_FEE_RECORDS,
   activeRecordFilterLabels,
   defaultRecordFilters,
+  parseDynamicFeeRecordFilters,
   filterDynamicFeeRecords,
   formatBps,
   formatEpoch,
@@ -25,6 +27,13 @@ import {
   recordKey,
   whitelistBadge,
 } from '@/lib/data/dynamic-fees-helpers';
+
+function subscribeFeeFilters(onChange: () => void) {
+  window.addEventListener('popstate', onChange);
+  window.addEventListener(EXPLORER_QUERY_EVENT, onChange);
+  return () => { window.removeEventListener('popstate', onChange); window.removeEventListener(EXPLORER_QUERY_EVENT, onChange); };
+}
+const feeQueryKeys = ['fee_q', 'fee_whitelist', 'fee_bps', 'fee_current'] as const;
 
 function DynamicFeeRow({
   record,
@@ -106,7 +115,16 @@ export function DynamicFeeRecordsExplorer({
   floorBps?: number | null;
   ceilingBps?: number | null;
 }) {
-  const [filters, setFilters] = useState<DynamicFeeRecordFilterState>(defaultRecordFilters);
+  const search = useSyncExternalStore(subscribeFeeFilters, () => window.location.search, () => '');
+  const filters = useMemo(() => parseDynamicFeeRecordFilters(new URLSearchParams(search)), [search]);
+  const updateFilters = (patch: Partial<DynamicFeeRecordFilterState>) => {
+    const params = new URLSearchParams(window.location.search);
+    const next = { ...parseDynamicFeeRecordFilters(params), ...patch };
+    const values = [next.query.slice(0, 256), next.whitelist === 'all' ? '' : next.whitelist, next.bps === 'all' ? '' : next.bps, next.current === 'all' ? '' : next.current];
+    feeQueryKeys.forEach((key, index) => { if (values[index]) params.set(key, values[index]); else params.delete(key); });
+    const query = params.toString();
+    replaceExplorerUrl(`${window.location.pathname}${query ? '?' + query : ''}#dynamic-fee-records-explorer`, feeQueryKeys);
+  };
   const records = status?.records ?? EMPTY_DYNAMIC_FEE_RECORDS;
   const filteredRecords = useMemo(
     () => filterDynamicFeeRecords(records, currentEntries, filters, floorBps, ceilingBps),
@@ -114,7 +132,7 @@ export function DynamicFeeRecordsExplorer({
   );
   const activeFilters = activeRecordFilterLabels(filters);
   const hasActiveFilters = activeFilters.length > 0;
-  const resetFilters = () => setFilters(defaultRecordFilters);
+  const resetFilters = () => updateFilters(defaultRecordFilters);
 
   return (
     <section id="dynamic-fee-records-explorer" className="mb-10 scroll-mt-24" aria-labelledby="dynamic-fee-records-heading">
@@ -136,7 +154,7 @@ export function DynamicFeeRecordsExplorer({
                   value={filters.query}
                   onChange={(event) => {
                     const query = event.currentTarget.value;
-                    setFilters((current) => ({ ...current, query }));
+                    updateFilters({ query });
                   }}
                   className="mt-2 w-full rounded-md border border-border bg-surface px-3 py-2 text-sm normal-case tracking-normal text-slate-100 outline-none transition focus:border-accent"
                   placeholder="thorname, pair, bps, epoch"
@@ -149,7 +167,7 @@ export function DynamicFeeRecordsExplorer({
                   value={filters.whitelist}
                   onChange={(event) => {
                     const whitelist = event.currentTarget.value as DynamicFeeWhitelistFilter;
-                    setFilters((current) => ({ ...current, whitelist }));
+                    updateFilters({ whitelist });
                   }}
                   className="mt-2 w-full rounded-md border border-border bg-surface px-3 py-2 text-sm normal-case tracking-normal text-slate-100 outline-none transition focus:border-accent"
                 >
@@ -166,14 +184,18 @@ export function DynamicFeeRecordsExplorer({
                   value={filters.bps}
                   onChange={(event) => {
                     const bps = event.currentTarget.value as DynamicFeeBpsFilter;
-                    setFilters((current) => ({ ...current, bps }));
+                    updateFilters({ bps });
                   }}
                   className="mt-2 w-full rounded-md border border-border bg-surface px-3 py-2 text-sm normal-case tracking-normal text-slate-100 outline-none transition focus:border-accent"
                 >
                   <option value="all">All positions</option>
+                  <option value="below">Below floor</option>
                   <option value="floor">At floor</option>
                   <option value="ceiling">At ceiling</option>
                   <option value="inside">Inside bounds</option>
+                  <option value="above">Above ceiling</option>
+                  <option value="equal">At shared bound</option>
+                  <option value="invalid">Invalid bounds</option>
                   <option value="unknown">Bounds unknown</option>
                 </select>
               </label>
@@ -183,7 +205,7 @@ export function DynamicFeeRecordsExplorer({
                   value={filters.current}
                   onChange={(event) => {
                     const currentFilter = event.currentTarget.value as DynamicFeeCurrentFilter;
-                    setFilters((current) => ({ ...current, current: currentFilter }));
+                    updateFilters({ current: currentFilter });
                   }}
                   className="mt-2 w-full rounded-md border border-border bg-surface px-3 py-2 text-sm normal-case tracking-normal text-slate-100 outline-none transition focus:border-accent"
                 >
