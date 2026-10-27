@@ -845,8 +845,6 @@ export const FOOTER_NAV_ITEMS = CONTENT_ENTRIES
   .filter((entry) => entry.footer)
   .map((entry) => ({ label: entry.footerLabel ?? entry.title, href: entry.href }));
 
-export const FEATURED_ENTRIES = CONTENT_ENTRIES.filter((entry) => entry.featured);
-
 export const DEEP_DIVE_ENTRIES = CONTENT_ENTRIES.filter((entry) => entry.category === 'deep-dive');
 
 export function getContentEntry(id: string) {

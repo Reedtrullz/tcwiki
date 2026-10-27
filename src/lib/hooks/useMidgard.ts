@@ -23,13 +23,7 @@ import { requireLiveData } from '@/lib/live-presentation';
 import { useLivePresentation } from '@/lib/hooks/useLivePresentation';
 import { liveResultIsDegraded } from '@/lib/live-result';
 import { DAILY_VOLUME_POOLS } from '@/lib/daily-volume';
-
-const SWR_OPTIONS = {
-  refreshInterval: 60000,
-  revalidateOnFocus: false,
-  shouldRetryOnError: false,
-};
-
+import { SWR_OPTIONS } from '@/lib/hooks/swr-options';
 
 export function useNetworkData() {
   const { data, error, isLoading, isValidating, mutate } = useSWR<LiveDataResult<NetworkStats>>(

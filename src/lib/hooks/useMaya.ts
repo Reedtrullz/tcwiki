@@ -5,13 +5,7 @@ import { MayaAPI } from '@/lib/api/maya';
 import type { LiveDataResult, MayaNetworkStats, MayaNode } from '@/lib/types';
 import { requireLiveData } from '@/lib/live-presentation';
 import { useLivePresentation } from '@/lib/hooks/useLivePresentation';
-
-const SWR_OPTIONS = {
-  refreshInterval: 60000,
-  revalidateOnFocus: false,
-  shouldRetryOnError: false,
-};
-
+import { SWR_OPTIONS } from '@/lib/hooks/swr-options';
 
 export function useMayaNetwork() {
   const { data, error, isLoading, isValidating, mutate } = useSWR<LiveDataResult<MayaNetworkStats>>(

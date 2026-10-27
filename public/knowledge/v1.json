@@ -11,9 +11,9 @@
   },
   "identity": {
     "authoredInputs": {
-      "src/lib/data/static.ts": "7628491a2e48bb13398a9f4fde56107b3bffc8686986df19b797c366aa300d87",
-      "src/lib/content/registry.ts": "4fbd8e079d342585d034936c15e9bbe31587324de3c8f508332d0b3042b5e3e4",
-      "src/lib/sources.ts": "273a7e189365abafe8c8ffcd4d2bab0666e18f1206c8ba322241485c6bd3370c",
+      "src/lib/data/static.ts": "1bca86d3c6c9072ba7521bc9e9eb5b4716cf90e17353164009cbe8504968fb54",
+      "src/lib/content/registry.ts": "cdbcbda74e1b194e230da107847be2113b10c348b9b222d8765d38e7bec0038b",
+      "src/lib/sources.ts": "3a93cde49ef5a31d05d6a0366c5108ef3d2266ce2914383f07b922e0a4890def",
       "src/lib/types.ts": "7ce679173123360384f57985d5980e1307ab7649a0c3439a68de413527f0e10c",
       "src/lib/site.ts": "e79a4609bcf097347fe1660252b7d4db81ae149520cca0b27c7059fd24a07f6d",
       "content/deep-dives/build-query-data.mdx": "d63a031b796c07eac8b50975c4358dc3b599c1455c2813ac9db08a54492b9e83",
@@ -233,6 +233,6 @@
   ],
   "checksum": {
     "algorithm": "sha256",
-    "value": "b476aade39beebbf7cd0b604d1afe2bf5424e643c7f235c27be41375b6f28d85"
+    "value": "431535c3ae13d99f3a851d86609d7bfcf9c5c629b1e621c524ed2dfc45b555d5"
   }
 }

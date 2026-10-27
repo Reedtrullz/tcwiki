@@ -1,6 +1,5 @@
 import {
   DataConfidence,
-  DATA_CONFIDENCES,
   FreshnessMeta,
   LiveDataResult,
   SourceMeta,
@@ -20,14 +19,6 @@ export function withFreshness<T>(
   freshness: FreshnessMeta
 ): SourcedRecord<T> {
   return { data, sources, freshness };
-}
-
-export function unwrapRecord<T>(record: SourcedRecord<T>): T {
-  return record.data;
-}
-
-export function isDataConfidence(value: unknown): value is DataConfidence {
-  return typeof value === 'string' && DATA_CONFIDENCES.includes(value as DataConfidence);
 }
 
 export function parseFiniteDecimal(value: string | undefined): number | null {

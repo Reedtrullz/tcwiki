@@ -63,6 +63,8 @@ import {
   memolessRegistrationPauseRecapSource,
   adr030DelegatedOpsSource,
   adr027AffiliateRevShareSource,
+  affiliateRevShareImplementationSource,
+  affiliateRevShareQ32026Source,
   adr031RujiraAlignmentSource,
   postRestartSecuritySource,
   queryingThorchainSource,
@@ -1514,16 +1516,16 @@ export const GOVERNANCE_PROPOSAL_RECORDS: SourcedRecord<GovernanceProposal>[] = 
   record({
     id: 'adr-027-revshare',
     title: 'ADR-027 Affiliate Revenue Share (REVSHARE)',
-    description: 'Proposed ADR for per-thorname protocol revenue share: operational REVSHARE-<thorname> Mimirs (capped at 5000 bps) would pay attributed swap liquidity fees from reserve system income through AffiliateCollector at end of block. Community reporting says SwapKit accounting is accumulating data ahead of QA; payout configuration and start dates remain unconfirmed.',
+    description: 'REVSHARE is ADR-027 in the repository and ADR-029 in official reporting. The pinned ADR remains labelled Proposed, while implementation MR 4779 is merged. The October 23 Q3 report says nodes approved the mechanism in August and describes a planned 20% SwapKit trial, starting when SwapKit is ready. Per-THORName rates are capped at 5000 bps and paid from reserve system income before other splits. Approval and merged code do not establish current payout rates, trial activation or actual payments.',
     type: 'ADR / Economics',
-    status: 'Proposed ADR; SwapKit accounting reported in progress',
-    votingPeriod: 'Community review and integration QA',
+    status: 'Approval reported as ADR-029; live payouts unverified',
+    votingPeriod: 'August approval per October 23 official report; trial start unconfirmed',
     createdDate: '2026-04-27',
-    expiryDate: 'Confirm final payout settings and activation from official releases before claims',
-    sourceUrl: 'https://gitlab.com/thorchain/thornode/-/blob/develop/docs/architecture/adr-027-affiliate-revshare.md',
-  }, [adr027AffiliateRevShareSource], 'curated', {
-    checkedAt: '2026-08-26',
-    nextReviewDue: '2026-10-26',
+    expiryDate: 'Recheck trial readiness and source-qualified payout evidence before activation claims',
+    sourceUrl: 'https://gitlab.com/thorchain/thornode/-/blob/2276d16386e96b6693f11f7e76473623f3fdb767/docs/architecture/adr-027-affiliate-revshare.md',
+  }, [adr027AffiliateRevShareSource, affiliateRevShareImplementationSource, affiliateRevShareQ32026Source], 'curated', {
+    checkedAt: '2026-10-27',
+    nextReviewDue: '2026-11-10',
   }),
   record({
     id: 'adr-031-rujira-alignment',
