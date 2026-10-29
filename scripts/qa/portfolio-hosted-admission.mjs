@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import net from 'node:net';
 import { once } from 'node:events';
 import { execFileSync } from 'node:child_process';
+import { createRequire } from 'node:module';
 
 assert.equal(process.getuid(), 65534);
 assert.equal(process.env.HOME, '/tmp/home');
@@ -44,8 +45,8 @@ const denied = await new Promise((resolve, reject) => {
   socket.once('error', error => { socket.destroy(); resolve(error.code); });
 });
 assert(['ENETUNREACH', 'EHOSTUNREACH'].includes(denied));
-const { parseAst } = await import('rollup/parseAst');
-const { transformSync } = await import('esbuild');
+const { parseAst } = createRequire(import.meta.resolve('@mdx-js/rollup'))('rollup/parseAst');
+const { transformSync } = createRequire(import.meta.resolve('wrangler'))('esbuild');
 assert.equal(parseAst('const authored = 1;').body.length, 1);
 assert(transformSync('const authored: number = 1;', { loader: 'ts' }).code.includes('authored'));
 const workerd = execFileSync('node_modules/.bin/workerd', ['--version'], { timeout: 10000, maxBuffer: 65536 }).toString().trim();
