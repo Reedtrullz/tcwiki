@@ -20,9 +20,13 @@ set +e
     mkdir -m 700 /tmp/private
     printf "%s" authored-private-canary > /tmp/private/canary
     chmod 600 /tmp/private/canary
+    mkdir /tmp/source
+    mount --bind "$source_root" /tmp/source
+    mount -o remount,bind,ro /tmp/source
+    mount --bind /tmp/private /tmp/source/.git
     mkdir /tmp/home
     chown 65534:65534 /tmp/home
-    cd "$source_root"
+    cd /tmp/source
     exec setpriv --reuid=65534 --regid=65534 --clear-groups --bounding-set=-all --no-new-privs \
       env -i PATH="$(dirname "$node_binary"):/usr/bin:/bin" HOME=/tmp/home TMPDIR=/tmp \
       XDG_CACHE_HOME=/tmp/home/cache CI=true NEXT_TELEMETRY_DISABLED=1 \
