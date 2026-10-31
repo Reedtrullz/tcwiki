@@ -2,8 +2,13 @@ import { expect, it } from 'vitest';
 import { createServer } from 'node:http';
 import { spawn } from 'node:child_process';
 
-it('terminates the real release probe within its total budget against a stalled HTTP provider', async () => {
-  const server = createServer(() => {});
+it.each([false, true])('terminates the real release probe within its budget against a stalled provider (body started: %s)', async (bodyStarted) => {
+  const server = createServer((_request, response) => {
+    if (bodyStarted) {
+      response.writeHead(200, { 'content-type': 'application/json' });
+      response.write('{"status":');
+    }
+  });
   await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
   const address = server.address();
   if (!address || typeof address === 'string') throw new Error('Missing fixture port');
