@@ -308,8 +308,8 @@ export const WIKI_CHANGE_RECORDS: SourcedRecord<WikiChangeRecord>[] = [
     sourceDate: '2026-10-02',
     reviewedAt: '2026-10-02',
   }, [{ ...continuousLiquidityPoolsSource, retrievedAt: '2026-10-02' }, { label: 'ADR-005 amendment', url: 'https://dev.thorchain.org/architecture/adr-005-deprecate-ilp.html#amendment-1-nov-23-permanently-sunset-ilp', retrievedAt: '2026-10-02' }], 'curated', {
-    checkedAt: '2026-10-02',
-    nextReviewDue: '2026-11-02',
+    checkedAt: '2026-11-05',
+    nextReviewDue: '2026-12-06',
   }),
   record({
     id: 'memoless-claim-evidence-2026-10-03',
@@ -319,8 +319,8 @@ export const WIKI_CHANGE_RECORDS: SourcedRecord<WikiChangeRecord>[] = [
     sourceDate: '2026-10-03',
     reviewedAt: '2026-10-03',
   }, [{ ...protocolUpgradeV320Source, retrievedAt: '2026-10-03' }], 'curated', {
-    checkedAt: '2026-10-03',
-    nextReviewDue: '2026-11-03',
+    checkedAt: '2026-11-05',
+    nextReviewDue: '2026-12-06',
   }),
 ];
 
@@ -675,7 +675,7 @@ export const TRANSACTION_EXAMPLE_RECORDS: SourcedRecord<TransactionExample>[] = 
         facts: [
           { label: 'Decoded method', value: 'transferAllowance(address router,address newVault,address asset,uint256 amount,string memo)' },
           { label: 'Decoded amount parameter', value: '544915588553 USDC raw Ethereum token uint256; not THORChain 1e8 units' },
-          { label: 'Ethereum block field', value: 'block_number=20844210; the response block field is null' },
+          { label: 'Ethereum block field', value: 'block_number=20844210; the 2026-11-05 Blockscout response has no block field' },
         ],
         source: ethereumMigrationTransactionSource,
         blockSource: ethereumMigrationBlockSource,
@@ -706,7 +706,7 @@ export const SOURCE_MAP_SECTION_RECORDS: SourcedRecord<SourceMapSection>[] = [
     claimExamples: ['A pointer to a recorded Bitcoin OP_RETURN payload.', 'Bitcoin transaction and block references to investigate independently.'],
     nonClaims: ['Complete THORChain history or all-chain coverage.', 'Validated memo interpretation, ticker counts or address ownership.', 'Successful cross-chain execution, THORChain validation or destination settlement.', 'Official endorsement, safe execution instructions or a current route quote.'],
     links: [opReturnBitcoinMemoSource],
-  }, [opReturnBitcoinMemoSource], 'curated', { checkedAt: '2026-10-03', nextReviewDue: '2026-11-03' }),
+  }, [opReturnBitcoinMemoSource], 'curated', { checkedAt: '2026-10-03', nextReviewDue: '2026-12-06' }),
 
   record({
     id: 'current-protocol-state',

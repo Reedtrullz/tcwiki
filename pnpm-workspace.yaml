@@ -9,8 +9,10 @@ overrides:
   miniflare>sharp: 0.35.5
   # Every miniflare release pins undici exactly; 7.30.1 clears its advisories.
   miniflare>undici: 7.30.1
-  # GHSA-g3hv-75wg-m249: patched only in minimatch >=11.0.1 (dev/eslint tree).
-  minimatch: ^11.0.1
+  # GHSA-g3hv-75wg-m249 affects minimatch >=7 <11.0.1. Only typescript-estree@8.62.1
+  # requests ^10.2.2, and it calls require("minimatch").minimatch(path, pattern, {dot:true}).
+  # 11.0.4 still exports that call. Legacy eslint callers request ^3.1.x and use the v3 function.
+  '@typescript-eslint/typescript-estree>minimatch': 11.0.4
 
 # pnpm 10 runs no dependency install scripts unless they are listed here.
 # esbuild, workerd (wrangler/miniflare) and unrs-resolver (eslint import
