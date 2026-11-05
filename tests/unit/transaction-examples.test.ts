@@ -12,7 +12,7 @@ describe('dated transaction examples', () => {
     expect(records).toHaveLength(4);
     expect(examples.size).toBe(4);
     expect(records.every(({ freshness }) => freshness.checkedAt === '2026-10-03')).toBe(true);
-    expect(records.every(({ freshness }) => freshness.nextReviewDue === '2026-11-03')).toBe(true);
+    expect(records.every(({ freshness }) => freshness.nextReviewDue === '2026-12-06')).toBe(true);
   });
 
   it('preserves the Bitcoin swap memo, chain observation and raw Midgard base units', () => {

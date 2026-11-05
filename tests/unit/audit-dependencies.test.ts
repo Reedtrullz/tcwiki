@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest';
+import { createRequire } from 'node:module';
+import { dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { assessAudit } from '../../scripts/audit-dependencies.mjs';
+
+const require = createRequire(fileURLToPath(new URL(import.meta.url)));
+
+function minimatchFrom(packageName: string) {
+  const packageJson = require.resolve(packageName + '/package.json');
+  return require(require.resolve('minimatch', { paths: [dirname(packageJson)] }));
+}
 
 function advisory(module_name: string, severity: string) {
   return { module_name, severity, url: `https://github.com/advisories/${module_name}`, findings: [{ version: '1.0.0', paths: [`.>${module_name}`] }] };
@@ -25,5 +35,17 @@ describe('full dependency audit policy (pnpm audit --json)', () => {
     expect(() => assessAudit({ error: 'registry unavailable' })).toThrow('Unrecognized');
     expect(() => assessAudit({ auditReportVersion: 2, vulnerabilities: {}, metadata: { vulnerabilities: {} } })).toThrow('Unrecognized');
     expect(() => assessAudit({ advisories: {}, metadata: { vulnerabilities: { high: 1 } } })).toThrow('contradict');
+  });
+
+  it('calls the estree named minimatch export and the legacy eslint function', () => {
+    const estree = minimatchFrom('@typescript-eslint/typescript-estree');
+    expect(typeof estree.minimatch).toBe('function');
+    expect(estree.minimatch('.hidden', '*', { dot: true })).toBe(true);
+    expect(estree.minimatch('.hidden', '*', { dot: false })).toBe(false);
+
+    const legacy = minimatchFrom('eslint');
+    expect(typeof legacy).toBe('function');
+    expect(legacy('abc', 'abc')).toBe(true);
+    expect(legacy('abc', 'zzz')).toBe(false);
   });
 });

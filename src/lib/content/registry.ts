@@ -213,8 +213,8 @@ export const UPDATES_PAGE_ENTRY: ContentEntry = {
   confidence: 'curated',
   description: 'Source-backed editorial updates to THORChain Wiki content, with separate source observation and review dates.',
   tags: ['updates', 'editorial history', 'sources'],
-  reviewedAt: '2026-10-03',
-  nextReviewDue: '2026-11-03',
+  reviewedAt: '2026-11-05',
+  nextReviewDue: '2026-12-06',
   sources: [
     { ...continuousLiquidityPoolsSource, retrievedAt: '2026-10-02' },
     { label: 'THORNode v3.20.0 release', url: 'https://gitlab.com/thorchain/thornode/-/releases/v3.20.0', retrievedAt: '2026-10-03' },
