@@ -574,7 +574,7 @@ export const TRANSACTION_EXAMPLE_RECORDS: SourcedRecord<TransactionExample>[] = 
       'TRON destination-chain inclusion was not independently verified; recipient ownership and user receipt are unknown.',
       'Midgard status=success is that provider record, not independent settlement proof.',
     ],
-  }, [bitcoinSwapTransactionSource, bitcoinBlock969681Source, midgardBitcoinSwapActionSource, ...memoSyntaxSources], 'historical', { checkedAt: '2026-10-03', nextReviewDue: '2026-11-03' }),
+  }, [bitcoinSwapTransactionSource, bitcoinBlock969681Source, midgardBitcoinSwapActionSource, ...memoSyntaxSources], 'historical', { checkedAt: '2026-10-03', nextReviewDue: '2026-12-06' }),
 
   record({
     id: 'pending-usdc-refund',
@@ -602,7 +602,7 @@ export const TRANSACTION_EXAMPLE_RECORDS: SourcedRecord<TransactionExample>[] = 
     unknowns: [
       'The source-chain block, refund outbound transaction, destination-chain inclusion, and refund settlement are unknown.',
     ],
-  }, [midgardPendingRefundSource, ...memoSyntaxSources], 'historical', { checkedAt: '2026-10-03', nextReviewDue: '2026-11-03' }),
+  }, [midgardPendingRefundSource, ...memoSyntaxSources], 'historical', { checkedAt: '2026-10-03', nextReviewDue: '2026-12-06' }),
 
   record({
     id: 'bitcoin-outbound',
@@ -645,7 +645,7 @@ export const TRANSACTION_EXAMPLE_RECORDS: SourcedRecord<TransactionExample>[] = 
       },
     ],
     unknowns: ['The OUT payload does not by itself prove what the referenced hash represents.'],
-  }, [bitcoinOutboundTransactionSource, bitcoinBlock969681Source, midgardBitcoinTradeActionSource, ...memoSyntaxSources], 'historical', { checkedAt: '2026-10-03', nextReviewDue: '2026-11-03' }),
+  }, [bitcoinOutboundTransactionSource, bitcoinBlock969681Source, midgardBitcoinTradeActionSource, ...memoSyntaxSources], 'historical', { checkedAt: '2026-10-03', nextReviewDue: '2026-12-06' }),
 
   record({
     id: 'ethereum-vault-migration',
@@ -693,7 +693,7 @@ export const TRANSACTION_EXAMPLE_RECORDS: SourcedRecord<TransactionExample>[] = 
       'A matched THORChain migration lifecycle, observed vault move, and migration completion are unknown.',
       'The developer-docs transaction 8330CAC064370F86352D247DE3046C9AA8C3E53C78760E5D35CFC7CAA3068DC6 is excluded here because the captured Midgard record classifies it as a swap.',
     ],
-  }, [ethereumMigrationTransactionSource, ethereumMigrationBlockSource, midgardEthereumMigrationLookupSource, ...memoSyntaxSources], 'historical', { checkedAt: '2026-10-03', nextReviewDue: '2026-11-03' }),
+  }, [ethereumMigrationTransactionSource, ethereumMigrationBlockSource, midgardEthereumMigrationLookupSource, ...memoSyntaxSources], 'historical', { checkedAt: '2026-10-03', nextReviewDue: '2026-12-06' }),
 ];
 
 export const SOURCE_MAP_SECTION_RECORDS: SourcedRecord<SourceMapSection>[] = [

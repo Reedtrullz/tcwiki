@@ -14,7 +14,7 @@ Pinned THORNode `memo.go` at `b08d81f79275093b0fcb753e0d68ff1c16c51cb8` maps `=`
 
 ## Transaction bodies
 
-Five October response bodies were recovered from the archived session and match their recorded SHA-256 values. The Bitcoin outbound transaction was fetched again on 2026-11-05 and returned the same original bytes. The Blockscout migration transaction returned a new body. Its decoded method, MIGRATE memo, amount, addresses, timestamp, status, and block number still match the record. That new body has no block field, so the record no longer says the field is null. October source dates stay historical. nextReviewDue remains 2026-11-03, so hosted check:content is still expected to fail those four records.
+Five October response bodies were recovered from the archived session and match their recorded SHA-256 values. The Bitcoin outbound transaction was fetched again on 2026-11-05 and returned the same original bytes. The Blockscout migration transaction returned a new body. Its decoded method, MIGRATE memo, amount, addresses, timestamp, status, and block number still match the record. That new body has no block field, so the record no longer says the field is null. October source dates and transaction observations stay historical. After review of these retained primary bodies on 2026-11-05, the four nextReviewDue values are 2026-12-06. This records the next editorial review, not a fresh chain observation.
 
 ## Minimatch
 
