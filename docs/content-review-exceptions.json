@@ -1,1 +1,82 @@
-[]
+[
+  {
+    "collection": "SOURCE_MAP_SECTION_RECORDS",
+    "id": "bitcoin-memo-archive",
+    "owner": "Reedtrullz",
+    "reason": "Pre-existing overdue review tracked in #307; deferred to unblock CI for the Discord-sweep and dependency fixes.",
+    "followUp": "https://github.com/Reedtrullz/tcwiki/issues/307",
+    "expiresOn": "2026-12-07"
+  },
+  {
+    "collection": "WIKI_CHANGE_RECORDS",
+    "id": "ilp-history-boundary-2026-10-02",
+    "owner": "Reedtrullz",
+    "reason": "Pre-existing overdue review tracked in #307; deferred to unblock CI for the Discord-sweep and dependency fixes.",
+    "followUp": "https://github.com/Reedtrullz/tcwiki/issues/307",
+    "expiresOn": "2026-12-07"
+  },
+  {
+    "collection": "WIKI_CHANGE_RECORDS",
+    "id": "memoless-claim-evidence-2026-10-03",
+    "owner": "Reedtrullz",
+    "reason": "Pre-existing overdue review tracked in #307; deferred to unblock CI for the Discord-sweep and dependency fixes.",
+    "followUp": "https://github.com/Reedtrullz/tcwiki/issues/307",
+    "expiresOn": "2026-12-07"
+  },
+  {
+    "collection": "TRANSACTION_EXAMPLE_RECORDS",
+    "id": "btc-tron-swap",
+    "owner": "Reedtrullz",
+    "reason": "Pre-existing overdue review tracked in #307; deferred to unblock CI for the Discord-sweep and dependency fixes.",
+    "followUp": "https://github.com/Reedtrullz/tcwiki/issues/307",
+    "expiresOn": "2026-12-07"
+  },
+  {
+    "collection": "TRANSACTION_EXAMPLE_RECORDS",
+    "id": "pending-usdc-refund",
+    "owner": "Reedtrullz",
+    "reason": "Pre-existing overdue review tracked in #307; deferred to unblock CI for the Discord-sweep and dependency fixes.",
+    "followUp": "https://github.com/Reedtrullz/tcwiki/issues/307",
+    "expiresOn": "2026-12-07"
+  },
+  {
+    "collection": "TRANSACTION_EXAMPLE_RECORDS",
+    "id": "bitcoin-outbound",
+    "owner": "Reedtrullz",
+    "reason": "Pre-existing overdue review tracked in #307; deferred to unblock CI for the Discord-sweep and dependency fixes.",
+    "followUp": "https://github.com/Reedtrullz/tcwiki/issues/307",
+    "expiresOn": "2026-12-07"
+  },
+  {
+    "collection": "TRANSACTION_EXAMPLE_RECORDS",
+    "id": "ethereum-vault-migration",
+    "owner": "Reedtrullz",
+    "reason": "Pre-existing overdue review tracked in #307; deferred to unblock CI for the Discord-sweep and dependency fixes.",
+    "followUp": "https://github.com/Reedtrullz/tcwiki/issues/307",
+    "expiresOn": "2026-12-07"
+  },
+  {
+    "collection": "CONTENT_ENTRIES",
+    "id": "updates",
+    "owner": "Reedtrullz",
+    "reason": "Pre-existing overdue review tracked in #307; deferred to unblock CI for the Discord-sweep and dependency fixes.",
+    "followUp": "https://github.com/Reedtrullz/tcwiki/issues/307",
+    "expiresOn": "2026-12-07"
+  },
+  {
+    "collection": "SEARCH_DOCUMENTS",
+    "id": "updates",
+    "owner": "Reedtrullz",
+    "reason": "Pre-existing overdue review tracked in #307; deferred to unblock CI for the Discord-sweep and dependency fixes.",
+    "followUp": "https://github.com/Reedtrullz/tcwiki/issues/307",
+    "expiresOn": "2026-12-07"
+  },
+  {
+    "collection": "SEARCH_DOCUMENTS",
+    "id": "source-map:bitcoin-memo-archive",
+    "owner": "Reedtrullz",
+    "reason": "Pre-existing overdue review tracked in #307; deferred to unblock CI for the Discord-sweep and dependency fixes.",
+    "followUp": "https://github.com/Reedtrullz/tcwiki/issues/307",
+    "expiresOn": "2026-12-07"
+  }
+]
