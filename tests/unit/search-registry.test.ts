@@ -341,10 +341,14 @@ describe('SEARCH_DOCUMENTS', () => {
     const sol = SEARCH_DOCUMENTS.find((doc) => doc.id === 'chain:sol');
     const xrp = SEARCH_DOCUMENTS.find((doc) => doc.id === 'chain:xrp');
     const base = SEARCH_DOCUMENTS.find((doc) => doc.id === 'chain:base');
+    const zec = SEARCH_DOCUMENTS.find((doc) => doc.id === 'chain:zec');
 
     expect(chainDocs).toHaveLength(CHAIN_RECORDS.length);
-    expect(chainDocs.every((doc) => doc.reviewedAt === '2026-07-14')).toBe(true);
-    expect(chainDocs.every((doc) => doc.nextReviewDue === '2026-11-17')).toBe(true);
+    for (const doc of chainDocs) {
+      const refreshedWithZec = doc.id === 'chain:zec';
+      expect(doc.reviewedAt, doc.id).toBe(refreshedWithZec ? '2026-11-07' : '2026-07-14');
+      expect(doc.nextReviewDue, doc.id).toBe(refreshedWithZec ? '2026-12-07' : '2026-11-17');
+    }
     expect(chainDocs.every((doc) => (
       doc.sources.some((source) => (
         source.label === 'Liquify THORNode inbound_addresses' &&
@@ -357,6 +361,7 @@ describe('SEARCH_DOCUMENTS', () => {
     expect(sol?.content).toContain('EdDSA');
     expect(sol?.sources.map((source) => source.label)).toContain('THORChain Chain Clients');
     expect(sol?.sources.map((source) => source.label)).toContain('THORChain Exploit Report #2');
+    expect(zec?.sources.map((source) => source.label)).toContain('THORChain ZEC client address handling (v3.21.0)');
     expect(xrp?.title).toBe('XRP Ledger (XRP) supported chain');
     expect(base?.content).toContain('EIP-55');
     expect(docsMatching('SOL supported chain').some((doc) => doc.id === 'chain:sol')).toBe(true);

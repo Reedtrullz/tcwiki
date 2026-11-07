@@ -527,8 +527,12 @@ describe('source and freshness labels', () => {
       'deep-dive-mimir-halt-controls',
     ];
     for (const id of contentIds) {
+      const refreshedWithMimir = id === 'deep-dive-mimir-halt-controls';
       expect(CONTENT_ENTRIES.find((entry) => entry.id === id), id).toEqual(
-        expect.objectContaining({ reviewedAt: '2026-07-13', nextReviewDue: '2026-11-17' })
+        expect.objectContaining({
+          reviewedAt: refreshedWithMimir ? '2026-11-07' : '2026-07-13',
+          nextReviewDue: refreshedWithMimir ? '2026-12-07' : '2026-11-17',
+        })
       );
     }
 

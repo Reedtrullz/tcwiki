@@ -53,7 +53,7 @@ const generatedSearchFile = ts.createSourceFile(generatedSearchPath, generatedSe
 
 const failures = [];
 const contentCategories = new Set(['section', 'deep-dive', 'resource']);
-const expectedChains = ['BTC', 'ETH', 'BSC', 'AVAX', 'GAIA', 'DOGE', 'LTC', 'BCH', 'TRON', 'BASE', 'SOL', 'XRP'];
+const expectedChains = ['BTC', 'ETH', 'BSC', 'AVAX', 'GAIA', 'DOGE', 'LTC', 'BCH', 'TRON', 'BASE', 'SOL', 'XRP', 'ZEC'];
 const forbiddenChainCodes = new Set(['TRX', 'ARB', 'MATIC', 'OP']);
 const liveInboundUrls = new Set([
   'https://gateway.liquify.com/chain/thorchain_api/thorchain/inbound_addresses',
