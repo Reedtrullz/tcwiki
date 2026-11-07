@@ -1,5 +1,54 @@
 import type { SourceMeta } from '@/lib/types';
 
+export const discordEthReorgSource: SourceMeta = {
+  label: 'October 31 ETH reorg double-payout report',
+  url: 'https://discord.com/channels/838986635756044328/839001804812451873/1566101692825608223',
+  retrievedAt: '2026-11-07',
+  notes: 'Live Inebotten read of the operator report: one-block ETH reorg, a 10 ETH double payout, and a precautionary all-chain pause. Not independent root-cause or current-state proof.',
+};
+
+export const discordEthReorgResolutionSource: SourceMeta = {
+  label: 'October 31 double-payout funds returned',
+  url: 'https://discord.com/channels/838986635756044328/839001804812451873/1566108488944324619',
+  retrievedAt: '2026-11-07',
+  notes: 'Live Inebotten read: the recipient returned the 10 ETH in full. Not proof that every related halt or accounting item was closed.',
+};
+
+export const discordThornode3210Source: SourceMeta = {
+  label: 'v3.21.0 upgrade and BSC Router V6.1 notice',
+  url: 'https://discord.com/channels/838986635756044328/839001804812451873/1561829343825756211',
+  retrievedAt: '2026-11-07',
+  notes: 'Live Inebotten read of the pre-upgrade notice: block 28,366,100, a post-churn BSC router vote, and ETH to follow. Not deployment or current-router proof.',
+};
+
+export const discordThornode3211Source: SourceMeta = {
+  label: 'v3.21.1 bifrost patch announcement',
+  url: 'https://discord.com/channels/838986635756044328/839001804812451873/1567105606299684896',
+  retrievedAt: '2026-11-07',
+  notes: 'Live Inebotten read: private binary with BTC relay-fee, gossip, solvency, GAIA and XRP fixes; chain actions resume after two-thirds adoption. Not fleet-adoption proof.',
+};
+
+export const discordThornode3213Source: SourceMeta = {
+  label: 'v3.21.3 bifrost patch announcement',
+  url: 'https://discord.com/channels/838986635756044328/839001804812451873/1568533386614538441',
+  retrievedAt: '2026-11-07',
+  notes: 'Live Inebotten read: BASE 200ms block handling, EVM receipt pipelining and SOL durable-nonce fixes. Non-consensus patch; not deployment proof.',
+};
+
+export const discordBaseHalt322Source: SourceMeta = {
+  label: 'BASE trading halt until v3.22.0',
+  url: 'https://discord.com/channels/838986635756044328/839001804812451873/1567996532723032107',
+  retrievedAt: '2026-11-07',
+  notes: 'Live Inebotten read: HALTBASETRADING=1 after the BASE Denim upgrade; the scanning fix changes swap quotes and needs a coordinated release.',
+};
+
+export const discordAdr029ResultsSource: SourceMeta = {
+  label: 'ADR-029 credit-spend and fee-ratio update',
+  url: 'https://discord.com/channels/838986635756044328/1521708211017744456/1567560853644120106',
+  retrievedAt: '2026-11-07',
+  notes: 'Live Inebotten read: 2.2x lifetime credit spend versus fees and a four-week optimisation window before changing the rev-share percentage. Not a final payout or revenue claim.',
+};
+
 export const thorchainDocsSource: SourceMeta = {
   label: 'THORChain Docs',
   url: 'https://docs.thorchain.org',
@@ -131,6 +180,13 @@ export const chainClientsSource: SourceMeta = {
   url: 'https://dev.thorchain.org/chain-clients/',
   retrievedAt: '2026-07-14',
   notes: 'Official Bifrost chain-client reference showing the current client families, including the Solana client and its EdDSA Base58 address derivation.',
+};
+
+export const zecAddressSource: SourceMeta = {
+  label: 'THORChain ZEC client address handling (v3.21.0)',
+  url: 'https://gitlab.com/thorchain/thornode/-/blob/v3.21.0/bifrost/pkg/chainclients/utxo/zcash/address.go',
+  retrievedAt: '2026-11-07',
+  notes: 'Release source and tests decode transparent P2PKH/P2SH Base58 (t1/t3) and TEX (tex1...) addresses; shielded formats are not handled.',
 };
 
 export const supportedBlockchainsSource: SourceMeta = {

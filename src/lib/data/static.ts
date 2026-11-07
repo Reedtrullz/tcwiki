@@ -35,6 +35,12 @@ import {
   archivedSaversLendingSource as archivedFeaturesSource,
   archivedSaversSource,
   assetNotationSource,
+  discordBaseHalt322Source,
+  discordEthReorgResolutionSource,
+  discordEthReorgSource,
+  discordThornode3210Source,
+  discordThornode3211Source,
+  discordThornode3213Source,
   chainClientsSource,
   clpLearningEquationsSource,
   clpLearningVersionSource,
@@ -88,6 +94,7 @@ import {
   tokenomicsSource,
   transactionQueryExamplesSource,
   xchainJsSource,
+  zecAddressSource,
 } from '@/lib/sources';
 import { withFreshness } from '@/lib/trust';
 
@@ -373,7 +380,7 @@ const supportedChainCatalogFreshness = {
 const supportedChainInboundSource: SourceMeta = {
   ...liquifyLiveInboundSource,
   retrievedAt: SUPPORTED_CHAIN_CATALOG_REVIEWED_AT,
-  notes: 'Current-only review at THORChain height 26994861 confirmed this record in the 12-chain inbound-address set. Presence is not swap, signing, LP-action, or route-availability proof.',
+  notes: 'Current-only inbound-address review confirmed this chain at its record check date. Presence is not swap, signing, LP-action, or route-availability proof.',
 };
 
 const supportedChainAddressFormatsSource: SourceMeta = {
@@ -498,9 +505,21 @@ export const CHAIN_RECORDS: SourcedRecord<Chain>[] = [
     supported: true,
     statusNote: 'Use a destination tag only when the receiving wallet requires it. The official guide lists Classic Base58 and does not list X-address as a supported format.',
   }, supportedChainCatalogSources, 'official', supportedChainCatalogFreshness),
+  record({
+    name: 'Zcash',
+    chain: 'ZEC',
+    explorer: 'https://blockchair.com/zcash/block',
+    addressFormats: ['Transparent Base58 (t1/t3)', 'TEX (tex1...)'],
+    supported: true,
+    statusNote: 'The ZEC client handles transparent P2PKH/P2SH and TEX addresses only; do not treat shielded addresses as supported. Availability remains live-state dependent.',
+  }, [supportedChainInboundSource, zecAddressSource, chainClientsSource], 'official', {
+    checkedAt: '2026-11-07',
+    nextReviewDue: '2026-12-07',
+  }),
 ];
 
-const chainCodes = CHAIN_RECORDS.map((record) => record.data.chain);
+// Ecosystem badges track the reviewed interface cohort, not every THORNode chain.
+const ecosystemChainCodes = ['BTC', 'ETH', 'BSC', 'AVAX', 'GAIA', 'DOGE', 'LTC', 'BCH', 'TRON', 'BASE', 'SOL', 'XRP'];
 
 const developerIntegrationSwapSource: SourceMeta = {
   ...swapGuideSource,
@@ -1022,7 +1041,7 @@ export const ECOSYSTEM_PROJECT_RECORDS: SourcedRecord<EcosystemProject>[] = [
     category: 'Interface',
     description: 'THORChain-branded swap interface for native cross-chain swaps. Live availability depends on current THORNode halt, quote, and inbound status.',
     url: 'https://swap.thorchain.org',
-    chains: chainCodes,
+    chains: ecosystemChainCodes,
     useFor: [
       'THORChain swap-interface starting point for native cross-chain swap routes.',
       'Checking whether the branded interface exposes a route for a supported chain pair.',
@@ -1062,7 +1081,7 @@ export const ECOSYSTEM_PROJECT_RECORDS: SourcedRecord<EcosystemProject>[] = [
     description: 'Third-party multi-protocol DEX aggregator and flagship THORChain interface; its maintained docs also describe routes through NEAR Intents, Maya Protocol, and Chainflip.',
     url: 'https://app.thorswap.finance',
     logo: '/logos/thorswap.svg',
-    chains: chainCodes,
+    chains: ecosystemChainCodes,
     useFor: [
       'Inspecting a third-party swap interface where THORChain may be one of several route providers.',
       'Comparing app-provided routes, recipients, fees, and execution details at quote time.',
@@ -1082,7 +1101,7 @@ export const ECOSYSTEM_PROJECT_RECORDS: SourcedRecord<EcosystemProject>[] = [
     category: 'Interface',
     description: 'Self-custody multichain wallet and DEX aggregator with THORChain route support for native cross-chain swaps.',
     url: 'https://app.shapeshift.com',
-    chains: chainCodes,
+    chains: ecosystemChainCodes,
     useFor: [
       'Third-party wallet and swap-interface research where THORChain can be one of the route sources.',
       'Comparing ShapeShift quotes and route handling against other THORChain-enabled interfaces.',
@@ -1101,7 +1120,7 @@ export const ECOSYSTEM_PROJECT_RECORDS: SourcedRecord<EcosystemProject>[] = [
     category: 'Wallet',
     description: 'Self-custody mobile wallet and cross-chain DEX surface listed by THORChain ecosystem sources.',
     url: 'https://www.thorwallet.org/',
-    chains: chainCodes,
+    chains: ecosystemChainCodes,
     useFor: [
       'Third-party wallet and swap-interface research where THORChain routes may be exposed in a mobile workflow.',
       'Inspecting THORWallet route, wallet-connection, recipient, and signing behavior before a user-facing recommendation.',
@@ -1120,7 +1139,7 @@ export const ECOSYSTEM_PROJECT_RECORDS: SourcedRecord<EcosystemProject>[] = [
     category: 'Wallet',
     description: 'Self-custodial MPC wallet and multi-chain vault listed by THORChain ecosystem sources.',
     url: 'https://vultisig.com/',
-    chains: chainCodes,
+    chains: ecosystemChainCodes,
     useFor: [
       'Researching seedless MPC custody, multi-factor signing, and THORChain-enabled wallet workflows.',
       'Inspecting current Vultisig wallet support, route handling, and release/source path before suggesting it to users.',
@@ -1139,7 +1158,7 @@ export const ECOSYSTEM_PROJECT_RECORDS: SourcedRecord<EcosystemProject>[] = [
     category: 'Interface',
     description: 'Cross-chain DEX and bridge aggregator listed by THORChain ecosystem sources.',
     url: 'https://rango.exchange/',
-    chains: chainCodes,
+    chains: ecosystemChainCodes,
     useFor: [
       'Third-party route-aggregation research where THORChain may be one of several possible liquidity paths.',
       'Comparing quote, route selection, fee, bridge, and execution disclosures against THORNode route checks.',
@@ -1215,7 +1234,7 @@ export const ECOSYSTEM_PROJECT_RECORDS: SourcedRecord<EcosystemProject>[] = [
     category: 'Developer Tools',
     description: 'SDK and API tooling for cross-chain swap integrations.',
     url: 'https://swapkit.dev',
-    chains: chainCodes,
+    chains: ecosystemChainCodes,
     useFor: [
       'Developer SDK/API research for THORChain and cross-chain swap integrations.',
       'Finding integration concepts before checking current package and API documentation.',
@@ -1234,7 +1253,7 @@ export const ECOSYSTEM_PROJECT_RECORDS: SourcedRecord<EcosystemProject>[] = [
     category: 'Developer Tools',
     description: 'JavaScript client libraries for THORChain and connected chains.',
     url: 'https://xchainjs.org',
-    chains: chainCodes,
+    chains: ecosystemChainCodes,
     useFor: [
       'JavaScript client-library research for THORChain and connected-chain tooling.',
       'Developer orientation before checking package-specific docs and examples.',
@@ -1429,6 +1448,25 @@ export const SECURITY_INCIDENT_RECORDS: SourcedRecord<SecurityIncident>[] = [
     checkedAt: '2026-10-07',
     nextReviewDue: '2026-11-07',
   }),
+  record({
+    id: 'eth-reorg-double-payout-2026-10',
+    title: 'Ethereum Reorg Double Payout and Global Pause',
+    date: '2026-10-31',
+    type: 'Operational Incident',
+    description: 'A one-block Ethereum reorg left a 10 ETH deposit observed and finalised even though it was not on the canonical chain. The quorum errata never formed, the automatic solvency halt fired and then lifted because the queued refund covered the gap, and the vault refunded both the unrecognised deposit and the real one. Core paused all chains as a precaution, then moved to chain-level halts.',
+    impact: 'Vault ...dx7767 was briefly 10 ETH short; the recipient returned the funds in full the same day. The incident report said Bifrost and THORNode fixes would ship in the next release, and 3.21.1 followed on November 3. No signing-key compromise was reported.',
+    resolved: true,
+    resolutionDate: '2026-10-31',
+    lessons: [
+      'A reorg errata that never reaches quorum is not a cleared observation.',
+      'Pending outbounds can mask a solvency gap during halt evaluation.',
+      'Separate a reorg/finality bug from a TSS or vault-key compromise in incident wording.',
+    ],
+    url: 'https://discord.com/channels/838986635756044328/839001804812451873/1566101692825608223',
+  }, [discordEthReorgSource, discordEthReorgResolutionSource], 'curated', {
+    checkedAt: '2026-11-07',
+    nextReviewDue: '2026-12-07',
+  }),
 ];
 const memolessPilotRecord = SECURITY_INCIDENT_RECORDS.find(record => record.data.id === 'memoless-spam-2026-08');
 if (!memolessPilotRecord) throw new Error('Missing memoless claim pilot record');
@@ -1592,5 +1630,21 @@ export const PROTOCOL_MILESTONE_RECORDS = [
   }, [protocolUpgradeV320Source], 'official', {
     checkedAt: '2026-08-26',
     nextReviewDue: '2026-11-17',
+  }),
+  record({
+    date: '2026-10-23',
+    title: 'THORNode v3.21.0 Upgrade',
+    description: 'Operator notice placed the coordinated upgrade at block 28,366,100 and paused SOL, TRON and ZEC signing for a chain migration that must run with signing halted. After the first post-upgrade churn, BSC was to move to Router V6.1 (0x00dc6100103BC402d490aEE3F9a5560cBd91f1d4), with ETH following. This is a release notice, not fleet-adoption or current-router proof.',
+  }, [discordThornode3210Source], 'curated', {
+    checkedAt: '2026-11-07',
+    nextReviewDue: '2026-12-07',
+  }),
+  record({
+    date: '2026-11-07',
+    title: 'THORNode v3.21.1 to v3.21.3 Bifrost Patches',
+    description: 'Bifrost-only patches followed the 3.21.0 upgrade. 3.21.1 and 3.21.2 shipped as private binaries with BTC, gossip, solvency, GAIA, XRP and EVM fixes; 3.21.3 added BASE 200ms block handling and a SOL durable-nonce fix. BASE trading stayed halted pending the coordinated 3.22.0 release because the scanning fix changes swap quotes.',
+  }, [discordThornode3211Source, discordThornode3213Source, discordBaseHalt322Source], 'curated', {
+    checkedAt: '2026-11-07',
+    nextReviewDue: '2026-12-07',
   }),
 ];
