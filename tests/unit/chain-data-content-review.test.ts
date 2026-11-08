@@ -26,8 +26,9 @@ describe('chain and developer-data content review', () => {
     for (const record of CHAIN_RECORDS) {
       expect(record.data.supported, record.data.chain).toBe(true);
       expect(record.data.dustThreshold, record.data.chain).toBeUndefined();
-      expect(record.freshness.checkedAt, record.data.chain).toBe(REVIEWED_AT);
-      expect(record.freshness.nextReviewDue, record.data.chain).toBe(NEXT_REVIEW_DUE);
+      const refreshedWithZec = record.data.chain === 'ZEC';
+      expect(record.freshness.checkedAt, record.data.chain).toBe(refreshedWithZec ? '2026-11-07' : REVIEWED_AT);
+      expect(record.freshness.nextReviewDue, record.data.chain).toBe(refreshedWithZec ? '2026-12-07' : NEXT_REVIEW_DUE);
       expect(record.sources.map((source) => source.url), record.data.chain).toContain(LIVE_INBOUND_URL);
     }
   });
@@ -41,6 +42,8 @@ describe('chain and developer-data content review', () => {
     expect(recordsByChain.get('XRP')?.data.addressFormats).toEqual(['Classic Base58']);
     expect(recordsByChain.get('XRP')?.data.statusNote).toContain('does not list X-address');
     expect(recordsByChain.get('SOL')?.sources).toContainEqual(chainClientsSource);
+    expect(recordsByChain.get('ZEC')?.data.addressFormats).toEqual(['Transparent Base58 (t1/t3)', 'TEX (tex1...)']);
+    expect(recordsByChain.get('ZEC')?.data.statusNote).toContain('shielded addresses');
   });
 
   it('refreshes the bounded source-map and developer-guide cohort together', () => {

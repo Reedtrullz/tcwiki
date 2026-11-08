@@ -6,7 +6,7 @@ test.describe('THORChain Wiki Protocol Smoke Tests', () => {
     await expect(page.getByRole('heading', { name: /Protocol Overview/i })).toBeVisible();
     await expect(page.getByRole('region', { name: 'Source and freshness' })).toBeVisible();
     await expect(page.getByText(/Threshold Signature Schemes/i)).toBeVisible();
-    await expect(page.getByText(/2026-07-14 chain-catalog review/i)).toBeVisible();
+    await expect(page.getByText(/2026-11-07 chain-catalog review/i)).toBeVisible();
     await expect(page.getByText(/Availability, routing, signing, LP actions, and pause state remain live\/current-only/i)).toBeVisible();
     await expect(page.locator('#chain-catalog-boundary')).toBeVisible();
     await expect(page.getByText('not availability proof')).toBeVisible();
@@ -17,7 +17,7 @@ test.describe('THORChain Wiki Protocol Smoke Tests', () => {
     await expect(page.locator('#supported-chain-finder')).toBeVisible();
     const chainFinder = page.getByRole('group', { name: /Supported Chain Finder/i });
     await expect(chainFinder).toBeVisible();
-    await expect(page.getByText(/Showing 12 of 12 catalog chain records/i)).toBeVisible();
+    await expect(page.getByText(/Showing 13 of 13 catalog chain records/i)).toBeVisible();
     await expect(page.locator('#chain-sol')).toBeVisible();
     await expect(page.locator('#chain-sol').getByText(/Live inbound and chain-client sources include SOL.*EdDSA/i)).toBeVisible();
     await expect(page.locator('#chain-sol').getByText(/high-level supported-blockchains overview omitted it/i)).toBeVisible();
@@ -35,7 +35,7 @@ test.describe('THORChain Wiki Protocol Smoke Tests', () => {
     const chainFinder = page.getByRole('group', { name: /Supported Chain Finder/i });
     await chainFinder.getByLabel('Find supported chains').fill('sol');
     await expect(page).toHaveURL(/\/protocol\?q=sol$/);
-    await expect(page.getByText(/Showing 1 of 12 catalog chain records/i)).toBeVisible();
+    await expect(page.getByText(/Showing 1 of 13 catalog chain records/i)).toBeVisible();
     await expect(page.getByLabel('Active supported-chain filters').getByText('Search: sol')).toBeVisible();
     await expect(page.locator('#chain-sol')).toBeVisible();
     await expect(page.locator('#chain-btc')).toHaveCount(0);
@@ -43,11 +43,11 @@ test.describe('THORChain Wiki Protocol Smoke Tests', () => {
     await page.getByRole('button', { name: /Reset/i }).click();
     await expect(page).toHaveURL(/\/protocol$/);
     await expect(chainFinder.getByLabel('Find supported chains')).toHaveValue('');
-    await expect(page.getByText(/Showing 12 of 12 catalog chain records/i)).toBeVisible();
+    await expect(page.getByText(/Showing 13 of 13 catalog chain records/i)).toBeVisible();
 
     await chainFinder.getByLabel('Address format').selectOption('EIP-55');
     await expect(page).toHaveURL(/\/protocol\?format=EIP-55$/);
-    await expect(page.getByText(/Showing 4 of 12 catalog chain records/i)).toBeVisible();
+    await expect(page.getByText(/Showing 4 of 13 catalog chain records/i)).toBeVisible();
     await expect(page.getByLabel('Active supported-chain filters').getByText('Address format: EIP-55')).toBeVisible();
     await expect(page.locator('#chain-eth')).toBeVisible();
     await expect(page.locator('#chain-base')).toBeVisible();
@@ -86,13 +86,13 @@ test.describe('THORChain Wiki Protocol Smoke Tests', () => {
     await expect(page.getByLabel('Active supported-chain filters').getByText('Address format: Base58')).toBeVisible();
     await expect(page.getByLabel('Active supported-chain filters').getByText('Notes: Has review note')).toBeVisible();
     await expect(page.locator('#chain-sol')).toBeVisible();
-    await expect(page.getByText(/Showing 1 of 12 catalog chain records/i)).toBeVisible();
+    await expect(page.getByText(/Showing 1 of 13 catalog chain records/i)).toBeVisible();
 
     await page.goto('/protocol?q=sol&format=EIP-55');
     await expect(page.getByText(/No supported-chain catalog entries match Search: sol \+ Address format: EIP-55/i)).toBeVisible();
     await page.getByRole('button', { name: /Reset filters/i }).click();
     await expect(page).toHaveURL(/\/protocol$/);
-    await expect(page.getByText(/Showing 12 of 12 catalog chain records/i)).toBeVisible();
+    await expect(page.getByText(/Showing 13 of 13 catalog chain records/i)).toBeVisible();
   });
 
   test('supported chain finder remains readable on narrow viewports', async ({ page }) => {

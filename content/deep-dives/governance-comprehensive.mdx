@@ -1,6 +1,6 @@
 # THORChain Governance — Comprehensive Overview
 
-This page consolidates all governance activity from the THORChain Devs Discord: every ADR, chain halt, security event, node vote, exploit, chain-specific issue, and community governance debate. Data sourced via the inebotten selfbot on 2026-08-27.
+This page consolidates all governance activity from the THORChain Devs Discord: every ADR, chain halt, security event, node vote, exploit, chain-specific issue, and community governance debate. Data sourced via the inebotten selfbot on 2026-08-27, with targeted October-November 2026 updates.
 
 For current live state, check `/network#network-diagnostics`. For dated incident and recovery context, see `/governance`.
 
@@ -30,7 +30,16 @@ Chain is currently halted at height 27,590,009 as of Aug 27, 2026 — see `/netw
 
 **ADR status totals:** 17 passed, 3 pending/voting, 2 withdrawn, 1 draft.
 
-**Latest major incident:** Full chain halt at height 27,590,009 (Aug 26-27, 2026) — block production stalled after Yevlec re-halt, chain frozen.
+**Latest major incident:** A one-block Ethereum reorg on October 31, 2026 caused a 10 ETH double payout and a precautionary all-chain pause; the recipient returned the funds the same day.
+
+### October-November 2026 Updates
+
+- **October 23, v3.21.0:** the [pre-upgrade notice](https://discord.com/channels/838986635756044328/839001804812451873/1561829343825756211) placed the coordinated upgrade at block `28,366,100` and paused SOL, TRON and ZEC signing for a migration that must run with signing halted. After the first post-upgrade churn, BSC was to vote on Router V6.1, with ETH following.
+- **October 31, ETH reorg double payout:** a one-block Ethereum reorg left a [10 ETH deposit](https://discord.com/channels/838986635756044328/839001804812451873/1566101692825608223) observed and finalised although it was not on the canonical chain. The errata never reached quorum, the automatic solvency halt fired and then lifted because the queued refund covered the gap, and the vault refunded both the unrecognised deposit and the real one. Core paused all chains, then moved to chain-level halts; the [sender returned the funds](https://discord.com/channels/838986635756044328/839001804812451873/1566108488944324619) the same day.
+- **November 3-7, v3.21.x patches:** 3.21.1 and 3.21.2 were [private bifrost-only binaries](https://discord.com/channels/838986635756044328/839001804812451873/1567105606299684896); [3.21.3](https://discord.com/channels/838986635756044328/839001804812451873/1568533386614538441) added BASE 200ms block handling, EVM receipt pipelining and a SOL durable-nonce fix.
+- **November 5, BASE trading halt:** [BASE stays halted until 3.22.0](https://discord.com/channels/838986635756044328/839001804812451873/1567996532723032107) because the Denim scanning fix changes swap quotes and needs a coordinated release. Churning also remained halted at the November 7 Mimir readback.
+- **ADR-029 activation:** bond yield shipped in 3.21.0 and was enabled in the November 7 readback (`BONDYIELDENABLED=1`). SwapKit reported the rev-share live for Tangem, IronWallet, CoinEx, OneKey and one unnamed new partner, then corrected a streaming-swap credit-spend bug and restated the balance at roughly `$3,400` rather than `$8,650`. [Lifetime credit spend versus fees was `2.2x`](https://discord.com/channels/838986635756044328/1521708211017744456/1567560853644120106), with four more weeks of spend optimisation requested before changing the percentage.
+- **October 15, ADR030:** the latest reminder found in this sweep still reported [7 votes short](https://discord.com/channels/838986635756044328/839001804812451873/1560302354350473236); no later activation confirmation was found.
 
 
 ## ADR Registry and Vote Tallies
@@ -82,6 +91,8 @@ This section breaks down every ADR by *how* it passed (or didn't) — which ones
 ### Close Calls (passed but barely, or required active campaigning)
 
 - **ADR-029 Revenue Share (SwapKit) — 58.9% (56/95).** The closest of the recent ADRs. Started the voting period needing active campaigning, with several nodes openly on the fence. SamYap and others ran a multi-week push ("Reminder for the NO to vote ADR029 (thanks SamYap) .. if there are any concerns to don't vote or vote against, it would be great to know why"). The YES vote only crossed 50% in the last days of the voting window.
+
+  Post-activation evidence is separate from that vote. By November 2026 the rev-share was live for several partners, bond yield was enabled, and SwapKit had corrected a streaming-swap credit-spend bug. Lifetime credit spend versus fees stood at 2.2x, and the team asked for four more weeks of spend optimisation before changing the percentage. This is dated implementation evidence, not a final revenue or payout claim.
 - **ADR-012 Scale Lending — ~52% in favor at one snapshot.** This was the closest lending-related vote. Several nodes **later removed their votes** (climber2391: "It seems some nodes removed their vote towards ADR012. Is that right? Only 66 votes now. It used to be more than 70"). Vote decay and fatigue were real issues. Passed only because the 60M RUNE burn was bundled with the CR-200% change.
 - **ADR-031 Rujira Long-Term Alignment — Option 1 (JV) won, but voting fatigue noted.** The vote request explicitly asked nodes to consider the recent $10M Asgard vault exploit and to choose a path forward. Option 1 was the strong consensus choice (sonofodin and aaluxx both endorsed it), but multiple commenters noted "voter fatigue" with simultaneous open votes (ADR-029, ADR-031, ADR-030, TORANCHOR mimirs all open at once).
 
@@ -118,6 +129,9 @@ These ADRs did not go through a `make mimir` vote. Instead, a contributor called
 
 | Date | Event | Severity | Impact |
 |------|-------|----------|--------|
+| Nov 5, 2026 | BASE Trading Halt Until 3.22.0 | Major | Denim 200ms scanning fix changes swap quotes; coordinated release required |
+| Oct 31, 2026 | Ethereum Reorg Double Payout + Global Pause | Critical | 10 ETH paid against a dropped deposit; funds returned same day; fixes announced for next release |
+| Oct 30, 2026 | TRON Trading Halted (Outbound Queue) | Major | Large outbound queue investigated; TSS signer filtering re-voted |
 | Aug 29, 2026 | Global CosmWasm Halted by Dev | Major | Dev484 halted all CosmWasm; only Yevlec was previously halted |
 | Aug 29, 2026 | SOL Unhalt Announced | Moderate | Requires archival RPC + scanner bump; XRP/SOL disabled from virtualization strategy |
 | Aug 29, 2026 | BSC Voting to Unhalt | Moderate | itzamnamaya voted; awaiting 2-3 more votes |
