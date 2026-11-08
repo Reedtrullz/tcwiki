@@ -41,7 +41,7 @@ test.describe('THORChain Wiki Network Smoke Tests', () => {
   });
   test('observed control exports preserve unsupported proof and offer a clipboard fallback without requests', async ({ page }) => {
     await page.addInitScript(() => { Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: () => Promise.reject(new Error('Clipboard unavailable')) } }); });
-    await mockSwapperFirstNetwork(page, { version: '3.21.0', mimir: { HALTTRADING: 100, RAWPRECISION: '9007199254740993' } });
+    await mockSwapperFirstNetwork(page, { version: '3.22.0', mimir: { HALTTRADING: 100, RAWPRECISION: '9007199254740993' } });
     let reads = 0;
     page.on('request', request => { if (/\/thorchain\/mimir(?:\?|$)/.test(request.url())) reads += 1; });
     await page.goto('/network');
@@ -64,7 +64,7 @@ test.describe('THORChain Wiki Network Smoke Tests', () => {
     expect(snapshot.schemaVersion).toBe(1);
     expect(snapshot.rawMimir.values.HALTTRADING).toBe(100);
     expect(snapshot.rawMimir.values.RAWPRECISION).toBe('9007199254740993');
-    expect(snapshot.warnings.join(' ')).toMatch(/3\.21\.0/);
+    expect(snapshot.warnings.join(' ')).toMatch(/3\.22\.0/);
     expect(snapshot.runtime).toEqual({ version: null, commit: null, image: null });
     expect(snapshot.sources.some((source: { heightPinning?: { verification: string } }) => source.heightPinning?.verification === 'unverified')).toBe(true);
     await panel.getByRole('button', { name: 'Copy observed evidence' }).click();
@@ -85,7 +85,7 @@ test.describe('THORChain Wiki Network Smoke Tests', () => {
     expect(width.content).toBeLessThanOrEqual(width.available + 2);
   });
   test('unreviewed protocol versions retain raw controls and require applicability review', async ({ page }) => {
-    await mockSwapperFirstNetwork(page, { version: '3.21.0', mimir: { HALTTRADING: 100 } });
+    await mockSwapperFirstNetwork(page, { version: '3.22.0', mimir: { HALTTRADING: 100 } });
     await page.goto('/network');
     await expect(page.getByText('Review applicability', { exact: true }).first()).toBeVisible({ timeout: 15_000 });
     await expect(page.getByText(/raw Mimir observations do not prove swap availability/i).first()).toBeVisible();
