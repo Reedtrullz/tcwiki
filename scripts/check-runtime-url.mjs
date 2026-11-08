@@ -31,21 +31,27 @@ function shouldRequireRuntimeMetadata(value) {
 
 async function fetchUntil(path, isExpectedStatus, init = undefined) {
   let lastError;
-  for (let attempt = 0; attempt < 60; attempt += 1) {
+  for (let attempt = 1; ; attempt += 1) {
     const remaining = deadline - performance.now();
-    if (remaining <= 0) throw new Error('Runtime probe overall deadline exceeded.');
+    if (remaining <= 0) throw new Error('Runtime probe overall deadline exceeded.', { cause: lastError });
+    const diagnostic = { path, attempt, elapsedMs: Math.floor(performance.now() - (deadline - budgetMs)), outcome: 'retry' };
     try {
       const response = await fetch(`${baseUrl}${path}`, { cache: 'no-store', ...init, signal: AbortSignal.timeout(Math.max(1, Math.floor(Math.min(5000, remaining)))) });
-      if (await isExpectedStatus(response)) {
+      diagnostic.status = response.status;
+      if (await isExpectedStatus(response, diagnostic) && performance.now() < deadline) {
+        diagnostic.outcome = 'match';
         return response;
       }
       lastError = new Error(`${path} returned ${response.status}`);
     } catch (error) {
+      diagnostic.outcome = 'error';
       lastError = error;
+    } finally {
+      // Only allowlisted status/identity fields: never response bodies, URLs or headers.
+      console.log(`Runtime probe attempt ${JSON.stringify(diagnostic)}`);
     }
     await wait(Math.max(0, Math.min(500, deadline - performance.now())));
   }
-  throw lastError ?? new Error(`${path} did not become ready`);
 }
 
 function expectHeader(headers, key, expected) {
@@ -84,7 +90,16 @@ async function expectCspReportEndpoint() {
   expectHeader(response.headers, 'cache-control', 'no-store');
 }
 
-function expectRuntimeMetadata(json) {
+function expectRuntimeMetadata(json, diagnostic = undefined) {
+  if (diagnostic) {
+    if (typeof json.commit === 'string' && /^[0-9a-f]{7,40}$/i.test(json.commit)) diagnostic.commit = json.commit;
+    if (typeof json.image === 'string') {
+      const digest = json.image.match(/@sha256:([0-9a-f]{64})$/i)?.[1];
+      if (digest) diagnostic.artifactDigest = digest;
+    }
+    if (typeof json.runtime?.strict === 'boolean') diagnostic.strict = json.runtime.strict;
+    if (typeof json.runtime?.verified === 'boolean') diagnostic.verified = json.runtime.verified;
+  }
   if (expectedVersion && json.version !== expectedVersion) {
     throw new Error(`Expected version ${expectedVersion}; got ${json.version ?? 'missing'}`);
   }
@@ -100,9 +115,10 @@ function expectRuntimeMetadata(json) {
   });
 }
 
-async function hasExpectedRuntime(response) {
+async function hasExpectedRuntime(response, diagnostic) {
   if (!response.ok) return false;
-  expectRuntimeMetadata(await response.clone().json());
+  const json = await response.clone().json();
+  expectRuntimeMetadata(json, diagnostic);
   return true;
 }
 
@@ -124,10 +140,14 @@ expectHeader(version.headers, 'cache-control', 'no-store');
 
 const ready = await fetchUntil(
   '/api/ready',
-  async (response) => {
+  async (response, diagnostic) => {
     if (response.status !== 200 && (requireReady || response.status !== 503)) return false;
-    expectRuntimeMetadata(await response.clone().json());
-    return true;
+    // Degraded readiness (503) still needs its own exact runtime identity check.
+    if (response.status === 503) {
+      expectRuntimeMetadata(await response.clone().json(), diagnostic);
+      return true;
+    }
+    return hasExpectedRuntime(response, diagnostic);
   }
 );
 const readyJson = await ready.json();
@@ -166,4 +186,5 @@ expectNoHeaderSubstring(rootResponse.headers, cspHeader, 'unsafe-eval');
 expectNoHeaderSubstring(rootResponse.headers, cspHeader, 'unsafe-inline');
 await expectCspReportEndpoint();
 
+if (performance.now() >= deadline) throw new Error('Runtime probe overall deadline exceeded.');
 console.log(`Runtime probe passed for ${baseUrl}.`);
