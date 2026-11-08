@@ -99,7 +99,7 @@ const OPERATIONAL_CONTROL_SEARCH_CONTENT = [
     `Activation mode ${control.activationMode}`,
     `Scope ${control.scope}`,
     control.absenceMeaning,
-    `Reviewed THORNode ${control.reviewedSource.versionRange} at ${control.reviewedSource.commit}`,
+    `Reviewed THORNode ${control.reviewedSource.versionRange} at ${control.reviewedSource.commit}; compatible through ${control.reviewedSource.compatibleThrough}`,
     ...control.searchTerms,
   ]),
   ...REVIEWED_OPERATIONAL_SUPPORT_MIMIR_PREFIXES.flatMap((prefix) => [

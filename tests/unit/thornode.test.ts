@@ -2,7 +2,7 @@ import { partitionReadinessWarnings } from '../../scripts/lib/readiness-warning-
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import ThornodeAPI, { createThornodeCollectionContext, reassessThornodeResult, deriveDynamicL1FeeStatus, deriveNetworkStatus, deriveRunePoolPolStatus, resetThornodeEndpointForTests } from '@/lib/api/thornode';
 import type { DynamicL1FeeSourceFreshness, RunePoolSourceFreshness, ThornodeInboundAddress } from '@/lib/types';
-import { OPERATIONAL_CONTROL_CATALOG, REVIEWED_OPERATIONAL_CONTROL_SOURCE } from '@/lib/operational-controls';
+import { OPERATIONAL_CONTROL_CATALOG, REVIEWED_OPERATIONAL_CONTROL_SOURCE, isOperationalControlSourceReviewed } from '@/lib/operational-controls';
 
 const makeResponse = (ok: boolean, data: unknown, status = 200, statusText = 'OK') => new Response(JSON.stringify(data), { status: !ok && status === 200 ? 500 : status, statusText });
 
@@ -1079,9 +1079,20 @@ describe('deriveNetworkStatus', () => {
     expect(unsupported.sourceWarningDetails).toContainEqual(expect.objectContaining({
       category: 'control-applicability',
       severity: 'review',
-      keys: OPERATIONAL_CONTROL_CATALOG.map((control) => control.key),
+      keys: OPERATIONAL_CONTROL_CATALOG.map((control) => control.key).filter((key) => key !== 'PAUSELOANS'),
     }));
     expect(unsupported.activeControlKeys).toEqual([]);
+
+    expect(isOperationalControlSourceReviewed('3.21.1')).toBe(true);
+    expect(isOperationalControlSourceReviewed('3.22.0')).toBe(false);
+    const reviewedCompatibility = deriveNetworkStatus({ HALTTRADING: 0 }, [completeInbound('BTC')], '3.21.1', 100);
+    expect(reviewedCompatibility.state).toBe('operational');
+    expect(reviewedCompatibility.sourceWarningDetails?.some((detail) => detail.category === 'control-applicability')).toBe(false);
+
+    const legacyLoans = deriveNetworkStatus({ PAUSELOANS: 1 }, [completeInbound('BTC')], '3.21.1', 100);
+    expect(legacyLoans.state).toBe('operational');
+    expect(legacyLoans.sourceWarningDetails?.some((detail) => detail.category === 'control-applicability')).toBe(false);
+    expect(legacyLoans.monitoredControls.find((control) => control.key === 'PAUSELOANS')?.state).toBe('unsupported');
   });
 
   it('applies each reviewed height-control boundary, including scoped controls', () => {
@@ -1120,7 +1131,11 @@ describe('deriveNetworkStatus', () => {
         .toMatchObject({ state: 'unsupported', active: false });
       expect(status.observedMimir?.[key]).toBe(value);
       expect(status.activeControlKeys).not.toContain(key);
-      expect(status.sourceWarningDetails).toContainEqual(expect.objectContaining({ category: 'control-applicability', keys: [key] }));
+      if (key === 'PAUSELOANS') {
+        expect(status.sourceWarningDetails?.some((detail) => detail.category === 'control-applicability')).toBe(false);
+      } else {
+        expect(status.sourceWarningDetails).toContainEqual(expect.objectContaining({ category: 'control-applicability', keys: [key] }));
+      }
     }
   });
 
@@ -1136,7 +1151,7 @@ describe('deriveNetworkStatus', () => {
     expect(status.sourceWarningDetails?.some((detail) => detail.category === 'mimir-parse')).toBe(true);
   });
 
-  it.each([undefined, '', '3.19.2', '3.20.4'])('withdraws interpreted control flags for unreviewed version %s', (version) => {
+  it.each([undefined, '', '3.19.2', '3.20.4', '3.22.0'])('withdraws interpreted control flags for unreviewed version %s', (version) => {
     const mimir = { HALTTRADING: 0, PauseBond: 1, TRADEACCOUNTSENABLED: 1 };
     const status = deriveNetworkStatus(mimir, [completeInbound('BTC')], version, 100);
     expect(status.state).toBe('degraded');
@@ -1501,7 +1516,7 @@ describe('deriveNetworkStatus', () => {
       expect(result.data?.thorchainHeight).toBe(100);
       expect(result).toMatchObject({ dataPolicy: {
         profile: 'app-operations', snapshotLagBlocks: 10,
-        blockAgeWarningSeconds: 12, blockAgeDegradedSeconds: 30,
+        blockAgeWarningSeconds: 18, blockAgeDegradedSeconds: 30,
         futureWarningSeconds: 12, futureDegradedSeconds: 30,
       } });
       expect(result.sources?.filter((source) => source.url.includes('?height='))
@@ -1684,16 +1699,16 @@ describe('deriveNetworkStatus', () => {
       else stubRunePoolSnapshots(runePoolFixture({ latestBlock }), runePoolFixture({ latestBlock }));
       const retrieve = vi.mocked(fetch).getMockImplementation()!;
       vi.mocked(fetch).mockImplementation(async (...args) => {
-        vi.setSystemTime(new Date('2026-07-03T12:00:02.000Z'));
+        vi.setSystemTime(new Date('2026-07-03T12:00:08.000Z'));
         return retrieve(...args);
       });
       const result = kind === 'network' ? await ThornodeAPI.getNetworkStatus()
         : kind === 'dynamic fees' ? await ThornodeAPI.getDynamicL1FeeStatus()
           : await ThornodeAPI.getRunePoolPolStatus();
       expect(result.status).toBe('ok');
-      expect(result.data?.sourceWarnings.some((message) => message.includes('13 seconds old'))).toBe(true);
+      expect(result.data?.sourceWarnings.some((message) => message.includes('19 seconds old'))).toBe(true);
       const data = result.data!;
-      expect('sourceFreshness' in data ? data.sourceFreshness.thorchainBlockAgeSeconds : data.thorchainBlockAgeSeconds).toBe(13);
+      expect('sourceFreshness' in data ? data.sourceFreshness.thorchainBlockAgeSeconds : data.thorchainBlockAgeSeconds).toBe(19);
     }
   );
 

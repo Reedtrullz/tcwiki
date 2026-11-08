@@ -80,7 +80,7 @@ const MIMIR_INTEGER_PATTERN = /^[+-]?\d+$/;
 const NON_CHAIN_SCOPED_MIMIR_CODES = new Set(['TCY']);
 const CURATED_CHAIN_CODES = new Set([...CHAIN_RECORDS.map((record) => record.data.chain.toUpperCase()), 'THOR']);
 const TRADE_ACCOUNT_CHAIN_SCOPED_MIMIR_PREFIXES = ['HaltTradeDeposit-', 'HaltTradeWithdraw-'] as const;
-const KNOWN_NON_OPERATIONAL_PAUSE_KEYS = new Set(['PAUSEONSLASHTHRESHOLD', 'HALTWASMCONTRACT']);
+const KNOWN_NON_OPERATIONAL_PAUSE_KEYS = new Set(['PAUSEONSLASHTHRESHOLD', 'HALTWASMCONTRACT', 'PAUSELOANS']);
 const KNOWN_MIMIR_SPELLING_MISMATCHES = new Map([
   ['HALTTRRONTRADING', { canonicalKey: 'HALTTRONTRADING', scope: 'TRON' }],
 ]);
@@ -2958,7 +2958,8 @@ export function deriveNetworkStatus(
 
   const runtimeReviewed = isOperationalControlSourceReviewed(thorNodeVersion);
   const unsupportedKeys = OPERATIONAL_CONTROL_CATALOG.filter((control) => (
-    !runtimeReviewed || (control.activationMode === null && getCanonicalMimirKey(mimir, control.key) !== undefined)
+    !KNOWN_NON_OPERATIONAL_PAUSE_KEYS.has(control.key.toUpperCase()) &&
+    (!runtimeReviewed || (control.activationMode === null && getCanonicalMimirKey(mimir, control.key) !== undefined))
   )).map((control) => control.key);
   const unsupportedControlSemantics = unsupportedKeys.length > 0
     ? warningDetail({

@@ -5,7 +5,7 @@ export const THORNODE_PROVIDER_DEFAULTS = Object.freeze([
 ]);
 
 export const THORNODE_BLOCK_AGE_POLICY = Object.freeze({
-  blockAgeWarningSeconds: 12, blockAgeDegradedSeconds: 30,
+  blockAgeWarningSeconds: 18, blockAgeDegradedSeconds: 30,
   futureWarningSeconds: 12, futureDegradedSeconds: 30,
 });
 
