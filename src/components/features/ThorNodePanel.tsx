@@ -138,7 +138,7 @@ export function ThorNodeCoverageView({
           </div>
 
           <p className="border-t border-border/70 pt-4 text-xs leading-relaxed text-slate-400">
-            Version strings are raw observations, not proof of a node&apos;s complete build or control applicability. Existing operational-control semantics remain reviewed for THORNode {REVIEWED_OPERATIONAL_CONTROL_SOURCE.versionRange} at the linked source revision.
+            Version strings are raw observations, not proof of a node&apos;s complete build or control applicability. Existing operational-control semantics remain reviewed for THORNode {REVIEWED_OPERATIONAL_CONTROL_SOURCE.versionRange} at the linked source revision and checked for compatibility through {REVIEWED_OPERATIONAL_CONTROL_SOURCE.compatibleThrough}.
           </p>
           <a
             className="text-xs font-semibold text-accent underline-offset-4 hover:underline"

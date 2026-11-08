@@ -1,7 +1,7 @@
 export interface ThornodeDataPolicy {
   profile: 'app-operations' | 'independent-chain-set';
   snapshotLagBlocks: number;
-  blockAgeWarningSeconds: 12;
+  blockAgeWarningSeconds: 18;
   blockAgeDegradedSeconds: 30;
   futureWarningSeconds: 12;
   futureDegradedSeconds: 30;

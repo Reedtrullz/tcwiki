@@ -354,10 +354,10 @@ describe('/api/ready', () => {
     const pendingHealth = deferred<LiveDataResult<MidgardHealth>>();
     vi.mocked(MidgardAPI.getHealth).mockReturnValueOnce(pendingHealth.promise);
     const firstResponse = GET();
-    vi.setSystemTime(new Date('2026-07-02T00:00:12.250Z'));
+    vi.setSystemTime(new Date('2026-07-02T00:00:18.250Z'));
     pendingHealth.resolve(midgardHealth('ok'));
     expect((await firstResponse).status).toBe(200);
-    vi.setSystemTime(new Date('2026-07-02T00:00:13.000Z'));
+    vi.setSystemTime(new Date('2026-07-02T00:00:19.000Z'));
     const freshTime = new Date().toISOString();
     const dynamicFees = dynamicFeeStatus();
     dynamicFees.data!.sourceFreshness.thorchainBlockTime = freshTime;
@@ -376,13 +376,13 @@ describe('/api/ready', () => {
     const pendingHealth = deferred<LiveDataResult<MidgardHealth>>();
     vi.mocked(MidgardAPI.getHealth).mockReturnValueOnce(pendingHealth.promise);
     const pendingResponse = GET(new Request('http://localhost/api/ready?contract=strict'));
-    vi.setSystemTime(new Date('2026-07-02T00:00:15.000Z'));
+    vi.setSystemTime(new Date('2026-07-02T00:00:19.000Z'));
     pendingHealth.resolve(midgardHealth('ok'));
     const response = await pendingResponse;
     const body = await response.json();
     expect(response.status).toBe(503);
-    expect(body.sources.thornode.dynamicFees.thorchainBlockAgeSeconds).toBe(15);
-    expect(body.reasons).toContain('THORNode latest block timestamp is 15 seconds old; dynamic fee state may be stale.');
+    expect(body.sources.thornode.dynamicFees.thorchainBlockAgeSeconds).toBe(19);
+    expect(body.reasons).toContain('THORNode latest block timestamp is 19 seconds old; dynamic fee state may be stale.');
   });
 
   it('briefly caches degraded snapshots instead of retrying every failing request', async () => {

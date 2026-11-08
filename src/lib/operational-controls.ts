@@ -21,10 +21,21 @@ export type OperationalControlActivationMode =
 
 export const REVIEWED_OPERATIONAL_CONTROL_SOURCE = {
   versionRange: '3.20.3',
+  compatibleThrough: '3.21.3',
   tag: 'v3.20.3',
   commit: 'b08d81f79275093b0fcb753e0d68ff1c16c51cb8',
   url: 'https://gitlab.com/thorchain/thornode/-/tree/b08d81f79275093b0fcb753e0d68ff1c16c51cb8',
 } as const;
+
+// 3.21.0 is a consensus release; 3.21.1-3.21.3 are bifrost-only patches.
+// The 3.21.0 notes add HALTSIGNINGZEC, which the chain-scoped signing parser already handles.
+export const OPERATIONAL_CONTROL_COMPATIBLE_VERSIONS = [
+  '3.20.3',
+  '3.21.0',
+  '3.21.1',
+  '3.21.2',
+  '3.21.3',
+] as const;
 
 export const OPERATIONAL_CONTROL_ABSENCE_MEANING =
   'When absent: no Mimir override was returned; the effective protocol default is not inferred.';
@@ -420,12 +431,13 @@ export function getOperationalControlCatalogEntry(key: string) {
 }
 
 export function isOperationalControlSourceReviewed(version: string | undefined) {
-  return version?.replace(/^v/, '') === REVIEWED_OPERATIONAL_CONTROL_SOURCE.versionRange;
+  const normalized = version?.replace(/^v/, '');
+  return normalized !== undefined && (OPERATIONAL_CONTROL_COMPATIBLE_VERSIONS as readonly string[]).includes(normalized);
 }
 
 export function getOperationalControlMeaning(key: string) {
   const control = getOperationalControlCatalogEntry(key);
-  return `${control.description} Activation: ${control.activationMode ?? 'unsupported'}. Scope: ${control.scope}. ${control.absenceMeaning} Source reviewed at THORNode ${control.reviewedSource.versionRange} (${control.reviewedSource.commit}).`;
+  return `${control.description} Activation: ${control.activationMode ?? 'unsupported'}. Scope: ${control.scope}. ${control.absenceMeaning} Source reviewed at THORNode ${control.reviewedSource.versionRange} (${control.reviewedSource.commit}); compatibility reviewed through ${control.reviewedSource.compatibleThrough}.`;
 }
 
 export function operationalControlPrefixSearchKey(key: string) {
