@@ -9,7 +9,7 @@ describe('curated Bitcoin-only memo archive pointer', () => {
   it('owns one dated source record with an explicit classification and settlement boundary', () => {
     const record = SOURCE_MAP_SECTION_RECORDS.find(record => record.data.id === 'bitcoin-memo-archive');
     expect(record?.sources).toContainEqual(opReturnBitcoinMemoSource);
-    expect(record?.freshness).toMatchObject({ checkedAt: '2026-10-03', confidence: 'curated' });
+    expect(record?.freshness).toMatchObject({ checkedAt: '2026-11-08', confidence: 'curated' });
     expect(opReturnBitcoinMemoSource.url).toBe('https://opreturn.xyz/p/thorchain');
     expect(record?.data.caveat).toMatch(/Bitcoin.only/);
     expect(record?.data.nonClaims.join(' ')).toMatch(/settlement/);

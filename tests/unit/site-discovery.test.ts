@@ -72,7 +72,7 @@ describe('site discovery routes', () => {
     const entries = sitemap();
 
     expect(entries).toEqual(publicSitemapRoutes().map((route) => route.path === '/updates'
-      ? { url: routeUrl(route.path), lastModified: new Date('2026-10-03T00:00:00.000Z') }
+      ? { url: routeUrl(route.path), lastModified: new Date('2026-11-08T00:00:00.000Z') }
       : { url: routeUrl(route.path) }));
   });
 

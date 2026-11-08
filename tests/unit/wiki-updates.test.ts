@@ -9,20 +9,23 @@ describe('authored wiki update feed', () => {
     expect(WIKI_CHANGE_RECORDS.map(record => record.data.id)).toEqual([
       'ilp-history-boundary-2026-10-02',
       'memoless-claim-evidence-2026-10-03',
+      'governance-october-november-2026-11-08',
+      'zec-chain-coverage-2026-11-08',
     ]);
     for (const { data } of WIKI_CHANGE_RECORDS) {
       expect(data.id).toMatch(/^[a-z0-9-]+$/);
-      expect(data.sourceDate).toMatch(/^2026-10-0[23]$/);
-      expect(data.reviewedAt).toBe(data.sourceDate);
+      expect(data.sourceDate).toMatch(/^2026-\d{2}-\d{2}$/);
       expect(Number.isFinite(Date.parse(`${data.sourceDate}T00:00:00Z`))).toBe(true);
       expect(data.reviewedAt >= data.sourceDate).toBe(true);
-      expect(data.href).toMatch(/^\/(?:deep-dives\/clp|governance#incident-memoless-spam-2026-08)$/);
+      expect(data.href).toMatch(/^\/(?:deep-dives\/clp|deep-dives\/governance-comprehensive|governance#incident-memoless-spam-2026-08|protocol#supported-chain-finder)$/);
     }
-    expect(latestWikiUpdateDate()).toBe('2026-10-03');
+    expect(latestWikiUpdateDate()).toBe('2026-11-08');
     const feed = buildWikiUpdateFeed();
     expect(feed).toContain('<rss version="2.0"');
     expect(feed).toContain('urn:tcwiki:update:memoless-claim-evidence-2026-10-03');
-    expect(feed).toContain('Source observation: 2026-10-03. Wiki review: 2026-10-03.');
+    expect(feed).toContain('urn:tcwiki:update:governance-october-november-2026-11-08');
+    expect(feed).toContain('urn:tcwiki:update:zec-chain-coverage-2026-11-08');
+    expect(feed).toContain('Source observation: 2026-10-03. Wiki review: 2026-11-08.');
     expect(feed).toContain('https://gitlab.com/thorchain/thornode/-/releases/v3.20.0');
     expect(feed).toContain('historical');
     expect(feed).not.toContain('new exploit today');

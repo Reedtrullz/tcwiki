@@ -647,7 +647,7 @@ export const transactionQueryExamplesSource: SourceMeta = {
 export const opReturnBitcoinMemoSource: SourceMeta = {
   label: 'OP_RETURN Bitcoin memo archive',
   url: 'https://opreturn.xyz/p/thorchain',
-  retrievedAt: '2026-10-03',
+  retrievedAt: '2026-11-08',
   notes: 'Curated third-party Bitcoin-only archive pointer: inspect recorded payload bytes, transaction/block references and Bitcoin-side history. Its THORChain classifications and confirmation labels do not establish THORChain validation, destination settlement, complete coverage or address ownership.',
 };
 
