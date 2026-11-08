@@ -11,7 +11,7 @@
   },
   "identity": {
     "authoredInputs": {
-      "src/lib/data/static.ts": "c16ba6b944e4a2560311cbafab39b325534193c36d88d300cd0a9a0260b24ac9",
+      "src/lib/data/static.ts": "a02e433ee661a7217bda611e15cf98d651eaa6a21383f07ba2f73b5477e5869a",
       "src/lib/content/registry.ts": "f85d8c954a801d0d0868b506f24ca5c44d629b851aeb258e8ae9df9ad037e8a1",
       "src/lib/sources.ts": "0738626a4ec6ef120d6b110c0987a876810a78ffed8b0a731c17a3535f66a24c",
       "src/lib/types.ts": "7ce679173123360384f57985d5980e1307ab7649a0c3439a68de413527f0e10c",
@@ -233,6 +233,6 @@
   ],
   "checksum": {
     "algorithm": "sha256",
-    "value": "544b3b354f98920ae68cd785583a8e3f7433bd0ef56463fb918a9b934da70739"
+    "value": "3b28fdb06d5001ef0aea484da3481deeb67f6fd98010a8193972e26ba8669942"
   }
 }

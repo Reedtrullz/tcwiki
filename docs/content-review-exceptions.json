@@ -78,5 +78,21 @@
     "reason": "Pre-existing overdue review tracked in #307; deferred to unblock CI for the Discord-sweep and dependency fixes.",
     "followUp": "https://github.com/Reedtrullz/tcwiki/issues/307",
     "expiresOn": "2026-12-07"
+  },
+  {
+    "collection": "SECURITY_INCIDENT_RECORDS",
+    "id": "memoless-spam-2026-08",
+    "owner": "Reedtrullz",
+    "reason": "Pre-existing overdue review tracked in #307; deferred to unblock CI for the Discord-sweep and dependency fixes.",
+    "followUp": "https://github.com/Reedtrullz/tcwiki/issues/307",
+    "expiresOn": "2026-12-07"
+  },
+  {
+    "collection": "SEARCH_DOCUMENTS",
+    "id": "incident:memoless-spam-2026-08",
+    "owner": "Reedtrullz",
+    "reason": "Pre-existing overdue review tracked in #307; deferred to unblock CI for the Discord-sweep and dependency fixes.",
+    "followUp": "https://github.com/Reedtrullz/tcwiki/issues/307",
+    "expiresOn": "2026-12-07"
   }
 ]

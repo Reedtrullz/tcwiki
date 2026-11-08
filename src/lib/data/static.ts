@@ -512,7 +512,7 @@ export const CHAIN_RECORDS: SourcedRecord<Chain>[] = [
     addressFormats: ['Transparent Base58 (t1/t3)', 'TEX (tex1...)'],
     supported: true,
     statusNote: 'The ZEC client handles transparent P2PKH/P2SH and TEX addresses only; do not treat shielded addresses as supported. Availability remains live-state dependent.',
-  }, [supportedChainInboundSource, zecAddressSource, chainClientsSource], 'official', {
+  }, [supportedChainInboundSource, zecAddressSource], 'official', {
     checkedAt: '2026-11-07',
     nextReviewDue: '2026-12-07',
   }),
