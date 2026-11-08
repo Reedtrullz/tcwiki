@@ -35,6 +35,7 @@ import {
   archivedSaversLendingSource as archivedFeaturesSource,
   archivedSaversSource,
   assetNotationSource,
+  discordAdr029ResultsSource,
   discordBaseHalt322Source,
   discordEthReorgResolutionSource,
   discordEthReorgSource,
@@ -313,10 +314,10 @@ export const WIKI_CHANGE_RECORDS: SourcedRecord<WikiChangeRecord>[] = [
     summary: 'The liquidity guide now distinguishes impermanent loss from protection against it. Official documentation and the amended ADR describe ILP as removed; this review does not imply current coverage.',
     href: '/deep-dives/clp',
     sourceDate: '2026-10-02',
-    reviewedAt: '2026-10-02',
-  }, [{ ...continuousLiquidityPoolsSource, retrievedAt: '2026-10-02' }, { label: 'ADR-005 amendment', url: 'https://dev.thorchain.org/architecture/adr-005-deprecate-ilp.html#amendment-1-nov-23-permanently-sunset-ilp', retrievedAt: '2026-10-02' }], 'curated', {
-    checkedAt: '2026-10-02',
-    nextReviewDue: '2026-11-02',
+    reviewedAt: '2026-11-08',
+  }, [{ ...continuousLiquidityPoolsSource, retrievedAt: '2026-11-08' }, { label: 'ADR-005 amendment', url: 'https://dev.thorchain.org/architecture/adr-005-deprecate-ilp.html#amendment-1-nov-23-permanently-sunset-ilp', retrievedAt: '2026-11-08' }], 'curated', {
+    checkedAt: '2026-11-08',
+    nextReviewDue: '2026-12-08',
   }),
   record({
     id: 'memoless-claim-evidence-2026-10-03',
@@ -324,10 +325,32 @@ export const WIKI_CHANGE_RECORDS: SourcedRecord<WikiChangeRecord>[] = [
     summary: 'The v3.20.0 release supports the listed memoless ERC20 handler, refund-simulation and inbound-observation work. It does not establish the historical halt sequence or present availability; those remain separate evidence questions.',
     href: '/governance#incident-memoless-spam-2026-08',
     sourceDate: '2026-10-03',
-    reviewedAt: '2026-10-03',
-  }, [{ ...protocolUpgradeV320Source, retrievedAt: '2026-10-03' }], 'curated', {
-    checkedAt: '2026-10-03',
-    nextReviewDue: '2026-11-03',
+    reviewedAt: '2026-11-08',
+  }, [{ ...protocolUpgradeV320Source, retrievedAt: '2026-11-08' }], 'curated', {
+    checkedAt: '2026-11-08',
+    nextReviewDue: '2026-12-08',
+  }),
+  record({
+    id: 'governance-october-november-2026-11-08',
+    title: 'Added October-November governance context',
+    summary: 'Recorded the v3.21.0 upgrade, the October 31 Ethereum reorg double payout and pause, the v3.21.1-v3.21.3 bifrost patches, the BASE halt until 3.22.0, and ADR-029 activation results.',
+    href: '/deep-dives/governance-comprehensive',
+    sourceDate: '2026-11-07',
+    reviewedAt: '2026-11-08',
+  }, [discordEthReorgSource, discordEthReorgResolutionSource, discordThornode3210Source, discordThornode3211Source, discordThornode3213Source, discordBaseHalt322Source, discordAdr029ResultsSource], 'curated', {
+    checkedAt: '2026-11-08',
+    nextReviewDue: '2026-12-08',
+  }),
+  record({
+    id: 'zec-chain-coverage-2026-11-08',
+    title: 'Added ZEC to the supported-chain catalog',
+    summary: 'Added Zcash with transparent Base58 and TEX address formats sourced to the v3.21.0 client, and confirmed the live inbound set matches all 13 curated chains.',
+    href: '/protocol#supported-chain-finder',
+    sourceDate: '2026-11-08',
+    reviewedAt: '2026-11-08',
+  }, [zecAddressSource, { ...liquifyLiveInboundSource, retrievedAt: '2026-11-08' }, { ...supportedBlockchainsSource, retrievedAt: '2026-11-08' }], 'curated', {
+    checkedAt: '2026-11-08',
+    nextReviewDue: '2026-12-08',
   }),
 ];
 
@@ -593,7 +616,7 @@ export const TRANSACTION_EXAMPLE_RECORDS: SourcedRecord<TransactionExample>[] = 
       'TRON destination-chain inclusion was not independently verified; recipient ownership and user receipt are unknown.',
       'Midgard status=success is that provider record, not independent settlement proof.',
     ],
-  }, [bitcoinSwapTransactionSource, bitcoinBlock969681Source, midgardBitcoinSwapActionSource, ...memoSyntaxSources], 'historical', { checkedAt: '2026-10-03', nextReviewDue: '2026-11-03' }),
+  }, [bitcoinSwapTransactionSource, bitcoinBlock969681Source, midgardBitcoinSwapActionSource, ...memoSyntaxSources], 'historical', { checkedAt: '2026-11-08', nextReviewDue: '2026-12-08' }),
 
   record({
     id: 'pending-usdc-refund',
@@ -621,7 +644,7 @@ export const TRANSACTION_EXAMPLE_RECORDS: SourcedRecord<TransactionExample>[] = 
     unknowns: [
       'The source-chain block, refund outbound transaction, destination-chain inclusion, and refund settlement are unknown.',
     ],
-  }, [midgardPendingRefundSource, ...memoSyntaxSources], 'historical', { checkedAt: '2026-10-03', nextReviewDue: '2026-11-03' }),
+  }, [midgardPendingRefundSource, ...memoSyntaxSources], 'historical', { checkedAt: '2026-11-08', nextReviewDue: '2026-12-08' }),
 
   record({
     id: 'bitcoin-outbound',
@@ -664,7 +687,7 @@ export const TRANSACTION_EXAMPLE_RECORDS: SourcedRecord<TransactionExample>[] = 
       },
     ],
     unknowns: ['The OUT payload does not by itself prove what the referenced hash represents.'],
-  }, [bitcoinOutboundTransactionSource, bitcoinBlock969681Source, midgardBitcoinTradeActionSource, ...memoSyntaxSources], 'historical', { checkedAt: '2026-10-03', nextReviewDue: '2026-11-03' }),
+  }, [bitcoinOutboundTransactionSource, bitcoinBlock969681Source, midgardBitcoinTradeActionSource, ...memoSyntaxSources], 'historical', { checkedAt: '2026-11-08', nextReviewDue: '2026-12-08' }),
 
   record({
     id: 'ethereum-vault-migration',
@@ -712,7 +735,7 @@ export const TRANSACTION_EXAMPLE_RECORDS: SourcedRecord<TransactionExample>[] = 
       'A matched THORChain migration lifecycle, observed vault move, and migration completion are unknown.',
       'The developer-docs transaction 8330CAC064370F86352D247DE3046C9AA8C3E53C78760E5D35CFC7CAA3068DC6 is excluded here because the captured Midgard record classifies it as a swap.',
     ],
-  }, [ethereumMigrationTransactionSource, ethereumMigrationBlockSource, midgardEthereumMigrationLookupSource, ...memoSyntaxSources], 'historical', { checkedAt: '2026-10-03', nextReviewDue: '2026-11-03' }),
+  }, [ethereumMigrationTransactionSource, ethereumMigrationBlockSource, midgardEthereumMigrationLookupSource, ...memoSyntaxSources], 'historical', { checkedAt: '2026-11-08', nextReviewDue: '2026-12-08' }),
 ];
 
 export const SOURCE_MAP_SECTION_RECORDS: SourcedRecord<SourceMapSection>[] = [
@@ -725,7 +748,7 @@ export const SOURCE_MAP_SECTION_RECORDS: SourcedRecord<SourceMapSection>[] = [
     claimExamples: ['A pointer to a recorded Bitcoin OP_RETURN payload.', 'Bitcoin transaction and block references to investigate independently.'],
     nonClaims: ['Complete THORChain history or all-chain coverage.', 'Validated memo interpretation, ticker counts or address ownership.', 'Successful cross-chain execution, THORChain validation or destination settlement.', 'Official endorsement, safe execution instructions or a current route quote.'],
     links: [opReturnBitcoinMemoSource],
-  }, [opReturnBitcoinMemoSource], 'curated', { checkedAt: '2026-10-03', nextReviewDue: '2026-11-03' }),
+  }, [opReturnBitcoinMemoSource], 'curated', { checkedAt: '2026-11-08', nextReviewDue: '2026-12-08' }),
 
   record({
     id: 'current-protocol-state',
@@ -1321,7 +1344,7 @@ const memolessPilotClaims: ClaimEvidence[] = [
     summary: 'The earlier August halt/re-enable/re-halt account remains unverified and is withdrawn as established chronology.',
     source: protocolUpgradeV320Source,
     observedAt: '2026-08-26', versionScope: 'Authored August 2026 cohort; not current operations',
-    scope: 'historical', reviewedAt: '2026-08-26', nextReviewDue: '2026-09-25', decision: 'needs-review',
+    scope: 'historical', reviewedAt: '2026-11-08', nextReviewDue: '2026-12-08', decision: 'needs-review',
     limitation: 'The original observation and review dates identify the authored account, not verified transitions. The 7 October publication disposition withdraws its exact sequence, cost vote, duration and ordinary-swap availability assertions; retained dated evidence is still missing. The release list does not certify that history.',
   },
   {
@@ -1329,17 +1352,17 @@ const memolessPilotClaims: ClaimEvidence[] = [
     summary: 'The v3.20.0 release lists memoless ERC20 handler, refund-simulation and inbound-observation changes.',
     source: protocolUpgradeV320Source,
     observedAt: '2026-10-03', versionScope: 'THORNode v3.20.0',
-    scope: 'historical', reviewedAt: '2026-10-03', nextReviewDue: '2026-11-03', decision: 'supported',
+    scope: 'historical', reviewedAt: '2026-11-08', nextReviewDue: '2026-12-08', decision: 'supported',
     limitation: 'Support is for the listed release work only. Release creation, proposed upgrade date, implementation and successful current execution are separate facts.',
   },
   {
     id: 'memoless-current-availability',
     summary: 'Present memoless availability requires a fresh, source-qualified operational assessment.',
     source: liquifyThornodeMimirSource,
-    observedAt: '2026-08-26', versionScope: 'Current provider result must be obtained separately',
-    scope: 'current-only', reviewedAt: '2026-10-03', nextReviewDue: '2026-11-03', decision: 'needs-live-evidence',
+    observedAt: '2026-11-08', versionScope: 'Current provider result must be obtained separately',
+    scope: 'current-only', reviewedAt: '2026-11-08', nextReviewDue: '2026-12-08', decision: 'needs-live-evidence',
     supersedes: 'memoless-august-cycle',
-    limitation: 'Supersedes using the August claim to answer a present-tense question; it does not erase the historical record. No current Mimir value or successful route is asserted by this citation.',
+    limitation: 'Supersedes using the August claim to answer a present-tense question; it does not erase the historical record. The 8 November 2026 readback returned HALTMEMOLESS=1, MEMOLESSTXNCOST=2000000 and MEMOLESSTXNCOSTSLOPEBPS=10000; no successful memoless route is asserted.',
   },
 ];
 
@@ -1435,7 +1458,7 @@ export const SECURITY_INCIDENT_RECORDS: SourcedRecord<SecurityIncident>[] = [
     date: '2026-08-21 to 2026-08-26',
     type: 'Operational Incident',
     description: 'The official 27 August episode recap reports that memo registrations were paused after a spam attempt. The v3.20.0 release separately lists memoless ERC-20 handler, refund-simulation and inbound-observation work. The original 21–26 August cohort dates are retained as an unverified authored range: exact halt/re-enable/re-halt transitions, MEMOLESSTXNCOST=200000, and HALTMEMOLESS=1 immediately after upgrade lack retained dated evidence.',
-    impact: 'The recap supports an attributed registration pause, not a verified five-day outage or uninterrupted ordinary swaps in the earlier windows. Those assertions are withdrawn pending historical receipts. Current availability needs a fresh source-qualified assessment.',
+    impact: 'The recap supports an attributed registration pause, not a verified five-day outage or uninterrupted ordinary swaps in the earlier windows. Those assertions are withdrawn pending historical receipts. Current availability needs a fresh source-qualified assessment. The 8 November 2026 readback still shows HALTMEMOLESS=1 and MEMOLESSTXNCOST=2000000; that is current state, not the missing historical sequence.',
     resolved: false,
     trackerStatus: 'current',
     lessons: [
@@ -1445,8 +1468,8 @@ export const SECURITY_INCIDENT_RECORDS: SourcedRecord<SecurityIncident>[] = [
     ],
     url: 'https://gitlab.com/thorchain/thornode/-/releases/v3.20.0',
   }, [protocolUpgradeV320Source, memolessRegistrationPauseRecapSource], 'needs-review', {
-    checkedAt: '2026-10-07',
-    nextReviewDue: '2026-11-07',
+    checkedAt: '2026-11-08',
+    nextReviewDue: '2026-12-08',
   }),
   record({
     id: 'eth-reorg-double-payout-2026-10',
