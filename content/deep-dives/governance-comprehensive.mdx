@@ -1,6 +1,6 @@
 # THORChain Governance — Comprehensive Overview
 
-This page consolidates all governance activity from the THORChain Devs Discord: every ADR, chain halt, security event, node vote, exploit, chain-specific issue, and community governance debate. Data sourced via the inebotten selfbot on 2026-08-27, with targeted October-November 2026 updates.
+This page collects dated THORChain Devs Discord reports about ADRs, halts, incidents, node votes, and community debates. The August archive is supplemented by targeted live Inebotten reviews on September 30 and October-November 2026; it is not an exhaustive history or a current network-state feed.
 
 For current live state, check `/network#network-diagnostics`. For dated incident and recovery context, see `/governance`.
 
@@ -10,13 +10,13 @@ The [August memoless claim evidence pilot](/governance#incident-memoless-spam-20
 
 ## At a Glance
 
-Chain is currently halted at height 27,590,009 as of Aug 27, 2026 — see `/network#network-diagnostics` for live state.
+The August 27 halt at height 27,590,009 is historical; the archive records block production restored on August 28. See [Network diagnostics](/network#network-diagnostics) for current state. The metrics below are August archive snapshots, not live counts, prices, or controls.
 
 | Key Metric | Value |
 |------------|-------|
 | Total ADRs | 24 |
 | Active Votes | 6 |
-| Chain Halt Status | Ongoing (height 27,590,009) |
+| Chain Halt Status | Historical August 27 halt (height 27,590,009) |
 | RUNE Price Context | ~$0.50 range |
 | Active Validators | ~95 |
 
@@ -28,9 +28,22 @@ Chain is currently halted at height 27,590,009 as of Aug 27, 2026 — see `/netw
 | 022 | Per Block Swap Scoring | 2025 |
 | 029 | Revenue Share (SwapKit) | 2025 |
 
-**ADR status totals:** 17 passed, 3 pending/voting, 2 withdrawn, 1 draft.
+The registry below preserves source-dated archive statuses and tallies; these are not a reconciled count of current proposals.
 
 **Latest major incident:** A one-block Ethereum reorg on October 31, 2026 caused a 10 ETH double payout and a precautionary all-chain pause; the recipient returned the funds the same day.
+
+### September 2026 Updates
+
+- **September 22, v3.20.3:** the [operator announcement](https://discord.com/channels/838986635756044328/839001804812451873/1551838627724796044) describes a Bifrost-only patch covering SOL v1 transaction observation/netfee sampling, re-signing after blockhash-not-found, signing-height TSS policy, scanner recovery, and whitelist startup. It says consensus network version remains 3.20.0, with no upgrade height.
+- **September 22-24, GAIA recovery:** [operator reporting](https://discord.com/channels/838986635756044328/839001804812451873/1552411654413615235) describes the Cosmos Hub halt at 33,086,740, v28.3.0 restart, and a missed outbound observation that left THORChain accounting behind on-chain settlement. A [September 24 follow-up](https://discord.com/channels/838986635756044328/839001804812451873/1552637215496998946) warns that a scanner can report healthy while caught up to its own frozen daemon. Compare heights and observation evidence, not just a health flag.
+- **September 26, App Layer investigation:** an [emergency request](https://discord.com/channels/838986635756044328/839001804812451873/1553391051283107963) asked nodes to set `HALTWASMGLOBAL=1`. A separate signing-pause request was [withdrawn later that day](https://discord.com/channels/838986635756044328/839001804812451873/1553395870806966326). These messages do not establish an exploit cause, loss amount, or final WASM unhalt.
+- **September 27-29, BTC incident and delays:** the [September 27 announcement](https://discord.com/channels/838986635756044328/839001804812451873/1553679215008682024) reports an almost double-spent transaction and BTC auto-halt, not a successful double payment. Later discussions report outbound delays; a [September 29 mainnet message](https://discord.com/channels/838986635756044328/839002619481554955/1554490358845542525) identifies 20 transactions with assigned BTC outbound hashes not seen on Bitcoin. Resolution of every affected transaction was not established by this review.
+- **September 28-30, ZEC and churn:** [operators were asked to enable ZEC scanning](https://discord.com/channels/838986635756044328/839001804812451873/1554044588295979089) with the Zebra 6.4.2 update ahead of churn. [Churning was enabled on September 30](https://discord.com/channels/838986635756044328/839002619481554955/1554672718308315177), but [inconsistent ZEC chain sets and keygen co-blaming](https://discord.com/channels/838986635756044328/839002619481554955/1554782541947473941) still blocked rotation in subsequent reporting. Scanner preparation is not proof of completed rotation or public ZEC trading availability.
+- **Base Cobalt preparation:** the [September 26 operator notice](https://discord.com/channels/838986635756044328/839001804812451873/1553349003658403942) specifies Base node v1.4.2 for a September 30, 18:00 UTC hardfork deadline (20:00 Oslo). This is a dated operational notice, not confirmation that every node upgraded or the fork completed.
+- **Governance and fees:** the [September 28 ADR030 reminder](https://discord.com/channels/838986635756044328/839001804812451873/1553983951700234290) reports 21 votes still needed and specifies the exact key `ADR030`. [September 1 POL discussion](https://discord.com/channels/838986635756044328/838986636665815072/1544494088886419496) reports liquidity already deployed; August voting tables must not be read as current POL state. A [September 25 request](https://discord.com/channels/838986635756044328/839001804812451873/1553088074743816223) seeks dynamic-fee enrollment for Edge Wallet (`ej`) and Symbiosis (`symbiosis`); activation needs current Mimir evidence.
+- **SwapKit QA:** an [August 27 update](https://discord.com/channels/838986635756044328/1521708211017744456/1542579834759413830) reports QA complete, while [August 28 reporting](https://discord.com/channels/838986635756044328/1521708211017744456/1542945926090457158) still awaits stability and an accounting start. Neither establishes a final payout percentage or activation.
+
+Discord sources above were read live on September 30. They establish dated announcements and reports, not independently verified current controls, release deployment, or incident root causes.
 
 ### October-November 2026 Updates
 
@@ -44,6 +57,7 @@ Chain is currently halted at height 27,590,009 as of Aug 27, 2026 — see `/netw
 
 ## ADR Registry and Vote Tallies
 
+Unless updated explicitly above, statuses and tallies in this archive describe the August research window. ADR numbering can differ between Discord and repository documents; implementation and activation require separate evidence.
 
 | # | Title | Status | Tally | Mimir key / mechanism | Summary |
 |---|-------|--------|-------|------------------------|---------|
@@ -342,6 +356,7 @@ The most persistent unsolved issue across the fleet:
 
 ## Active Node Votes
 
+This is an August 2026 vote snapshot, not the currently active vote set. The September updates above supersede its POL voting and WASM-state wording; use live Mimir for present controls.
 
 | Vote | Status | Tally | Notes |
 |------|--------|-------|-------|

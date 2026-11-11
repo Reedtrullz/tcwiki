@@ -1,5 +1,75 @@
 import type { SourceMeta } from '@/lib/types';
 
+export const discordV3203Source: SourceMeta = {
+  label: 'v3.20.3 operator announcement',
+  url: 'https://discord.com/channels/838986635756044328/839001804812451873/1551838627724796044',
+  retrievedAt: '2026-09-30',
+  notes: 'Live Inebotten read of a dated Discord report; not independent current-state or activation proof.',
+};
+
+export const discordBtcSeptemberSource: SourceMeta = {
+  label: 'September 27 BTC auto-halt report',
+  url: 'https://discord.com/channels/838986635756044328/839001804812451873/1553679215008682024',
+  retrievedAt: '2026-09-30',
+  notes: 'Live Inebotten read of a dated Discord report; not independent current-state or activation proof.',
+};
+
+export const discordGaiaSeptemberSource: SourceMeta = {
+  label: 'September GAIA recovery report',
+  url: 'https://discord.com/channels/838986635756044328/839001804812451873/1552411654413615235',
+  retrievedAt: '2026-09-30',
+  notes: 'Live Inebotten read of a dated Discord report; not independent current-state or activation proof.',
+};
+
+export const discordWasmSeptemberSource: SourceMeta = {
+  label: 'September 26 WASM halt request',
+  url: 'https://discord.com/channels/838986635756044328/839001804812451873/1553391051283107963',
+  retrievedAt: '2026-09-30',
+  notes: 'Live Inebotten read of a dated Discord report; not independent current-state or activation proof.',
+};
+
+export const discordZecChurnSource: SourceMeta = {
+  label: 'September 30 ZEC/keygen blockers',
+  url: 'https://discord.com/channels/838986635756044328/839002619481554955/1554782541947473941',
+  retrievedAt: '2026-09-30',
+  notes: 'Live Inebotten read of a dated Discord report; not independent current-state or activation proof.',
+};
+
+export const discordBaseCobaltSource: SourceMeta = {
+  label: 'Base Cobalt operator notice',
+  url: 'https://discord.com/channels/838986635756044328/839001804812451873/1553349003658403942',
+  retrievedAt: '2026-09-30',
+  notes: 'Live Inebotten read of a dated Discord report; not independent current-state or activation proof.',
+};
+
+export const discordAdr030SeptemberSource: SourceMeta = {
+  label: 'September 28 ADR030 vote reminder',
+  url: 'https://discord.com/channels/838986635756044328/839001804812451873/1553983951700234290',
+  retrievedAt: '2026-09-30',
+  notes: 'Live Inebotten read of a dated Discord report; not independent current-state or activation proof.',
+};
+
+export const discordDynamicFeeSeptemberSource: SourceMeta = {
+  label: 'Edge Wallet and Symbiosis enrollment request',
+  url: 'https://discord.com/channels/838986635756044328/839001804812451873/1553088074743816223',
+  retrievedAt: '2026-09-30',
+  notes: 'Live Inebotten read of a dated Discord report; not independent current-state or activation proof.',
+};
+
+export const discordSwapkitQaSource: SourceMeta = {
+  label: 'SwapKit QA completion report',
+  url: 'https://discord.com/channels/838986635756044328/1521708211017744456/1542579834759413830',
+  retrievedAt: '2026-09-30',
+  notes: 'Live Inebotten read of a dated Discord report; not independent current-state or activation proof.',
+};
+
+export const discordPolSeptemberSource: SourceMeta = {
+  label: 'September POL deployment discussion',
+  url: 'https://discord.com/channels/838986635756044328/838986636665815072/1544494088886419496',
+  retrievedAt: '2026-09-30',
+  notes: 'Live Inebotten read of a dated Discord report; not independent current-state or activation proof.',
+};
+
 export const discordEthReorgSource: SourceMeta = {
   label: 'October 31 ETH reorg double-payout report',
   url: 'https://discord.com/channels/838986635756044328/839001804812451873/1566101692825608223',
@@ -196,6 +266,13 @@ export const supportedBlockchainsSource: SourceMeta = {
   notes: 'Official high-level list contained eleven chains and omitted Solana at review time; use live inbound-address evidence and the chain-client reference for the current catalog boundary.',
 };
 
+export const zecInboundAddressSource: SourceMeta = {
+  label: 'ZEC inbound-address snapshot',
+  url: 'https://gateway.liquify.com/chain/thorchain_api/thorchain/inbound_addresses',
+  retrievedAt: '2026-11-07',
+  notes: 'Live inbound-address read on 2026-11-07 returned ZEC with halted=false. Presence is not swap, signing, LP-action, or route-availability proof.',
+};
+
 export const swapGuideSource: SourceMeta = {
   label: 'THORChain Swap Guide',
   url: 'https://dev.thorchain.org/swap-guide/quickstart-guide.html',
@@ -263,7 +340,48 @@ export const adr026DynamicFeesSource: SourceMeta = {
   label: 'ADR-026 dynamic L1 fee model',
   url: 'https://gitlab.com/thorchain/thornode/-/raw/develop/docs/architecture/adr-026-dynamic-l1-min-fee-per-thorname.md',
   retrievedAt: '2026-07-04',
-  notes: 'Architecture decision text currently labeled proposed; compare with live THORNode state before making current claims.',
+  notes: 'Historical July review labeled the ADR proposed; this moving develop URL is not an immutable status snapshot. Use the September implementation review for updated status, and live THORNode evidence for rollout.',
+};
+
+export const adr026SeptemberSource: SourceMeta = {
+  ...adr026DynamicFeesSource,
+  retrievedAt: '2026-09-30',
+  notes: 'Develop ADR marks the decision Implemented; documentation MR 4984 merged August 12. Historical July endpoint snapshots do not establish current enrollment or results.',
+};
+
+export const ibcDocumentationCorrectionSource: SourceMeta = {
+  label: 'Open IBC documentation correction MR 5076',
+  url: 'https://gitlab.com/thorchain/thornode/-/merge_requests/5076',
+  retrievedAt: '2026-09-30',
+  notes: 'Open, not merged: author explicitly says IBC is not enabled on THORChain and removes older secured-asset IBC claims. Not a native transfer-support guarantee.',
+};
+
+export const discordRouterV6Source: SourceMeta = {
+  label: 'March 20 Router V6 integration warning',
+  url: 'https://discord.com/channels/838986635756044328/929872517794000986/1484651910865748008',
+  retrievedAt: '2026-09-30',
+  notes: 'Dated Discord notice warns that mismatched router/vault addresses can lose funds; does not establish fleet-wide or all-chain rollout.',
+};
+
+export const discordStreamingDurationSource: SourceMeta = {
+  label: 'September streaming-duration mismatch report',
+  url: 'https://discord.com/channels/838986635756044328/1498412149842903151/1553209112437858366',
+  retrievedAt: '2026-09-30',
+  notes: 'September 25-26 integrator report, not independently reproduced or attributed to a confirmed quote bug.',
+};
+
+export const discordTcyContractSource: SourceMeta = {
+  label: 'September 26 TCY autocompound contract report',
+  url: 'https://discord.com/channels/838986635756044328/1332419612859564132/1553526943129804890',
+  retrievedAt: '2026-09-30',
+  notes: 'User-reported blocked Rujira contract actions during WASM halt; not loss, contract-safety, or native TCY halt proof.',
+};
+
+export const discordPendulumDiscussionSource: SourceMeta = {
+  label: 'September 23 pendulum and LP reward discussion',
+  url: 'https://discord.com/channels/838986635756044328/1552272049076965446/1552287741524312084',
+  retrievedAt: '2026-09-30',
+  notes: 'Indexed discussion evidence only; full thread history unavailable during discovery. No adopted pendulum-deprecation ADR established.',
 };
 
 export const assetNotationSource: SourceMeta = {
@@ -403,7 +521,13 @@ export const tokenomicsSource: SourceMeta = {
   label: 'RUNE and TCY tokenomics',
   url: 'https://docs.thorchain.org/tokenomics-rune-tcy',
   retrievedAt: '2026-07-05',
-  notes: 'Official RUNE and TCY tokenomics overview, including TCY supply, revenue share, and no-governance-rights caveat; current amounts and distributions still require live evidence.',
+  notes: 'Historical July RUNE and TCY tokenomics review; use the September review for corrected supply, distribution, and buyback framing. Exact current amounts and distributions require live evidence.',
+};
+
+export const tokenomicsSeptemberSource: SourceMeta = {
+  ...tokenomicsSource,
+  retrievedAt: '2026-09-30',
+  notes: 'Official repository tokenomics reviewed September 30: approximately 360M post-ADR-023 maximum supply, September fee distribution, and protocol-owned TCY buybacks into the Staking Module. Exact supply and payouts require live evidence.',
 };
 
 export const tcyGuideSource: SourceMeta = {
@@ -627,7 +751,7 @@ export const economicModelSource: SourceMeta = {
   label: 'THORChain economic model',
   url: 'https://docs.thorchain.org/technical-documentation/technical-deep-dive/economic-model',
   retrievedAt: '2026-07-14',
-  notes: 'Official Incentive Pendulum, emission, and reserve-flow design; its original 500M maximum-supply framing must not be presented as the newer tokenomics page\'s current approximate supply.',
+  notes: 'Official Incentive Pendulum and reserve-flow design; distinguish historical 500M genesis framing from the approximately 360M post-ADR-023 maximum in the September documentation correction.',
 };
 
 export const networkSecurityGovernanceSource: SourceMeta = {

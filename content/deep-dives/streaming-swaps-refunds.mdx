@@ -54,6 +54,10 @@ The important fields are:
 
 Streaming is usually a price-quality tool, not a guarantee of execution. A longer streaming path can reduce slip but also creates more time for live state, halts, pools, gas, and quote assumptions to change.
 
+Interval `0` permits rapid execution with multiple iterations in a block; intervals of `1` or more space iterations across blocks. Rapid execution does not mean instantaneous inbound confirmation, outbound signing, or destination settlement. Keep quantity, interval, affiliate fields, quote duration, and executed memo aligned; a lower fee floor with automatically calculated quantity can also mean many more slices and a longer stream.
+
+[September 25-26 integrator reports](https://discord.com/channels/838986635756044328/1498412149842903151/1553209112437858366) described a roughly one-hour quote versus a roughly fifteen-hour stream in a 1-bps/automatic-quantity/one-block-spacing context. This is an unreproduced mismatch report, not proof of a particular quote bug or a universal reason to change memos to `/0/0`. Investigate the exact inputs and executed transaction before attributing the delay to ADR-026; historical fixed-5-bps examples are not substitutes for fresh route-specific fee evidence.
+
 ## Why Refunds Happen
 
 Refunds are a symptom, not one root cause. Common evidence families include:

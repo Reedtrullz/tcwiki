@@ -63,8 +63,8 @@ describe('liquidity and economics content review', () => {
       'deep-dive-runepool-pol',
     ]) {
       const entry = getContentEntry(id);
-      expect(entry.reviewedAt, id).toBe(REVIEWED_AT);
-      expect(entry.nextReviewDue, id).toBe(NEXT_REVIEW_DUE);
+      expect(entry.reviewedAt, id).toBe(['deep-dive-incentive-pendulum', 'deep-dive-runepool-pol'].includes(id) ? '2026-09-30' : REVIEWED_AT);
+      expect(entry.nextReviewDue, id).toBe(id === 'deep-dive-runepool-pol' ? '2026-12-11' : NEXT_REVIEW_DUE);
     }
 
     for (const id of ['new-to-thorchain', 'swap-economics', 'liquidity-actions']) {
@@ -101,19 +101,26 @@ describe('liquidity and economics content review', () => {
     expect(GLOSSARY_TERMS.find((term) => term.id === 'protocol-owned-liquidity')?.definition).toContain('fixed documentation count');
   });
 
-  it('preserves conflicting supply pages as separate dated source claims', () => {
+  it('uses corrected September supply framing without treating maximum as circulating supply', () => {
     const supply = getTokenomicsRecord('rune-supply-framing');
     const sourceMap = SOURCE_MAP_SECTION_RECORDS.find((record) => record.data.id === 'rune-tokenomics-and-value');
 
-    expect(supply.freshness.checkedAt).toBe(REVIEWED_AT);
+    expect(supply.freshness.checkedAt).toBe('2026-09-30');
     expect(supply.freshness.nextReviewDue).toBe(NEXT_REVIEW_DUE);
-    expect(supply.data.summary).toContain('approximate figures near 425M');
-    expect(supply.data.summary).toContain('original 500M maximum');
+    expect(supply.data.summary).toContain('approximately 360M maximum');
+    expect(supply.data.summary).toContain('500M genesis cap');
     expect(supply.sources).toContainEqual(economicModelSource);
-    expect(sourceMap?.freshness.checkedAt).toBe(REVIEWED_AT);
-    expect(sourceMap?.data.caveat).toContain('`425M and burning`');
-    expect(sourceMap?.data.caveat).toContain('original `500M` maximum');
+    expect(sourceMap?.freshness.checkedAt).toBe('2026-09-30');
+    expect(sourceMap?.data.caveat).toContain('not exact current circulating supply');
+    expect(sourceMap?.data.caveat).toContain('500M genesis context');
     expect(sourceMap?.data.links).toContainEqual(economicModelSource);
+  });
+
+  it('keeps the dated revenue allocation complete and rendered at its search anchor', () => {
+    const revenue = getTokenomicsRecord('rune-revenue-distribution');
+    expect(revenue.data.figures.map(({ value }) => value)).toEqual(['1%', '5%', '5%', '10%', '20%', '59%; pendulum allocation']);
+    expect(revenue.data.summary).toContain('not same-block payout proof');
+    expect(readFileSync('src/app/rune/page.tsx', 'utf8')).toContain("recordAnchor('tokenomics', revenueRecord.data.id)");
   });
 
   it('removes unsupported AMM and market-regime shortcuts from the articles', () => {
@@ -125,7 +132,8 @@ describe('liquidity and economics content review', () => {
     expect(clp).toMatch(/CLP is a constant.function pool design/i);
     expect(clp).not.toContain('Unlike constant-product AMMs');
     expect(pendulum).not.toContain('During bull markets with high liquidity demand');
-    expect(pendulum).toContain('`425M and burning`');
+    expect(pendulum).toContain('approximately `360M` post-ADR-023 maximum');
+    expect(pendulum).toContain('not an adopted ADR');
     expect(liquidityActions).toContain('impermanent-loss-protection section is historical');
     expect(runePool).toContain('same-provider same-height');
     expect(runePool).toContain('`current_deposit` is `rune_deposited - rune_withdrawn` and can be negative');

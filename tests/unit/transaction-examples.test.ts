@@ -90,9 +90,9 @@ describe('dated transaction examples', () => {
     expect(migration?.unknowns.join(' ')).toMatch(/matched|unmatched/i);
   });
 
-  it('does not repin the parent guide review dates for the new example cohort', () => {
-    expect(getContentEntry('deep-dive-streaming-swaps-refunds').reviewedAt).toBe('2026-07-14');
-    expect(getContentEntry('deep-dive-build-query-data').reviewedAt).toBe('2026-07-14');
+  it('keeps parent guide review dates on their own review cycle', () => {
+    expect(getContentEntry('deep-dive-streaming-swaps-refunds').reviewedAt).toBe('2026-09-30');
+    expect(getContentEntry('deep-dive-build-query-data').reviewedAt).toBe('2026-09-30');
     expect(getContentEntry('deep-dive-churning').reviewedAt).toBe('2026-07-14');
   });
 });

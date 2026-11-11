@@ -29,7 +29,17 @@ import {
   transactionExampleMemoDocsSource,
   transactionExampleMemoMapV3203Source,
   transactionMemoParserV3203Source,
+  tokenomicsSeptemberSource,
+  discordV3203Source,
+  discordBtcSeptemberSource,
+  discordGaiaSeptemberSource,
+  discordWasmSeptemberSource,
+  discordZecChurnSource,
+  discordBaseCobaltSource,
+  discordAdr030SeptemberSource,
+  discordDynamicFeeSeptemberSource,
   adr026DynamicFeesSource,
+  adr026SeptemberSource,
   adr028ExploitConciliationSource,
   archivedLendingSource,
   archivedSaversLendingSource as archivedFeaturesSource,
@@ -79,6 +89,7 @@ import {
   runePoolDocsSource,
   runePoolEndpointSource,
   supportedBlockchainsSource,
+  zecAddressSource,
   swapGuideSource,
   swapkitDocsSource,
   tcyGuideSource,
@@ -95,7 +106,6 @@ import {
   tokenomicsSource,
   transactionQueryExamplesSource,
   xchainJsSource,
-  zecAddressSource,
 } from '@/lib/sources';
 import { withFreshness } from '@/lib/trust';
 
@@ -211,12 +221,6 @@ const viewblockNeedsReviewSource: SourceMeta = {
   ...viewblockSource,
   retrievedAt: '2026-07-08',
   notes: 'Direct source returned a Cloudflare challenge from this review environment; keep as needs-review until a human/browser refresh confirms THORChain indexing.',
-};
-
-const adr026DynamicFeesReviewedAt20260708: SourceMeta = {
-  ...adr026DynamicFeesSource,
-  retrievedAt: '2026-07-08',
-  notes: 'Architecture decision text still labels the ADR proposed; live THORNode evidence is separate current-only state.',
 };
 
 const thornodeMimirDynamicFeesReviewedAt20260708: SourceMeta = {
@@ -518,7 +522,7 @@ export const CHAIN_RECORDS: SourcedRecord<Chain>[] = [
     explorer: 'https://solscan.io/block',
     addressFormats: ['Base58'],
     supported: true,
-    statusNote: 'Live inbound and chain-client sources include SOL even though the high-level supported-blockchains overview omitted it at review time. SOL uses EdDSA signing; Exploit Report #2 says EdDSA chains such as Solana were not exposed to the GG20/Paillier attack path.',
+    statusNote: 'Live inbound-address and chain-client sources include SOL. SOL uses EdDSA signing; Exploit Report #2 says EdDSA chains such as Solana were not exposed to the GG20/Paillier attack path.',
   }, supportedChainSolSources, 'official', supportedChainCatalogFreshness),
   record({
     name: 'XRP Ledger',
@@ -823,7 +827,7 @@ export const SOURCE_MAP_SECTION_RECORDS: SourcedRecord<SourceMapSection>[] = [
     title: 'RUNE Tokenomics And Value Claims',
     decision: 'Which source family should back a RUNE number, supply framing, security constant, or value claim?',
     use: 'Use official tokenomics and protocol docs for dated RUNE supply and role framing, Stats for current Midgard network metrics, and THORNode/Mimir evidence for current security constants such as minimum bond or slash settings.',
-    caveat: 'The newer tokenomics page gives approximate `425M and burning` supply framing while the economic-model page still presents the original `500M` maximum and genesis distribution. Keep those dated source contexts, live metrics, and market analysis separate; the wiki does not provide price targets, fair-value models, market-cap proof, exchange float, or guaranteed-yield conclusions.',
+    caveat: 'September official documentation gives an approximately 360M post-ADR-023 maximum supply, not exact current circulating supply. The 500M genesis context and older 425M/350M/75M figures are historical. Read exact total, circulating, and reserve balances live; this wiki does not provide price targets, fair-value models, market-cap proof, exchange float, or guaranteed-yield conclusions.',
     claimExamples: [
       'Dated RUNE supply, reserve, circulating-supply, burn, or TCY-context framing from the tokenomics source.',
       'Which live dashboard surface owns pooled RUNE, reserve, bond, node-count, earnings, or APY-style metrics.',
@@ -836,9 +840,9 @@ export const SOURCE_MAP_SECTION_RECORDS: SourcedRecord<SourceMapSection>[] = [
       'Future yield, protocol revenue lift, recovery value, or guaranteed return.',
       'That one RUNE number can be reused across settlement, security, liquidity, tokenomics, and market-value claims.',
     ],
-    links: [tokenomicsSource, economicModelSource, officialDocs, developerDocs, midgardNetworkSource, thornodeMimirSource],
-  }, [tokenomicsSource, economicModelSource, officialDocs, developerDocs, midgardNetworkSource, thornodeMimirSource], 'curated', {
-    checkedAt: '2026-07-14',
+    links: [tokenomicsSeptemberSource, economicModelSource, officialDocs, developerDocs, midgardNetworkSource, thornodeMimirSource],
+  }, [tokenomicsSeptemberSource, economicModelSource, officialDocs, developerDocs, midgardNetworkSource, thornodeMimirSource], 'curated', {
+    checkedAt: '2026-09-30',
     nextReviewDue: '2026-11-17',
   }),
   record({
@@ -1015,18 +1019,34 @@ export const TOKENOMICS_RECORDS: SourcedRecord<TokenomicsSnapshot>[] = [
   record({
     id: 'rune-supply-framing',
     title: 'RUNE Supply Framing',
-    summary: 'As reviewed on 2026-07-14, the newer official tokenomics page gives approximate figures near 425M total, 350M circulating, and 75M reserve with ongoing burns. The economic-model page still shows the original 500M maximum and genesis distribution; keep that as historical cap context rather than combining it with the newer approximate snapshot.',
+    summary: 'Official documentation reviewed September 30 reflects the September 10 supply correction: approximately 360M maximum RUNE supply after ADR-023. Exact total and circulating supply decrease with burns, and reserve balances require live reads. The 500M genesis cap and older 425M/350M/75M snapshot are historical, not current supply figures.',
     figures: [
-      { label: 'Original Cap Context', value: '500M economic-model figure', tone: 'historical' },
-      { label: 'Tokenomics Page Total', value: '~425M and burning', tone: 'source-backed' },
-      { label: 'Tokenomics Page Circulating', value: '~350M', tone: 'source-backed' },
-      { label: 'Tokenomics Page Reserve', value: '~75M', tone: 'source-backed' },
+      { label: 'Genesis Cap Context', value: '500M historical cap', tone: 'historical' },
+      { label: 'Post-ADR-023 Maximum', value: '~360M RUNE', tone: 'source-backed' },
+      { label: 'Total / Circulating', value: 'Live supply; decreases with burns', tone: 'current-only' },
+      { label: 'Reserve Balance', value: 'Read current reserve account', tone: 'current-only' },
       { label: 'Network Income', value: 'Fees, emissions, burns, TCY share', tone: 'dynamic' },
       { label: 'Bond Requirement', value: 'Check constants + Mimir', tone: 'current-only' },
       { label: 'Slash Penalty', value: 'Check constants + Mimir', tone: 'current-only' },
     ],
-  }, [tokenomicsSource, economicModelSource], 'official', {
-    checkedAt: '2026-07-14',
+  }, [tokenomicsSeptemberSource, economicModelSource], 'official', {
+    checkedAt: '2026-09-30',
+    nextReviewDue: '2026-11-17',
+  }),
+  record({
+    id: 'rune-revenue-distribution',
+    title: 'September Revenue Distribution',
+    summary: 'The official September 14 documentation update allocates fee revenue as below. The Incentive Pendulum divides the remaining 59% between nodes and LPs. This is a dated documentation model, not same-block payout proof, and is separate from ADR-031 app-layer revenue sharing.',
+    figures: [
+      { label: 'Burn', value: '1%', tone: 'source-backed' },
+      { label: 'Developer Fund', value: '5%', tone: 'source-backed' },
+      { label: 'Marketing', value: '5%', tone: 'source-backed' },
+      { label: 'TCY', value: '10%', tone: 'source-backed' },
+      { label: 'POL-LP Position', value: '20%', tone: 'source-backed' },
+      { label: 'Nodes / LPs', value: '59%; pendulum allocation', tone: 'source-backed' },
+    ],
+  }, [tokenomicsSeptemberSource], 'official', {
+    checkedAt: '2026-09-30',
     nextReviewDue: '2026-11-17',
   }),
   record({
@@ -1368,6 +1388,85 @@ const memolessPilotClaims: ClaimEvidence[] = [
 
 export const SECURITY_INCIDENT_RECORDS: SourcedRecord<SecurityIncident>[] = [
   record({
+    id: 'eth-reorg-double-payout-2026-10',
+    title: 'Ethereum Reorg Double Payout and Global Pause',
+    date: '2026-10-31',
+    type: 'Operational Incident',
+    description: 'A one-block Ethereum reorg left a 10 ETH deposit observed and finalised even though it was not on the canonical chain. The quorum errata never formed, the automatic solvency halt fired and then lifted because the queued refund covered the gap, and the vault refunded both the unrecognised deposit and the real one. Core paused all chains as a precaution, then moved to chain-level halts.',
+    impact: 'Vault ...dx7767 was briefly 10 ETH short; the recipient returned the funds in full the same day. The incident report said Bifrost and THORNode fixes would ship in the next release, and 3.21.1 followed on November 3. No signing-key compromise was reported.',
+    resolved: true,
+    resolutionDate: '2026-10-31',
+    lessons: [
+      'A reorg errata that never reaches quorum is not a cleared observation.',
+      'Pending outbounds can mask a solvency gap during halt evaluation.',
+      'Separate a reorg/finality bug from a TSS or vault-key compromise in incident wording.',
+    ],
+    url: 'https://discord.com/channels/838986635756044328/839001804812451873/1566101692825608223',
+  }, [discordEthReorgSource, discordEthReorgResolutionSource], 'curated', {
+    checkedAt: '2026-11-07',
+    nextReviewDue: '2026-12-07',
+  }),
+  record({
+    id: 'btc-autohalt-2026-09',
+    title: 'BTC Auto-Halt and Outbound Delays',
+    date: '2026-09-27',
+    type: 'Operational Incident',
+    description: 'Discord operator reporting describes an almost double-spent transaction and BTC auto-halt, not a successful double payment. September 29 reporting also identified outbound hashes not seen on Bitcoin.',
+    impact: 'Dated BTC interruption and delayed outbounds; resolution of every affected transaction was not established.',
+    resolved: false,
+    trackerStatus: 'current',
+    lessons: ['Use dated reporting separately from live controls and confirmed resolution.'],
+    url: 'https://discord.com/channels/838986635756044328/839001804812451873/1553679215008682024',
+  }, [discordBtcSeptemberSource], 'curated', {
+    checkedAt: '2026-09-30',
+    nextReviewDue: '2026-12-11',
+  }),
+  record({
+    id: 'gaia-recovery-2026-09',
+    title: 'GAIA Restart and Missed Observation',
+    date: '2026-09-22',
+    type: 'Operational Incident',
+    description: 'Operator reports describe the Cosmos Hub halt at 33086740, v28.3.0 restart, and an outbound settled on Gaia but not yet reflected in THORChain observation accounting.',
+    impact: 'Recovery required observation reconciliation; scanner healthy flags could conceal a frozen upstream daemon.',
+    resolved: false,
+    trackerStatus: 'current',
+    lessons: ['Use dated reporting separately from live controls and confirmed resolution.'],
+    url: 'https://discord.com/channels/838986635756044328/839001804812451873/1552411654413615235',
+  }, [discordGaiaSeptemberSource], 'curated', {
+    checkedAt: '2026-09-30',
+    nextReviewDue: '2026-12-11',
+  }),
+  record({
+    id: 'wasm-halt-request-2026-09',
+    title: 'App Layer Emergency Halt Request',
+    date: '2026-09-26',
+    type: 'Operational Incident',
+    description: 'A Discord operator request asked nodes to set HALTWASMGLOBAL=1 while investigating a potential App Layer issue. A separate signing-pause request was withdrawn later that day.',
+    impact: 'WASM halt requested; cause, loss amount and final unhalt were not established by this review.',
+    resolved: false,
+    trackerStatus: 'current',
+    lessons: ['Use dated reporting separately from live controls and confirmed resolution.'],
+    url: 'https://discord.com/channels/838986635756044328/839001804812451873/1553391051283107963',
+  }, [discordWasmSeptemberSource], 'curated', {
+    checkedAt: '2026-09-30',
+    nextReviewDue: '2026-12-11',
+  }),
+  record({
+    id: 'zec-keygen-2026-09',
+    title: 'ZEC Readiness and Churn Blockers',
+    date: '2026-09-30',
+    type: 'Operational Incident',
+    description: 'After churning was enabled, operators reported inconsistent ZEC chain sets and keygen co-blaming preventing vault rotation.',
+    impact: 'Scanner enablement did not establish completed rotation or public ZEC trading availability.',
+    resolved: false,
+    trackerStatus: 'current',
+    lessons: ['Use dated reporting separately from live controls and confirmed resolution.'],
+    url: 'https://discord.com/channels/838986635756044328/839002619481554955/1554782541947473941',
+  }, [discordZecChurnSource], 'curated', {
+    checkedAt: '2026-09-30',
+    nextReviewDue: '2026-12-11',
+  }),
+  record({
     id: 'eth-router-1',
     title: 'ETH Router Exploit #1',
     date: '2021-07-15',
@@ -1471,25 +1570,6 @@ export const SECURITY_INCIDENT_RECORDS: SourcedRecord<SecurityIncident>[] = [
     checkedAt: '2026-11-08',
     nextReviewDue: '2026-12-08',
   }),
-  record({
-    id: 'eth-reorg-double-payout-2026-10',
-    title: 'Ethereum Reorg Double Payout and Global Pause',
-    date: '2026-10-31',
-    type: 'Operational Incident',
-    description: 'A one-block Ethereum reorg left a 10 ETH deposit observed and finalised even though it was not on the canonical chain. The quorum errata never formed, the automatic solvency halt fired and then lifted because the queued refund covered the gap, and the vault refunded both the unrecognised deposit and the real one. Core paused all chains as a precaution, then moved to chain-level halts.',
-    impact: 'Vault ...dx7767 was briefly 10 ETH short; the recipient returned the funds in full the same day. The incident report said Bifrost and THORNode fixes would ship in the next release, and 3.21.1 followed on November 3. No signing-key compromise was reported.',
-    resolved: true,
-    resolutionDate: '2026-10-31',
-    lessons: [
-      'A reorg errata that never reaches quorum is not a cleared observation.',
-      'Pending outbounds can mask a solvency gap during halt evaluation.',
-      'Separate a reorg/finality bug from a TSS or vault-key compromise in incident wording.',
-    ],
-    url: 'https://discord.com/channels/838986635756044328/839001804812451873/1566101692825608223',
-  }, [discordEthReorgSource, discordEthReorgResolutionSource], 'curated', {
-    checkedAt: '2026-11-07',
-    nextReviewDue: '2026-12-07',
-  }),
 ];
 const memolessPilotRecord = SECURITY_INCIDENT_RECORDS.find(record => record.data.id === 'memoless-spam-2026-08');
 if (!memolessPilotRecord) throw new Error('Missing memoless claim pilot record');
@@ -1498,6 +1578,20 @@ memolessPilotRecord.claims = memolessPilotClaims;
 
 
 export const GOVERNANCE_PROPOSAL_RECORDS: SourcedRecord<GovernanceProposal>[] = [
+  record({
+    id: 'dynamic-fee-enrollment-2026-09',
+    title: 'Edge Wallet and Symbiosis Dynamic Fee Enrollment',
+    description: 'September 25 operator request to enroll ej and symbiosis through DYNAMICFEE-WHITELIST-EJ=1 and DYNAMICFEE-WHITELIST-SYMBIOSIS=1. The request does not prove activation; check current Mimir and pair records.',
+    type: 'Operational Parameter',
+    status: 'Enrollment requested; activation not verified',
+    votingPeriod: 'Dated operational request; three matching node votes requested',
+    createdDate: '2026-09-25',
+    expiryDate: 'Confirm current whitelist state before activation claims',
+    sourceUrl: 'https://discord.com/channels/838986635756044328/839001804812451873/1553088074743816223',
+  }, [discordDynamicFeeSeptemberSource], 'curated', {
+    checkedAt: '2026-09-30',
+    nextReviewDue: '2026-12-11',
+  }),
   record({
     id: 'thorfi-unwind',
     title: 'THORFi Unwind',
@@ -1544,34 +1638,34 @@ export const GOVERNANCE_PROPOSAL_RECORDS: SourcedRecord<GovernanceProposal>[] = 
   record({
     id: 'adr-026-dynamic-l1-fees',
     title: 'ADR-026 Dynamic L1 Fees',
-    description: 'Dynamic per-thorname and per-pair L1 minimum fee experiment. Official ADR text is proposed-design context while live THORNode snapshots may show enabled Mimirs and dynamic-fee records.',
+    description: 'Implemented dynamic per-thorname and per-pair L1 minimum fee mechanism. Develop ADR status and merged August 12 documentation establish implementation history; current Mimir, affiliate eligibility, records, and revenue effects still require fresh evidence.',
     type: 'ADR / Operational Experiment',
-    status: 'Proposed ADR / live Mimir evidence',
+    status: 'Implemented ADR / current-only rollout evidence',
     votingPeriod: 'Current-only Mimir and source review',
     createdDate: '2026-04-15',
     expiryDate: 'ADR discussion review target 2026-11-17',
     sourceUrl: 'https://gitlab.com/thorchain/thornode/-/raw/develop/docs/architecture/adr-026-dynamic-l1-min-fee-per-thorname.md',
   }, [
-    adr026DynamicFeesReviewedAt20260708,
+    adr026SeptemberSource,
     thornodeMimirDynamicFeesReviewedAt20260708,
     dynamicL1FeesReviewedAt20260708,
     dynamicL1FeesCurrentReviewedAt20260708,
   ], 'curated', {
-    checkedAt: '2026-07-08',
+    checkedAt: '2026-09-30',
     nextReviewDue: '2026-11-17',
   }),
   record({
     id: 'adr-030-delegated-node-ops',
     title: 'ADR-030 Delegated Node Operator Permissions',
-    description: 'Proposed ADR for a per-node delegate registry: the operator could grant MAINT, LEAVE, bond-provider-whitelist, and set-fee permissions to delegate addresses with optional block-offset expiry. Custody, UNBOND, OPERATOR_ROTATE, and delegation management would stay exclusive to the operator key. The official v3.20 recap says the framework ships in v3.20 code with activation expected in v3.21; no delegate registry is active on mainnet yet.',
+    description: 'Proposed per-node delegate registry for MAINT, LEAVE, bond-provider-whitelist, and set-fee permissions, with custody and delegation management retained by the operator. The v3.20 recap expected activation in v3.21. A September 28 Discord reminder reported 21 votes still needed and specified ADR030, not ADR30 or ADR-030; this dated tally does not prove current activation.',
     type: 'ADR / Node Operations',
     status: 'Proposed ADR',
     votingPeriod: 'Open community review; no mainnet activation evidence',
     createdDate: '2026-07-17',
     expiryDate: 'Check develop ADR status and release notes before present-tense claims',
     sourceUrl: 'https://gitlab.com/thorchain/thornode/-/blob/develop/docs/architecture/adr-030-delegated-node-operator-permissions.md',
-  }, [adr030DelegatedOpsSource], 'official', {
-    checkedAt: '2026-08-26',
+  }, [adr030DelegatedOpsSource, discordAdr030SeptemberSource], 'curated', {
+    checkedAt: '2026-09-30',
     nextReviewDue: '2026-11-17',
   }),
   record({
@@ -1586,7 +1680,7 @@ export const GOVERNANCE_PROPOSAL_RECORDS: SourcedRecord<GovernanceProposal>[] = 
     sourceUrl: 'https://gitlab.com/thorchain/thornode/-/blob/2276d16386e96b6693f11f7e76473623f3fdb767/docs/architecture/adr-027-affiliate-revshare.md',
   }, [adr027AffiliateRevShareSource, affiliateRevShareImplementationSource, affiliateRevShareQ32026Source], 'curated', {
     checkedAt: '2026-10-27',
-    nextReviewDue: '2026-11-10',
+    nextReviewDue: '2026-12-11',
   }),
   record({
     id: 'adr-031-rujira-alignment',
@@ -1606,6 +1700,38 @@ export const GOVERNANCE_PROPOSAL_RECORDS: SourcedRecord<GovernanceProposal>[] = 
 
 
 export const PROTOCOL_MILESTONE_RECORDS = [
+  record({
+    date: '2026-11-07',
+    title: 'THORNode v3.21.1 to v3.21.3 Bifrost Patches',
+    description: 'Bifrost-only patches followed the 3.21.0 upgrade. 3.21.1 and 3.21.2 shipped as private binaries with BTC, gossip, solvency, GAIA, XRP and EVM fixes; 3.21.3 added BASE 200ms block handling and a SOL durable-nonce fix. BASE trading stayed halted pending the coordinated 3.22.0 release because the scanning fix changes swap quotes.',
+  }, [discordThornode3211Source, discordThornode3213Source, discordBaseHalt322Source], 'curated', {
+    checkedAt: '2026-11-07',
+    nextReviewDue: '2026-12-07',
+  }),
+  record({
+    date: '2026-10-23',
+    title: 'THORNode v3.21.0 Upgrade',
+    description: 'Operator notice placed the coordinated upgrade at block 28,366,100 and paused SOL, TRON and ZEC signing for a chain migration that must run with signing halted. After the first post-upgrade churn, BSC was to move to Router V6.1 (0x00dc6100103BC402d490aEE3F9a5560cBd91f1d4), with ETH following. This is a release notice, not fleet-adoption or current-router proof.',
+  }, [discordThornode3210Source], 'curated', {
+    checkedAt: '2026-11-07',
+    nextReviewDue: '2026-12-07',
+  }),
+  record({
+    date: '2026-09-22',
+    title: 'THORNode v3.20.3 Bifrost Patch Announcement',
+    description: 'Operator announcement reports SOL v1 transaction support, blockhash re-signing, signing-height TSS policy, scanner recovery and whitelist startup fixes. Bifrost-only patch: consensus network version remains 3.20.0, with no upgrade height. Announcement is not fleet deployment proof.',
+  }, [discordV3203Source], 'curated', {
+    checkedAt: '2026-09-30',
+    nextReviewDue: '2026-12-11',
+  }),
+  record({
+    date: '2026-09-26',
+    title: 'Base Cobalt Operator Preparation Notice',
+    description: 'Operator notice specifies Base node v1.4.2 for the September 30, 18:00 UTC Cobalt hardfork deadline. This dated notice does not confirm fleet upgrade completion or fork outcome.',
+  }, [discordBaseCobaltSource], 'curated', {
+    checkedAt: '2026-09-30',
+    nextReviewDue: '2026-12-11',
+  }),
   record({
     date: '2018',
     title: 'THORChain Founded',
@@ -1653,21 +1779,5 @@ export const PROTOCOL_MILESTONE_RECORDS = [
   }, [protocolUpgradeV320Source], 'official', {
     checkedAt: '2026-08-26',
     nextReviewDue: '2026-11-17',
-  }),
-  record({
-    date: '2026-10-23',
-    title: 'THORNode v3.21.0 Upgrade',
-    description: 'Operator notice placed the coordinated upgrade at block 28,366,100 and paused SOL, TRON and ZEC signing for a chain migration that must run with signing halted. After the first post-upgrade churn, BSC was to move to Router V6.1 (0x00dc6100103BC402d490aEE3F9a5560cBd91f1d4), with ETH following. This is a release notice, not fleet-adoption or current-router proof.',
-  }, [discordThornode3210Source], 'curated', {
-    checkedAt: '2026-11-07',
-    nextReviewDue: '2026-12-07',
-  }),
-  record({
-    date: '2026-11-07',
-    title: 'THORNode v3.21.1 to v3.21.3 Bifrost Patches',
-    description: 'Bifrost-only patches followed the 3.21.0 upgrade. 3.21.1 and 3.21.2 shipped as private binaries with BTC, gossip, solvency, GAIA, XRP and EVM fixes; 3.21.3 added BASE 200ms block handling and a SOL durable-nonce fix. BASE trading stayed halted pending the coordinated 3.22.0 release because the scanning fix changes swap quotes.',
-  }, [discordThornode3211Source, discordThornode3213Source, discordBaseHalt322Source], 'curated', {
-    checkedAt: '2026-11-07',
-    nextReviewDue: '2026-12-07',
   }),
 ];

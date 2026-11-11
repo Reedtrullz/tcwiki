@@ -11,12 +11,12 @@
   },
   "identity": {
     "authoredInputs": {
-      "src/lib/data/static.ts": "b4e16ac813bc4895dd37a5345890fd6eda950d9d31735f35627866095c88df94",
-      "src/lib/content/registry.ts": "5d63029eb16386c88c05d3599a747296c5fc0a1a01004327c987f88e73581382",
-      "src/lib/sources.ts": "783fee0ffb91ae50a7b006aef51de24e3696ef37c5aa998718de164991c09f18",
+      "src/lib/data/static.ts": "3e825e417d401797163884d9e6fa8403b7141cf9b5ed3f7d728f35814f8d7acf",
+      "src/lib/content/registry.ts": "0ac576869c0c33b3cdd099b728fccfdac2a1e34b573517f4bc274d0046807d6b",
+      "src/lib/sources.ts": "e397a87bf1c0ebe2eb3b9bb8b7904b05cf615fe99cfb8156f33f2a6cdd1665ed",
       "src/lib/types.ts": "7ce679173123360384f57985d5980e1307ab7649a0c3439a68de413527f0e10c",
       "src/lib/site.ts": "e79a4609bcf097347fe1660252b7d4db81ae149520cca0b27c7059fd24a07f6d",
-      "content/deep-dives/build-query-data.mdx": "d63a031b796c07eac8b50975c4358dc3b599c1455c2813ac9db08a54492b9e83",
+      "content/deep-dives/build-query-data.mdx": "bf08feee64afbebaefc68adbe363a09db89d927927f301665f8e004b73efc485",
       "scripts/lib/knowledge-links.mjs": "1d2c3fbafd6d754696a1824cf1f50f7c9a574aaaaf4aae832d131d9de3825316",
       "scripts/lib/deep-dive-toc.mjs": "73458b1084d09f2c9c46e54b0ac287a640d4d822435d3440388639b832c536e3",
       "src/lib/deep-dive-heading-id.mjs": "9ecba84bf8d1f47133c0ab6c08e2bd05edb5c4fc828c0e25474aafba3f0c52b6"
@@ -148,7 +148,7 @@
       "title": "Build And Query THORChain Data",
       "href": "/deep-dives/build-query-data",
       "confidence": "curated",
-      "reviewedAt": "2026-07-14",
+      "reviewedAt": "2026-09-30",
       "nextReviewDue": "2026-11-17",
       "sources": [
         {
@@ -186,6 +186,18 @@
           "url": "https://dev.thorchain.org/concepts/asset-notation.html",
           "retrievedAt": "2026-07-14",
           "notes": "Official asset-notation reference for chain.asset and token identifiers used in quotes, pools, and memos."
+        },
+        {
+          "label": "March 20 Router V6 integration warning",
+          "url": "https://discord.com/channels/838986635756044328/929872517794000986/1484651910865748008",
+          "retrievedAt": "2026-09-30",
+          "notes": "Dated Discord notice warns that mismatched router/vault addresses can lose funds; does not establish fleet-wide or all-chain rollout."
+        },
+        {
+          "label": "ADR-026 dynamic L1 fee model",
+          "url": "https://gitlab.com/thorchain/thornode/-/raw/develop/docs/architecture/adr-026-dynamic-l1-min-fee-per-thorname.md",
+          "retrievedAt": "2026-09-30",
+          "notes": "Develop ADR marks the decision Implemented; documentation MR 4984 merged August 12. Historical July endpoint snapshots do not establish current enrollment or results."
         },
         {
           "label": "Midgard v2 Pools",
@@ -233,6 +245,6 @@
   ],
   "checksum": {
     "algorithm": "sha256",
-    "value": "b575c35baeaf320bddf7c4f623a400f92d7918884857d506eb28076754574652"
+    "value": "670115079ea10bc188e8745ce766ec624f59e6ab9e9f34ba512068989c18189c"
   }
 }

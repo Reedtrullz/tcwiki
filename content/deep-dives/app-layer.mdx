@@ -14,7 +14,7 @@ App Layer language gets risky when one sentence tries to cover contracts, secure
 
 ### Secured asset movement
 
-- **Use:** Explain that secured assets are THORChain-native assets minted from deposited L1 assets and can be used by accounts, IBC, and contracts.
+- **Use:** Explain that secured assets are THORChain-native assets minted from deposited L1 assets and can be used by accounts and contracts; do not infer native IBC transfer support.
 - **Verify:** Check live secured-asset controls, chain-scoped deposit and withdrawal flags, route availability, and official asset-notation docs.
 - **Do not claim:** Current capacity, redemption timing, liquidity, or safety margin without fresh protocol evidence.
 
@@ -82,7 +82,9 @@ Do not reduce those controls to a single "App Layer is up" claim. A global contr
 
 ## Secured Assets
 
-Secured Assets are native THORChain assets minted from deposited L1 assets. They are designed for account transfers, IBC-compatible movement, and CosmWasm integration using normal Cosmos SDK messages.
+Secured Assets are native THORChain assets minted from deposited L1 assets. They are designed for account transfers and CosmWasm integration using normal Cosmos SDK messages.
+
+As checked September 30, [documentation correction MR 5076](https://gitlab.com/thorchain/thornode/-/merge_requests/5076) is **open**, not merged, and explicitly says IBC is not enabled on THORChain. Older IBC wording is not evidence of an available native transfer path. External Gaia deposits originating through IBC are a different claim from native THORChain IBC asset transfers; neither Cosmos SDK nor CosmWasm integration alone proves that support.
 
 They are not the same as pooled L1 assets, synthetic assets, or historical trade assets:
 
