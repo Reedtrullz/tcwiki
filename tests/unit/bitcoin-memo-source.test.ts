@@ -16,8 +16,13 @@ describe('curated Bitcoin-only memo archive pointer', () => {
     expect(record?.data.nonClaims.join(' ')).toMatch(/complete/i);
   });
   it('reuses the source in source map and guides and makes the bounded pointer searchable', () => {
-    for (const id of ['docs', 'deep-dive-streaming-swaps-refunds', 'deep-dive-build-query-data']) {
-      expect(getContentEntry(id).reviewedAt).toBe('2026-07-14');
+    const reviewedAt: Record<string, string> = {
+      docs: '2026-07-14',
+      'deep-dive-streaming-swaps-refunds': '2026-09-30',
+      'deep-dive-build-query-data': '2026-09-30',
+    };
+    for (const [id, date] of Object.entries(reviewedAt)) {
+      expect(getContentEntry(id).reviewedAt, id).toBe(date);
       expect(getContentEntry(id).sources).not.toContainEqual(opReturnBitcoinMemoSource);
     }
     for (const slug of ['streaming-swaps-refunds', 'build-query-data']) expect(readFileSync(`content/deep-dives/${slug}.mdx`, 'utf8')).toContain('/docs#bitcoin-memo-archive');

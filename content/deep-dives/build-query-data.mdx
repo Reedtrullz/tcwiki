@@ -65,6 +65,8 @@ For a swap, wallet, or route-aware integration, a conservative query sequence is
 
 Do not silently carry a quote, inbound address, or gas rate from an old render into a later transaction flow.
 
+For ADR-026 quotes, pass the intended `affiliate` **and nonzero `affiliate_bps`**, and keep both consistent with the executed memo. [Current fee documentation](https://gitlab.com/thorchain/thornode/-/blob/develop/docs/concepts/fees.md) says omitting either uses the default L1 floor and can make the quote disagree with execution. The dynamic floor changes the user's liquidity fee, not the integrator's own affiliate-bps setting.
+
 ## Quotes, Inbound Addresses, And Caching
 
 Quotes and inbound addresses are short-lived operational evidence.
@@ -83,6 +85,10 @@ For the wiki, this means a quote result is strong current evidence for that rout
 
 Dust thresholds are live transaction inputs. The supported-chain catalog intentionally does not copy numeric dust thresholds because current `inbound_addresses` values can differ from old examples or a previous review. Read the selected chain's current `dust_threshold`, gas-rate units, router, and halt fields from the same fresh transaction evidence used for the quote.
 
+Treat an EVM **router and vault address as one fresh pair**, fetched together for the transaction flow. Do not hardcode either or cache them independently across upgrades or churn. The [March 20 Router V6 notice](https://discord.com/channels/838986635756044328/929872517794000986/1484651910865748008) warned that mismatching them can lose funds; later chain-specific upgrade notices are not proof that every chain has completed the same rollout.
+
+Memoless infrastructure needs a separate preflight: check current `HaltMemoless`, registration cost, reference and amount validation, and the service's rate-abuse and hot-wallet exposure before accepting deposits. [Builder discussion](https://discord.com/channels/838986635756044328/1186697172981391370/1435658993786949794) and the [September 4 abuse-halt report](https://discord.com/channels/838986635756044328/838986636665815072/1545301809965563935) show why an API's historical release announcement is not current availability or custody-safety proof.
+
 ## Amounts, Assets, And Units
 
 Most THORChain and Midgard numeric amount fields use `1e8` base units unless a field explicitly says otherwise, such as a USD field. Do not parse large base-unit values through floating point math when exactness matters.
@@ -94,6 +100,7 @@ Builder-facing checks:
 - Convert human input to base units before quote requests, and convert display output back from base units with clear labels.
 - Preserve `null`, `unavailable`, `insufficient samples`, and malformed fields as distinct states.
 - Do not render missing money, amount, APY, fee, or bps fields as zero.
+- Preserve case-sensitive Solana/base58 transaction identifiers exactly; do not globally uppercase transaction hashes. [Midgard MR 726](https://gitlab.com/thorchain/midgard/-/merge_requests/726), merged June 30, addressed original-case lookup alongside uppercase search.
 
 If an integration mixes native token decimals, THORChain base units, USD strings, and bps fields, name the unit in the UI and tests.
 
@@ -113,6 +120,8 @@ Builder-specific guidance for upstream failure:
 ## Shipping Boundary
 
 Before release, confirm source ownership, provider mixing, quote throttling and expiry, fresh inbound/route state at signing time, Midgard labeling, safe unit/error handling, and integration-specific tests. Public endpoints can be unavailable, rate-limited, or inconsistent; copied operational values and third-party SDKs still need their own checks.
+
+Missing indexed events can invalidate reconstructed secured-asset balances; an index-derived balance is not authoritative merely because the calculation is internally consistent. Match it to protocol/account evidence at a named height. For security findings, use the canonical [responsible-disclosure policy](https://gitlab.com/thorchain/thornode/-/blob/develop/bugbounty.md) rather than posting exploit details in public Discord; consult the policy for current contacts, encryption guidance, and scope, without assuming a payout.
 
 ## Swap Execution And Evidence Map
 

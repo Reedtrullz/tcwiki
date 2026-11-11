@@ -1,5 +1,6 @@
 import type { DataConfidence, SourceMeta } from '@/lib/types';
 import {
+  ibcDocumentationCorrectionSource,
   adr026DynamicFeesSource,
   adr028ExploitConciliationSource,
   appLayerSource,
@@ -430,12 +431,12 @@ export const GLOSSARY_TERMS: GlossaryTerm[] = [
   {
     id: slugifyFragment('Secured asset'),
     term: 'Secured asset',
-    definition: 'A Cosmos bank asset minted from deposited L1 assets, representing shares of deposited-asset depth and usable by accounts, IBC, and CosmWasm. The high-level and developer docs differ on whether this replaces Trade Assets or Trade Accounts; neither wording proves module removal, conversion, or current availability.',
+    definition: 'A Cosmos bank asset minted from deposited L1 assets, representing shares of deposited-asset depth and usable by accounts and CosmWasm. Native IBC transfer availability is not established; open documentation MR 5076 says IBC is not enabled. Older docs differ on Trade Assets or Trade Accounts replacement; neither proves module removal or current availability.',
     category: 'protocol',
     confidence: 'curated',
-    reviewedAt: '2026-07-14',
+    reviewedAt: '2026-09-30',
     nextReviewDue: '2026-11-17',
-    sources: [securedAssetsSource, securedAssetsDevSource, assetNotationSource, networkHaltsSource],
+    sources: [securedAssetsSource, securedAssetsDevSource, assetNotationSource, networkHaltsSource, ibcDocumentationCorrectionSource],
     relatedHrefs: ['/deep-dives/app-layer', '/economics', '/network#network-diagnostics'],
   },
   {

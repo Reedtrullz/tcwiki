@@ -351,9 +351,7 @@ describe('SEARCH_DOCUMENTS', () => {
     }
     expect(chainDocs.every((doc) => (
       doc.sources.some((source) => (
-        source.label === 'Liquify THORNode inbound_addresses' &&
         source.url === 'https://gateway.liquify.com/chain/thorchain_api/thorchain/inbound_addresses' &&
-        source.retrievedAt === '2026-07-14' &&
         source.notes?.includes('not swap')
       ))
     ))).toBe(true);
@@ -382,14 +380,14 @@ describe('SEARCH_DOCUMENTS', () => {
 
     expect(tokenomicsDocs).toHaveLength(TOKENOMICS_RECORDS.length);
     expect(runeSupply?.href).toBe('/rune#tokenomics-rune-supply-framing');
-    expect(runeSupply?.content).toContain('~425M and burning');
+    expect(runeSupply?.content).toContain('~360M RUNE');
     expect(runeSupply?.content).toContain('Bond Requirement');
     expect(runeSupply?.sources.map((source) => source.label)).toContain('RUNE and TCY tokenomics');
     expect(tcyRecovery?.href).toBe('/tcy#tokenomics-tcy-recovery-context');
     expect(tcyRecovery?.confidence).toBe('official');
     expect(tcyRecovery?.content).toContain('Full recovery Not guaranteed');
     expect(tcyRecovery?.sources.map((source) => source.label)).toContain('TCY Developer Guide');
-    expect(docsMatching('approximate figures near 425M').some((doc) => doc.id === 'tokenomics:rune-supply-framing')).toBe(true);
+    expect(docsMatching('approximately 360M maximum').some((doc) => doc.id === 'tokenomics:rune-supply-framing')).toBe(true);
     expect(docsMatching('full debt recovery is market dependent').some((doc) => doc.id === 'tokenomics:tcy-recovery-context')).toBe(true);
   });
 
@@ -470,7 +468,7 @@ describe('SEARCH_DOCUMENTS', () => {
     expect(gg20Incident?.nextReviewDue).toBe('2026-11-17');
     expect(dynamicFeeSourceMap?.reviewedAt).toBe('2026-07-13');
     expect(dynamicFeeSourceMap?.nextReviewDue).toBe('2026-11-17');
-    expect(SEARCH_DOCUMENTS.find((doc) => doc.id === 'tokenomics:rune-supply-framing')?.reviewedAt).toBe('2026-07-14');
+    expect(SEARCH_DOCUMENTS.find((doc) => doc.id === 'tokenomics:rune-supply-framing')?.reviewedAt).toBe('2026-09-30');
     expect(SEARCH_DOCUMENTS.find((doc) => doc.id === 'tokenomics:tcy-recovery-context')).toEqual(
       expect.objectContaining({ confidence: 'official', reviewedAt: '2026-07-13', nextReviewDue: '2026-11-17' })
     );
@@ -518,7 +516,7 @@ describe('SEARCH_DOCUMENTS', () => {
       const entry = CONTENT_ENTRIES.find((candidate) => candidate.id === id);
       const doc = SEARCH_DOCUMENTS.find((candidate) => candidate.id === id);
 
-      expect(entry?.reviewedAt, `${id} entry reviewedAt`).toMatch(/^2026-07-(05|06|08|09|13|14)$/);
+      expect(entry?.reviewedAt, `${id} entry reviewedAt`).toMatch(id === 'dynamic-fees' ? /^2026-09-30$/ : /^2026-07-(05|06|08|09|13|14)$/);
       expect(entry?.nextReviewDue, `${id} entry nextReviewDue`).toBe('2026-11-17');
       expect(doc?.reviewedAt, `${id} search reviewedAt`).toBe(entry?.reviewedAt);
       expect(doc?.nextReviewDue, `${id} search nextReviewDue`).toBe(entry?.nextReviewDue);

@@ -250,7 +250,7 @@ describe('source and freshness labels', () => {
 
     for (const id of expectedEntryIds) {
       expect(CONTENT_ENTRIES.find((entry) => entry.id === id), id).toEqual(
-        expect.objectContaining({ reviewedAt, nextReviewDue })
+        expect.objectContaining({ reviewedAt: id === 'deep-dive-tcy-recovery-timeline' ? '2026-09-30' : reviewedAt, nextReviewDue })
       );
     }
 
@@ -528,9 +528,10 @@ describe('source and freshness labels', () => {
     ];
     for (const id of contentIds) {
       const refreshedWithMimir = id === 'deep-dive-mimir-halt-controls';
+      const refreshedWithSeptember = id === 'dynamic-fees';
       expect(CONTENT_ENTRIES.find((entry) => entry.id === id), id).toEqual(
         expect.objectContaining({
-          reviewedAt: refreshedWithMimir ? '2026-11-07' : '2026-07-13',
+          reviewedAt: refreshedWithMimir ? '2026-11-07' : refreshedWithSeptember ? '2026-09-30' : '2026-07-13',
           nextReviewDue: refreshedWithMimir ? '2026-12-07' : '2026-11-17',
         })
       );
@@ -570,7 +571,7 @@ describe('source and freshness labels', () => {
   });
 
   it('keeps historical milestones aligned with dated primary evidence', () => {
-    expect(PROTOCOL_MILESTONE_RECORDS.slice(0, 3).map(({ data, freshness, sources }) => ({
+    expect(PROTOCOL_MILESTONE_RECORDS.filter(({ data }) => ['THORChain Founded', 'Multichain Chaosnet Launch', 'THORNode v3.0.0 Release'].includes(data.title)).map(({ data, freshness, sources }) => ({
       date: data.date,
       title: data.title,
       description: data.description,

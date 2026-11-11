@@ -110,6 +110,8 @@ describe('canonical source drift', () => {
       'glossary',
     ]);
     expect(sources.find(({ id }) => id === 'dynamic-l1-fees-adr')?.affectedRecords).toEqual([
+      'deep-dive-build-query-data',
+      'deep-dive-streaming-swaps-refunds',
       'dynamic-fees',
       'glossary',
     ]);

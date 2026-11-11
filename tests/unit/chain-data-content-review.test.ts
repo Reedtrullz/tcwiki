@@ -71,7 +71,7 @@ describe('chain and developer-data content review', () => {
 
     for (const entryId of ['deep-dive-build-query-data', 'deep-dive-midgard-thornode-data']) {
       const entry = getContentEntry(entryId);
-      expect(entry.reviewedAt, entryId).toBe(REVIEWED_AT);
+      expect(entry.reviewedAt, entryId).toBe(entryId === 'deep-dive-build-query-data' ? '2026-09-30' : REVIEWED_AT);
       expect(entry.nextReviewDue, entryId).toBe(NEXT_REVIEW_DUE);
     }
 

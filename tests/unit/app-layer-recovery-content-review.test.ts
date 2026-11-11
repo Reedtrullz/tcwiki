@@ -51,7 +51,7 @@ describe('app-layer, interface, and recovery content review', () => {
       'deep-dive-streaming-swaps-refunds',
     ]) {
       const entry = getContentEntry(id);
-      expect(entry.reviewedAt, id).toBe(REVIEWED_AT);
+      expect(entry.reviewedAt, id).toBe(id === 'deep-dive-savers' ? REVIEWED_AT : '2026-09-30');
       expect(entry.nextReviewDue, id).toBe(NEXT_REVIEW_DUE);
     }
 
@@ -84,7 +84,7 @@ describe('app-layer, interface, and recovery content review', () => {
       'Savers',
     ]) {
       const term = GLOSSARY_TERMS.find((candidate) => candidate.term === termName);
-      expect(term?.reviewedAt, termName).toBe(REVIEWED_AT);
+      expect(term?.reviewedAt, termName).toBe(termName === 'Secured asset' ? '2026-09-30' : REVIEWED_AT);
       expect(term?.nextReviewDue, termName).toBe(NEXT_REVIEW_DUE);
     }
   });
@@ -100,6 +100,8 @@ describe('app-layer, interface, and recovery content review', () => {
     expect(inbound?.definition).toContain('must not be cached or reused across churns');
     expect(memo?.definition).toContain('deprecated handlers can remain documented');
     expect(secured?.definition).toContain('Trade Assets or Trade Accounts');
+    expect(secured?.definition).not.toContain('usable by accounts, IBC');
+    expect(secured?.definition).toContain('IBC is not enabled');
     expect(synth?.definition).toContain('documented memo handlers do not prove');
 
     const appLayer = readFileSync('content/deep-dives/app-layer.mdx', 'utf8');

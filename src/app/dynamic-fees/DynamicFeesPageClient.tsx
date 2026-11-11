@@ -134,6 +134,14 @@ export function DynamicFeesView({
           ADR-026 replaces one global L1 minimum slip floor with whitelisted per-thorname and per-pair floors that move by a TOR-denominated fee-revenue signal.
           Live values below are THORNode snapshots, not durable governance history.
         </p>
+        <p className="mt-3 max-w-3xl text-sm text-slate-400">
+          The develop ADR marks this mechanism Implemented. It applies only to L1 pairs and changes the liquidity fee, not your affiliate bps.
+          Quotes must include the intended <code>affiliate</code> and nonzero <code>affiliate_bps</code> to match execution.
+          Among Active enrolled, unexpired THORNames with nonzero bps, the largest affiliate split selects the floor;
+          raw addresses, Monitor-mode, unenrolled, expired, and zero-bps entries are skipped.
+          Names containing <code>_</code> or <code>+</code> cannot currently be enrolled through the whitelist Mimir key.
+          New records start at the configured floor (documented default 1 bps), but can rise above the fallback L1 minimum.
+        </p>
       </div>
 
       {children}

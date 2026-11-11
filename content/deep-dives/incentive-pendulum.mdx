@@ -34,7 +34,11 @@ Without this mechanism, maintaining healthy bonding and liquidity ratios would r
 
 - The intended direction is toward whichever side the model treats as comparatively under-supplied.
 - A current reward split, bond ratio, or APY must be read from current source-labeled data rather than inferred from market regime.
-- The economic-model page still carries original `500M` maximum-supply framing, while the newer tokenomics page gives an approximate `425M and burning` supply. Neither number is an output of the pendulum, and the two source contexts should remain visibly separate.
+- The [September 10 supply correction](https://github.com/thorchain/docs/pull/125) gives an approximately `360M` post-ADR-023 maximum. The original `500M` genesis cap and older `425M` snapshot are historical; maximum supply is not exact current circulating supply or an output of the pendulum.
+
+The [September 14 official revenue-distribution update](https://github.com/thorchain/docs/pull/128) describes fee allocation as **1% burn, 5% developer fund, 5% marketing, 10% TCY, 20% POL-LP, and 59% nodes/LPs**. The pendulum allocates that final 59% between nodes and LPs. This dated documentation model does not prove a specific block's payouts and must not be mixed with ADR-031's separate Rujira app-layer split.
+
+A [September 23 Discord discussion](https://discord.com/channels/838986635756044328/1552272049076965446/1552287741524312084) considered deprecating the pendulum and reallocating LP rewards toward POL. This is indexed discussion evidence, not an adopted ADR or proof that LP rewards have been removed.
 
 The Incentive Pendulum is best treated as an incentive-alignment mechanism rather than a guarantee of network health or returns.
 

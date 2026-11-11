@@ -33,6 +33,7 @@ const runeToc: TocItem[] = [
 ];
 const supplyRecord = getTokenomicsRecord('rune-supply-framing');
 const supplyAnchor = recordAnchor('tokenomics', supplyRecord.data.id);
+const revenueRecord = getTokenomicsRecord('rune-revenue-distribution');
 
 const runeNumberRoutes = getRuneNumberRoutes(supplyAnchor);
 const runeClaimChecks = getRuneClaimChecks(supplyAnchor);
@@ -194,6 +195,20 @@ export default function RunePage() {
           </div>
         ))}
       </div>
+
+      <section id={recordAnchor('tokenomics', revenueRecord.data.id)} className="mb-12 scroll-mt-24">
+        <SectionHeader level="secondary">{revenueRecord.data.title}</SectionHeader>
+        <p className="mb-4 max-w-3xl text-sm text-slate-400">{revenueRecord.data.summary}</p>
+        <FreshnessMeta freshness={revenueRecord.freshness} sources={revenueRecord.sources} />
+        <dl className="mt-4 divide-y divide-border">
+          {revenueRecord.data.figures.map((row) => (
+            <div key={row.label} className="flex justify-between gap-4 py-3 text-sm">
+              <dt className="text-slate-400">{row.label}</dt>
+              <dd className="text-right font-semibold">{row.value}</dd>
+            </div>
+          ))}
+        </dl>
+      </section>
 
       <p className="mb-12 max-w-3xl text-xs leading-relaxed text-slate-500">
         These figures are dated snapshots — check the <span className="text-slate-400">FreshnessMeta</span> above for exactly when they were last verified. The split between reserve and circulating supply matters because it shapes how bonds, LP positions, and emissions interact: reserve RUNE backs node security while circulating RUNE includes the portion available for swaps and liquidity. For how RUNE actually flows through the system, see the <Link href="/deep-dives/rune-settlement" className="text-accent hover:underline">RUNE Settlement</Link> deep dive; for current protocol economics including POL and emissions, see <Link href="/economics" className="text-accent hover:underline">Economics</Link>. Do not treat any figure here as live or investment-grade data.

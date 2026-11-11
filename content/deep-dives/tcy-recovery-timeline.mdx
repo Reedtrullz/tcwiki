@@ -56,7 +56,7 @@ For present-tense TCY claiming, staking, unstaking, distributions, or trading, u
 
 ### Current TCY Documentation: Mechanics And Caveats
 
-The TCY developer guide, updated on July 12, 2026 at this review, and the tokenomics docs describe the technical framing:
+The July 12, 2026 TCY developer-guide snapshot and tokenomics documentation reviewed September 30 describe the technical framing:
 
 - TCY is a native THORChain token associated with approximately `$210M` of defaulted THORFi debt.
 - Total supply is described as `210M TCY`.
@@ -67,6 +67,10 @@ The TCY developer guide, updated on July 12, 2026 at this review, and the tokeno
 - Full debt recovery is market dependent and not guaranteed.
 
 The developer guide also documents claim, staker, and bank-balance endpoints. Those docs establish the supported mechanics, but they still do not prove a specific claimant's status, a current RUNE distribution amount, that every interface is available, or any future value.
+
+The [September 14 TCY documentation correction](https://github.com/thorchain/docs/pull/107) specifies that forfeited yield from unclaimed or unstaked TCY buys TCY into the **TCY Staking Module as protocol-owned TCY**. RUNE/TCY pool fees also fund protocol-owned TCY buybacks. This is not a generic transfer into treasury reserves and does not guarantee a holder's realized yield.
+
+Native TCY staking and a Rujira autocompound contract are separate paths. A [September 26 user report](https://discord.com/channels/838986635756044328/1332419612859564132/1553526943129804890) described blocked contract actions during the WASM halt. That report does not establish loss, contract safety, or that native TCY staking was halted; check the contract controls and native TCY controls separately.
 
 ### May-June 2026: Separate Exploit Conciliation
 
