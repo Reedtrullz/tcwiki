@@ -14,7 +14,8 @@ import { PageTableOfContents, type TocItem } from '@/components/layout/PageTable
 import { Badge } from '@/components/ui/Badge';
 import { AdditionalSourceDisclosure, SourceMetaLink } from '@/components/ui/SourceMetaDisclosure';
 import { getConfidenceLabel, getConfidenceTone } from '@/lib/trust';
-import { getSearchQueryTerms, runSafeLunrSearch } from '@/lib/search/lunr-query';
+import { getSearchQueryTerms } from '@/lib/search/lunr-query';
+import { admitSearchQuery, runAdmittedLunrSearch } from '@/lib/search/query-limits';
 import { rankSearchResults } from '@/lib/search/ranking';
 import {
   buildSearchFilterOptions,
@@ -499,6 +500,7 @@ function SearchResultsInner() {
   const query = searchParams.get('q') || '';
   const selectedFilter = normalizeSearchFilter(searchParams.get('filter'));
   const [localQuery, setLocalQuery] = useState(query);
+  const admission = useMemo(() => admitSearchQuery(query), [query]);
 
   useEffect(() => {
     setLocalQuery(query);
@@ -519,8 +521,8 @@ function SearchResultsInner() {
   };
 
   const results = useMemo<Array<SearchDoc & { score: number }>>(() => {
-    if (query.trim()) {
-      const raw = runSafeLunrSearch(searchIndex, query);
+    if (admission.ok && query.trim()) {
+      const raw = runAdmittedLunrSearch(searchIndex, query);
       const mapped: Array<SearchDoc & { score: number }> = [];
       raw.forEach((r) => {
         const doc = searchDocumentsById.get(r.ref);
@@ -532,7 +534,7 @@ function SearchResultsInner() {
     }
 
     return [];
-  }, [query]);
+  }, [admission.ok, query]);
   const filterOptions = useMemo(() => buildSearchFilterOptions(results), [results]);
   const filteredResults = useMemo(() => filterSearchResults(results, selectedFilter), [results, selectedFilter]);
   const startingPoints = useMemo(
@@ -585,6 +587,8 @@ function SearchResultsInner() {
             value={localQuery}
             onChange={(e) => setLocalQuery(e.target.value)}
             placeholder="Search the wiki..."
+            aria-invalid={!admission.ok}
+            aria-describedby={!admission.ok ? 'search-query-guidance' : undefined}
             className="w-full pl-10 pr-12 py-3 bg-surface border border-border rounded-lg text-base text-slate-100 placeholder-slate-600 focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-all shadow-lg"
           />
           <button
@@ -597,7 +601,7 @@ function SearchResultsInner() {
         </div>
       </form>
 
-      {query ? (
+      {query ? admission.ok ? (
         <>
           <p className="mb-4 text-sm text-slate-500">Ranking is a starting point, not proof.</p>
           <p aria-live="polite" aria-atomic="true" className="mb-4 text-sm text-slate-400">
@@ -609,6 +613,10 @@ function SearchResultsInner() {
           <SearchFilterNav query={query} selectedFilter={selectedFilter} options={filterOptions} />
           <StartingPoints query={query} results={startingPoints} />
         </>
+      ) : (
+        <p id="search-query-guidance" role="status" className="mb-4 rounded-lg border border-amber-500/25 bg-amber-500/10 px-4 py-3 text-sm leading-relaxed text-amber-200">
+          {admission.message}
+        </p>
       ) : (
         <>
           <p className="text-sm text-slate-400 mb-4">Enter a search term above or start from a task or reader path.</p>
