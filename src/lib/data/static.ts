@@ -522,7 +522,7 @@ export const CHAIN_RECORDS: SourcedRecord<Chain>[] = [
     explorer: 'https://solscan.io/block',
     addressFormats: ['Base58'],
     supported: true,
-    statusNote: 'Live inbound-address and chain-client sources include SOL. SOL uses EdDSA signing; Exploit Report #2 says EdDSA chains such as Solana were not exposed to the GG20/Paillier attack path.',
+    statusNote: 'Live inbound and chain-client sources include SOL even though the high-level supported-blockchains overview omitted it at review time. SOL uses EdDSA signing; Exploit Report #2 says EdDSA chains such as Solana were not exposed to the GG20/Paillier attack path.',
   }, supportedChainSolSources, 'official', supportedChainCatalogFreshness),
   record({
     name: 'XRP Ledger',
