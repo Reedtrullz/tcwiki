@@ -502,3 +502,23 @@ test('section search result lands on its matching heading', async ({ page }) => 
   ]);
   await expect(main.locator('#current-and-historical-endpoint-routing')).toBeVisible();
 });
+
+test('over-limit URL, pasted and restored queries stay bounded and recover', async ({ page }) => {
+  await page.goto('/search?q=rune');
+  await expect(page.locator('[data-testid="search-results-list"] article').first()).toBeVisible();
+
+  await page.goto(`/search?q=${'a'.repeat(300)}`);
+  await expect(page.getByText(/Search is limited to 256 characters/i)).toBeVisible();
+  await expect(page.locator('[data-testid="search-results-list"] article')).toHaveCount(0);
+  await page.goBack();
+  await expect(page.locator('[data-testid="search-results-list"] article').first()).toBeVisible();
+
+  const form = page.getByRole('search', { name: 'Search wiki content' });
+  const input = form.getByLabel('Search the wiki', { exact: true });
+  await input.fill('alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu nu xi omicron pi rho');
+  await form.getByRole('button', { name: 'Submit search page query' }).click();
+  await expect(page.getByText(/Search is limited to 16 distinct terms/i)).toBeVisible();
+  await expect(page.locator('[data-testid="search-results-list"] article')).toHaveCount(0);
+  await page.goBack();
+  await expect(page.locator('[data-testid="search-results-list"] article').first()).toBeVisible();
+});
