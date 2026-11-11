@@ -1,0 +1,24 @@
+THORChain Wiki
+Copyright (c) 2026 Reidar
+
+License scope
+
+- Code: src/, scripts/, configuration and build files are licensed under the
+  MIT License. See LICENSE.
+- Owned prose and curated content: the MDX explainers, curated records and
+  other repository-authored text are licensed under CC BY 4.0. See
+  LICENSE-CONTENT.
+- Contributions are accepted under the same inbound = outbound terms. See
+  CONTRIBUTING.md.
+
+Exclusions
+
+- Quotations and participant statements from the THORChain Devs Discord,
+  including the governance archive, are not licensed here. Their provenance
+  and permission are unresolved.
+- External documentation, blog posts and articles are referenced by link and
+  short quotation only; no license is granted to that text.
+- Live Midgard and THORNode values are dynamic observations, not licensed
+  content.
+- Dependencies keep their own licenses; see pnpm-lock.yaml and each package.
+- The THORChain name and marks are not licensed by this repository.

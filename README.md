@@ -132,7 +132,11 @@ Current focus areas:
 
 ## License
 
-Owner licensing decision pending. The previous MIT statement was not accompanied by a LICENSE file. See the [rights and attribution inventory](docs/rights-and-attribution.md) for current provenance, exclusions and the decision needed before new full-text exports.
+- Code is licensed under the [MIT License](LICENSE).
+- Repository-authored prose and curated content are licensed under [CC BY 4.0](LICENSE-CONTENT).
+- Discord quotations, external article text, live provider values, dependencies and THORChain marks are excluded; see [NOTICE](NOTICE).
+
+The recorded scope and provenance boundaries are in the [rights and attribution inventory](docs/rights-and-attribution.md).
 
 ---
 

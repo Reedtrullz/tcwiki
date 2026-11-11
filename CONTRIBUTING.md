@@ -44,6 +44,10 @@ CI will run audits, content checks, lint, typecheck, unit tests, both target bui
 
 For PRs, CI builds and scans the candidate Docker image, then runs the same `pnpm run smoke:docker` helper in prebuilt-image mode against the scanned tag on `http://127.0.0.1:3011`. For pushes to `main`, CI publishes the scanned digest, pulls that immutable digest in a fresh `Smoke published image` job, and runs the same Docker runtime smoke before the deploy job is allowed to start. Locally, `pnpm run smoke:docker` performs the same shape of proof by building an image, running it on a free localhost port with strict runtime metadata and enforced CSP, probing health/version/ready/security headers, and then running the narrow browser lane. The Docker smoke covers health/version/ready metadata, the shared readiness contract including `sources.thornode.runePoolPol` RUNEPool/POL status and RUNEPool/POL source posture, security headers, the Home first-screen render, and one mocked loaded-state smoke each for Network, Dynamic Fees, Economics RUNEPool/POL, and Stats; it is intentionally small and does not replace the full standalone Playwright suite.
 
+## Licensing
+
+Code contributions are accepted under the MIT License. Prose, data and other content contributions are accepted under CC BY 4.0; both are inbound = outbound. Only submit material you have the right to license, keep external quotations short and attributed, and do not send private Discord logs or third-party article text. See LICENSE, LICENSE-CONTENT and NOTICE.
+
 ## How Content Works Today
 
 Most of the site is **curated, hand-written content** in React components and MDX:
