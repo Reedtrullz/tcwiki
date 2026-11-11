@@ -84,7 +84,7 @@ const canonicalOrigin = SITE_ORIGIN;
 const llms = [
   '# THORChain Wiki',
   '',
-  'Registry-generated metadata pointers for builders. Article text is not redistributed here.',
+  'Registry-generated metadata pointers for builders. Article text is not redistributed here; repository-authored article text is CC BY 4.0 (see LICENSE-CONTENT).',
   '',
   `- Knowledge JSON v1: ${canonicalOrigin}/knowledge/v1.json`,
   `- Governance incident metadata: ${canonicalOrigin}${governingRoute.href} (reviewed ${governingRoute.reviewedAt}; next review ${governingRoute.nextReviewDue})`,

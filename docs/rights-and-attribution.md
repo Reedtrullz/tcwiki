@@ -18,17 +18,17 @@ README previously said “MIT”, but the repository has no LICENSE file. The ow
 
 This is a category inventory with a targeted external-quote exception, not a verified per-author chain of title. No private Discord fetch or bulk external copying was performed.
 
-## Required owner record
+## Recorded owner decision
 
-The earlier execution question remains unanswered. Record the owner's explicit choice here before granting new full-text redistribution rights:
+Recorded 11 November 2026 by the owner (Reidar):
 
-- Code license and exact scope: pending.
-- Owned explanation/content license and exact scope: pending.
-- Contributor expectations/attribution: pending; preserve existing authors and sources meanwhile.
-- External/private/community exclusions and confirmed permissions: pending, including the governance archive above.
-- Date, owner and approval evidence: pending.
+- Code license and scope: MIT for repository-authored code under `src/`, `scripts/` and configuration. See `LICENSE`.
+- Owned explanation/content license and scope: CC BY 4.0 for repository-authored prose, MDX explainers and curated records. See `LICENSE-CONTENT`.
+- Contributor expectations/attribution: inbound = outbound under the same split; see `CONTRIBUTING.md`. Existing authors and sources stay attributed.
+- External/private/community exclusions: Discord quotations and participant statements (including the governance archive), external article text, live provider values, dependencies and THORChain marks stay excluded. See `NOTICE`.
+- Date, owner and approval evidence: 11 November 2026, owner Reidar, recorded in the license change merged through #160.
 
-Candidate choices discussed in execution were MIT for owned code/text, MIT code with CC BY 4.0 for owned text, or metadata-only publication while ownership remains unresolved. This document selects none of them. After an explicit choice, add the corresponding license text(s), reconcile README/contribution/export wording and document exclusions. Do not infer approval from elapsed time or main-merge approval alone.
+The earlier pending state is superseded by this record. Do not infer approval from elapsed time or main-merge approval alone; this record is the approval.
 
 ## Present export and contribution posture
 

@@ -7,7 +7,7 @@
   "generator": {
     "id": "thorchain-wiki-knowledge-export",
     "version": 1,
-    "sha256": "14eb52e6d268da8656ba917175d0fb3df2874ea88f5f3f52a872b4998658b4d7"
+    "sha256": "4bfeed6067324e6883bea1afff48cc3cbe5673471f4ea5be9350931ff81f2a3f"
   },
   "identity": {
     "authoredInputs": {
@@ -245,6 +245,6 @@
   ],
   "checksum": {
     "algorithm": "sha256",
-    "value": "311998d523771aba7d1b7535b6065026ccfcbb51a13b5c406bae5834f7e781a2"
+    "value": "43777d58dc7238a90e73470b09e9308b2f10b5ed1a370203c01b97ee6d86e8d1"
   }
 }

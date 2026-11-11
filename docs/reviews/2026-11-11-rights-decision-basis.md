@@ -94,16 +94,16 @@ control matters more than reuse.
 
 ## Owner decision
 
-- [ ] Option A: MIT code + CC BY 4.0 owned content
+- [x] Option A: MIT code + CC BY 4.0 owned content
 - [ ] Option B: MIT for all owned material
 - [ ] Option C: All rights reserved, metadata-only
-- [ ] Confirm owned scope: code, MDX explainers, curated records
-- [ ] Confirm exclusions above
-- [ ] Confirm inbound = outbound contribution terms
+- [x] Confirm owned scope: code, MDX explainers, curated records
+- [x] Confirm exclusions above
+- [x] Confirm inbound = outbound contribution terms
 
-Owner:
-Date:
-Evidence link:
+Owner: Reidar
+Date: 2026-11-11
+Evidence link: the license change merged through #160 (LICENSE, LICENSE-CONTENT, NOTICE, README, CONTRIBUTING).
 
 ## After the decision
 

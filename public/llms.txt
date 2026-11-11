@@ -1,6 +1,6 @@
 # THORChain Wiki
 
-Registry-generated metadata pointers for builders. Article text is not redistributed here.
+Registry-generated metadata pointers for builders. Article text is not redistributed here; repository-authored article text is CC BY 4.0 (see LICENSE-CONTENT).
 
 - Knowledge JSON v1: https://wiki.thorchain.no/knowledge/v1.json
 - Governance incident metadata: https://wiki.thorchain.no/governance (reviewed 2026-07-13; next review 2026-11-17)
