@@ -4,8 +4,9 @@ import { pathToFileURL } from 'node:url';
 
 // Full (production + development) dependency audit. Any finding above `low`
 // blocks. The former braces/micromatch development review exception
-// (GHSA-vfj7-8cjw-p6xm) expired on 2026-10-10 and those packages are no longer
-// in the tree, so no exception remains. Never waive a production finding here.
+// (GHSA-vfj7-8cjw-p6xm) expired on 2026-10-10 and the advisory was withdrawn
+// upstream on 2026-10-23; the dev-only chain remains without an exception.
+// Never waive a production finding here.
 export function assessAudit(report) {
   if (!report || typeof report !== 'object' || !report.advisories || typeof report.advisories !== 'object' || !report.metadata?.vulnerabilities) {
     throw new Error('Unrecognized pnpm audit response.');
