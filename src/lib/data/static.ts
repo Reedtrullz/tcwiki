@@ -71,7 +71,6 @@ import {
   liquifyMidgardPoolsSource,
   liquifyThornodeMimirSource,
   liveInboundSource,
-  midgardHealthSource,
   midgardNetworkSource,
   multichainChaosnetLaunchSource,
   networkHaltsSource,
@@ -187,13 +186,6 @@ const liquifyMidgardHealthReviewedAt20260704: SourceMeta = {
   label: 'Liquify Midgard Gateway',
   retrievedAt: '2026-07-04',
   notes: 'Runtime failover source used only after response-shape validation.',
-};
-
-const thornodeVersionSource: SourceMeta = {
-  label: 'THORChain THORNode Version',
-  url: 'https://thornode.thorchain.network/thorchain/version',
-  retrievedAt: '2026-07-04',
-  notes: 'Runtime version endpoint used for source and deployment identity checks.',
 };
 
 const liquifyThornodeVersionSource: SourceMeta = {
@@ -794,8 +786,8 @@ export const SOURCE_MAP_SECTION_RECORDS: SourcedRecord<SourceMapSection>[] = [
       'That a clean provider response proves historical correctness.',
       'That degraded readiness is a deploy failure when warnings are intentionally conservative.',
     ],
-    links: [liquifyMidgardHealthReviewedAt20260704, midgardHealthSource, liquifyThornodeVersionSource, thornodeVersionSource],
-  }, [liquifyMidgardHealthReviewedAt20260704, midgardHealthSource, liquifyThornodeVersionSource, thornodeVersionSource], 'curated', {
+    links: [liquifyMidgardHealthReviewedAt20260704, liquifyThornodeVersionSource],
+  }, [liquifyMidgardHealthReviewedAt20260704, liquifyThornodeVersionSource], 'curated', {
     checkedAt: '2026-07-13',
     nextReviewDue: '2026-11-17',
   }),

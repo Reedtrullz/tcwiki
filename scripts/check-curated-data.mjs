@@ -57,7 +57,6 @@ const expectedChains = ['BTC', 'ETH', 'BSC', 'AVAX', 'GAIA', 'DOGE', 'LTC', 'BCH
 const forbiddenChainCodes = new Set(['TRX', 'ARB', 'MATIC', 'OP']);
 const liveInboundUrls = new Set([
   'https://gateway.liquify.com/chain/thorchain_api/thorchain/inbound_addresses',
-  'https://thornode.thorchain.network/thorchain/inbound_addresses',
 ]);
 const contentCheckToday = process.env.CONTENT_CHECK_TODAY ?? new Date().toISOString().slice(0, 10);
 const reviewExceptions = buildReviewExceptionMap({

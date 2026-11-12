@@ -20,7 +20,7 @@ export function ProviderRequestDisclosure({ variant }: { variant: 'quote' | 'dia
             ? 'The GET /quote/swap query contains from_asset, to_asset and amount in 1e8 base units. This wiki does not send a destination address, wallet address, affiliate or signing credentials with that query.'
             : 'Operation reads request /mimir, /inbound_addresses, /version and /lastblock, with a requested height where applicable; the Cosmos endpoint supplies /base/tendermint/v1beta1/blocks/latest. Midgard supplies /network, /health and available /pools with a bounded period. These requests carry public endpoint parameters rather than your search text.'}</p>
           <ul className="space-y-1" aria-label={quote ? 'Quote provider destinations' : 'Network provider destinations'}>
-            {THORNODE_PROVIDER_DEFAULTS.map(provider => (
+            {THORNODE_PROVIDER_DEFAULTS.filter(provider => !provider.retired).map(provider => (
               <li key={provider.url} className="break-all">
                 <a href={provider.url} target="_blank" rel="noopener noreferrer" className="text-accent underline">{provider.label}</a>: {provider.url}
                 {!quote && <>; Cosmos block source: {provider.cosmosUrl}</>}

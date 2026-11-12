@@ -16,7 +16,7 @@ test('network renders dated server evidence and a native reference path without 
   await expect(fallback).toContainText(/checked at \d{4}-\d{2}-\d{2}T/);
   await expect(fallback).toContainText('cannot prove that a route will execute');
   await expect(fallback.getByRole('link', { name: 'Source map', exact: true })).toHaveAttribute('href', '/docs#current-protocol-state');
-  await expect(fallback.getByRole('link', { name: /current controls/ })).toHaveCount(2);
+  await expect(fallback.getByRole('link', { name: /current controls/ })).toHaveCount(1);
   await expect(page.getByRole('region', { name: 'Source and freshness' })).not.toContainText('Loading live source');
   await fallback.getByRole('searchbox', { name: 'Search reference material' }).fill('quote expiry');
   await fallback.getByRole('button', { name: 'Search', exact: true }).click();

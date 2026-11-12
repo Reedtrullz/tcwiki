@@ -11,9 +11,9 @@
   },
   "identity": {
     "authoredInputs": {
-      "src/lib/data/static.ts": "f0db8b16fa89b54a98f25b1ae22878f8d3f5ea4baab03b446d6273ee429e630d",
+      "src/lib/data/static.ts": "9060f2bf402b86f9a7866039071b0cad676be3359409095a2e1b4b1c4ce542c6",
       "src/lib/content/registry.ts": "0ac576869c0c33b3cdd099b728fccfdac2a1e34b573517f4bc274d0046807d6b",
-      "src/lib/sources.ts": "e397a87bf1c0ebe2eb3b9bb8b7904b05cf615fe99cfb8156f33f2a6cdd1665ed",
+      "src/lib/sources.ts": "b68641930635c3d7cd18c2e295d98d2760dda08a8ea06ce1332628d92afe132f",
       "src/lib/types.ts": "4b64233e955b7b4069f89e91a46b324cbd8520639bccf8d1c21467fbeb2e67f2",
       "src/lib/site.ts": "e79a4609bcf097347fe1660252b7d4db81ae149520cca0b27c7059fd24a07f6d",
       "content/deep-dives/build-query-data.mdx": "bf08feee64afbebaefc68adbe363a09db89d927927f301665f8e004b73efc485",
@@ -201,19 +201,19 @@
         },
         {
           "label": "Midgard v2 Pools",
-          "url": "https://midgard.thorchain.network/v2/pools?status=available",
+          "url": "https://gateway.liquify.com/chain/thorchain_midgard/v2/pools?status=available",
           "retrievedAt": "2026-07-05",
           "notes": "Current-only available-pool snapshot; not durable pool uptime proof."
         },
         {
           "label": "THORNode Mimir endpoint",
-          "url": "https://thornode.thorchain.network/thorchain/mimir",
+          "url": "https://gateway.liquify.com/chain/thorchain_api/thorchain/mimir",
           "retrievedAt": "2026-07-05",
           "notes": "Current-only operational controls; malformed values must not be treated as inactive."
         },
         {
           "label": "THORNode inbound_addresses",
-          "url": "https://thornode.thorchain.network/thorchain/inbound_addresses",
+          "url": "https://gateway.liquify.com/chain/thorchain_api/thorchain/inbound_addresses",
           "retrievedAt": "2026-07-05",
           "notes": "Current-only chain availability, router, halt, and inbound-address snapshot; not durable uptime proof."
         }
@@ -245,6 +245,6 @@
   ],
   "checksum": {
     "algorithm": "sha256",
-    "value": "fbe82155d0bebf101b216d74ef77a6810af1f29a3799781c49380fee89ba2c9b"
+    "value": "0234286b9ace13413e0aaf9ec11d6c12088e27cae84554a9c86e4a9be65c4aab"
   }
 }

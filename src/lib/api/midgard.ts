@@ -18,15 +18,10 @@ import {
 } from '@/lib/types';
 import { liveDegraded, liveOk } from '@/lib/trust';
 import { DAILY_VOLUME_POOLS } from '@/lib/daily-volume';
+import { MIDGARD_PROVIDER_DEFAULTS } from '../../../scripts/lib/upstream-hosts.mjs';
 
-export const MIDGARD_ENDPOINTS = [
-  {
-    label: 'Liquify Midgard',
-    url: 'https://gateway.liquify.com/chain/thorchain_midgard/v2',
-  },
-];
+export const MIDGARD_ENDPOINTS = MIDGARD_PROVIDER_DEFAULTS;
 
-// Public Midgard (midgard.thorchain.network) is NXDOMAIN since November 2026; calling it only produced a 530.
 // Cold Liquify pool reads were measured at 4.6-10.1s, so readiness needs the full read instead of a 5s abort.
 const REQUEST_TIMEOUT_MS = 12_000;
 

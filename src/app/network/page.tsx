@@ -24,7 +24,7 @@ export default async function NetworkPage() {
   try {
     initialStatusResult = reassessThornodeResult(await ThornodeAPI.getNetworkStatus(createThornodeCollectionContext()));
   } catch {
-    initialStatusResult = liveDegraded<NetworkStatus>('The server could not retrieve an operational sample. Use the primary sources below or refresh after enabling JavaScript.', THORNODE_PROVIDER_DEFAULTS.map(({ label, url }) => ({ label, url })));
+    initialStatusResult = liveDegraded<NetworkStatus>('The server could not retrieve an operational sample. Use the primary sources below or refresh after enabling JavaScript.', THORNODE_PROVIDER_DEFAULTS.filter(provider => !provider.retired).map(({ label, url }) => ({ label, url })));
   }
   return (
     <NetworkPageClient initialStatusResult={initialStatusResult}>
@@ -46,7 +46,7 @@ export default async function NetworkPage() {
           <p className="mt-2">The operation summary is one server-retrieved sample, checked at {initialStatusResult.checkedAt}. It will not refresh here. Treat it as dated context; it cannot prove that a route will execute.</p>
           <p className="mt-2">Interactive quotes and browser refresh require JavaScript. Read the primary public sources or continue with reference material.</p>
           <ul className="mt-2 space-y-1">
-            {THORNODE_PROVIDER_DEFAULTS.map(({ label, url }) => <li key={url}><a href={`${url}/mimir`} rel="noopener noreferrer" className="text-accent underline">{label} current controls</a></li>)}
+            {THORNODE_PROVIDER_DEFAULTS.filter(provider => !provider.retired).map(({ label, url }) => <li key={url}><a href={`${url}/mimir`} rel="noopener noreferrer" className="text-accent underline">{label} current controls</a></li>)}
           </ul>
           <div className="mt-3 flex flex-wrap gap-4"><Link href="/docs#current-protocol-state" className="text-accent underline">Source map</Link><Link href="/deep-dives/mimir-halt-controls" className="text-accent underline">Read the halt guide</Link></div>
           <form action="/search" method="get" className="mt-3 flex flex-wrap items-end gap-2">
