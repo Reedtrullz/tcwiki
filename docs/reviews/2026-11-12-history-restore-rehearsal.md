@@ -65,6 +65,27 @@ Does not prove: backend account quota, a real backup destination, production
 retention behavior, real provider captures, or that the eventual Durable Object
 SQLite implementation matches this rehearsal. It is not a backup-success claim.
 
+## Destination drill - 2026-11-12
+
+Destination: `/var/backups/tcwiki-history/2026-11-12/bundle` on `racknerd-2d09df5`,
+owned by `deploy:deploy`; 3,102 bytes; `/var` had 35G free at the time.
+
+- Exported the bundle locally, copied it with `scp` to the destination, and
+  listed the remote SHA-256 values. The manifest hash was
+  `32c906125542822fedf796554b5f7748e6f6285a10cd45a260ccca34a311ca07`, with three
+  snapshot files and the checksum file present.
+- Copied the destination bundle back to a second local directory. `diff -r`
+  reported no differences.
+- Restored from that returned copy with
+  `node --experimental-sqlite scripts/rehearse-history-restore.mjs --verify-bundle <dir>`:
+  3 rows, row hash `04b40ec170e745e7e2a460bc0e85363a5846e1be3f9d2a42a428d133a1772cf8`,
+  equal to the source rows.
+- The restored SQLite file is byte-identical to the source database
+  (`438dcc3ab83bbe474a8ee73026e372a280243e8236ac05d2b48f3db21e3a9724`).
+
+Offsite coverage for this path is still unverified; the record claims a
+separate-machine destination, not an offsite backup.
+
 ## Remaining owner inputs
 
 - Name and role of the operational owner.
