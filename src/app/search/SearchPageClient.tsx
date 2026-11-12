@@ -1,7 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { useEffect, useMemo, useState, Suspense } from 'react';
+import { useEffect, useMemo, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Activity, ArrowRight, BookOpen, Compass, Search, ShieldCheck } from 'lucide-react';
@@ -499,12 +499,7 @@ function SearchResultsInner() {
   const searchParams = useSearchParams();
   const query = searchParams.get('q') || '';
   const selectedFilter = normalizeSearchFilter(searchParams.get('filter'));
-  const [localQuery, setLocalQuery] = useState(query);
   const admission = useMemo(() => admitSearchQuery(query), [query]);
-
-  useEffect(() => {
-    setLocalQuery(query);
-  }, [query]);
 
   const handleSearchSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -584,8 +579,8 @@ function SearchResultsInner() {
             aria-label="Search the wiki"
             type="text"
             enterKeyHint="search"
-            value={localQuery}
-            onChange={(e) => setLocalQuery(e.target.value)}
+            key={query}
+            defaultValue={query}
             placeholder="Search the wiki..."
             aria-invalid={!admission.ok}
             aria-describedby={!admission.ok ? 'search-query-guidance' : undefined}
