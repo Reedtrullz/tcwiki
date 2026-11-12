@@ -134,7 +134,8 @@ export async function writeReadinessMonitorEvidence(evidence, outputPath) {
 }
 
 // Independent monitor request deadline covers headers AND body; no retry loop.
-export async function fetchMonitorJson(url, { fetchImpl = fetch, timeoutMs = 10000 } = {}) {
+// Readiness can spend up to 12s on a cold Midgard pools read before it answers.
+export async function fetchMonitorJson(url, { fetchImpl = fetch, timeoutMs = 20000 } = {}) {
   const controller = new AbortController();
   let reader;
   let rejectAbort;

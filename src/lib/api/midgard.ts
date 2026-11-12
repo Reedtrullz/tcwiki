@@ -24,11 +24,11 @@ export const MIDGARD_ENDPOINTS = [
     label: 'Liquify Midgard',
     url: 'https://gateway.liquify.com/chain/thorchain_midgard/v2',
   },
-  {
-    label: 'THORChain Midgard',
-    url: 'https://midgard.thorchain.network/v2',
-  },
 ];
+
+// Public Midgard (midgard.thorchain.network) is NXDOMAIN since November 2026; calling it only produced a 530.
+// Cold Liquify pool reads were measured at 4.6-10.1s, so readiness needs the full read instead of a 5s abort.
+const REQUEST_TIMEOUT_MS = 12_000;
 
 let activeEndpoint = 0;
 
@@ -82,7 +82,7 @@ async function request<T>(path: string): Promise<LiveDataResult<T>> {
 
 async function requestFromEndpoint<T>(endpoint: SourceMeta, path: string, signal?: AbortSignal): Promise<T> {
   const controller = new AbortController();
-  const timeoutId = globalThis.setTimeout(() => controller.abort(), 5000);
+  const timeoutId = globalThis.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   const abort = () => controller.abort();
   signal?.addEventListener('abort', abort, { once: true });
   if (signal?.aborted) controller.abort();

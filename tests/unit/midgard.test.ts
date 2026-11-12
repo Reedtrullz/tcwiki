@@ -13,26 +13,38 @@ describe('MidgardAPI', () => {
     vi.unstubAllGlobals();
   });
 
-  it('falls back from Liquify to public Midgard and preserves the raw pool APY field', async () => {
+  it('preserves the raw pool APY field from the single live Midgard provider', async () => {
     const fetchMock = vi
       .fn()
-      .mockResolvedValueOnce(makeResponse(false, {}, 500, 'Server Error'))
-      .mockResolvedValueOnce(makeResponse(true, [{ asset: 'BTC.BTC', poolAPY: '0.12', synthUnits: '0', synthSupply: '0', units: '1', assetDepth: '1', runeDepth: '1', price: '1', status: 'available', assetPriceUSD: '1', runePriceUSD: '1', liquidityInUSD: '1', volume24h: '1', pool: 'BTC.BTC', earnings: '0', rewards: '0' }]));
+      .mockResolvedValue(makeResponse(true, [{ asset: 'BTC.BTC', poolAPY: '0.12', synthUnits: '0', synthSupply: '0', units: '1', assetDepth: '1', runeDepth: '1', price: '1', status: 'available', assetPriceUSD: '1', runePriceUSD: '1', liquidityInUSD: '1', volume24h: '1', pool: 'BTC.BTC', earnings: '0', rewards: '0' }]));
 
     vi.stubGlobal('fetch', fetchMock);
     const result = await MidgardAPI.getPools();
 
     expect(result.status).toBe('ok');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(fetchMock.mock.calls[0][0]).toContain('gateway.liquify.com');
     expect(fetchMock.mock.calls[0][0]).toContain('/pools?status=available&period=14d');
-    expect(fetchMock.mock.calls[1][0]).toContain('midgard.thorchain.network');
     expect(result.data?.[0].poolAPY).toBe('0.12');
     expect(result.data?.[0].annualPercentageRate).toBeUndefined();
     expect(result.source).toEqual({
-      label: 'THORChain Midgard',
-      url: 'https://midgard.thorchain.network/v2/pools?status=available&period=14d',
+      label: 'Liquify Midgard',
+      url: 'https://gateway.liquify.com/chain/thorchain_midgard/v2/pools?status=available&period=14d',
       retrievedAt: result.checkedAt,
     });
+  });
+
+  it('reports degraded without calling the retired public Midgard host', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(makeResponse(false, {}, 500, 'Server Error'));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const result = await MidgardAPI.getPools();
+
+    expect(result.status).toBe('degraded');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls[0][0]).toContain('gateway.liquify.com');
+    expect(result.error).toContain('Liquify Midgard');
+    expect(result.error).not.toContain('midgard.thorchain.network');
   });
 
   it('preserves separate APR/APY source fields and the explicit default pool period', async () => {
@@ -103,89 +115,36 @@ describe('MidgardAPI', () => {
     expect(result.data).toBeUndefined();
   });
 
-  it('falls back when a Midgard endpoint responds with unusable domain data', async () => {
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce(makeResponse(true, {
-        totalPooledRune: '100000000',
-        totalReserve: '200000000',
-        activeNodeCount: null,
-        standbyNodeCount: '23',
-        bondingAPY: '0.12',
-        liquidityAPY: '4.5',
-        nextChurnHeight: '123456',
-        bondMetrics: {},
-      }))
-      .mockResolvedValueOnce(makeResponse(true, {
-        totalPooledRune: '100000000',
-        totalReserve: '200000000',
-        activeNodeCount: '101',
-        standbyNodeCount: '23',
-        bondingAPY: '0.12',
-        liquidityAPY: '4.5',
-        nextChurnHeight: '123456',
-        poolActivationCountdown: '9',
-        poolShareFactor: '1',
-        blockRewards: { blockReward: '100' },
-        bondMetrics: { average: '1' },
-      }));
+  it('reports degraded when the live provider returns unusable network data', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(makeResponse(true, {
+      totalPooledRune: '100000000',
+      totalReserve: '200000000',
+      activeNodeCount: null,
+      standbyNodeCount: '23',
+      bondingAPY: '0.12',
+      liquidityAPY: '4.5',
+      nextChurnHeight: '123456',
+      bondMetrics: {},
+    }));
     vi.stubGlobal('fetch', fetchMock);
 
     const result = await MidgardAPI.getNetworkData();
 
-    expect(result.status).toBe('ok');
-    expect(fetchMock).toHaveBeenCalledTimes(2);
-    expect(fetchMock.mock.calls[0][0]).toContain('gateway.liquify.com');
-    expect(fetchMock.mock.calls[1][0]).toContain('midgard.thorchain.network');
-    expect(result.source?.label).toBe('THORChain Midgard');
-    expect(result.source?.url).toBe('https://midgard.thorchain.network/v2/network');
-    expect(result.data?.activeNodeCount).toBe(101);
+    expect(result.status).toBe('degraded');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(result.error).toContain('network.activeNodeCount');
+    expect(result.data).toBeUndefined();
   });
 
-  it('falls back when pool details have unusable domain data', async () => {
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce(makeResponse(true, { asset: 'BTC.BTC', status: 'available' }))
-      .mockResolvedValueOnce(makeResponse(true, {
-        asset: 'BTC.BTC',
-        assetDepth: '1',
-        runeDepth: '1',
-        status: 'available',
-      }));
+  it('reports degraded when pool details have unusable domain data', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(makeResponse(true, { asset: 'BTC.BTC', status: 'available' }));
     vi.stubGlobal('fetch', fetchMock);
 
     const result = await MidgardAPI.getPoolDetails('BTC.BTC');
 
-    expect(result.status).toBe('ok');
-    expect(fetchMock).toHaveBeenCalledTimes(2);
-    expect(result.source?.label).toBe('THORChain Midgard');
-    expect(result.source?.url).toBe('https://midgard.thorchain.network/v2/pool/BTC.BTC');
-    expect(result.data?.asset).toBe('BTC.BTC');
-  });
-
-  it('falls back when base-unit pool fields are numeric instead of canonical strings', async () => {
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce(makeResponse(true, [{
-        asset: 'BTC.BTC',
-        assetDepth: 100000000,
-        runeDepth: '1',
-        status: 'available',
-      }]))
-      .mockResolvedValueOnce(makeResponse(true, [{
-        asset: 'BTC.BTC',
-        assetDepth: '100000000',
-        runeDepth: '1',
-        status: 'available',
-      }]));
-    vi.stubGlobal('fetch', fetchMock);
-
-    const result = await MidgardAPI.getPools();
-
-    expect(result.status).toBe('ok');
-    expect(fetchMock).toHaveBeenCalledTimes(2);
-    expect(result.source?.label).toBe('THORChain Midgard');
-    expect(result.data?.[0].assetDepth).toBe('100000000');
+    expect(result.status).toBe('degraded');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(result.data).toBeUndefined();
   });
 
   it('returns degraded when all Midgard pool base-unit fields are numeric', async () => {
@@ -507,18 +466,18 @@ describe('MidgardAPI', () => {
     fetchMock.mockClear().mockRejectedValue(new Error('Offline'));
     const unavailable = await MidgardAPI.getDailyVolumeHistories();
     expect(unavailable.every(result => result.status === 'degraded')).toBe(true);
-    expect(fetchMock).toHaveBeenCalledTimes(14);
+    expect(fetchMock).toHaveBeenCalledTimes(7);
   });
-  it('falls back before accepting an inverted or overlapping earnings interval', async () => {
+  it('rejects inverted or overlapping earnings intervals from the live provider', async () => {
     const interval = { startTime: '1704067200', endTime: '1704153600', earnings: '100000000', bondingEarnings: '60000000', liquidityEarnings: '40000000' };
     for (const intervals of [[{ ...interval, endTime: interval.startTime }], [interval, { ...interval, startTime: '1704100000', endTime: '1704186400' }]]) {
       resetMidgardEndpointForTests();
-      const fetchMock = vi.fn().mockResolvedValueOnce(makeResponse(true, { intervals })).mockResolvedValueOnce(makeResponse(true, { intervals: [interval] }));
+      const fetchMock = vi.fn().mockResolvedValue(makeResponse(true, { intervals }));
       vi.stubGlobal('fetch', fetchMock);
       const result = await MidgardAPI.getHistory();
-      expect(fetchMock).toHaveBeenCalledTimes(2);
-      expect(result.source?.label).toBe('THORChain Midgard');
-      expect(result.data).toHaveLength(1);
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      expect(result.status).toBe('degraded');
+      expect(result.data).toBeUndefined();
     }
   });
 });
