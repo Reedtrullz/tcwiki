@@ -33,6 +33,26 @@ describe('readiness runtime contract helper', () => {
     expect(() => assertReadinessContract(readyResponse())).not.toThrow();
   });
 
+  it('accepts cached pool age metadata', () => {
+    const response = readyResponse();
+    response.sources.midgard.visibleData.pools.cache = {
+      cachedAt: '2026-11-12T12:00:00.000Z',
+      ageSeconds: 300,
+      stale: true,
+    };
+    expect(() => assertReadinessContract(response)).not.toThrow();
+  });
+
+  it('rejects malformed cached pool age metadata', () => {
+    const response = readyResponse();
+    response.sources.midgard.visibleData.pools.cache = {
+      cachedAt: '2026-11-12T12:00:00.000Z',
+      ageSeconds: -1,
+      stale: true,
+    };
+    expect(() => assertReadinessContract(response)).toThrow(/ageSeconds/);
+  });
+
   it('accepts ready responses with fully disclosed review-only Mimir support warnings', () => {
     const response = readyResponse();
     const warning = 'Known operational-support Mimir keys present: BURNSYNTHS, SCHEDULEDMIGRATION.';

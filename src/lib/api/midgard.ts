@@ -47,6 +47,113 @@ export function resetMidgardEndpointForTests() {
   activeEndpoint = 0;
 }
 
+const POOLS_CACHE_FRESH_SECONDS = 60;
+const POOLS_CACHE_MAX_STALE_SECONDS = 600;
+const EDGE_CACHE_ORIGIN = 'https://tcwiki.invalid/midgard';
+
+interface CachedPoolsEntry {
+  checkedAt: string;
+  source: SourceMeta;
+  data: Pool[];
+}
+
+interface EdgeCache {
+  match(request: Request): Promise<Response | undefined>;
+  put(request: Request, response: Response): Promise<void>;
+}
+
+const poolsCache = new Map<string, CachedPoolsEntry>();
+const poolsRefresh = new Map<string, Promise<void>>();
+
+function edgeCache(): EdgeCache | undefined {
+  const store = (globalThis as typeof globalThis & { caches?: { default?: EdgeCache } }).caches;
+  return store?.default;
+}
+
+function edgeCacheRequest(path: string) {
+  return new Request(`${EDGE_CACHE_ORIGIN}${path}`);
+}
+
+async function readEdgeCache(path: string): Promise<CachedPoolsEntry | undefined> {
+  const cache = edgeCache();
+  if (!cache) return undefined;
+  try {
+    const response = await cache.match(edgeCacheRequest(path));
+    if (!response) return undefined;
+    const entry = await response.json() as Partial<CachedPoolsEntry>;
+    if (!entry || typeof entry.checkedAt !== 'string' || !entry.source || !Array.isArray(entry.data)) return undefined;
+    return { checkedAt: entry.checkedAt, source: entry.source, data: entry.data };
+  } catch {
+    return undefined;
+  }
+}
+
+async function writeEdgeCache(path: string, entry: CachedPoolsEntry): Promise<void> {
+  const cache = edgeCache();
+  if (!cache) return;
+  try {
+    await cache.put(edgeCacheRequest(path), new Response(JSON.stringify(entry), {
+      headers: { 'content-type': 'application/json' },
+    }));
+  } catch {
+    // Edge cache storage is best effort; the in-process copy still serves the request.
+  }
+}
+
+function poolsAgeSeconds(entry: CachedPoolsEntry, now: number): number {
+  const checkedAt = Date.parse(entry.checkedAt);
+  return Number.isFinite(checkedAt) ? Math.max(0, Math.round((now - checkedAt) / 1000)) : Number.POSITIVE_INFINITY;
+}
+
+function cachedPoolsResult(entry: CachedPoolsEntry, now: number): LiveDataResult<Pool[]> {
+  const ageSeconds = poolsAgeSeconds(entry, now);
+  return {
+    ...liveOk(entry.data, entry.source, entry.checkedAt),
+    cache: { cachedAt: entry.checkedAt, ageSeconds, stale: ageSeconds > POOLS_CACHE_FRESH_SECONDS },
+  };
+}
+
+function refreshPoolsCache(path: string, load: () => Promise<LiveDataResult<Pool[]>>) {
+  if (poolsRefresh.has(path)) return;
+  const task = load()
+    .then(async (result) => {
+      if (result.status !== 'ok' || !result.data || !result.source) return;
+      const entry = { checkedAt: result.checkedAt, source: result.source, data: result.data };
+      poolsCache.set(path, entry);
+      await writeEdgeCache(path, entry);
+    })
+    .catch(() => undefined)
+    .finally(() => { poolsRefresh.delete(path); });
+  poolsRefresh.set(path, task);
+}
+
+async function withPoolsCache(path: string, load: () => Promise<LiveDataResult<Pool[]>>): Promise<LiveDataResult<Pool[]>> {
+  const now = Date.now();
+  const cached = poolsCache.get(path) ?? await readEdgeCache(path);
+  if (cached) {
+    poolsCache.set(path, cached);
+    const ageSeconds = poolsAgeSeconds(cached, now);
+    if (ageSeconds <= POOLS_CACHE_FRESH_SECONDS) return cachedPoolsResult(cached, now);
+    if (ageSeconds <= POOLS_CACHE_MAX_STALE_SECONDS) {
+      refreshPoolsCache(path, load);
+      return cachedPoolsResult(cached, now);
+    }
+  }
+  const fresh = await load();
+  if (fresh.status === 'ok' && fresh.data && fresh.source) {
+    const entry = { checkedAt: fresh.checkedAt, source: fresh.source, data: fresh.data };
+    poolsCache.set(path, entry);
+    void writeEdgeCache(path, entry);
+    return cachedPoolsResult(entry, Date.now());
+  }
+  return fresh;
+}
+
+export function resetMidgardPoolsCacheForTests() {
+  poolsCache.clear();
+  poolsRefresh.clear();
+}
+
 function sourceForPath(endpoint: SourceMeta, path: string): SourceMeta {
   return {
     ...endpoint,
@@ -607,7 +714,8 @@ export class MidgardAPI {
     }
     params.set('period', period);
     const query = `?${params.toString()}`;
-    return requestNormalized<RawPool[], Pool[]>(`/pools${query}`, normalizePools);
+    const path = `/pools${query}`;
+    return withPoolsCache(path, () => requestNormalized<RawPool[], Pool[]>(path, normalizePools));
   }
 
   static async getPoolDetails(pool: string): Promise<LiveDataResult<Pool>> {

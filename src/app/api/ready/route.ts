@@ -46,6 +46,7 @@ function sourceCheck<T>(result: LiveDataResult<T>): ReadinessSourceCheck {
     source: result.source,
     sources: result.sources,
     error: result.error,
+    ...(result.cache ? { cache: result.cache } : {}),
   };
 }
 

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import MidgardAPI, { resetMidgardEndpointForTests } from '@/lib/api/midgard';
+import MidgardAPI, { resetMidgardEndpointForTests, resetMidgardPoolsCacheForTests } from '@/lib/api/midgard';
 import type { MidgardPoolPeriod } from '@/lib/types';
 
 const makeResponse = (ok: boolean, data: unknown, status = 200, statusText = 'OK') => new Response(JSON.stringify(data), { status: !ok && status === 200 ? 500 : status, statusText });
@@ -7,6 +7,7 @@ const makeResponse = (ok: boolean, data: unknown, status = 200, statusText = 'OK
 describe('MidgardAPI', () => {
   beforeEach(() => {
     resetMidgardEndpointForTests();
+    resetMidgardPoolsCacheForTests();
   });
 
   afterEach(() => {
@@ -479,5 +480,94 @@ describe('MidgardAPI', () => {
       expect(result.status).toBe('degraded');
       expect(result.data).toBeUndefined();
     }
+  });
+});
+
+describe('Midgard pools edge cache', () => {
+  const pool = { asset: 'BTC.BTC', assetDepth: '1', runeDepth: '1', status: 'available' };
+  const startedAt = new Date('2026-11-12T12:00:00Z');
+
+  beforeEach(() => {
+    resetMidgardEndpointForTests();
+    resetMidgardPoolsCacheForTests();
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(startedAt);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  it('serves a fresh cached pool read without a second request', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(makeResponse(true, [pool]));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const first = await MidgardAPI.getPools();
+    expect(first.cache).toEqual({ cachedAt: '2026-11-12T12:00:00.000Z', ageSeconds: 0, stale: false });
+    vi.setSystemTime(new Date('2026-11-12T12:00:30Z'));
+    const second = await MidgardAPI.getPools();
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(second.status).toBe('ok');
+    expect(second.data).toEqual(first.data);
+    expect(second.cache).toEqual({
+      cachedAt: '2026-11-12T12:00:00.000Z',
+      ageSeconds: 30,
+      stale: false,
+    });
+  });
+
+  it('serves stale pools immediately and refreshes in the background', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(makeResponse(true, [pool]));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await MidgardAPI.getPools();
+    vi.setSystemTime(new Date('2026-11-12T12:05:00Z'));
+    const stale = await MidgardAPI.getPools();
+
+    expect(stale.status).toBe('ok');
+    expect(stale.cache).toEqual({
+      cachedAt: '2026-11-12T12:00:00.000Z',
+      ageSeconds: 300,
+      stale: true,
+    });
+    await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+  });
+
+  it('does not serve pools older than the stale window', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(makeResponse(true, [pool]));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await MidgardAPI.getPools();
+    fetchMock.mockResolvedValue(makeResponse(false, {}, 500, 'Server Error'));
+    vi.setSystemTime(new Date('2026-11-12T12:20:00Z'));
+    const result = await MidgardAPI.getPools();
+
+    expect(result.status).toBe('degraded');
+    expect(result.cache).toBeUndefined();
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('writes through to the edge cache and rehydrates after a process restart', async () => {
+    const store = new Map<string, Response>();
+    const cache = {
+      match: vi.fn(async (request: Request) => store.get(request.url)),
+      put: vi.fn(async (request: Request, response: Response) => { store.set(request.url, response.clone()); }),
+    };
+    vi.stubGlobal('caches', { default: cache });
+    const fetchMock = vi.fn().mockResolvedValue(makeResponse(true, [pool]));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await MidgardAPI.getPools();
+    expect(cache.put).toHaveBeenCalledTimes(1);
+
+    resetMidgardPoolsCacheForTests();
+    vi.setSystemTime(new Date('2026-11-12T12:00:30Z'));
+    const second = await MidgardAPI.getPools();
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(second.cache?.ageSeconds).toBe(30);
+    expect(cache.match).toHaveBeenCalledTimes(2);
   });
 });

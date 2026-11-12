@@ -168,6 +168,7 @@ export interface LiveCollectionTiming {
 }
 
 export interface LiveDataResult<T> {
+  cache?: LiveDataCacheMeta;
   presentation?: {
     kind: 'operational' | 'aggregate' | 'historical';
     state: 'current' | 'refreshing' | 'last-good' | 'stale' | 'unavailable' | 'historical';
@@ -186,6 +187,12 @@ export interface LiveDataResult<T> {
 export const MIDGARD_POOL_PERIODS = ['1h', '24h', '7d', '14d', '30d', '90d', '100d', '180d', '365d'] as const;
 export type MidgardPoolPeriod = (typeof MIDGARD_POOL_PERIODS)[number];
 export const DEFAULT_MIDGARD_POOL_PERIOD: MidgardPoolPeriod = '14d';
+
+export interface LiveDataCacheMeta {
+  cachedAt: string;
+  ageSeconds: number;
+  stale: boolean;
+}
 
 export interface MidgardHealth {
   provider?: string;
@@ -332,6 +339,7 @@ export interface ReadinessResponse {
 }
 
 export interface ReadinessSourceCheck {
+  cache?: LiveDataCacheMeta;
   status: LiveDataStatus;
   checkedAt: string;
   source?: SourceMeta;
