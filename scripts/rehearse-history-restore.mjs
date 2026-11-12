@@ -6,10 +6,32 @@ import { join, resolve } from 'node:path';
 // Bounded synthetic export/backup/restore rehearsal for #200. This is not
 // production storage; it proves the path before the owner approves one.
 // Run with: node --experimental-sqlite scripts/rehearse-history-restore.mjs [dir]
+const sha = (value) => createHash('sha256').update(value).digest('hex');
+
+if (process.argv[2] === '--verify-bundle') {
+  const bundlePath = process.argv[3];
+  if (!bundlePath) throw new Error('Usage: node --experimental-sqlite scripts/rehearse-history-restore.mjs --verify-bundle <bundle-dir>');
+  const manifest = JSON.parse(readFileSync(join(bundlePath, 'manifest.json'), 'utf8'));
+  const database = join(resolve(bundlePath), '..', 'restored-verify.sqlite');
+  const db = new DatabaseSync(database);
+  db.exec('DROP TABLE IF EXISTS captures');
+  db.exec('CREATE TABLE captures (capture_id TEXT PRIMARY KEY, observed_at TEXT NOT NULL, schema_version INTEGER NOT NULL, bytes INTEGER NOT NULL, sha256 TEXT NOT NULL, json TEXT NOT NULL)');
+  const insert = db.prepare('INSERT INTO captures VALUES (?, ?, ?, ?, ?, ?)');
+  for (const entry of manifest.captures) {
+    const bytes = readFileSync(join(bundlePath, 'snapshots', entry.captureId + '.json'));
+    if (sha(bytes) !== entry.sha256 || bytes.length !== entry.bytes) throw new Error('checksum mismatch for ' + entry.captureId);
+    const parsed = JSON.parse(bytes.toString('utf8'));
+    if (parsed.schemaVersion !== 1) throw new Error('unsupported schema in ' + entry.captureId);
+    insert.run(parsed.captureId, parsed.timestamps.observedAt, parsed.schemaVersion, bytes.length, sha(bytes), bytes.toString('utf8'));
+  }
+  const rows = db.prepare('SELECT * FROM captures ORDER BY capture_id').all();
+  console.log(JSON.stringify({ bundle: bundlePath, manifestCaptures: manifest.captures.length, rows: rows.length, rowsSha256: sha(JSON.stringify(rows)), database }, null, 2));
+  process.exit(0);
+}
+
 const root = resolve(process.argv[2] ?? '.artifacts/history-restore');
 mkdirSync(root, { recursive: true });
 const dir = (path) => { mkdirSync(join(root, path), { recursive: true }); return join(root, path); };
-const sha = (value) => createHash('sha256').update(value).digest('hex');
 
 const AS_OF = Date.parse('2026-11-12T09:00:00.000Z');
 const MAX_CAPTURE_BYTES = 65536;
