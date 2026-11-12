@@ -486,7 +486,7 @@ describe('source and freshness labels', () => {
     expect(swapAvailability?.sources.map(({ url }) => url)).toEqual([
       'https://dev.thorchain.org/swap-guide/quickstart-guide.html',
       'https://dev.thorchain.org/concepts/network-halts.html',
-      'https://thornode.thorchain.network/thorchain/inbound_addresses',
+      'https://gateway.liquify.com/chain/thorchain_api/thorchain/inbound_addresses',
     ]);
 
     for (const id of ['fees-and-adr026', 'swap-availability', 'why-paused']) {

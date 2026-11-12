@@ -54,7 +54,7 @@ describe('one bounded server operational seed', () => {
     const html = renderToStaticMarkup(element.props.children);
     expect(html).toContain('<noscript>');
     expect(html).toContain('action="/search"');
-    expect(html).toContain('https://thornode.thorchain.network/thorchain');
+    expect(html).toContain('https://gateway.liquify.com/chain/thorchain_api/thorchain');
     expect(html).not.toContain('private unexpected exception');
   });
 });

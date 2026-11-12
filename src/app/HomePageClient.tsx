@@ -57,7 +57,7 @@ const homeProofRoutes = [
 const homeExternalLinks = [
   { label: 'THORChain Docs', href: 'https://docs.thorchain.org' },
   { label: 'Developer Docs', href: 'https://dev.thorchain.org' },
-  { label: 'Midgard API', href: 'https://midgard.thorchain.network/v2/doc' },
+  { label: 'Midgard API', href: 'https://gateway.liquify.com/chain/thorchain_midgard/v2/doc' },
   { label: 'RuneScan Explorer', href: 'https://runescan.io' },
 ];
 

@@ -64,12 +64,12 @@ Separate protocol exploits from illicit use of open infrastructure. For example,
 Useful current-state endpoints:
 
 ```bash
-curl -fsS https://thornode.thorchain.network/thorchain/mimir | jq
-curl -fsS https://thornode.thorchain.network/thorchain/inbound_addresses | jq
-curl -fsS https://thornode.thorchain.network/thorchain/lastblock | jq
-curl -fsS https://midgard.thorchain.network/v2/health | jq
-curl -fsS https://midgard.thorchain.network/v2/network | jq
-curl -fsS https://midgard.thorchain.network/v2/pools | jq 'map(.asset)'
+curl -fsS https://gateway.liquify.com/chain/thorchain_api/thorchain/mimir | jq
+curl -fsS https://gateway.liquify.com/chain/thorchain_api/thorchain/inbound_addresses | jq
+curl -fsS https://gateway.liquify.com/chain/thorchain_api/thorchain/lastblock | jq
+curl -fsS https://gateway.liquify.com/chain/thorchain_midgard/v2/health | jq
+curl -fsS https://gateway.liquify.com/chain/thorchain_midgard/v2/network | jq
+curl -fsS https://gateway.liquify.com/chain/thorchain_midgard/v2/pools | jq 'map(.asset)'
 ```
 
 Record the check time and make clear that the result is a snapshot.

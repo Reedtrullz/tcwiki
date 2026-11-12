@@ -15,7 +15,7 @@ const officialSourceLinks = [
   },
   {
     label: 'Midgard API',
-    href: 'https://midgard.thorchain.network/v2/doc',
+    href: 'https://gateway.liquify.com/chain/thorchain_midgard/v2/doc',
     description: 'Official indexed dashboard API docs.',
   },
 ];

@@ -157,19 +157,19 @@ export const MDX_SEARCH_DOCUMENTS: SearchDoc[] = [
       },
       {
         "label": "Midgard v2 Pools",
-        "url": "https://midgard.thorchain.network/v2/pools?status=available",
+        "url": "https://gateway.liquify.com/chain/thorchain_midgard/v2/pools?status=available",
         "retrievedAt": "2026-07-05",
         "notes": "Current-only available-pool snapshot; not durable pool uptime proof."
       },
       {
         "label": "THORNode Mimir endpoint",
-        "url": "https://thornode.thorchain.network/thorchain/mimir",
+        "url": "https://gateway.liquify.com/chain/thorchain_api/thorchain/mimir",
         "retrievedAt": "2026-07-05",
         "notes": "Current-only operational controls; malformed values must not be treated as inactive."
       },
       {
         "label": "THORNode inbound_addresses",
-        "url": "https://thornode.thorchain.network/thorchain/inbound_addresses",
+        "url": "https://gateway.liquify.com/chain/thorchain_api/thorchain/inbound_addresses",
         "retrievedAt": "2026-07-05",
         "notes": "Current-only chain availability, router, halt, and inbound-address snapshot; not durable uptime proof."
       }
@@ -417,7 +417,7 @@ export const MDX_SEARCH_DOCUMENTS: SearchDoc[] = [
       },
       {
         "label": "Midgard v2 Network",
-        "url": "https://midgard.thorchain.network/v2/network",
+        "url": "https://gateway.liquify.com/chain/thorchain_midgard/v2/network",
         "retrievedAt": "2026-07-05",
         "notes": "Current-only network totals; pair with visible source freshness before treating values as live."
       },
@@ -479,25 +479,25 @@ export const MDX_SEARCH_DOCUMENTS: SearchDoc[] = [
       },
       {
         "label": "Midgard v2 Pools",
-        "url": "https://midgard.thorchain.network/v2/pools?status=available",
+        "url": "https://gateway.liquify.com/chain/thorchain_midgard/v2/pools?status=available",
         "retrievedAt": "2026-07-05",
         "notes": "Current-only available-pool snapshot; not durable pool uptime proof."
       },
       {
         "label": "Midgard v2 Network",
-        "url": "https://midgard.thorchain.network/v2/network",
+        "url": "https://gateway.liquify.com/chain/thorchain_midgard/v2/network",
         "retrievedAt": "2026-07-05",
         "notes": "Current-only network totals; pair with visible source freshness before treating values as live."
       },
       {
         "label": "Midgard v2 Earnings",
-        "url": "https://midgard.thorchain.network/v2/history/earnings?interval=day&count=30",
+        "url": "https://gateway.liquify.com/chain/thorchain_midgard/v2/history/earnings?interval=day&count=30",
         "retrievedAt": "2026-07-05",
         "notes": "Current-only earnings intervals as returned by Midgard, not protocol revenue attribution proof."
       },
       {
         "label": "THORNode Mimir endpoint",
-        "url": "https://thornode.thorchain.network/thorchain/mimir",
+        "url": "https://gateway.liquify.com/chain/thorchain_api/thorchain/mimir",
         "retrievedAt": "2026-07-05",
         "notes": "Current-only operational controls; malformed values must not be treated as inactive."
       }
@@ -529,37 +529,37 @@ export const MDX_SEARCH_DOCUMENTS: SearchDoc[] = [
       },
       {
         "label": "Midgard v2 Health",
-        "url": "https://midgard.thorchain.network/v2/health",
+        "url": "https://gateway.liquify.com/chain/thorchain_midgard/v2/health",
         "retrievedAt": "2026-07-05",
         "notes": "Current-only Midgard provider health, sync state, and lag for rendered live metrics."
       },
       {
         "label": "Midgard v2 Network",
-        "url": "https://midgard.thorchain.network/v2/network",
+        "url": "https://gateway.liquify.com/chain/thorchain_midgard/v2/network",
         "retrievedAt": "2026-07-05",
         "notes": "Current-only network totals; pair with visible source freshness before treating values as live."
       },
       {
         "label": "Midgard v2 Pools",
-        "url": "https://midgard.thorchain.network/v2/pools?status=available",
+        "url": "https://gateway.liquify.com/chain/thorchain_midgard/v2/pools?status=available",
         "retrievedAt": "2026-07-05",
         "notes": "Current-only available-pool snapshot; not durable pool uptime proof."
       },
       {
         "label": "Midgard v2 Earnings",
-        "url": "https://midgard.thorchain.network/v2/history/earnings?interval=day&count=30",
+        "url": "https://gateway.liquify.com/chain/thorchain_midgard/v2/history/earnings?interval=day&count=30",
         "retrievedAt": "2026-07-05",
         "notes": "Current-only earnings intervals as returned by Midgard, not protocol revenue attribution proof."
       },
       {
         "label": "THORNode Mimir endpoint",
-        "url": "https://thornode.thorchain.network/thorchain/mimir",
+        "url": "https://gateway.liquify.com/chain/thorchain_api/thorchain/mimir",
         "retrievedAt": "2026-07-05",
         "notes": "Current-only operational controls; malformed values must not be treated as inactive."
       },
       {
         "label": "THORNode inbound_addresses",
-        "url": "https://thornode.thorchain.network/thorchain/inbound_addresses",
+        "url": "https://gateway.liquify.com/chain/thorchain_api/thorchain/inbound_addresses",
         "retrievedAt": "2026-07-05",
         "notes": "Current-only chain availability, router, halt, and inbound-address snapshot; not durable uptime proof."
       }
@@ -691,13 +691,13 @@ export const MDX_SEARCH_DOCUMENTS: SearchDoc[] = [
       },
       {
         "label": "THORNode Mimir endpoint",
-        "url": "https://thornode.thorchain.network/thorchain/mimir",
+        "url": "https://gateway.liquify.com/chain/thorchain_api/thorchain/mimir",
         "retrievedAt": "2026-07-05",
         "notes": "Current-only operational controls; malformed values must not be treated as inactive."
       },
       {
         "label": "Midgard v2 Pools",
-        "url": "https://midgard.thorchain.network/v2/pools?status=available",
+        "url": "https://gateway.liquify.com/chain/thorchain_midgard/v2/pools?status=available",
         "retrievedAt": "2026-07-05",
         "notes": "Current-only available-pool snapshot; not durable pool uptime proof."
       }
