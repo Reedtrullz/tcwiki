@@ -20,7 +20,8 @@ function contentSecurityPolicy(nonce: string) {
     `style-src 'self' 'nonce-${nonce}'`,
     "img-src 'self' data: https:",
     "font-src 'self'",
-    "connect-src 'self' https://gateway.liquify.com https://midgard.mayachain.info",
+    // The retired THORNode row stays in THORNODE_PROVIDER_DEFAULTS as a failover target, so the browser may still attempt it.
+    "connect-src 'self' https://gateway.liquify.com https://thornode.thorchain.network https://midgard.mayachain.info",
     "frame-ancestors 'none'",
     "report-uri /api/csp-report",
   ].join('; ');
