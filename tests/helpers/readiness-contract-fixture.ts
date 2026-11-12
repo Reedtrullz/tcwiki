@@ -64,6 +64,7 @@ export function readinessResponse() {
             status: 'ok',
             checkedAt: '2026-07-04T00:00:00.000Z',
             source: { label: 'Midgard', url: 'https://midgard.thorchain.network/v2' },
+            cache: undefined as { cachedAt: string; ageSeconds: number; stale: boolean } | undefined,
           },
           earnings: {
             status: 'ok',

@@ -124,6 +124,12 @@ function assertSourceCheck(value, path) {
   assert(allowedSourceStatuses.has(value.status), `${path}.status must be ok or degraded`);
   assertString(value.checkedAt, `${path}.checkedAt`);
   assertSourceMeta(value.source, `${path}.source`);
+  if (value.cache !== undefined) {
+    assert(value.cache && typeof value.cache === 'object', `${path}.cache must be an object`);
+    assertString(value.cache.cachedAt, `${path}.cache.cachedAt`);
+    assert(typeof value.cache.ageSeconds === 'number' && Number.isFinite(value.cache.ageSeconds) && value.cache.ageSeconds >= 0, `${path}.cache.ageSeconds must be a non-negative finite number`);
+    assert(typeof value.cache.stale === 'boolean', `${path}.cache.stale must be a boolean`);
+  }
 }
 
 function assertWarningDetails(value, path) {

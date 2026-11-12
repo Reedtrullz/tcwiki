@@ -451,6 +451,24 @@ describe('/api/ready', () => {
     expect(body.sources.thornode.runePoolPol.sourceWarningDetails).toEqual([]);
   });
 
+  it('reports cached pool age in the readiness payload', async () => {
+    vi.mocked(MidgardAPI.getPools).mockResolvedValue({
+      ...poolsData(),
+      cache: { cachedAt: '2026-07-02T00:00:00.000Z', ageSeconds: 300, stale: true },
+    });
+
+    const response = await GET();
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.sources.midgard.visibleData.pools.cache).toEqual({
+      cachedAt: '2026-07-02T00:00:00.000Z',
+      ageSeconds: 300,
+      stale: true,
+    });
+    expect(body.reasons).toEqual([]);
+  });
+
   it('passes the strict readiness contract probe for usable readiness responses', async () => {
     const response = await GET(new Request('http://localhost/api/ready?contract=strict'));
     const body = await response.json();

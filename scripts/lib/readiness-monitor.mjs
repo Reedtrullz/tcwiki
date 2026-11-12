@@ -32,6 +32,11 @@ export function summarizeReadinessResponse({ observedAt, httpStatus, json }) {
   ].filter(([, , source]) => source).map(([family, feature, source]) => ({
     family, feature, status: source.status ?? null,
     checkedAt: source.collection?.completedAt ?? source.checkedAt ?? null,
+    cache: source.cache && typeof source.cache === 'object' ? {
+      cachedAt: typeof source.cache.cachedAt === 'string' ? source.cache.cachedAt : null,
+      ageSeconds: Number.isFinite(source.cache.ageSeconds) ? source.cache.ageSeconds : null,
+      stale: source.cache.stale === true,
+    } : null,
     provider: sourceSummary(source.source),
     error: source.error ? boundedText(source.error) : null,
     warnings: Array.isArray(source.sourceWarningDetails) ? source.sourceWarningDetails.slice(0, 80).map(detail => ({
