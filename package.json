@@ -63,7 +63,7 @@
   "devDependencies": {
     "@cloudflare/vite-plugin": "^1.61.0",
     "@mdx-js/rollup": "3.1.1",
-    "@playwright/test": "^1.63.0",
+    "@playwright/test": "^1.65.1",
     "@tailwindcss/postcss": "^4.3.3",
     "@types/lunr": "^2.3.7",
     "@types/mdx": "^2.0.13",
